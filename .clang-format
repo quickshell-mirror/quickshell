@@ -1,0 +1,82 @@
+AlignArrayOfStructures: None
+AlignAfterOpenBracket: BlockIndent
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+BinPackArguments: false
+BinPackParameters: false
+Cpp11BracedListStyle: true
+LambdaBodyIndentation: Signature
+UseCRLF: false
+UseTab: ForIndentation
+SpacesInSquareBrackets: false
+SpacesInParentheses: false
+SpacesInCStyleCastParentheses: false
+SpacesInAngles: Never
+SpaceInEmptyParentheses: false
+SpaceInEmptyBlock: false
+SpaceBeforeSquareBrackets: false
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+SpaceBeforeParens: ControlStatementsExceptControlMacros
+SortIncludes: CaseSensitive
+PointerAlignment: Left
+PackConstructorInitializers: NextLine
+LineEnding: LF
+InsertBraces: false
+BreakConstructorInitializers: AfterColon
+BreakBeforeBraces: Custom
+BreakInheritanceList: AfterColon
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BraceWrapping:
+  AfterClass: false
+  AfterFunction: false
+  AfterCaseLabel: false
+  AfterEnum: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+  AfterControlStatement: MultiLine
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+AlignOperands: AlignAfterOperator
+InsertTrailingCommas: Wrapped
+MaxEmptyLinesToKeep: 1
+ExperimentalAutoDetectBinPacking: false
+ColumnLimit: 100
+IndentWidth: 2
+TabWidth: 2
+AllowAllConstructorInitializersOnNextLine: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+NamespaceIndentation: None
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<(cassert|cctype|cerrno|cfenv|cfloat|cinttypes|climits|clocale|cmath|csetjmp|csignal|cstdarg|cstdbool|cstddef|cstdint|cstdio|cstdlib|cstring|ctime|cuchar|cwchar|cwctype|algorithm|any|array|atomic|bitset|chrono|codecvt|complex|condition_variable|deque|exception|filesystem|forward_list|fstream|functional|future|initializer_list|iomanip|ios|iosfwd|iostream|istream|iterator|latch|limits|list|locale|map|memory|mutex|new|numeric|optional|ostream|queue|random|ratio|regex|scoped_allocator|set|shared_mutex|sstream|stack|stdexcept|streambuf|string|string_view|strstream|syncstream|system_error|thread|tuple|type_traits|typeindex|typeinfo|unordered_map|unordered_set|utility|valarray|variant|vector|version|assert.h|ctype.h|errno.h|fenv.h|float.h|inttypes.h|limits.h|locale.h|math.h|setjmp.h|signal.h|stdarg.h|stddef.h|stdint.h|stdio.h|stdlib.h|string.h|time.h|uchar.h|wchar.h|wctype.h)>$'
+    Priority: 0
+  - Regex: '^<.*>$'
+    Priority: 1
+  - Regex: '^".*"$'
+    Priority: 2
+  - Regex: '.+'
+    Priority: 3

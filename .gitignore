@@ -1,0 +1,10 @@
+# build files
+/build/
+compile_commands.json
+
+# clangd
+/.cache
+
+# direnv
+/.envrc
+/.direnv/
