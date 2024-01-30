@@ -25,6 +25,7 @@ qt_standard_project_setup(REQUIRES 6.6)
 qt_add_executable(qtshell
 	src/cpp/main.cpp
 	src/cpp/shell.cpp
+	src/cpp/variants.cpp
 )
 
 qt_add_qml_module(qtshell URI QtShell)
