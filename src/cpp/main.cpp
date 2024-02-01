@@ -5,10 +5,11 @@
 #include <qguiapplication.h>
 #include <qlogging.h>
 #include <qobject.h>
-#include <qqmlapplicationengine.h>
+#include <qquickwindow.h>
 #include <qstandardpaths.h>
 #include <qstring.h>
 
+#include "rootwrapper.hpp"
 #include "shell.hpp"
 
 int main(int argc, char** argv) {
@@ -43,21 +44,11 @@ int main(int argc, char** argv) {
 	CONFIG_PATH = configPath;
 
 	LayerShellQt::Shell::useLayerShell();
+	// Base window transparency appears to be additive.
+	// Use a fully transparent window with a colored rect.
+	QQuickWindow::setDefaultAlphaBuffer(true);
 
-	auto engine = QQmlApplicationEngine();
-	engine.load(configPath);
-
-	if (engine.rootObjects().isEmpty()) {
-		qCritical() << "failed to load config file";
-		return -1;
-	}
-
-	auto* shellobj = qobject_cast<QtShell*>(engine.rootObjects().first());
-
-	if (shellobj == nullptr) {
-		qCritical() << "root item was not a QtShell";
-		return -1;
-	}
+	auto root = RootWrapper(configPath);
 
 	return QGuiApplication::exec();
 }

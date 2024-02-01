@@ -23,10 +23,13 @@ class QtShell: public QObject, public QQmlParserStatus {
 public:
 	explicit QtShell();
 
-	void classBegin() override {};
+	void classBegin() override {}
 	void componentComplete() override;
 
 	QQmlListProperty<ShellComponent> components();
+
+public slots:
+	void reload();
 
 private:
 	static void appendComponent(QQmlListProperty<ShellComponent>* list, ShellComponent* component);

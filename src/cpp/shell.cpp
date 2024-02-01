@@ -11,18 +11,25 @@
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 
+#include "rootwrapper.hpp"
+
 QString CONFIG_PATH; // NOLINT
 
-QtShell::QtShell(): QObject(nullptr), path(CONFIG_PATH), dir(QFileInfo(this->path).dir()) {
-	CONFIG_PATH = "";
-}
+QtShell::QtShell(): QObject(nullptr), path(CONFIG_PATH), dir(QFileInfo(this->path).dir()) {}
 
-void QtShell::componentComplete() {
-	if (this->path.isEmpty()) {
-		qWarning() << "Multiple QtShell objects were created. You should not do this.";
+void QtShell::reload() {
+	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
+	auto* root = qobject_cast<RootWrapper*>(rootobj);
+
+	if (root == nullptr) {
+		qWarning() << "cannot find RootWrapper for reload, ignoring request";
 		return;
 	}
 
+	root->reloadGraph();
+}
+
+void QtShell::componentComplete() {
 	for (auto* component: this->mComponents) {
 		component->prepare(this->dir);
 	}

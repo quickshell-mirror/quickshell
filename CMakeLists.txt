@@ -26,6 +26,7 @@ qt_add_executable(qtshell
 	src/cpp/main.cpp
 	src/cpp/shell.cpp
 	src/cpp/variants.cpp
+	src/cpp/rootwrapper.cpp
 )
 
 qt_add_qml_module(qtshell URI QtShell)
