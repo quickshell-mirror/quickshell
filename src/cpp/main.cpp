@@ -10,7 +10,6 @@
 #include <qstring.h>
 
 #include "rootwrapper.hpp"
-#include "shell.hpp"
 
 int main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
@@ -40,8 +39,6 @@ int main(int argc, char** argv) {
 		qCritical() << "config file does not exist";
 		return -1;
 	}
-
-	CONFIG_PATH = configPath;
 
 	LayerShellQt::Shell::useLayerShell();
 	// Base window transparency appears to be additive.
