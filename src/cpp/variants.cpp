@@ -16,9 +16,36 @@ void Variants::earlyInit(QObject* old) {
 }
 
 QObject* Variants::scavengeTargetFor(QObject* /* child */) {
+	// Attempt to find the set that most closely matches the current one.
+	// This is biased to the order of the scavenge list which should help in
+	// case of conflicts as long as variants have not been reordered.
+
 	if (this->activeScavengeVariant != nullptr) {
-		auto* r = this->scavengeableInstances.get(*this->activeScavengeVariant);
-		if (r != nullptr) return *r;
+		auto& values = this->scavengeableInstances.values;
+		if (values.empty()) return nullptr;
+
+		int matchcount = 0;
+		int matchi = 0;
+		int i = 0;
+		for (auto& [valueSet, _]: values) {
+			int count = 0;
+			for (auto& [k, v]: this->activeScavengeVariant->toStdMap()) {
+				if (valueSet.contains(k) && valueSet.value(k) == v) {
+					count++;
+				}
+			}
+
+			if (count > matchcount) {
+				matchcount = count;
+				matchi = i;
+			}
+
+			i++;
+		}
+
+		if (matchcount > 0) {
+			return values.takeAt(matchi).second;
+		}
 	}
 
 	return nullptr;
