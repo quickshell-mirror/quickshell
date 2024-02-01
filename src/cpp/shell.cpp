@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include <utility>
 
 #include <qlogging.h>
 #include <qobject.h>
@@ -8,7 +9,7 @@
 
 #include "rootwrapper.hpp"
 
-void QtShell::reload() {
+void QtShell::reload(bool hard) {
 	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
 	auto* root = qobject_cast<RootWrapper*>(rootobj);
 
@@ -17,7 +18,23 @@ void QtShell::reload() {
 		return;
 	}
 
-	root->reloadGraph();
+	root->reloadGraph(hard);
+}
+
+void QtShell::earlyInit(QObject* old) {
+	auto* oldshell = qobject_cast<QtShell*>(old);
+
+	if (oldshell != nullptr) {
+		this->scavengeableChildren = std::move(oldshell->children);
+	}
+}
+
+QObject* QtShell::scavengeTargetFor(QObject* /* child */) {
+	if (this->scavengeableChildren.length() > this->children.length()) {
+		return this->scavengeableChildren[this->children.length()];
+	}
+
+	return nullptr;
 }
 
 QQmlListProperty<QObject> QtShell::components() {
@@ -36,4 +53,5 @@ QQmlListProperty<QObject> QtShell::components() {
 void QtShell::appendComponent(QQmlListProperty<QObject>* list, QObject* component) {
 	auto* shell = static_cast<QtShell*>(list->object); // NOLINT
 	component->setParent(shell);
+	shell->children.append(component);
 }

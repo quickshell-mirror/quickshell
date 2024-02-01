@@ -4,17 +4,33 @@
 
 #include <qcontainerfwd.h>
 #include <qlogging.h>
+#include <qobject.h>
+
+#include "scavenge.hpp"
+
+void Variants::earlyInit(QObject* old) {
+	auto* oldv = qobject_cast<Variants*>(old);
+	if (oldv != nullptr) {
+		this->scavengeableInstances = std::move(oldv->instances);
+	}
+}
+
+QObject* Variants::scavengeTargetFor(QObject* /* child */) {
+	if (this->activeScavengeVariant != nullptr) {
+		auto* r = this->scavengeableInstances.get(*this->activeScavengeVariant);
+		if (r != nullptr) return *r;
+	}
+
+	return nullptr;
+}
 
 void Variants::setVariants(QVariantList variants) {
 	this->mVariants = std::move(variants);
-	qDebug() << "configurations updated:" << this->mVariants;
-
 	this->updateVariants();
 }
 
 void Variants::componentComplete() {
-	qDebug() << "configure ready";
-
+	Scavenger::componentComplete();
 	this->updateVariants();
 }
 
@@ -53,14 +69,14 @@ void Variants::updateVariants() {
 				continue; // we dont need to recreate this one
 			}
 
-			auto* instance = this->mComponent->createWithInitialProperties(variant, nullptr);
+			this->activeScavengeVariant = &variant;
+			auto* instance = createComponentScavengeable(*this, *this->mComponent, variant);
 
 			if (instance == nullptr) {
 				qWarning() << "failed to create variant with object" << variant;
 				continue;
 			}
 
-			instance->setParent(this);
 			this->instances.insert(variant, instance);
 		}
 
@@ -73,6 +89,17 @@ bool AwfulMap<K, V>::contains(const K& key) const {
 	return std::ranges::any_of(this->values, [&](const QPair<K, V>& pair) {
 		return pair.first == key;
 	});
+}
+
+template <typename K, typename V>
+V* AwfulMap<K, V>::get(const K& key) {
+	for (auto& [k, v]: this->values) {
+		if (key == k) {
+			return &v;
+		}
+	}
+
+	return nullptr;
 }
 
 template <typename K, typename V>

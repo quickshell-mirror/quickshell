@@ -6,16 +6,19 @@
 #include <qtmetamacros.h>
 #include <qurl.h>
 
+#include "scavenge.hpp"
 #include "shell.hpp"
 
-class RootWrapper: public QObject {
+class RootWrapper: public QObject, virtual public Scavengeable {
 	Q_OBJECT;
 
 public:
 	explicit RootWrapper(QUrl rootUrl);
 
-	void reloadGraph();
+	void reloadGraph(bool hard);
 	void changeRoot(QtShell* newRoot);
+
+	QObject* scavengeTargetFor(QObject* child) override;
 
 private slots:
 	void destroy();
