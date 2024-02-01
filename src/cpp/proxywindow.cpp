@@ -32,6 +32,8 @@ QQuickWindow* ProxyWindowBase::disownWindow() {
 	return window;
 }
 
+QQuickItem* ProxyWindowBase::item() { return this->window->contentItem(); }
+
 // NOLINTNEXTLINE
 #define PROXYPROP(type, get, set)                                                                  \
 	type ProxyWindowBase::get() { return this->window->get(); }                                      \

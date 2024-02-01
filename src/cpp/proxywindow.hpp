@@ -4,6 +4,7 @@
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
+#include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -15,9 +16,10 @@
 // Detaching a window and touching any property is a use after free.
 //
 // NOTE: setting an `id` in qml will point to the proxy window and not the real window so things
-// like anchors dont work
+// like anchors must use `item`.
 class ProxyWindowBase: public Scavenger {
 	Q_OBJECT;
+	Q_PROPERTY(QQuickItem* item READ item CONSTANT);
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight);
@@ -39,6 +41,8 @@ public:
 
 	// Disown the backing window and delete all its children.
 	QQuickWindow* disownWindow();
+
+	QQuickItem* item();
 
 	bool isVisible();
 	virtual void setVisible(bool value);
