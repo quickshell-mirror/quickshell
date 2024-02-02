@@ -98,9 +98,14 @@ void ProxyWindowBase::dataRemoveLast(QQmlListProperty<QObject>* prop) {
 	backer.removeLast(&backer);
 }
 
-void ProxyFloatingWindow::setVisible(bool value) {
-	this->geometryLocked |= value;
-	ProxyWindowBase::setVisible(value);
+void ProxyFloatingWindow::earlyInit(QObject* old) {
+	ProxyWindowBase::earlyInit(old);
+	this->geometryLocked = this->window->isVisible();
+}
+
+void ProxyFloatingWindow::componentComplete() {
+	ProxyWindowBase::componentComplete();
+	this->geometryLocked = true;
 }
 
 void ProxyFloatingWindow::setWidth(qint32 value) {

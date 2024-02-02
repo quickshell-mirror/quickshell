@@ -77,7 +77,9 @@ class ProxyFloatingWindow: public ProxyWindowBase {
 	QML_ELEMENT;
 
 public:
-	void setVisible(bool value) override;
+	void earlyInit(QObject* old) override;
+	void componentComplete() override;
+
 	void setWidth(qint32 value) override;
 	void setHeight(qint32 value) override;
 
