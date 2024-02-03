@@ -33,6 +33,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	SCAVENGE_PARENT = nullptr;
 
 	if (obj == nullptr) {
+		qWarning() << component.errorString().toStdString().c_str();
 		qWarning() << "failed to create root component";
 		return;
 	}

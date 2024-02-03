@@ -36,5 +36,10 @@ QObject* createComponentScavengeable(
 	if (instance->parent() != nullptr) instance->setParent(&parent);
 	component.setInitialProperties(instance, initialProperties);
 	component.completeCreate();
+
+	if (instance == nullptr) {
+		qWarning() << component.errorString().toStdString().c_str();
+	}
+
 	return instance;
 }
