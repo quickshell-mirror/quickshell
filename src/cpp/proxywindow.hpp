@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcolor.h>
+#include <qevent.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
@@ -20,15 +21,16 @@
 class ProxyWindowBase: public Scavenger {
 	Q_OBJECT;
 	Q_PROPERTY(QQuickItem* item READ item CONSTANT);
-	Q_PROPERTY(bool visible READ isVisible WRITE setVisible);
-	Q_PROPERTY(qint32 width READ width WRITE setWidth);
-	Q_PROPERTY(qint32 height READ height WRITE setHeight);
+	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
+	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
+	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	Q_PROPERTY(QColor color READ color WRITE setColor);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
 
 protected:
 	void earlyInit(QObject* old) override;
+	QQuickWindow* window = nullptr;
 
 public:
 	explicit ProxyWindowBase(QObject* parent = nullptr): Scavenger(parent) {}
@@ -40,23 +42,28 @@ public:
 	void operator=(ProxyWindowBase&&) = delete;
 
 	// Disown the backing window and delete all its children.
-	QQuickWindow* disownWindow();
+	virtual QQuickWindow* disownWindow();
 
 	QQuickItem* item();
 
-	bool isVisible();
+	virtual bool isVisible();
 	virtual void setVisible(bool value);
 
-	qint32 width();
+	virtual qint32 width();
 	virtual void setWidth(qint32 value);
 
-	qint32 height();
+	virtual qint32 height();
 	virtual void setHeight(qint32 value);
 
 	QColor color();
 	void setColor(QColor value);
 
 	QQmlListProperty<QObject> data();
+
+signals:
+	void visibleChanged(bool visible);
+	void widthChanged(qint32 width);
+	void heightChanged(qint32 width);
 
 private:
 	static QQmlListProperty<QObject> dataBacker(QQmlListProperty<QObject>* prop);
@@ -66,8 +73,6 @@ private:
 	static void dataClear(QQmlListProperty<QObject>* prop);
 	static void dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj);
 	static void dataRemoveLast(QQmlListProperty<QObject>* prop);
-
-	QQuickWindow* window = nullptr;
 };
 
 // qt attempts to resize the window but fails because wayland

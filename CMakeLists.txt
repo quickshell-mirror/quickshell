@@ -30,6 +30,9 @@ qt_add_executable(qtshell
 	src/cpp/proxywindow.cpp
 	src/cpp/scavenge.cpp
 	src/cpp/rootwrapper.cpp
+	src/cpp/layershell.cpp
+	src/cpp/qmlglobal.cpp
+	src/cpp/qmlscreen.cpp
 )
 
 qt_add_qml_module(qtshell URI QtShell)

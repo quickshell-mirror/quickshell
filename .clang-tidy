@@ -11,6 +11,7 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
   google-build-using-namespace.
   google-explicit-constructor,
   google-global-names-in-headers,
@@ -41,6 +42,7 @@ CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.ConstantCase: UPPER_CASE
   readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.FunctionCase: camelBack
   readability-identifier-naming.MemberCase: camelBack
   readability-identifier-naming.NamespaceCase: lower_case

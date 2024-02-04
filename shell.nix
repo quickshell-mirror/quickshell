@@ -11,8 +11,8 @@
     domain = "git.outfoxxed.me";
     owner = "outfoxxed";
     repo = "layer-shell-qt-nokde";
-    rev = "a50d30687cc03ae4da177033faf5f038c3e1a8b2";
-    sha256 = "5fNwoCce74SSqR5XB3fJ8GI+D5cbkcLRok42k8R3XSw=";
+    rev = "2ebe7b313efbacfcd62ec39e2fda6b4c740d0770";
+    sha256 = "N/nMwf5LQMMwCJvG7J/6xug/EUppHedQCngzCkH8Auk=";
   })) {}; #pkgs.callPackage (import /home/admin/programming/outfoxxed/layer-shell-qt) {};
 in pkgs.mkShell {
   nativeBuildInputs = with pkgs; [

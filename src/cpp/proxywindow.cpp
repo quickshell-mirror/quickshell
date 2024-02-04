@@ -20,9 +20,17 @@ void ProxyWindowBase::earlyInit(QObject* old) {
 	} else {
 		this->window = oldpw->disownWindow();
 	}
+
+	// clang-format off
+	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
+	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
+	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
+	// clang-format on
 }
 
 QQuickWindow* ProxyWindowBase::disownWindow() {
+	QObject::disconnect(this->window, nullptr, this, nullptr);
+
 	auto data = this->data();
 	ProxyWindowBase::dataClear(&data);
 	data.clear(&data);

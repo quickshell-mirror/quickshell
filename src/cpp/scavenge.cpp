@@ -1,6 +1,7 @@
 #include "scavenge.hpp"
 
 #include <qcontainerfwd.h>
+#include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
