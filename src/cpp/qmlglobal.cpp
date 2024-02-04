@@ -3,12 +3,16 @@
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qguiapplication.h>
+#include <qlogging.h>
 #include <qobject.h>
+#include <qqmlcontext.h>
+#include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "qmlscreen.hpp"
+#include "rootwrapper.hpp"
 
 QtShellGlobal::QtShellGlobal(QObject* parent): QObject(parent) {
 	auto* app = QCoreApplication::instance();
@@ -40,6 +44,18 @@ QQmlListProperty<QtShellScreenInfo> QtShellGlobal::screens() {
 	    &QtShellGlobal::screensCount,
 	    &QtShellGlobal::screenAt
 	);
+}
+
+void QtShellGlobal::reload(bool hard) {
+	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
+	auto* root = qobject_cast<RootWrapper*>(rootobj);
+
+	if (root == nullptr) {
+		qWarning() << "cannot find RootWrapper for reload, ignoring request";
+		return;
+	}
+
+	root->reloadGraph(hard);
 }
 
 void QtShellGlobal::updateScreens() {

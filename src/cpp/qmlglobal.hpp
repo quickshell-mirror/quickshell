@@ -24,6 +24,7 @@ signals:
 	void screensChanged();
 
 public slots:
+	void reload(bool hard);
 	void updateScreens();
 
 private:

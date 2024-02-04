@@ -1,25 +1,8 @@
 #include "shell.hpp"
 #include <utility>
 
-#include <qlogging.h>
 #include <qobject.h>
-#include <qqmlcontext.h>
-#include <qqmlengine.h>
 #include <qqmllist.h>
-
-#include "rootwrapper.hpp"
-
-void QtShell::reload(bool hard) {
-	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
-	auto* root = qobject_cast<RootWrapper*>(rootobj);
-
-	if (root == nullptr) {
-		qWarning() << "cannot find RootWrapper for reload, ignoring request";
-		return;
-	}
-
-	root->reloadGraph(hard);
-}
 
 void QtShell::earlyInit(QObject* old) {
 	auto* oldshell = qobject_cast<QtShell*>(old);

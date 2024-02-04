@@ -2,7 +2,6 @@
 
 #include <qcontainerfwd.h>
 #include <qlist.h>
-#include <qlogging.h>
 #include <qobject.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
@@ -23,9 +22,6 @@ public:
 	QObject* scavengeTargetFor(QObject* child) override;
 
 	QQmlListProperty<QObject> components();
-
-public slots:
-	void reload(bool hard = true);
 
 private:
 	static void appendComponent(QQmlListProperty<QObject>* list, QObject* component);
