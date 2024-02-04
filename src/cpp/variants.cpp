@@ -57,7 +57,7 @@ void Variants::setVariants(QVariantList variants) {
 }
 
 void Variants::componentComplete() {
-	Scavenger::componentComplete();
+	this->Scavenger::componentComplete();
 	this->updateVariants();
 }
 

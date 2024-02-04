@@ -14,7 +14,7 @@
 #include "qmlscreen.hpp"
 
 void ProxyShellWindow::earlyInit(QObject* old) {
-	ProxyWindowBase::earlyInit(old);
+	this->ProxyWindowBase::earlyInit(old);
 
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyShellWindow::screenChanged);
 
@@ -50,21 +50,21 @@ void ProxyShellWindow::componentComplete() {
 
 	this->window->setVisible(this->stagingVisible);
 
-	ProxyWindowBase::componentComplete();
+	this->ProxyWindowBase::componentComplete();
 }
 
 QQuickWindow* ProxyShellWindow::disownWindow() {
 	QObject::disconnect(this->shellWindow, nullptr, this, nullptr);
-	return ProxyWindowBase::disownWindow();
+	return this->ProxyWindowBase::disownWindow();
 }
 
 void ProxyShellWindow::setVisible(bool visible) {
 	if (!this->complete) this->stagingVisible = visible;
-	else ProxyWindowBase::setVisible(visible);
+	else this->ProxyWindowBase::setVisible(visible);
 }
 
 bool ProxyShellWindow::isVisible() {
-	return this->complete ? ProxyWindowBase::isVisible() : this->stagingVisible;
+	return this->complete ? this->ProxyWindowBase::isVisible() : this->stagingVisible;
 }
 
 void ProxyShellWindow::setWidth(qint32 width) {
@@ -72,11 +72,11 @@ void ProxyShellWindow::setWidth(qint32 width) {
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (this->complete && (!anchors.mLeft || !anchors.mRight)) ProxyWindowBase::setWidth(width);
+	if (this->complete && (!anchors.mLeft || !anchors.mRight)) this->ProxyWindowBase::setWidth(width);
 }
 
 qint32 ProxyShellWindow::width() {
-	return this->complete ? ProxyWindowBase::width() : this->requestedWidth;
+	return this->complete ? this->ProxyWindowBase::width() : this->requestedWidth;
 }
 
 void ProxyShellWindow::setHeight(qint32 height) {
@@ -84,11 +84,12 @@ void ProxyShellWindow::setHeight(qint32 height) {
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (this->complete && (!anchors.mTop || !anchors.mBottom)) ProxyWindowBase::setHeight(height);
+	if (this->complete && (!anchors.mTop || !anchors.mBottom))
+		this->ProxyWindowBase::setHeight(height);
 }
 
 qint32 ProxyShellWindow::height() {
-	return this->complete ? ProxyWindowBase::height() : this->requestedHeight;
+	return this->complete ? this->ProxyWindowBase::height() : this->requestedHeight;
 }
 
 void ProxyShellWindow::setScreen(QtShellScreenInfo* screen) {
@@ -114,8 +115,8 @@ void ProxyShellWindow::setAnchors(Anchors anchors) {
 	if (anchors.mTop) lsAnchors |= LayerShellQt::Window::AnchorTop;
 	if (anchors.mBottom) lsAnchors |= LayerShellQt::Window::AnchorBottom;
 
-	if (!anchors.mLeft || !anchors.mRight) ProxyWindowBase::setWidth(this->requestedWidth);
-	if (!anchors.mTop || !anchors.mBottom) ProxyWindowBase::setHeight(this->requestedHeight);
+	if (!anchors.mLeft || !anchors.mRight) this->ProxyWindowBase::setWidth(this->requestedWidth);
+	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(this->requestedHeight);
 
 	this->shellWindow->setAnchors(lsAnchors);
 }

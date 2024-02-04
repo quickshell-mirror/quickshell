@@ -107,23 +107,23 @@ void ProxyWindowBase::dataRemoveLast(QQmlListProperty<QObject>* prop) {
 }
 
 void ProxyFloatingWindow::earlyInit(QObject* old) {
-	ProxyWindowBase::earlyInit(old);
+	this->ProxyWindowBase::earlyInit(old);
 	this->geometryLocked = this->window->isVisible();
 }
 
 void ProxyFloatingWindow::componentComplete() {
-	ProxyWindowBase::componentComplete();
+	this->ProxyWindowBase::componentComplete();
 	this->geometryLocked = true;
 }
 
 void ProxyFloatingWindow::setWidth(qint32 value) {
 	if (!this->geometryLocked) {
-		ProxyWindowBase::setWidth(value);
+		this->ProxyWindowBase::setWidth(value);
 	}
 }
 
 void ProxyFloatingWindow::setHeight(qint32 value) {
 	if (!this->geometryLocked) {
-		ProxyWindowBase::setHeight(value);
+		this->ProxyWindowBase::setHeight(value);
 	}
 }
