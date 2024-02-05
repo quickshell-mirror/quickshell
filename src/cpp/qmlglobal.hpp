@@ -13,7 +13,7 @@ class QtShellGlobal: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QQmlListProperty<QtShellScreenInfo> screens READ screens NOTIFY screensChanged);
 	QML_SINGLETON;
-	QML_ELEMENT;
+	QML_NAMED_ELEMENT(QtShell);
 
 public:
 	QtShellGlobal(QObject* parent = nullptr);

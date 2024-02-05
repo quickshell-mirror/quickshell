@@ -37,6 +37,7 @@ qt_add_executable(qtshell
 	src/cpp/rootwrapper.cpp
 	src/cpp/qmlglobal.cpp
 	src/cpp/qmlscreen.cpp
+	src/cpp/watcher.cpp
 )
 
 qt_add_qml_module(qtshell URI QtShell)

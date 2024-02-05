@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <utility>
 
+#include <qfileinfo.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
@@ -10,23 +11,26 @@
 
 #include "scavenge.hpp"
 #include "shell.hpp"
+#include "watcher.hpp"
 
-RootWrapper::RootWrapper(QUrl rootUrl):
-    QObject(nullptr), rootUrl(std::move(rootUrl)), engine(this) {
+RootWrapper::RootWrapper(QString rootPath):
+    QObject(nullptr), rootPath(std::move(rootPath)), engine(this) {
 	this->reloadGraph(true);
 
-	if (this->activeRoot == nullptr) {
+	if (this->root == nullptr) {
 		qCritical() << "could not create scene graph, exiting";
 		exit(-1); // NOLINT
 	}
 }
 
+QObject* RootWrapper::scavengeTargetFor(QObject* /* child */) { return this->root; }
+
 void RootWrapper::reloadGraph(bool hard) {
-	if (this->activeRoot != nullptr) {
+	if (this->root != nullptr) {
 		this->engine.clearComponentCache();
 	}
 
-	auto component = QQmlComponent(&this->engine, this->rootUrl);
+	auto component = QQmlComponent(&this->engine, QUrl::fromLocalFile(this->rootPath));
 
 	SCAVENGE_PARENT = hard ? nullptr : this;
 	auto* obj = component.beginCreate(this->engine.rootContext());
@@ -38,7 +42,7 @@ void RootWrapper::reloadGraph(bool hard) {
 		return;
 	}
 
-	auto* newRoot = qobject_cast<QtShell*>(obj);
+	auto* newRoot = qobject_cast<ShellRoot*>(obj);
 	if (newRoot == nullptr) {
 		qWarning() << "root component was not a QtShell";
 		delete obj;
@@ -47,26 +51,34 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	component.completeCreate();
 
-	if (this->activeRoot != nullptr) {
-		this->activeRoot->deleteLater();
-		this->activeRoot = nullptr;
+	if (this->root != nullptr) {
+		this->root->deleteLater();
+		this->root = nullptr;
 	}
 
-	this->activeRoot = newRoot;
+	this->root = newRoot;
+	this->onConfigChanged();
 }
 
-void RootWrapper::changeRoot(QtShell* newRoot) {
-	if (this->activeRoot != nullptr) {
-		QObject::disconnect(this->destroyConnection);
-		this->activeRoot->deleteLater();
-	}
+void RootWrapper::onConfigChanged() {
+	auto config = this->root->config();
 
-	if (newRoot != nullptr) {
-		this->activeRoot = newRoot;
-		QObject::connect(this->activeRoot, &QtShell::destroyed, this, &RootWrapper::destroy);
+	if (config.mWatchFiles && this->configWatcher == nullptr) {
+		this->configWatcher = new FiletreeWatcher();
+		this->configWatcher->addPath(QFileInfo(this->rootPath).dir().path());
+
+		QObject::connect(this->root, &ShellRoot::configChanged, this, &RootWrapper::onConfigChanged);
+
+		QObject::connect(
+		    this->configWatcher,
+		    &FiletreeWatcher::fileChanged,
+		    this,
+		    &RootWrapper::onWatchedFilesChanged
+		);
+	} else if (!config.mWatchFiles && this->configWatcher != nullptr) {
+		this->configWatcher->deleteLater();
+		this->configWatcher = nullptr;
 	}
 }
 
-QObject* RootWrapper::scavengeTargetFor(QObject* /* child */) { return this->activeRoot; }
-
-void RootWrapper::destroy() { this->deleteLater(); }
+void RootWrapper::onWatchedFilesChanged() { this->reloadGraph(false); }

@@ -11,7 +11,7 @@
 #include "rootwrapper.hpp"
 
 #ifdef CONF_LAYERSHELL
-#	include <LayerShellQt/shell.h>
+#include <LayerShellQt/shell.h>
 #endif
 
 int main(int argc, char** argv) {

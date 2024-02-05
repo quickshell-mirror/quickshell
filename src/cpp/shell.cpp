@@ -3,16 +3,17 @@
 
 #include <qobject.h>
 #include <qqmllist.h>
+#include <qtmetamacros.h>
 
-void QtShell::earlyInit(QObject* old) {
-	auto* oldshell = qobject_cast<QtShell*>(old);
+void ShellRoot::earlyInit(QObject* old) {
+	auto* oldshell = qobject_cast<ShellRoot*>(old);
 
 	if (oldshell != nullptr) {
 		this->scavengeableChildren = std::move(oldshell->children);
 	}
 }
 
-QObject* QtShell::scavengeTargetFor(QObject* /* child */) {
+QObject* ShellRoot::scavengeTargetFor(QObject* /* child */) {
 	if (this->scavengeableChildren.length() > this->children.length()) {
 		return this->scavengeableChildren[this->children.length()];
 	}
@@ -20,11 +21,19 @@ QObject* QtShell::scavengeTargetFor(QObject* /* child */) {
 	return nullptr;
 }
 
-QQmlListProperty<QObject> QtShell::components() {
+void ShellRoot::setConfig(ShellConfig config) {
+	this->mConfig = config;
+
+	emit this->configChanged();
+}
+
+ShellConfig ShellRoot::config() const { return this->mConfig; }
+
+QQmlListProperty<QObject> ShellRoot::components() {
 	return QQmlListProperty<QObject>(
 	    this,
 	    nullptr,
-	    &QtShell::appendComponent,
+	    &ShellRoot::appendComponent,
 	    nullptr,
 	    nullptr,
 	    nullptr,
@@ -33,8 +42,8 @@ QQmlListProperty<QObject> QtShell::components() {
 	);
 }
 
-void QtShell::appendComponent(QQmlListProperty<QObject>* list, QObject* component) {
-	auto* shell = static_cast<QtShell*>(list->object); // NOLINT
+void ShellRoot::appendComponent(QQmlListProperty<QObject>* list, QObject* component) {
+	auto* shell = static_cast<ShellRoot*>(list->object); // NOLINT
 	component->setParent(shell);
 	shell->children.append(component);
 }
