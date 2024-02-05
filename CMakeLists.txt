@@ -5,6 +5,8 @@ set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(LAYERSHELL "Enable wayland layershell support" ON)
+
 add_compile_options(-Wall -Wextra)
 
 # nix workaround
@@ -18,7 +20,10 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Qml QuickControls2)
-find_package(LayerShellQt REQUIRED)
+
+if (LAYERSHELL)
+	find_package(LayerShellQt REQUIRED)
+endif()
 
 qt_standard_project_setup(REQUIRES 6.6)
 
@@ -30,7 +35,6 @@ qt_add_executable(qtshell
 	src/cpp/proxywindow.cpp
 	src/cpp/scavenge.cpp
 	src/cpp/rootwrapper.cpp
-	src/cpp/layershell.cpp
 	src/cpp/qmlglobal.cpp
 	src/cpp/qmlscreen.cpp
 )
@@ -40,4 +44,11 @@ qt_add_qml_module(qtshell URI QtShell)
 # qml type registration requires this
 target_include_directories(qtshell PRIVATE src/cpp)
 
-target_link_libraries(qtshell PRIVATE Qt6::Qml Qt6::QuickControls2 LayerShellQtInterface)
+target_link_libraries(qtshell PRIVATE Qt6::Qml Qt6::QuickControls2)
+
+if (LAYERSHELL)
+	target_link_libraries(qtshell PRIVATE LayerShellQtInterface)
+	target_compile_definitions(qtshell PRIVATE CONF_LAYERSHELL)
+
+	target_sources(qtshell PRIVATE src/cpp/layershell.cpp)
+endif()

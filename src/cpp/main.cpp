@@ -1,4 +1,3 @@
-#include <LayerShellQt/shell.h>
 #include <qcommandlineoption.h>
 #include <qcommandlineparser.h>
 #include <qdir.h>
@@ -10,6 +9,10 @@
 #include <qstring.h>
 
 #include "rootwrapper.hpp"
+
+#ifdef CONF_LAYERSHELL
+#	include <LayerShellQt/shell.h>
+#endif
 
 int main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
@@ -40,7 +43,10 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
+#if CONF_LAYERSHELL
 	LayerShellQt::Shell::useLayerShell();
+#endif
+
 	// Base window transparency appears to be additive.
 	// Use a fully transparent window with a colored rect.
 	QQuickWindow::setDefaultAlphaBuffer(true);
