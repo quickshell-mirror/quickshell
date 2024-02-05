@@ -19,7 +19,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Qml QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
 
 if (LAYERSHELL)
 	find_package(LayerShellQt REQUIRED)
@@ -45,7 +45,7 @@ qt_add_qml_module(qtshell URI QtShell)
 # qml type registration requires this
 target_include_directories(qtshell PRIVATE src/cpp)
 
-target_link_libraries(qtshell PRIVATE Qt6::Qml Qt6::QuickControls2)
+target_link_libraries(qtshell PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 
 if (LAYERSHELL)
 	target_link_libraries(qtshell PRIVATE LayerShellQtInterface)
