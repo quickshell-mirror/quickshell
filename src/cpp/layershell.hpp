@@ -84,7 +84,7 @@ Q_ENUM_NS(Enum);
 class ProxyShellWindow: public ProxyWindowBase {
 	// clang-format off
 	Q_OBJECT;
-	Q_PROPERTY(QtShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
+	Q_PROPERTY(QuickShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
 	Q_PROPERTY(qint32 exclusionZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusionZoneChanged)
 	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged)
@@ -115,8 +115,8 @@ public:
 	void setHeight(qint32 height) override;
 	qint32 height() override;
 
-	void setScreen(QtShellScreenInfo* screen);
-	[[nodiscard]] QtShellScreenInfo* screen() const;
+	void setScreen(QuickShellScreenInfo* screen);
+	[[nodiscard]] QuickShellScreenInfo* screen() const;
 
 	void setAnchors(Anchors anchors);
 	[[nodiscard]] Anchors anchors() const;

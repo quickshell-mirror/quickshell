@@ -8,10 +8,10 @@
 #include <qtypes.h>
 
 // unfortunately QQuickScreenInfo is private.
-class QtShellScreenInfo: public QObject {
+class QuickShellScreenInfo: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("QtShellScreenInfo can only be obtained via QtShell.screens");
+	QML_UNCREATABLE("QuickShellScreenInfo can only be obtained via QuickShell.screens");
 	// clang-format off
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
 	Q_PROPERTY(qint32 width READ width NOTIFY widthChanged);
@@ -24,9 +24,9 @@ class QtShellScreenInfo: public QObject {
 	// clang-format on
 
 public:
-	QtShellScreenInfo(QObject* parent, QScreen* screen): QObject(parent), screen(screen) {}
+	QuickShellScreenInfo(QObject* parent, QScreen* screen): QObject(parent), screen(screen) {}
 
-	bool operator==(QtShellScreenInfo& other) const;
+	bool operator==(QuickShellScreenInfo& other) const;
 
 	[[nodiscard]] QString name() const;
 	[[nodiscard]] qint32 width() const;

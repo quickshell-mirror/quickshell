@@ -30,4 +30,4 @@ clean:
 	rm -rf {{builddir}}
 
 run *ARGS='': build
-	{{builddir}}/qtshell {{ARGS}}
+	{{builddir}}/quickshell {{ARGS}}

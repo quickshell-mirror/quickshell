@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(qtshell VERSION "0.0.1")
+project(quickshell VERSION "0.0.1")
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
@@ -27,7 +27,7 @@ endif()
 
 qt_standard_project_setup(REQUIRES 6.6)
 
-qt_add_executable(qtshell
+qt_add_executable(quickshell
 	src/cpp/main.cpp
 	src/cpp/shell.cpp
 	src/cpp/variants.cpp
@@ -40,16 +40,16 @@ qt_add_executable(qtshell
 	src/cpp/watcher.cpp
 )
 
-qt_add_qml_module(qtshell URI QtShell)
+qt_add_qml_module(quickshell URI QuickShell)
 
 # qml type registration requires this
-target_include_directories(qtshell PRIVATE src/cpp)
+target_include_directories(quickshell PRIVATE src/cpp)
 
-target_link_libraries(qtshell PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+target_link_libraries(quickshell PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 
 if (LAYERSHELL)
-	target_link_libraries(qtshell PRIVATE LayerShellQtInterface)
-	target_compile_definitions(qtshell PRIVATE CONF_LAYERSHELL)
+	target_link_libraries(quickshell PRIVATE LayerShellQtInterface)
+	target_compile_definitions(quickshell PRIVATE CONF_LAYERSHELL)
 
-	target_sources(qtshell PRIVATE src/cpp/layershell.cpp)
+	target_sources(quickshell PRIVATE src/cpp/layershell.cpp)
 endif()

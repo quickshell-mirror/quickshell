@@ -9,16 +9,16 @@
 
 #include "qmlscreen.hpp"
 
-class QtShellGlobal: public QObject {
+class QuickShellGlobal: public QObject {
 	Q_OBJECT;
-	Q_PROPERTY(QQmlListProperty<QtShellScreenInfo> screens READ screens NOTIFY screensChanged);
+	Q_PROPERTY(QQmlListProperty<QuickShellScreenInfo> screens READ screens NOTIFY screensChanged);
 	QML_SINGLETON;
-	QML_NAMED_ELEMENT(QtShell);
+	QML_NAMED_ELEMENT(QuickShell);
 
 public:
-	QtShellGlobal(QObject* parent = nullptr);
+	QuickShellGlobal(QObject* parent = nullptr);
 
-	QQmlListProperty<QtShellScreenInfo> screens();
+	QQmlListProperty<QuickShellScreenInfo> screens();
 
 signals:
 	void screensChanged();
@@ -28,8 +28,8 @@ public slots:
 	void updateScreens();
 
 private:
-	static qsizetype screensCount(QQmlListProperty<QtShellScreenInfo>* prop);
-	static QtShellScreenInfo* screenAt(QQmlListProperty<QtShellScreenInfo>* prop, qsizetype i);
+	static qsizetype screensCount(QQmlListProperty<QuickShellScreenInfo>* prop);
+	static QuickShellScreenInfo* screenAt(QQmlListProperty<QuickShellScreenInfo>* prop, qsizetype i);
 
-	QVector<QtShellScreenInfo*> mScreens;
+	QVector<QuickShellScreenInfo*> mScreens;
 };

@@ -92,12 +92,12 @@ qint32 ProxyShellWindow::height() {
 	return this->complete ? this->ProxyWindowBase::height() : this->requestedHeight;
 }
 
-void ProxyShellWindow::setScreen(QtShellScreenInfo* screen) {
+void ProxyShellWindow::setScreen(QuickShellScreenInfo* screen) {
 	this->window->setScreen(screen->screen);
 }
 
-QtShellScreenInfo* ProxyShellWindow::screen() const {
-	return new QtShellScreenInfo(
+QuickShellScreenInfo* ProxyShellWindow::screen() const {
+	return new QuickShellScreenInfo(
 	    const_cast<ProxyShellWindow*>(this), // NOLINT
 	    this->window->screen()
 	);

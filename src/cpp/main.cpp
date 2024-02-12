@@ -16,11 +16,10 @@
 
 int main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
-	QGuiApplication::setApplicationName("qtshell");
+	QGuiApplication::setApplicationName("quickshell");
 	QGuiApplication::setApplicationVersion("0.0.1");
 
 	QCommandLineParser parser;
-	parser.setApplicationDescription("Qt based desktop shell");
 	parser.addHelpOption();
 	parser.addVersionOption();
 
@@ -33,7 +32,7 @@ int main(int argc, char** argv) {
 		configPath = parser.value(configOption);
 	} else {
 		configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
-		configPath = QDir(QDir(configPath).filePath("qtshell")).filePath("config.qml");
+		configPath = QDir(QDir(configPath).filePath("quickshell")).filePath("shell.qml");
 	}
 
 	qInfo() << "config file path:" << configPath;

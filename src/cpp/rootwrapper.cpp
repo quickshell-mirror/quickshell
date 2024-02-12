@@ -44,7 +44,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	auto* newRoot = qobject_cast<ShellRoot*>(obj);
 	if (newRoot == nullptr) {
-		qWarning() << "root component was not a QtShell";
+		qWarning() << "root component was not a QuickShell.ShellRoot";
 		delete obj;
 		return;
 	}

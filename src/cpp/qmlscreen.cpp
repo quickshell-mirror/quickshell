@@ -5,13 +5,13 @@
 #include <qnamespace.h>
 #include <qtypes.h>
 
-bool QtShellScreenInfo::operator==(QtShellScreenInfo& other) const {
+bool QuickShellScreenInfo::operator==(QuickShellScreenInfo& other) const {
 	return this->screen == other.screen;
 }
 
 void warnNull() { qWarning() << "attempted to use dangling screen object"; }
 
-QString QtShellScreenInfo::name() const {
+QString QuickShellScreenInfo::name() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return "{ DANGLING SCREEN POINTER }";
@@ -20,7 +20,7 @@ QString QtShellScreenInfo::name() const {
 	return this->screen->name();
 }
 
-qint32 QtShellScreenInfo::width() const {
+qint32 QuickShellScreenInfo::width() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0;
@@ -29,7 +29,7 @@ qint32 QtShellScreenInfo::width() const {
 	return this->screen->size().width();
 }
 
-qint32 QtShellScreenInfo::height() const {
+qint32 QuickShellScreenInfo::height() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0;
@@ -38,7 +38,7 @@ qint32 QtShellScreenInfo::height() const {
 	return this->screen->size().height();
 }
 
-qreal QtShellScreenInfo::pixelDensity() const {
+qreal QuickShellScreenInfo::pixelDensity() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0.0;
@@ -47,7 +47,7 @@ qreal QtShellScreenInfo::pixelDensity() const {
 	return this->screen->physicalDotsPerInch() / 25.4;
 }
 
-qreal QtShellScreenInfo::logicalPixelDensity() const {
+qreal QuickShellScreenInfo::logicalPixelDensity() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0.0;
@@ -56,7 +56,7 @@ qreal QtShellScreenInfo::logicalPixelDensity() const {
 	return this->screen->logicalDotsPerInch() / 25.4;
 }
 
-qreal QtShellScreenInfo::devicePixelRatio() const {
+qreal QuickShellScreenInfo::devicePixelRatio() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0.0;
@@ -65,7 +65,7 @@ qreal QtShellScreenInfo::devicePixelRatio() const {
 	return this->screen->devicePixelRatio();
 }
 
-Qt::ScreenOrientation QtShellScreenInfo::orientation() const {
+Qt::ScreenOrientation QuickShellScreenInfo::orientation() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return Qt::PrimaryOrientation;
@@ -74,7 +74,7 @@ Qt::ScreenOrientation QtShellScreenInfo::orientation() const {
 	return this->screen->orientation();
 }
 
-Qt::ScreenOrientation QtShellScreenInfo::primaryOrientation() const {
+Qt::ScreenOrientation QuickShellScreenInfo::primaryOrientation() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return Qt::PrimaryOrientation;
