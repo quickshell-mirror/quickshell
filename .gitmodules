@@ -1,0 +1,3 @@
+[submodule "docs"]
+	path = docs
+	url = https://git.outfoxxed.me/outfoxxed/quickshell-docs

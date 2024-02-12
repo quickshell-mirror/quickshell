@@ -8,16 +8,34 @@
 #include <qtypes.h>
 
 // unfortunately QQuickScreenInfo is private.
+
+/// Monitor object useful for setting the monitor for a [ProxyShellWindow]
+/// or querying information about the monitor.
+///
+/// > [!WARNING] If the monitor is disconnected than any stored copies of its ShellMonitor will
+/// > be marked as dangling and all properties will return default values.
+/// > Reconnecting the monitor will not reconnect it to the ShellMonitor object.
+///
+/// Due to some technical limitations, it was not possible to reuse the native qml [Screen] type.
+///
+/// [ProxyShellWindow]: ../proxyshellwindow
+/// [Screen]: https://doc.qt.io/qt-6/qml-qtquick-screen.html
 class QuickShellScreenInfo: public QObject {
 	Q_OBJECT;
-	QML_ELEMENT;
-	QML_UNCREATABLE("QuickShellScreenInfo can only be obtained via QuickShell.screens");
+	QML_NAMED_ELEMENT(ShellScreen);
+	QML_UNCREATABLE("ShellScreen can only be obtained via QuickShell.screens");
 	// clang-format off
+	/// The name of the screen as seen by the operating system.
+	///
+	/// Usually something like `DP-1`, `HDMI-1`, `eDP-1`.
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
 	Q_PROPERTY(qint32 width READ width NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height NOTIFY heightChanged);
+	/// The number of physical pixels per millimeter.
 	Q_PROPERTY(qreal pixelDensity READ pixelDensity NOTIFY logicalPixelDensityChanged);
+	/// The number of device-independent (scaled) pixels per millimeter.
 	Q_PROPERTY(qreal logicalPixelDensity READ logicalPixelDensity NOTIFY logicalPixelDensityChanged);
+	/// The ratio between physical pixels and device-independent (scaled) pixels.
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
 	Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation NOTIFY orientationChanged);
 	Q_PROPERTY(Qt::ScreenOrientation primatyOrientation READ primaryOrientation NOTIFY primaryOrientationChanged);

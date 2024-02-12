@@ -17,10 +17,13 @@ public:
 	bool mWatchFiles = true;
 };
 
+///! Root config element
 class ShellRoot: public Scavenger, virtual public Scavengeable {
 	Q_OBJECT;
+	/// If `config.watchFiles` is true the configuration will be reloaded whenever it changes.
+	/// Defaults to true.
 	Q_PROPERTY(ShellConfig config READ config WRITE setConfig);
-	Q_PROPERTY(QQmlListProperty<QObject> components READ components FINAL);
+	Q_PROPERTY(QQmlListProperty<QObject> components READ components);
 	Q_CLASSINFO("DefaultProperty", "components");
 	QML_ELEMENT;
 

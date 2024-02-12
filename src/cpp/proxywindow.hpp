@@ -20,10 +20,29 @@
 // like anchors must use `item`.
 class ProxyWindowBase: public Scavenger {
 	Q_OBJECT;
+	/// The content item of the window.
 	Q_PROPERTY(QQuickItem* item READ item CONSTANT);
+	/// The visibility of the window.
+	///
+	/// > [!INFO] Windows are not visible by default so you will need to set this to make the window
+	/// appear.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
+	/// The background color of the window. Defaults to white.
+	///
+	/// > [!WARNING] This seems to behave weirdly when using transparent colors on some systems.
+	/// > Using a colored content item over a transparent window is the recommended way to work around this:
+	/// > ```qml
+	/// > ProxyWindow {
+	/// >   Rectangle {
+	/// >     anchors.fill: parent
+	/// >     color: "#20ffffff"
+	/// >
+	/// >     // your content here
+	/// >   }
+	/// > }
+	/// > ```
 	Q_PROPERTY(QColor color READ color WRITE setColor);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");

@@ -33,7 +33,8 @@ qsizetype QuickShellGlobal::screensCount(QQmlListProperty<QuickShellScreenInfo>*
 	return static_cast<QuickShellGlobal*>(prop->object)->mScreens.size(); // NOLINT
 }
 
-QuickShellScreenInfo* QuickShellGlobal::screenAt(QQmlListProperty<QuickShellScreenInfo>* prop, qsizetype i) {
+QuickShellScreenInfo*
+QuickShellGlobal::screenAt(QQmlListProperty<QuickShellScreenInfo>* prop, qsizetype i) {
 	return static_cast<QuickShellGlobal*>(prop->object)->mScreens.at(i); // NOLINT
 }
 
