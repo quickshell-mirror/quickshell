@@ -42,6 +42,25 @@ public:
 	qint32 mBottom = 0;
 };
 
+namespace ExclusionMode { // NOLINT
+Q_NAMESPACE;
+QML_ELEMENT;
+
+enum Enum {
+	/// Respect the exclusion zone of other shell layers and optionally set one
+	Normal = 0,
+	/// Ignore exclusion zones of other shell layers. You cannot set an exclusion zone in this mode.
+	Ignore = 1,
+	/// Decide the exclusion zone based on the window dimensions and anchors.
+	///
+	/// Will attempt to reseve exactly enough space for the window and its margins if
+	/// exactly 3 anchors are connected.
+	Auto = 2,
+};
+Q_ENUM_NS(Enum);
+
+} // namespace ExclusionMode
+
 namespace Layer { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -131,6 +150,8 @@ class ProxyShellWindow: public ProxyWindowBase {
 	/// > [!INFO] Some systems will require exactly 3 anchors to be attached for the exclusion zone to take
 	/// > effect.
 	Q_PROPERTY(qint32 exclusionZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusionZoneChanged);
+	/// Defaults to `ExclusionMode.Normal`.
+	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// Offsets from the sides of the screen.
 	///
 	/// > [!INFO] Only applies to edges with anchors
@@ -172,6 +193,9 @@ public:
 	void setExclusiveZone(qint32 zone);
 	[[nodiscard]] qint32 exclusiveZone() const;
 
+	void setExclusionMode(ExclusionMode::Enum exclusionMode);
+	[[nodiscard]] ExclusionMode::Enum exclusionMode() const;
+
 	void setMargins(Margins margins);
 	[[nodiscard]] Margins margins() const;
 
@@ -195,12 +219,18 @@ signals:
 	void anchorsChanged();
 	void marginsChanged();
 	void exclusionZoneChanged();
+	void exclusionModeChanged();
 	void layerChanged();
 	void keyboardFocusChanged();
+
+private slots:
+	void updateExclusionZone();
 
 private:
 	LayerShellQt::Window* shellWindow = nullptr;
 	bool anchorsInitialized = false;
+	ExclusionMode::Enum mExclusionMode = ExclusionMode::Normal;
+	qint32 requestedExclusionZone = 0;
 
 	// needed to ensure size dosent fuck up when changing layershell attachments
 	// along with setWidth and setHeight overrides

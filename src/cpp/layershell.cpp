@@ -7,6 +7,7 @@
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
 
@@ -31,6 +32,11 @@ void ProxyShellWindow::earlyInit(QObject* old) {
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::marginsChanged, this, &ProxyShellWindow::marginsChanged);
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::layerChanged, this, &ProxyShellWindow::layerChanged);
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::keyboardInteractivityChanged, this, &ProxyShellWindow::keyboardFocusChanged);
+
+	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyShellWindow::updateExclusionZone);
+	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyShellWindow::updateExclusionZone);
+	QObject::connect(this, &ProxyShellWindow::anchorsChanged, this, &ProxyShellWindow::updateExclusionZone);
+	QObject::connect(this, &ProxyShellWindow::marginsChanged, this, &ProxyShellWindow::updateExclusionZone);
 	// clang-format on
 }
 
@@ -40,6 +46,7 @@ void ProxyShellWindow::componentComplete() {
 	// The default anchor settings are a hazard because they cover the entire screen.
 	// We opt for 0 anchors by default to avoid blocking user input.
 	this->setAnchors(this->stagingAnchors);
+	this->updateExclusionZone();
 
 	// Make sure we signal changes from anchors, but only if this is a reload.
 	// If we do it on first load then it sends an extra change at 0px.
@@ -135,9 +142,35 @@ Anchors ProxyShellWindow::anchors() const {
 	return anchors;
 }
 
-void ProxyShellWindow::setExclusiveZone(qint32 zone) { this->shellWindow->setExclusiveZone(zone); }
+void ProxyShellWindow::setExclusiveZone(qint32 zone) {
+	if (zone < 0) zone = 0;
+	if (zone == this->requestedExclusionZone) return;
+	this->requestedExclusionZone = zone;
+
+	if (this->exclusionMode() == ExclusionMode::Normal) {
+		this->shellWindow->setExclusiveZone(zone);
+		emit this->exclusionZoneChanged();
+	}
+}
 
 qint32 ProxyShellWindow::exclusiveZone() const { return this->shellWindow->exclusionZone(); }
+
+ExclusionMode::Enum ProxyShellWindow::exclusionMode() const { return this->mExclusionMode; }
+
+void ProxyShellWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
+	if (exclusionMode == this->mExclusionMode) return;
+	this->mExclusionMode = exclusionMode;
+
+	if (exclusionMode == ExclusionMode::Normal) {
+		this->shellWindow->setExclusiveZone(this->requestedExclusionZone);
+		emit this->exclusionZoneChanged();
+	} else if (exclusionMode == ExclusionMode::Ignore) {
+		this->shellWindow->setExclusiveZone(-1);
+		emit this->exclusionZoneChanged();
+	} else {
+		this->updateExclusionZone();
+	}
+}
 
 void ProxyShellWindow::setMargins(Margins margins) {
 	auto lsMargins = QMargins(margins.mLeft, margins.mTop, margins.mRight, margins.mBottom);
@@ -252,3 +285,24 @@ void ProxyShellWindow::setCloseOnDismissed(bool close) {
 }
 
 bool ProxyShellWindow::closeOnDismissed() const { return this->shellWindow->closeOnDismissed(); }
+
+void ProxyShellWindow::updateExclusionZone() {
+	if (this->exclusionMode() == ExclusionMode::Auto) {
+		auto anchors = this->anchors();
+
+		auto zone = -1;
+
+		if (anchors.mTop && anchors.mBottom) {
+			if (anchors.mLeft) zone = this->width() + this->margins().mLeft;
+			else if (anchors.mRight) zone = this->width() + this->margins().mRight;
+		} else if (anchors.mLeft && anchors.mRight) {
+			if (anchors.mTop) zone = this->height() + this->margins().mTop;
+			else if (anchors.mBottom) zone = this->height() + this->margins().mBottom;
+		}
+
+		if (zone != -1) {
+			this->shellWindow->setExclusiveZone(zone);
+			emit this->exclusionZoneChanged();
+		}
+	}
+}
