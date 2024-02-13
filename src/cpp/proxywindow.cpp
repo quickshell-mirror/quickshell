@@ -42,6 +42,7 @@ QQuickWindow* ProxyWindowBase::disownWindow() {
 	return window;
 }
 
+QQuickWindow* ProxyWindowBase::backingWindow() { return this->window; }
 QQuickItem* ProxyWindowBase::item() { return this->window->contentItem(); }
 
 // NOLINTNEXTLINE

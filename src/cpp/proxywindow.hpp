@@ -20,6 +20,14 @@
 // like anchors must use `item`.
 class ProxyWindowBase: public Scavenger {
 	Q_OBJECT;
+	/// The QtQuick window backing this window.
+	///
+	/// > [!WARNING] Do not expect values set via this property to work correctly.
+	/// > Values set this way will almost certainly misbehave across a reload, possibly
+	/// > even without one.
+	/// >
+	/// > Use **only** if you know what you are doing.
+	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
 	/// The content item of the window.
 	Q_PROPERTY(QQuickItem* item READ item CONSTANT);
 	/// The visibility of the window.
@@ -63,6 +71,7 @@ public:
 	// Disown the backing window and delete all its children.
 	virtual QQuickWindow* disownWindow();
 
+	QQuickWindow* backingWindow();
 	QQuickItem* item();
 
 	virtual bool isVisible();
