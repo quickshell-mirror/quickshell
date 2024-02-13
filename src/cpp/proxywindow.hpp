@@ -10,6 +10,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "region.hpp"
 #include "scavenge.hpp"
 
 // Proxy to an actual window exposing a limited property set with the ability to
@@ -33,7 +34,7 @@ class ProxyWindowBase: public Scavenger {
 	/// The visibility of the window.
 	///
 	/// > [!INFO] Windows are not visible by default so you will need to set this to make the window
-	/// appear.
+	/// > appear.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
@@ -52,6 +53,49 @@ class ProxyWindowBase: public Scavenger {
 	/// > }
 	/// > ```
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
+	/// The clickthrough mask. Defaults to null.
+	///
+	/// If non null then the clickable areas of the window will be determined by the provided region.
+	///
+	/// ```qml
+	/// ProxyShellWindow {
+	///   // The mask region is set to `rect`, meaning only `rect` is clickable.
+	///   // All other clicks pass through the window to ones behind it.
+	///   mask: Region { item: rect }
+	///
+	///   Rectangle {
+	///     id: rect
+	///
+	///     anchors.centerIn: parent
+	///     width: 100
+	///     height: 100
+	///   }
+	/// }
+	/// ```
+	///
+	/// If the provided region's intersection mode is `Combine` (the default),
+	/// then the region will be used as is. Otherwise it will be applied on top of the window region.
+	///
+	/// For example, setting the intersection mode to `Xor` will invert the mask and make everything in
+	/// the mask region not clickable and pass through clicks inside it through the window.
+	///
+	/// ```qml
+	/// ProxyShellWindow {
+	///   // The mask region is set to `rect`, but the intersection mode is set to `Xor`.
+	///   // This inverts the mask causing all clicks inside `rect` to be passed to the window
+	///   // behind this one.
+	///   mask: Region { item: rect; intersection: Intersection.Xor }
+	///
+	///   Rectangle {
+	///     id: rect
+	///
+	///     anchors.centerIn: parent
+	///     width: 100
+	///     height: 100
+	///   }
+	/// }
+	/// ```
+	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
 
@@ -86,6 +130,9 @@ public:
 	QColor color();
 	void setColor(QColor value);
 
+	PendingRegion* mask();
+	void setMask(PendingRegion* mask);
+
 	QQmlListProperty<QObject> data();
 
 signals:
@@ -93,6 +140,10 @@ signals:
 	void widthChanged(qint32 width);
 	void heightChanged(qint32 width);
 	void colorChanged(QColor color);
+	void maskChanged();
+
+private slots:
+	void onMaskChanged();
 
 private:
 	static QQmlListProperty<QObject> dataBacker(QQmlListProperty<QObject>* prop);
@@ -102,6 +153,8 @@ private:
 	static void dataClear(QQmlListProperty<QObject>* prop);
 	static void dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj);
 	static void dataRemoveLast(QQmlListProperty<QObject>* prop);
+
+	PendingRegion* mMask = nullptr;
 };
 
 // qt attempts to resize the window but fails because wayland

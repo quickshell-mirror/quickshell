@@ -8,6 +8,7 @@ headers = [
 	"variants.hpp",
 	"proxywindow.hpp",
 	"layershell.hpp",
+	"region.hpp",
 ]
 -----
 The core types provided by QuickShell

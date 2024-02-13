@@ -4,8 +4,12 @@
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
+#include <qregion.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
+
+#include "region.hpp"
 
 ProxyWindowBase::~ProxyWindowBase() {
 	if (this->window != nullptr) {
@@ -22,11 +26,17 @@ void ProxyWindowBase::earlyInit(QObject* old) {
 		this->window = oldpw->disownWindow();
 	}
 
+	this->window->setMask(QRegion());
+
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
+
+	QObject::connect(this, &ProxyWindowBase::maskChanged, this, &ProxyWindowBase::onMaskChanged);
+	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onMaskChanged);
+	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
 	// clang-format on
 }
 
@@ -54,6 +64,36 @@ PROXYPROP(bool, isVisible, setVisible);
 PROXYPROP(qint32, width, setWidth);
 PROXYPROP(qint32, height, setHeight);
 PROXYPROP(QColor, color, setColor);
+
+PendingRegion* ProxyWindowBase::mask() { return this->mMask; }
+
+void ProxyWindowBase::setMask(PendingRegion* mask) {
+	if (this->mMask != nullptr) {
+		this->mMask->deleteLater();
+	}
+
+	if (mask != nullptr) {
+		mask->setParent(this);
+		this->mMask = mask;
+		QObject::connect(mask, &PendingRegion::changed, this, &ProxyWindowBase::maskChanged);
+		emit this->maskChanged();
+	}
+}
+
+void ProxyWindowBase::onMaskChanged() {
+	QRegion mask;
+	if (this->mMask != nullptr) {
+		// if left as the default, dont combine it with the whole window area, leave it as is.
+		if (this->mMask->mIntersection == Intersection::Combine) {
+			mask = this->mMask->build();
+		} else {
+			auto windowRegion = QRegion(QRect(0, 0, this->width(), this->height()));
+			mask = this->mMask->applyTo(windowRegion);
+		}
+	}
+
+	this->window->setMask(mask);
+}
 
 // see:
 // https://code.qt.io/cgit/qt/qtdeclarative.git/tree/src/quick/items/qquickwindow.cpp
