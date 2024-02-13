@@ -43,7 +43,7 @@ class ProxyWindowBase: public Scavenger {
 	/// >   }
 	/// > }
 	/// > ```
-	Q_PROPERTY(QColor color READ color WRITE setColor);
+	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
 
@@ -83,6 +83,7 @@ signals:
 	void visibleChanged(bool visible);
 	void widthChanged(qint32 width);
 	void heightChanged(qint32 width);
+	void colorChanged(QColor color);
 
 private:
 	static QQmlListProperty<QObject> dataBacker(QQmlListProperty<QObject>* prop);

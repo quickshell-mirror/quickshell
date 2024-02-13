@@ -5,6 +5,7 @@
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qtypes.h>
+#include <qwindow.h>
 
 ProxyWindowBase::~ProxyWindowBase() {
 	if (this->window != nullptr) {
@@ -25,6 +26,7 @@ void ProxyWindowBase::earlyInit(QObject* old) {
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
+	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
 	// clang-format on
 }
 
