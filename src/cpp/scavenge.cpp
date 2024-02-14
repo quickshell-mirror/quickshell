@@ -1,10 +1,16 @@
 #include "scavenge.hpp"
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
+#include <qqmllist.h>
+
+// FIXME: there are core problems with SCAVENGE_PARENT due to the qml engine liking to set parents really late.
+// this should instead be handled by proxying all property values until a possible target is ready or definitely not coming.
+// The parent should probably be stable in componentComplete() but should be tested.
 
 QObject* SCAVENGE_PARENT = nullptr; // NOLINT
 
@@ -43,4 +49,39 @@ QObject* createComponentScavengeable(
 	}
 
 	return instance;
+}
+
+void ScavengeableScope::earlyInit(QObject* old) {
+	auto* oldshell = qobject_cast<ScavengeableScope*>(old);
+
+	if (oldshell != nullptr) {
+		this->scavengeableData = std::move(oldshell->mData);
+	}
+}
+
+QObject* ScavengeableScope::scavengeTargetFor(QObject* /* child */) {
+	if (this->scavengeableData.length() > this->mData.length()) {
+		return this->scavengeableData[this->mData.length()];
+	}
+
+	return nullptr;
+}
+
+QQmlListProperty<QObject> ScavengeableScope::data() {
+	return QQmlListProperty<QObject>(
+	    this,
+	    nullptr,
+	    &ScavengeableScope::appendComponent,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr
+	);
+}
+
+void ScavengeableScope::appendComponent(QQmlListProperty<QObject>* list, QObject* component) {
+	auto* self = static_cast<ScavengeableScope*>(list->object); // NOLINT
+	component->setParent(self);
+	self->mData.append(component);
 }
