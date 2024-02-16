@@ -3,7 +3,7 @@ description = "Core QuickShell types"
 headers = [
 	"qmlglobal.hpp",
 	"qmlscreen.hpp",
-	"scavenge.hpp",
+	"reload.hpp",
 	"shell.hpp",
 	"variants.hpp",
 	"proxywindow.hpp",

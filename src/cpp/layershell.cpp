@@ -14,18 +14,11 @@
 #include "proxywindow.hpp"
 #include "qmlscreen.hpp"
 
-void ProxyShellWindow::earlyInit(QObject* old) {
-	this->ProxyWindowBase::earlyInit(old);
-
+void ProxyShellWindow::setupWindow() {
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyShellWindow::screenChanged);
-
 	this->shellWindow = LayerShellQt::Window::get(this->window);
 
-	// dont want to steal focus unless actually configured to
-	this->shellWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
-
-	// this dosent reset if its unset
-	this->shellWindow->setExclusiveZone(0);
+	this->ProxyWindowBase::setupWindow();
 
 	// clang-format off
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::anchorsChanged, this, &ProxyShellWindow::anchorsChanged);
@@ -38,26 +31,16 @@ void ProxyShellWindow::earlyInit(QObject* old) {
 	QObject::connect(this, &ProxyShellWindow::anchorsChanged, this, &ProxyShellWindow::updateExclusionZone);
 	QObject::connect(this, &ProxyShellWindow::marginsChanged, this, &ProxyShellWindow::updateExclusionZone);
 	// clang-format on
-}
 
-void ProxyShellWindow::componentComplete() {
-	this->complete = true;
+	this->window->setScreen(this->mScreen);
+	this->setAnchors(this->mAnchors);
+	this->setMargins(this->mMargins);
+	this->setExclusionMode(this->mExclusionMode); // also sets exclusion zone
+	this->setLayer(this->mLayer);
+	this->shellWindow->setScope(this->mScope);
+	this->setKeyboardFocus(this->mKeyboardFocus);
 
-	// The default anchor settings are a hazard because they cover the entire screen.
-	// We opt for 0 anchors by default to avoid blocking user input.
-	this->setAnchors(this->stagingAnchors);
-	this->updateExclusionZone();
-
-	// Make sure we signal changes from anchors, but only if this is a reload.
-	// If we do it on first load then it sends an extra change at 0px.
-	if (this->stagingAnchors.mLeft && this->stagingAnchors.mRight && this->width() != 0)
-		this->widthChanged(this->width());
-	if (this->stagingAnchors.mTop && this->stagingAnchors.mBottom && this->height() != 0)
-		this->heightChanged(this->height());
-
-	this->window->setVisible(this->stagingVisible);
-
-	this->ProxyWindowBase::componentComplete();
+	this->connected = true;
 }
 
 QQuickWindow* ProxyShellWindow::disownWindow() {
@@ -65,54 +48,56 @@ QQuickWindow* ProxyShellWindow::disownWindow() {
 	return this->ProxyWindowBase::disownWindow();
 }
 
-void ProxyShellWindow::setVisible(bool visible) {
-	if (!this->complete) this->stagingVisible = visible;
-	else this->ProxyWindowBase::setVisible(visible);
-}
-
-bool ProxyShellWindow::isVisible() {
-	return this->complete ? this->ProxyWindowBase::isVisible() : this->stagingVisible;
-}
-
 void ProxyShellWindow::setWidth(qint32 width) {
-	this->requestedWidth = width;
+	this->mWidth = width;
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (this->complete && (!anchors.mLeft || !anchors.mRight)) this->ProxyWindowBase::setWidth(width);
-}
-
-qint32 ProxyShellWindow::width() {
-	return this->complete ? this->ProxyWindowBase::width() : this->requestedWidth;
+	if (!anchors.mLeft || !anchors.mRight) this->ProxyWindowBase::setWidth(width);
 }
 
 void ProxyShellWindow::setHeight(qint32 height) {
-	this->requestedHeight = height;
+	this->mHeight = height;
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (this->complete && (!anchors.mTop || !anchors.mBottom))
-		this->ProxyWindowBase::setHeight(height);
-}
-
-qint32 ProxyShellWindow::height() {
-	return this->complete ? this->ProxyWindowBase::height() : this->requestedHeight;
+	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(height);
 }
 
 void ProxyShellWindow::setScreen(QuickShellScreenInfo* screen) {
-	this->window->setScreen(screen->screen);
+	if (this->mScreen != nullptr) {
+		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
+	}
+
+	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
+	if (qscreen != nullptr) {
+		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyShellWindow::onScreenDestroyed);
+	}
+
+	if (this->window == nullptr) this->mScreen = qscreen;
+	else this->window->setScreen(qscreen);
 }
 
+void ProxyShellWindow::onScreenDestroyed() { this->mScreen = nullptr; }
+
 QuickShellScreenInfo* ProxyShellWindow::screen() const {
+	QScreen* qscreen = nullptr;
+
+	if (this->window == nullptr) {
+		if (this->mScreen != nullptr) qscreen = this->mScreen;
+	} else {
+		qscreen = this->window->screen();
+	}
+
 	return new QuickShellScreenInfo(
 	    const_cast<ProxyShellWindow*>(this), // NOLINT
-	    this->window->screen()
+	    qscreen
 	);
 }
 
 void ProxyShellWindow::setAnchors(Anchors anchors) {
-	if (!this->complete) {
-		this->stagingAnchors = anchors;
+	if (this->window == nullptr) {
+		this->mAnchors = anchors;
 		return;
 	}
 
@@ -122,14 +107,14 @@ void ProxyShellWindow::setAnchors(Anchors anchors) {
 	if (anchors.mTop) lsAnchors |= LayerShellQt::Window::AnchorTop;
 	if (anchors.mBottom) lsAnchors |= LayerShellQt::Window::AnchorBottom;
 
-	if (!anchors.mLeft || !anchors.mRight) this->ProxyWindowBase::setWidth(this->requestedWidth);
-	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(this->requestedHeight);
+	if (!anchors.mLeft || !anchors.mRight) this->ProxyWindowBase::setWidth(this->mWidth);
+	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(this->mHeight);
 
 	this->shellWindow->setAnchors(lsAnchors);
 }
 
 Anchors ProxyShellWindow::anchors() const {
-	if (!this->complete) return this->stagingAnchors;
+	if (this->window == nullptr) return this->mAnchors;
 
 	auto lsAnchors = this->shellWindow->anchors();
 
@@ -144,40 +129,49 @@ Anchors ProxyShellWindow::anchors() const {
 
 void ProxyShellWindow::setExclusiveZone(qint32 zone) {
 	if (zone < 0) zone = 0;
-	if (zone == this->requestedExclusionZone) return;
-	this->requestedExclusionZone = zone;
+	if (this->connected && zone == this->mExclusionZone) return;
+	this->mExclusionZone = zone;
 
-	if (this->exclusionMode() == ExclusionMode::Normal) {
+	if (this->window != nullptr && this->exclusionMode() == ExclusionMode::Normal) {
 		this->shellWindow->setExclusiveZone(zone);
 		emit this->exclusionZoneChanged();
 	}
 }
 
-qint32 ProxyShellWindow::exclusiveZone() const { return this->shellWindow->exclusionZone(); }
+qint32 ProxyShellWindow::exclusiveZone() const {
+	if (this->window == nullptr) return this->mExclusionZone;
+	else return this->shellWindow->exclusionZone();
+}
 
 ExclusionMode::Enum ProxyShellWindow::exclusionMode() const { return this->mExclusionMode; }
 
 void ProxyShellWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
-	if (exclusionMode == this->mExclusionMode) return;
+	if (this->connected && exclusionMode == this->mExclusionMode) return;
 	this->mExclusionMode = exclusionMode;
 
-	if (exclusionMode == ExclusionMode::Normal) {
-		this->shellWindow->setExclusiveZone(this->requestedExclusionZone);
-		emit this->exclusionZoneChanged();
-	} else if (exclusionMode == ExclusionMode::Ignore) {
-		this->shellWindow->setExclusiveZone(-1);
-		emit this->exclusionZoneChanged();
-	} else {
-		this->updateExclusionZone();
+	if (this->window != nullptr) {
+		if (exclusionMode == ExclusionMode::Normal) {
+			this->shellWindow->setExclusiveZone(this->mExclusionZone);
+			emit this->exclusionZoneChanged();
+		} else if (exclusionMode == ExclusionMode::Ignore) {
+			this->shellWindow->setExclusiveZone(-1);
+			emit this->exclusionZoneChanged();
+		} else {
+			this->updateExclusionZone();
+		}
 	}
 }
 
 void ProxyShellWindow::setMargins(Margins margins) {
-	auto lsMargins = QMargins(margins.mLeft, margins.mTop, margins.mRight, margins.mBottom);
-	this->shellWindow->setMargins(lsMargins);
+	if (this->window == nullptr) this->mMargins = margins;
+	else {
+		auto lsMargins = QMargins(margins.mLeft, margins.mTop, margins.mRight, margins.mBottom);
+		this->shellWindow->setMargins(lsMargins);
+	}
 }
 
 Margins ProxyShellWindow::margins() const {
+	if (this->window == nullptr) return this->mMargins;
 	auto lsMargins = this->shellWindow->margins();
 
 	auto margins = Margins();
@@ -190,6 +184,11 @@ Margins ProxyShellWindow::margins() const {
 }
 
 void ProxyShellWindow::setLayer(Layer::Enum layer) {
+	if (this->window == nullptr) {
+		this->mLayer = layer;
+		return;
+	}
+
 	auto lsLayer = LayerShellQt::Window::LayerBackground;
 
 	// clang-format off
@@ -205,6 +204,8 @@ void ProxyShellWindow::setLayer(Layer::Enum layer) {
 }
 
 Layer::Enum ProxyShellWindow::layer() const {
+	if (this->window == nullptr) return this->mLayer;
+
 	auto layer = Layer::Top;
 	auto lsLayer = this->shellWindow->layer();
 
@@ -220,11 +221,22 @@ Layer::Enum ProxyShellWindow::layer() const {
 	return layer;
 }
 
-void ProxyShellWindow::setScope(const QString& scope) { this->shellWindow->setScope(scope); }
+void ProxyShellWindow::setScope(const QString& scope) {
+	if (this->window == nullptr) this->mScope = scope;
+	else this->shellWindow->setScope(scope);
+}
 
-QString ProxyShellWindow::scope() const { return this->shellWindow->scope(); }
+QString ProxyShellWindow::scope() const {
+	if (this->window == nullptr) return this->mScope;
+	else return this->shellWindow->scope();
+}
 
 void ProxyShellWindow::setKeyboardFocus(KeyboardFocus::Enum focus) {
+	if (this->window == nullptr) {
+		this->mKeyboardFocus = focus;
+		return;
+	}
+
 	auto lsFocus = LayerShellQt::Window::KeyboardInteractivityNone;
 
 	// clang-format off
@@ -239,6 +251,8 @@ void ProxyShellWindow::setKeyboardFocus(KeyboardFocus::Enum focus) {
 }
 
 KeyboardFocus::Enum ProxyShellWindow::keyboardFocus() const {
+	if (this->window == nullptr) return this->mKeyboardFocus;
+
 	auto focus = KeyboardFocus::None;
 	auto lsFocus = this->shellWindow->keyboardInteractivity();
 
@@ -254,6 +268,11 @@ KeyboardFocus::Enum ProxyShellWindow::keyboardFocus() const {
 }
 
 void ProxyShellWindow::setScreenConfiguration(ScreenConfiguration::Enum configuration) {
+	if (this->window == nullptr) {
+		this->mScreenConfiguration = configuration;
+		return;
+	}
+
 	auto lsConfiguration = LayerShellQt::Window::ScreenFromQWindow;
 
 	// clang-format off
@@ -267,6 +286,8 @@ void ProxyShellWindow::setScreenConfiguration(ScreenConfiguration::Enum configur
 }
 
 ScreenConfiguration::Enum ProxyShellWindow::screenConfiguration() const {
+	if (this->window == nullptr) return this->mScreenConfiguration;
+
 	auto configuration = ScreenConfiguration::Window;
 	auto lsConfiguration = this->shellWindow->screenConfiguration();
 
@@ -280,14 +301,8 @@ ScreenConfiguration::Enum ProxyShellWindow::screenConfiguration() const {
 	return configuration;
 }
 
-void ProxyShellWindow::setCloseOnDismissed(bool close) {
-	this->shellWindow->setCloseOnDismissed(close);
-}
-
-bool ProxyShellWindow::closeOnDismissed() const { return this->shellWindow->closeOnDismissed(); }
-
 void ProxyShellWindow::updateExclusionZone() {
-	if (this->exclusionMode() == ExclusionMode::Auto) {
+	if (this->window != nullptr && this->exclusionMode() == ExclusionMode::Auto) {
 		auto anchors = this->anchors();
 
 		auto zone = -1;

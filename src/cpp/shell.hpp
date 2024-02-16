@@ -5,7 +5,7 @@
 #include <qqmlengine.h>
 #include <qtmetamacros.h>
 
-#include "scavenge.hpp"
+#include "reload.hpp"
 
 class ShellConfig {
 	Q_GADGET;
@@ -16,7 +16,7 @@ public:
 };
 
 ///! Root config element
-class ShellRoot: public ScavengeableScope {
+class ShellRoot: public ReloadPropagator {
 	Q_OBJECT;
 	/// If `config.watchFiles` is true the configuration will be reloaded whenever it changes.
 	/// Defaults to true.
@@ -24,7 +24,7 @@ class ShellRoot: public ScavengeableScope {
 	QML_ELEMENT;
 
 public:
-	explicit ShellRoot(QObject* parent = nullptr): ScavengeableScope(parent) {}
+	explicit ShellRoot(QObject* parent = nullptr): ReloadPropagator(parent) {}
 
 	void setConfig(ShellConfig config);
 	[[nodiscard]] ShellConfig config() const;

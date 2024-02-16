@@ -33,7 +33,7 @@ qt_add_executable(quickshell
 	src/cpp/variants.cpp
 	src/cpp/rootwrapper.cpp
 	src/cpp/proxywindow.cpp
-	src/cpp/scavenge.cpp
+	src/cpp/reload.cpp
 	src/cpp/rootwrapper.cpp
 	src/cpp/qmlglobal.cpp
 	src/cpp/qmlscreen.cpp

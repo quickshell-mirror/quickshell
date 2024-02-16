@@ -7,8 +7,9 @@
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlparserstatus.h>
+#include <qtmetamacros.h>
 
-#include "scavenge.hpp"
+#include "reload.hpp"
 
 // extremely inefficient map
 template <typename K, typename V>
@@ -28,7 +29,7 @@ public:
 /// screen.
 ///
 /// [QuickShell.screens]: ../quickshell#prop.screens
-class Variants: public Scavenger, virtual public Scavengeable {
+class Variants: public Reloadable {
 	Q_OBJECT;
 	/// The component to create instances of
 	Q_PROPERTY(QQmlComponent* component MEMBER mComponent);
@@ -39,10 +40,9 @@ class Variants: public Scavenger, virtual public Scavengeable {
 	QML_ELEMENT;
 
 public:
-	explicit Variants(QObject* parent = nullptr): Scavenger(parent) {}
+	explicit Variants(QObject* parent = nullptr): Reloadable(parent) {}
 
-	void earlyInit(QObject* old) override;
-	QObject* scavengeTargetFor(QObject* child) override;
+	void onReload(QObject* oldInstance) override;
 
 	void componentComplete() override;
 
@@ -53,8 +53,4 @@ private:
 	QQmlComponent* mComponent = nullptr;
 	QVariantList mVariants;
 	AwfulMap<QVariantMap, QObject*> instances;
-
-	// pointers may die post componentComplete.
-	AwfulMap<QVariantMap, QObject*> scavengeableInstances;
-	QVariantMap* activeScavengeVariant = nullptr;
 };

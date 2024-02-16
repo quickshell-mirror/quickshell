@@ -45,36 +45,9 @@ public:
 	/// `hard` - perform a hard reload. If this is false, QuickShell will attempt to reuse windows
 	/// that already exist. If true windows will be recreated.
 	///
-	/// > [!INFO] QuickShell can only reuse windows that are in a hierarchy of elements known
-	/// > internally as `Scavengeable`. These types are [ShellRoot] and [Variants].
-	/// >
-	/// > ```qml
-	/// > // this will reuse the window on reload
-	/// > ShellRoot {
-	/// >   Varaints {
-	/// >     ProxyShellWindow {
-	/// >       // ...
-	/// >     }
-	/// >
-	/// >     // ...
-	/// >   }
-	/// > }
-	/// >
-	/// > // this will NOT reuse the window on reload,
-	/// > // and will destroy the old one / create a new one every time
-	/// > ShellRoot {
-	/// >   AnyNonScavengeableType {
-	/// >     ProxyShellWindow {
-	/// >       // ...
-	/// >     }
-	/// >
-	/// >     // ...
-	/// >   }
-	/// > }
-	/// > ```
-	/// >
-	/// > [ShellRoot]: ../shellroot
-	/// > [Variants]: ../variants
+	/// See [Reloadable] for more information on what can be reloaded and how.
+	///
+	/// [Reloadable]: ../reloadable
 	Q_INVOKABLE void reload(bool hard);
 
 signals:

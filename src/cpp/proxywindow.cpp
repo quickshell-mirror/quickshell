@@ -17,17 +17,29 @@ ProxyWindowBase::~ProxyWindowBase() {
 	}
 }
 
-void ProxyWindowBase::earlyInit(QObject* old) {
-	auto* oldpw = qobject_cast<ProxyWindowBase*>(old);
+void ProxyWindowBase::onReload(QObject* oldInstance) {
+	auto* old = qobject_cast<ProxyWindowBase*>(oldInstance);
 
-	if (oldpw == nullptr || oldpw->window == nullptr) {
+	if (old == nullptr || old->window == nullptr) {
 		this->window = new QQuickWindow();
 	} else {
-		this->window = oldpw->disownWindow();
+		this->window = old->disownWindow();
 	}
 
-	this->window->setMask(QRegion());
+	this->setupWindow();
 
+	auto backer = this->dataBacker();
+	for (auto* child: this->pendingChildren) {
+		backer.append(&backer, child);
+	}
+
+	this->pendingChildren.clear();
+
+	emit this->windowConnected();
+	this->window->setVisible(this->mVisible);
+}
+
+void ProxyWindowBase::setupWindow() {
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
@@ -38,6 +50,11 @@ void ProxyWindowBase::earlyInit(QObject* old) {
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onMaskChanged);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
 	// clang-format on
+
+	this->setWidth(this->mWidth);
+	this->setHeight(this->mHeight);
+	this->setColor(this->mColor);
+	this->updateMask();
 }
 
 QQuickWindow* ProxyWindowBase::disownWindow() {
@@ -52,20 +69,57 @@ QQuickWindow* ProxyWindowBase::disownWindow() {
 	return window;
 }
 
-QQuickWindow* ProxyWindowBase::backingWindow() { return this->window; }
-QQuickItem* ProxyWindowBase::item() { return this->window->contentItem(); }
+QQuickWindow* ProxyWindowBase::backingWindow() const { return this->window; }
 
-// NOLINTNEXTLINE
-#define PROXYPROP(type, get, set)                                                                  \
-	type ProxyWindowBase::get() { return this->window->get(); }                                      \
-	void ProxyWindowBase::set(type value) { this->window->set(value); }
+bool ProxyWindowBase::isVisible() const {
+	if (this->window == nullptr) return this->mVisible;
+	else return this->window->isVisible();
+}
 
-PROXYPROP(bool, isVisible, setVisible);
-PROXYPROP(qint32, width, setWidth);
-PROXYPROP(qint32, height, setHeight);
-PROXYPROP(QColor, color, setColor);
+void ProxyWindowBase::setVisible(bool visible) {
+	if (this->window == nullptr) {
+		this->mVisible = visible;
+		emit this->visibleChanged();
+	} else this->window->setVisible(visible);
+}
 
-PendingRegion* ProxyWindowBase::mask() { return this->mMask; }
+qint32 ProxyWindowBase::width() const {
+	if (this->window == nullptr) return this->mWidth;
+	else return this->window->width();
+}
+
+void ProxyWindowBase::setWidth(qint32 width) {
+	if (this->window == nullptr) {
+		this->mWidth = width;
+		emit this->widthChanged();
+	} else this->window->setWidth(width);
+}
+
+qint32 ProxyWindowBase::height() const {
+	if (this->window == nullptr) return this->mHeight;
+	else return this->window->height();
+}
+
+void ProxyWindowBase::setHeight(qint32 height) {
+	if (this->window == nullptr) {
+		this->mHeight = height;
+		emit this->heightChanged();
+	} else this->window->setHeight(height);
+}
+
+QColor ProxyWindowBase::color() const {
+	if (this->window == nullptr) return this->mColor;
+	else return this->window->color();
+}
+
+void ProxyWindowBase::setColor(QColor color) {
+	if (this->window == nullptr) {
+		this->mColor = color;
+		emit this->colorChanged();
+	} else this->window->setColor(color);
+}
+
+PendingRegion* ProxyWindowBase::mask() const { return this->mMask; }
 
 void ProxyWindowBase::setMask(PendingRegion* mask) {
 	if (this->mMask != nullptr) {
@@ -81,6 +135,10 @@ void ProxyWindowBase::setMask(PendingRegion* mask) {
 }
 
 void ProxyWindowBase::onMaskChanged() {
+	if (this->window != nullptr) this->updateMask();
+}
+
+void ProxyWindowBase::updateMask() {
 	QRegion mask;
 	if (this->mMask != nullptr) {
 		// if left as the default, dont combine it with the whole window area, leave it as is.
@@ -114,59 +172,87 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 	);
 }
 
-QQmlListProperty<QObject> ProxyWindowBase::dataBacker(QQmlListProperty<QObject>* prop) {
-	auto* that = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-	return that->window->property("data").value<QQmlListProperty<QObject>>();
+QQmlListProperty<QObject> ProxyWindowBase::dataBacker() {
+	return this->window->property("data").value<QQmlListProperty<QObject>>();
 }
 
 void ProxyWindowBase::dataAppend(QQmlListProperty<QObject>* prop, QObject* obj) {
-	auto backer = dataBacker(prop);
-	backer.append(&backer, obj);
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
+
+	if (self->window == nullptr) {
+		if (obj != nullptr) {
+			obj->setParent(self);
+			self->pendingChildren.append(obj);
+		}
+	} else {
+		auto backer = self->dataBacker();
+		backer.append(&backer, obj);
+	}
 }
 
 qsizetype ProxyWindowBase::dataCount(QQmlListProperty<QObject>* prop) {
-	auto backer = dataBacker(prop);
-	return backer.count(&backer);
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
+
+	if (self->window == nullptr) {
+		return self->pendingChildren.count();
+	} else {
+		auto backer = self->dataBacker();
+		return backer.count(&backer);
+	}
 }
 
 QObject* ProxyWindowBase::dataAt(QQmlListProperty<QObject>* prop, qsizetype i) {
-	auto backer = dataBacker(prop);
-	return backer.at(&backer, i);
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
+
+	if (self->window == nullptr) {
+		return self->pendingChildren.at(i);
+	} else {
+		auto backer = self->dataBacker();
+		return backer.at(&backer, i);
+	}
 }
 
 void ProxyWindowBase::dataClear(QQmlListProperty<QObject>* prop) {
-	auto backer = dataBacker(prop);
-	backer.clear(&backer);
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
+
+	if (self->window == nullptr) {
+		self->pendingChildren.clear();
+	} else {
+		auto backer = self->dataBacker();
+		backer.clear(&backer);
+	}
 }
 
 void ProxyWindowBase::dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj) {
-	auto backer = dataBacker(prop);
-	backer.replace(&backer, i, obj);
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
+
+	if (self->window == nullptr) {
+		if (obj != nullptr) {
+			obj->setParent(self);
+			self->pendingChildren.replace(i, obj);
+		}
+	} else {
+		auto backer = self->dataBacker();
+		backer.replace(&backer, i, obj);
+	}
 }
 
 void ProxyWindowBase::dataRemoveLast(QQmlListProperty<QObject>* prop) {
-	auto backer = dataBacker(prop);
-	backer.removeLast(&backer);
-}
+	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
 
-void ProxyFloatingWindow::earlyInit(QObject* old) {
-	this->ProxyWindowBase::earlyInit(old);
-	this->geometryLocked = this->window->isVisible();
-}
-
-void ProxyFloatingWindow::componentComplete() {
-	this->ProxyWindowBase::componentComplete();
-	this->geometryLocked = true;
-}
-
-void ProxyFloatingWindow::setWidth(qint32 value) {
-	if (!this->geometryLocked) {
-		this->ProxyWindowBase::setWidth(value);
+	if (self->window == nullptr) {
+		self->pendingChildren.removeLast();
+	} else {
+		auto backer = self->dataBacker();
+		backer.removeLast(&backer);
 	}
 }
 
-void ProxyFloatingWindow::setHeight(qint32 value) {
-	if (!this->geometryLocked) {
-		this->ProxyWindowBase::setHeight(value);
-	}
+void ProxyFloatingWindow::setWidth(qint32 width) {
+	if (this->window == nullptr || !this->window->isVisible()) this->ProxyWindowBase::setWidth(width);
+}
+
+void ProxyFloatingWindow::setHeight(qint32 height) {
+	if (this->window == nullptr || !this->window->isVisible())
+		this->ProxyWindowBase::setHeight(height);
 }

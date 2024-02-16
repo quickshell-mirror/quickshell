@@ -162,27 +162,18 @@ class ProxyShellWindow: public ProxyWindowBase {
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
 	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 	Q_PROPERTY(ScreenConfiguration::Enum screenConfiguration READ screenConfiguration WRITE setScreenConfiguration);
-	Q_PROPERTY(bool closeOnDismissed READ closeOnDismissed WRITE setCloseOnDismissed);
 	QML_ELEMENT;
 	// clang-format on
 
-protected:
-	void earlyInit(QObject* old) override;
-
 public:
-	void componentComplete() override;
+	void setupWindow() override;
 	QQuickWindow* disownWindow() override;
 
 	QQmlListProperty<QObject> data();
 
-	void setVisible(bool visible) override;
-	bool isVisible() override;
-
 	void setWidth(qint32 width) override;
-	qint32 width() override;
 
 	void setHeight(qint32 height) override;
-	qint32 height() override;
 
 	void setScreen(QuickShellScreenInfo* screen);
 	[[nodiscard]] QuickShellScreenInfo* screen() const;
@@ -211,9 +202,6 @@ public:
 	void setScreenConfiguration(ScreenConfiguration::Enum configuration);
 	[[nodiscard]] ScreenConfiguration::Enum screenConfiguration() const;
 
-	void setCloseOnDismissed(bool close);
-	[[nodiscard]] bool closeOnDismissed() const;
-
 signals:
 	void screenChanged();
 	void anchorsChanged();
@@ -225,20 +213,19 @@ signals:
 
 private slots:
 	void updateExclusionZone();
+	void onScreenDestroyed();
 
 private:
 	LayerShellQt::Window* shellWindow = nullptr;
-	bool anchorsInitialized = false;
+	QScreen* mScreen = nullptr;
 	ExclusionMode::Enum mExclusionMode = ExclusionMode::Normal;
-	qint32 requestedExclusionZone = 0;
+	qint32 mExclusionZone = 0;
+	Anchors mAnchors;
+	Margins mMargins;
+	Layer::Enum mLayer = Layer::Top;
+	QString mScope;
+	KeyboardFocus::Enum mKeyboardFocus = KeyboardFocus::None;
+	ScreenConfiguration::Enum mScreenConfiguration = ScreenConfiguration::Window;
 
-	// needed to ensure size dosent fuck up when changing layershell attachments
-	// along with setWidth and setHeight overrides
-	qint32 requestedWidth = 100;
-	qint32 requestedHeight = 100;
-
-	// width/height must be set before anchors, so we have to track anchors and apply them late
-	bool complete = false;
-	bool stagingVisible = false;
-	Anchors stagingAnchors;
+	bool connected = false;
 };

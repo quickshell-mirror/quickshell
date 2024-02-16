@@ -5,17 +5,14 @@
 #include <qtmetamacros.h>
 #include <qurl.h>
 
-#include "scavenge.hpp"
 #include "shell.hpp"
 #include "watcher.hpp"
 
-class RootWrapper: public QObject, virtual public Scavengeable {
+class RootWrapper: public QObject {
 	Q_OBJECT;
 
 public:
 	explicit RootWrapper(QString rootPath);
-
-	QObject* scavengeTargetFor(QObject* child) override;
 
 	void reloadGraph(bool hard);
 

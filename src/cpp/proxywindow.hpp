@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcolor.h>
+#include <qcontainerfwd.h>
 #include <qevent.h>
 #include <qobject.h>
 #include <qqmllist.h>
@@ -11,7 +12,7 @@
 #include <qtypes.h>
 
 #include "region.hpp"
-#include "scavenge.hpp"
+#include "reload.hpp"
 
 // Proxy to an actual window exposing a limited property set with the ability to
 // transfer it to a new window.
@@ -19,7 +20,7 @@
 //
 // NOTE: setting an `id` in qml will point to the proxy window and not the real window so things
 // like anchors must use `item`.
-class ProxyWindowBase: public Scavenger {
+class ProxyWindowBase: public Reloadable {
 	Q_OBJECT;
 	/// The QtQuick window backing this window.
 	///
@@ -29,8 +30,6 @@ class ProxyWindowBase: public Scavenger {
 	/// >
 	/// > Use **only** if you know what you are doing.
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
-	/// The content item of the window.
-	Q_PROPERTY(QQuickItem* item READ item CONSTANT);
 	/// The visibility of the window.
 	///
 	/// > [!INFO] Windows are not visible by default so you will need to set this to make the window
@@ -99,12 +98,8 @@ class ProxyWindowBase: public Scavenger {
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
 
-protected:
-	void earlyInit(QObject* old) override;
-	QQuickWindow* window = nullptr;
-
 public:
-	explicit ProxyWindowBase(QObject* parent = nullptr): Scavenger(parent) {}
+	explicit ProxyWindowBase(QObject* parent = nullptr): Reloadable(parent) {}
 	~ProxyWindowBase() override;
 
 	ProxyWindowBase(ProxyWindowBase&) = delete;
@@ -112,41 +107,55 @@ public:
 	void operator=(ProxyWindowBase&) = delete;
 	void operator=(ProxyWindowBase&&) = delete;
 
+	void onReload(QObject* oldInstance) override;
+
+	virtual void setupWindow();
+
 	// Disown the backing window and delete all its children.
 	virtual QQuickWindow* disownWindow();
 
-	QQuickWindow* backingWindow();
-	QQuickItem* item();
+	[[nodiscard]] QQuickWindow* backingWindow() const;
 
-	virtual bool isVisible();
-	virtual void setVisible(bool value);
+	[[nodiscard]] virtual bool isVisible() const;
+	virtual void setVisible(bool visible);
 
-	virtual qint32 width();
-	virtual void setWidth(qint32 value);
+	[[nodiscard]] virtual qint32 width() const;
+	virtual void setWidth(qint32 width);
 
-	virtual qint32 height();
-	virtual void setHeight(qint32 value);
+	[[nodiscard]] virtual qint32 height() const;
+	virtual void setHeight(qint32 height);
 
-	QColor color();
-	void setColor(QColor value);
+	[[nodiscard]] QColor color() const;
+	void setColor(QColor color);
 
-	PendingRegion* mask();
+	[[nodiscard]] PendingRegion* mask() const;
 	void setMask(PendingRegion* mask);
 
 	QQmlListProperty<QObject> data();
 
 signals:
-	void visibleChanged(bool visible);
-	void widthChanged(qint32 width);
-	void heightChanged(qint32 width);
-	void colorChanged(QColor color);
+	void windowConnected();
+	void visibleChanged();
+	void widthChanged();
+	void heightChanged();
+	void colorChanged();
 	void maskChanged();
 
 private slots:
 	void onMaskChanged();
 
+protected:
+	bool mVisible = false;
+	qint32 mWidth = 100;
+	qint32 mHeight = 100;
+	QColor mColor;
+	PendingRegion* mMask = nullptr;
+	QQuickWindow* window = nullptr;
+
 private:
-	static QQmlListProperty<QObject> dataBacker(QQmlListProperty<QObject>* prop);
+	void updateMask();
+	QQmlListProperty<QObject> dataBacker();
+
 	static void dataAppend(QQmlListProperty<QObject>* prop, QObject* obj);
 	static qsizetype dataCount(QQmlListProperty<QObject>* prop);
 	static QObject* dataAt(QQmlListProperty<QObject>* prop, qsizetype i);
@@ -154,7 +163,7 @@ private:
 	static void dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj);
 	static void dataRemoveLast(QQmlListProperty<QObject>* prop);
 
-	PendingRegion* mMask = nullptr;
+	QVector<QObject*> pendingChildren;
 };
 
 // qt attempts to resize the window but fails because wayland
@@ -164,12 +173,8 @@ class ProxyFloatingWindow: public ProxyWindowBase {
 	QML_ELEMENT;
 
 public:
-	void earlyInit(QObject* old) override;
-	void componentComplete() override;
-
-	void setWidth(qint32 value) override;
-	void setHeight(qint32 value) override;
-
-private:
-	bool geometryLocked = false;
+	// Setting geometry while the window is visible makes the content item shrink but not the window
+	// which is awful so we disable it for floating windows.
+	void setWidth(qint32 width) override;
+	void setHeight(qint32 height) override;
 };

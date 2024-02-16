@@ -5,50 +5,47 @@
 #include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qqmlengine.h>
 
-#include "scavenge.hpp"
+#include "reload.hpp"
 
-void Variants::earlyInit(QObject* old) {
-	auto* oldv = qobject_cast<Variants*>(old);
-	if (oldv != nullptr) {
-		this->scavengeableInstances = std::move(oldv->instances);
-	}
-}
+void Variants::onReload(QObject* oldInstance) {
+	auto* old = qobject_cast<Variants*>(oldInstance);
 
-QObject* Variants::scavengeTargetFor(QObject* /* child */) {
-	// Attempt to find the set that most closely matches the current one.
-	// This is biased to the order of the scavenge list which should help in
-	// case of conflicts as long as variants have not been reordered.
+	for (auto& [variant, instanceObj]: this->instances.values) {
+		QObject* oldInstance = nullptr;
+		if (old != nullptr) {
+			auto& values = old->instances.values;
 
-	if (this->activeScavengeVariant != nullptr) {
-		auto& values = this->scavengeableInstances.values;
-		if (values.empty()) return nullptr;
-
-		int matchcount = 0;
-		int matchi = 0;
-		int i = 0;
-		for (auto& [valueSet, _]: values) {
-			int count = 0;
-			for (auto& [k, v]: this->activeScavengeVariant->toStdMap()) {
-				if (valueSet.contains(k) && valueSet.value(k) == v) {
-					count++;
+			int matchcount = 0;
+			int matchi = 0;
+			int i = 0;
+			for (auto& [valueSet, _]: values) {
+				int count = 0;
+				for (auto& [k, v]: variant.toStdMap()) {
+					if (valueSet.contains(k) && valueSet.value(k) == v) {
+						count++;
+					}
 				}
+
+				if (count > matchcount) {
+					matchcount = count;
+					matchi = i;
+				}
+
+				i++;
 			}
 
-			if (count > matchcount) {
-				matchcount = count;
-				matchi = i;
+			if (matchcount > 0) {
+				oldInstance = values.takeAt(matchi).second;
 			}
-
-			i++;
 		}
 
-		if (matchcount > 0) {
-			return values.takeAt(matchi).second;
-		}
+		auto* instance = qobject_cast<Reloadable*>(instanceObj);
+
+		if (instance != nullptr) instance->onReload(oldInstance);
+		else Reloadable::reloadChildrenRecursive(instanceObj, oldInstance);
 	}
-
-	return nullptr;
 }
 
 void Variants::setVariants(QVariantList variants) {
@@ -57,7 +54,7 @@ void Variants::setVariants(QVariantList variants) {
 }
 
 void Variants::componentComplete() {
-	this->Scavenger::componentComplete();
+	this->Reloadable::componentComplete();
 	this->updateVariants();
 }
 
@@ -96,14 +93,18 @@ void Variants::updateVariants() {
 				continue; // we dont need to recreate this one
 			}
 
-			this->activeScavengeVariant = &variant;
-			auto* instance = createComponentScavengeable(*this, *this->mComponent, variant);
+			auto* instance = this->mComponent->createWithInitialProperties(
+			    variant,
+			    QQmlEngine::contextForObject(this)
+			);
 
 			if (instance == nullptr) {
+				qWarning() << this->mComponent->errorString().toStdString().c_str();
 				qWarning() << "failed to create variant with object" << variant;
 				continue;
 			}
 
+			instance->setParent(this);
 			this->instances.insert(variant, instance);
 		}
 

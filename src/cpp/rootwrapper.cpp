@@ -9,7 +9,6 @@
 #include <qqmlengine.h>
 #include <qurl.h>
 
-#include "scavenge.hpp"
 #include "shell.hpp"
 #include "watcher.hpp"
 
@@ -23,8 +22,6 @@ RootWrapper::RootWrapper(QString rootPath):
 	}
 }
 
-QObject* RootWrapper::scavengeTargetFor(QObject* /* child */) { return this->root; }
-
 void RootWrapper::reloadGraph(bool hard) {
 	if (this->root != nullptr) {
 		this->engine.clearComponentCache();
@@ -32,9 +29,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	auto component = QQmlComponent(&this->engine, QUrl::fromLocalFile(this->rootPath));
 
-	SCAVENGE_PARENT = hard ? nullptr : this;
 	auto* obj = component.beginCreate(this->engine.rootContext());
-	SCAVENGE_PARENT = nullptr;
 
 	if (obj == nullptr) {
 		qWarning() << component.errorString().toStdString().c_str();
@@ -50,6 +45,8 @@ void RootWrapper::reloadGraph(bool hard) {
 	}
 
 	component.completeCreate();
+
+	newRoot->onReload(hard ? nullptr : this->root);
 
 	if (this->root != nullptr) {
 		this->root->deleteLater();
