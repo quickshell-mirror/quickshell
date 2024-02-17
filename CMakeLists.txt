@@ -39,6 +39,7 @@ qt_add_executable(quickshell
 	src/cpp/qmlscreen.cpp
 	src/cpp/watcher.cpp
 	src/cpp/region.cpp
+	src/cpp/persistentprops.cpp
 )
 
 qt_add_qml_module(quickshell URI QuickShell)

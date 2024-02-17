@@ -52,7 +52,9 @@ class Reloadable: public QObject, public QQmlParserStatus {
 public:
 	explicit Reloadable(QObject* parent = nullptr): QObject(parent) {}
 
-	/// called unconditionally in the reload phase, with nullptr if no source could be determined
+	// Called unconditionally in the reload phase, with nullptr if no source could be determined.
+	// If non null the old instance may or may not be of the same type, and should be checked
+	// by `onReload`.
 	virtual void onReload(QObject* oldInstance) = 0;
 
 	// TODO: onReload runs after initialization for reloadable objects created late

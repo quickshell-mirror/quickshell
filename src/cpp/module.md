@@ -9,6 +9,7 @@ headers = [
 	"proxywindow.hpp",
 	"layershell.hpp",
 	"region.hpp",
+	"persistentprops.hpp",
 ]
 -----
 The core types provided by QuickShell
