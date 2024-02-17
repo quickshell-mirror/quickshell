@@ -33,10 +33,7 @@ class ProxyWindowBase: public Reloadable {
 	/// >
 	/// > Use **only** if you know what you are doing.
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
-	/// The visibility of the window.
-	///
-	/// > [!INFO] Windows are not visible by default so you will need to set this to make the window
-	/// > appear.
+	/// If the window is shown or hidden. Defaults to true.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
@@ -152,7 +149,7 @@ private slots:
 	void onHeightChanged();
 
 protected:
-	bool mVisible = false;
+	bool mVisible = true;
 	qint32 mWidth = 100;
 	qint32 mHeight = 100;
 	QColor mColor = Qt::white;
