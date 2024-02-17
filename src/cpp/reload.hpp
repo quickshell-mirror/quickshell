@@ -9,8 +9,10 @@
 
 ///! The base class of all types that can be reloaded.
 /// Reloadables will attempt to take specific state from previous config revisions if possible.
-/// Some examples are `ProxyShellWindow` and `ProxyFloatingWindow` which will attempt to find the
-/// windows assigned to them in the previous configuration.
+/// Some examples are [ProxyWindowBase] and [PersistentProperties]
+///
+/// [ProxyWindowBase]: ../proxywindowbase
+/// [PersistentProperties]: ../persistentproperties
 class Reloadable: public QObject, public QQmlParserStatus {
 	Q_OBJECT;
 	Q_INTERFACES(QQmlParserStatus);
@@ -32,8 +34,8 @@ class Reloadable: public QObject, public QQmlParserStatus {
 	///
 	///   // any non `Reloadable` object
 	///   QtObject {
-	///     ProxyFloatingWindow {
-	///       // this ProxyFloatingWindow will now be matched to the same one in the previous
+	///     FloatingWindow {
+	///       // this FloatingWindow will now be matched to the same one in the previous
 	///       // widget tree for its variant. "myFloatingWindow" refers to both the variant in
 	///       // `foo: 1` and `foo: 2` for each tree.
 	///       reloadableId: "myFloatingWindow"

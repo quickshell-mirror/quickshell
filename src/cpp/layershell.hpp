@@ -75,9 +75,9 @@ Q_ENUM_NS(Enum);
 
 } // namespace Layer
 
-/// Type of keyboard focus that will be accepted by a [ProxyShellWindow]
+/// Type of keyboard focus that will be accepted by a [ShellWindow]
 ///
-/// [ProxyShellWindow]: ../proxyshellwindow
+/// [ShellWindow]: ../shellwindow
 namespace KeyboardFocus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -117,7 +117,7 @@ Q_ENUM_NS(Enum);
 /// The following snippet creates a white bar attached to the bottom of [TODO] screen.
 ///
 /// ```qml
-/// ProxyShellWindow {
+/// ShellWindow {
 ///   anchors {
 ///     left: true
 ///     bottom: true
@@ -162,7 +162,7 @@ class ProxyShellWindow: public ProxyWindowBase {
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
 	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 	Q_PROPERTY(ScreenConfiguration::Enum screenConfiguration READ screenConfiguration WRITE setScreenConfiguration);
-	QML_ELEMENT;
+	QML_NAMED_ELEMENT(ShellWindow);
 	// clang-format on
 
 public:

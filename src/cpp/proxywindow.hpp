@@ -17,10 +17,12 @@
 
 // Proxy to an actual window exposing a limited property set with the ability to
 // transfer it to a new window.
-// Detaching a window and touching any property is a use after free.
-//
-// NOTE: setting an `id` in qml will point to the proxy window and not the real window so things
-// like anchors must use `item`.
+
+///! Base class for reloadable windows
+/// Base class for reloadable windows. See [ShellWindow] and [FloatingWindow]
+///
+/// [ShellWindow]: ../shellwindow
+/// [FloatingWindow]: ../floatingwindow
 class ProxyWindowBase: public Reloadable {
 	Q_OBJECT;
 	/// The QtQuick window backing this window.
@@ -58,7 +60,7 @@ class ProxyWindowBase: public Reloadable {
 	/// If non null then the clickable areas of the window will be determined by the provided region.
 	///
 	/// ```qml
-	/// ProxyShellWindow {
+	/// ShellWindow {
 	///   // The mask region is set to `rect`, meaning only `rect` is clickable.
 	///   // All other clicks pass through the window to ones behind it.
 	///   mask: Region { item: rect }
@@ -80,7 +82,7 @@ class ProxyWindowBase: public Reloadable {
 	/// the mask region not clickable and pass through clicks inside it through the window.
 	///
 	/// ```qml
-	/// ProxyShellWindow {
+	/// ShellWindow {
 	///   // The mask region is set to `rect`, but the intersection mode is set to `Xor`.
 	///   // This inverts the mask causing all clicks inside `rect` to be passed to the window
 	///   // behind this one.
@@ -98,6 +100,8 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
+	QML_ELEMENT;
+	QML_UNCREATABLE("use ShellWindow or FloatingWindow");
 
 public:
 	explicit ProxyWindowBase(QObject* parent = nullptr);
@@ -162,9 +166,11 @@ private:
 
 // qt attempts to resize the window but fails because wayland
 // and only resizes the graphics context which looks terrible.
+
+///! Standard floating window.
 class ProxyFloatingWindow: public ProxyWindowBase {
 	Q_OBJECT;
-	QML_ELEMENT;
+	QML_NAMED_ELEMENT(FloatingWindow);
 
 public:
 	// Setting geometry while the window is visible makes the content item shrink but not the window

@@ -19,7 +19,7 @@ class QuickShellGlobal: public QObject {
 	/// ```qml
 	/// ShellRoot {
 	///   Variants {
-	///     ProxyShellWindow {
+	///     ShellWindow {
 	///       // ...
 	///     }
 	///

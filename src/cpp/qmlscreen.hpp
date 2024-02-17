@@ -9,7 +9,7 @@
 
 // unfortunately QQuickScreenInfo is private.
 
-/// Monitor object useful for setting the monitor for a [ProxyShellWindow]
+/// Monitor object useful for setting the monitor for a [ShellWindow]
 /// or querying information about the monitor.
 ///
 /// > [!WARNING] If the monitor is disconnected than any stored copies of its ShellMonitor will
@@ -18,7 +18,7 @@
 ///
 /// Due to some technical limitations, it was not possible to reuse the native qml [Screen] type.
 ///
-/// [ProxyShellWindow]: ../proxyshellwindow
+/// [ShellWindow]: ../shellwindow
 /// [Screen]: https://doc.qt.io/qt-6/qml-qtquick-screen.html
 class QuickShellScreenInfo: public QObject {
 	Q_OBJECT;
