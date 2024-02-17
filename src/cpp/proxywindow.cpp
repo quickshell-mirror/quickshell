@@ -10,6 +10,7 @@
 #include <qwindow.h>
 
 #include "region.hpp"
+#include "reload.hpp"
 
 ProxyWindowBase::~ProxyWindowBase() {
 	if (this->window != nullptr) {
@@ -28,9 +29,17 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	this->setupWindow();
 
+	for (auto* child: this->pendingChildren) {
+		Reloadable::reloadRecursive(child, oldInstance);
+	}
+
 	auto backer = this->dataBacker();
 	for (auto* child: this->pendingChildren) {
-		backer.append(&backer, child);
+		// Reparent QQuickItems to the content element,
+		// while leaving QObjects parented to the proxy window.
+		if (qobject_cast<QQuickItem*>(child) != nullptr) {
+			backer.append(&backer, child);
+		}
 	}
 
 	this->pendingChildren.clear();
