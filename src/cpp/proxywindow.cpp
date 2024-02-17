@@ -12,6 +12,14 @@
 #include "region.hpp"
 #include "reload.hpp"
 
+ProxyWindowBase::ProxyWindowBase(QObject* parent): Reloadable(parent) {
+	this->contentItem = new QQuickItem(); // NOLINT
+	this->contentItem->setParent(this);
+
+	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
+	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onHeightChanged);
+}
+
 ProxyWindowBase::~ProxyWindowBase() {
 	if (this->window != nullptr) {
 		this->window->deleteLater();
@@ -29,20 +37,12 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	this->setupWindow();
 
-	for (auto* child: this->pendingChildren) {
-		Reloadable::reloadRecursive(child, oldInstance);
-	}
+	Reloadable::reloadRecursive(this->contentItem, oldInstance);
 
-	auto backer = this->dataBacker();
-	for (auto* child: this->pendingChildren) {
-		// Reparent QQuickItems to the content element,
-		// while leaving QObjects parented to the proxy window.
-		if (qobject_cast<QQuickItem*>(child) != nullptr) {
-			backer.append(&backer, child);
-		}
-	}
+	this->contentItem->setParentItem(this->window->contentItem());
 
-	this->pendingChildren.clear();
+	this->contentItem->setWidth(this->width());
+	this->contentItem->setHeight(this->height());
 
 	emit this->windowConnected();
 	this->window->setVisible(this->mVisible);
@@ -69,9 +69,7 @@ void ProxyWindowBase::setupWindow() {
 QQuickWindow* ProxyWindowBase::disownWindow() {
 	QObject::disconnect(this->window, nullptr, this, nullptr);
 
-	auto data = this->data();
-	ProxyWindowBase::dataClear(&data);
-	data.clear(&data);
+	this->contentItem->setParentItem(nullptr);
 
 	auto* window = this->window;
 	this->window = nullptr;
@@ -162,100 +160,13 @@ void ProxyWindowBase::updateMask() {
 	this->window->setMask(mask);
 }
 
-// see:
-// https://code.qt.io/cgit/qt/qtdeclarative.git/tree/src/quick/items/qquickwindow.cpp
-// https://code.qt.io/cgit/qt/qtdeclarative.git/tree/src/quick/items/qquickitem.cpp
-//
-// relevant functions are private so we call them via the property
-
 QQmlListProperty<QObject> ProxyWindowBase::data() {
-	return QQmlListProperty<QObject>(
-	    this,
-	    nullptr,
-	    ProxyWindowBase::dataAppend,
-	    ProxyWindowBase::dataCount,
-	    ProxyWindowBase::dataAt,
-	    ProxyWindowBase::dataClear,
-	    ProxyWindowBase::dataReplace,
-	    ProxyWindowBase::dataRemoveLast
-	);
+	return this->contentItem->property("data").value<QQmlListProperty<QObject>>();
 }
 
-QQmlListProperty<QObject> ProxyWindowBase::dataBacker() {
-	return this->window->property("data").value<QQmlListProperty<QObject>>();
-}
+void ProxyWindowBase::onWidthChanged() { this->contentItem->setWidth(this->width()); }
 
-void ProxyWindowBase::dataAppend(QQmlListProperty<QObject>* prop, QObject* obj) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		if (obj != nullptr) {
-			obj->setParent(self);
-			self->pendingChildren.append(obj);
-		}
-	} else {
-		auto backer = self->dataBacker();
-		backer.append(&backer, obj);
-	}
-}
-
-qsizetype ProxyWindowBase::dataCount(QQmlListProperty<QObject>* prop) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		return self->pendingChildren.count();
-	} else {
-		auto backer = self->dataBacker();
-		return backer.count(&backer);
-	}
-}
-
-QObject* ProxyWindowBase::dataAt(QQmlListProperty<QObject>* prop, qsizetype i) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		return self->pendingChildren.at(i);
-	} else {
-		auto backer = self->dataBacker();
-		return backer.at(&backer, i);
-	}
-}
-
-void ProxyWindowBase::dataClear(QQmlListProperty<QObject>* prop) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		self->pendingChildren.clear();
-	} else {
-		auto backer = self->dataBacker();
-		backer.clear(&backer);
-	}
-}
-
-void ProxyWindowBase::dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		if (obj != nullptr) {
-			obj->setParent(self);
-			self->pendingChildren.replace(i, obj);
-		}
-	} else {
-		auto backer = self->dataBacker();
-		backer.replace(&backer, i, obj);
-	}
-}
-
-void ProxyWindowBase::dataRemoveLast(QQmlListProperty<QObject>* prop) {
-	auto* self = static_cast<ProxyWindowBase*>(prop->object); // NOLINT
-
-	if (self->window == nullptr) {
-		self->pendingChildren.removeLast();
-	} else {
-		auto backer = self->dataBacker();
-		backer.removeLast(&backer);
-	}
-}
+void ProxyWindowBase::onHeightChanged() { this->contentItem->setHeight(this->height()); }
 
 void ProxyFloatingWindow::setWidth(qint32 width) {
 	if (this->window == nullptr || !this->window->isVisible()) this->ProxyWindowBase::setWidth(width);

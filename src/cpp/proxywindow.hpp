@@ -100,7 +100,7 @@ class ProxyWindowBase: public Reloadable {
 	Q_CLASSINFO("DefaultProperty", "data");
 
 public:
-	explicit ProxyWindowBase(QObject* parent = nullptr): Reloadable(parent) {}
+	explicit ProxyWindowBase(QObject* parent = nullptr);
 	~ProxyWindowBase() override;
 
 	ProxyWindowBase(ProxyWindowBase&) = delete;
@@ -144,6 +144,8 @@ signals:
 
 private slots:
 	void onMaskChanged();
+	void onWidthChanged();
+	void onHeightChanged();
 
 protected:
 	bool mVisible = false;
@@ -152,19 +154,10 @@ protected:
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
 	QQuickWindow* window = nullptr;
+	QQuickItem* contentItem = nullptr;
 
 private:
 	void updateMask();
-	QQmlListProperty<QObject> dataBacker();
-
-	static void dataAppend(QQmlListProperty<QObject>* prop, QObject* obj);
-	static qsizetype dataCount(QQmlListProperty<QObject>* prop);
-	static QObject* dataAt(QQmlListProperty<QObject>* prop, qsizetype i);
-	static void dataClear(QQmlListProperty<QObject>* prop);
-	static void dataReplace(QQmlListProperty<QObject>* prop, qsizetype i, QObject* obj);
-	static void dataRemoveLast(QQmlListProperty<QObject>* prop);
-
-	QVector<QObject*> pendingChildren;
 };
 
 // qt attempts to resize the window but fails because wayland
