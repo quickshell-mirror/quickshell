@@ -3,6 +3,7 @@
 #include <qcolor.h>
 #include <qcontainerfwd.h>
 #include <qevent.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
@@ -148,7 +149,7 @@ protected:
 	bool mVisible = false;
 	qint32 mWidth = 100;
 	qint32 mHeight = 100;
-	QColor mColor;
+	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
 	QQuickWindow* window = nullptr;
 
