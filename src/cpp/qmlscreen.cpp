@@ -3,7 +3,43 @@
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qnamespace.h>
+#include <qobject.h>
+#include <qscreen.h>
 #include <qtypes.h>
+
+QuickShellScreenInfo::QuickShellScreenInfo(QObject* parent, QScreen* screen):
+    QObject(parent), screen(screen) {
+	QObject::connect(
+	    this->screen,
+	    &QScreen::geometryChanged,
+	    this,
+	    &QuickShellScreenInfo::geometryChanged
+	);
+	QObject::connect(
+	    this->screen,
+	    &QScreen::physicalDotsPerInchChanged,
+	    this,
+	    &QuickShellScreenInfo::physicalPixelDensityChanged
+	);
+	QObject::connect(
+	    this->screen,
+	    &QScreen::logicalDotsPerInchChanged,
+	    this,
+	    &QuickShellScreenInfo::logicalPixelDensityChanged
+	);
+	QObject::connect(
+	    this->screen,
+	    &QScreen::orientationChanged,
+	    this,
+	    &QuickShellScreenInfo::orientationChanged
+	);
+	QObject::connect(
+	    this->screen,
+	    &QScreen::primaryOrientationChanged,
+	    this,
+	    &QuickShellScreenInfo::primaryOrientationChanged
+	);
+}
 
 bool QuickShellScreenInfo::operator==(QuickShellScreenInfo& other) const {
 	return this->screen == other.screen;
@@ -38,7 +74,7 @@ qint32 QuickShellScreenInfo::height() const {
 	return this->screen->size().height();
 }
 
-qreal QuickShellScreenInfo::pixelDensity() const {
+qreal QuickShellScreenInfo::physicalPixelDensity() const {
 	if (this->screen == nullptr) {
 		warnNull();
 		return 0.0;

@@ -28,28 +28,28 @@ class QuickShellScreenInfo: public QObject {
 	/// The name of the screen as seen by the operating system.
 	///
 	/// Usually something like `DP-1`, `HDMI-1`, `eDP-1`.
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
-	Q_PROPERTY(qint32 width READ width NOTIFY widthChanged);
-	Q_PROPERTY(qint32 height READ height NOTIFY heightChanged);
+	Q_PROPERTY(QString name READ name);
+	Q_PROPERTY(qint32 width READ width NOTIFY geometryChanged);
+	Q_PROPERTY(qint32 height READ height NOTIFY geometryChanged);
 	/// The number of physical pixels per millimeter.
-	Q_PROPERTY(qreal pixelDensity READ pixelDensity NOTIFY logicalPixelDensityChanged);
+	Q_PROPERTY(qreal physicalPixelDensity READ physicalPixelDensity NOTIFY physicalPixelDensityChanged);
 	/// The number of device-independent (scaled) pixels per millimeter.
 	Q_PROPERTY(qreal logicalPixelDensity READ logicalPixelDensity NOTIFY logicalPixelDensityChanged);
 	/// The ratio between physical pixels and device-independent (scaled) pixels.
-	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
+	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY physicalPixelDensityChanged);
 	Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation NOTIFY orientationChanged);
 	Q_PROPERTY(Qt::ScreenOrientation primatyOrientation READ primaryOrientation NOTIFY primaryOrientationChanged);
 	// clang-format on
 
 public:
-	QuickShellScreenInfo(QObject* parent, QScreen* screen): QObject(parent), screen(screen) {}
+	QuickShellScreenInfo(QObject* parent, QScreen* screen); //: QObject(parent), screen(screen) {}
 
 	bool operator==(QuickShellScreenInfo& other) const;
 
 	[[nodiscard]] QString name() const;
 	[[nodiscard]] qint32 width() const;
 	[[nodiscard]] qint32 height() const;
-	[[nodiscard]] qreal pixelDensity() const;
+	[[nodiscard]] qreal physicalPixelDensity() const;
 	[[nodiscard]] qreal logicalPixelDensity() const;
 	[[nodiscard]] qreal devicePixelRatio() const;
 	[[nodiscard]] Qt::ScreenOrientation orientation() const;
@@ -58,12 +58,9 @@ public:
 	QScreen* screen;
 
 signals:
-	void nameChanged();
-	void widthChanged();
-	void heightChanged();
-	void pixelDensityChanged();
+	void geometryChanged();
+	void physicalPixelDensityChanged();
 	void logicalPixelDensityChanged();
-	void devicePixelRatioChanged();
 	void orientationChanged();
 	void primaryOrientationChanged();
 };
