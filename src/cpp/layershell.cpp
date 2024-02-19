@@ -12,56 +12,67 @@
 #include <qwindow.h>
 
 #include "proxywindow.hpp"
+#include "shellwindow.hpp"
 
-void ProxyShellWindow::setupWindow() {
+WaylandShellWindow::WaylandShellWindow(QObject* parent):
+    ProxyShellWindow(parent), mWayland(new WaylandShellWindowExtensions(this)) {}
+
+void WaylandShellWindow::setupWindow() {
 	this->shellWindow = LayerShellQt::Window::get(this->window);
 
-	this->ProxyWindowBase::setupWindow();
+	this->ProxyShellWindow::setupWindow();
 
 	// clang-format off
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::anchorsChanged, this, &ProxyShellWindow::anchorsChanged);
 	QObject::connect(this->shellWindow, &LayerShellQt::Window::marginsChanged, this, &ProxyShellWindow::marginsChanged);
-	QObject::connect(this->shellWindow, &LayerShellQt::Window::layerChanged, this, &ProxyShellWindow::layerChanged);
-	QObject::connect(this->shellWindow, &LayerShellQt::Window::keyboardInteractivityChanged, this, &ProxyShellWindow::keyboardFocusChanged);
 
-	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyShellWindow::updateExclusionZone);
-	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyShellWindow::updateExclusionZone);
-	QObject::connect(this, &ProxyShellWindow::anchorsChanged, this, &ProxyShellWindow::updateExclusionZone);
-	QObject::connect(this, &ProxyShellWindow::marginsChanged, this, &ProxyShellWindow::updateExclusionZone);
+	QObject::connect(
+	    this->shellWindow, &LayerShellQt::Window::layerChanged,
+	    this->mWayland, &WaylandShellWindowExtensions::layerChanged
+	 );
+	QObject::connect(
+	    this->shellWindow, &LayerShellQt::Window::keyboardInteractivityChanged,
+	    this->mWayland, &WaylandShellWindowExtensions::keyboardFocusChanged
+	);
+
+	QObject::connect(this->window, &QWindow::widthChanged, this, &WaylandShellWindow::updateExclusionZone);
+	QObject::connect(this->window, &QWindow::heightChanged, this, &WaylandShellWindow::updateExclusionZone);
+	QObject::connect(this, &ProxyShellWindow::anchorsChanged, this, &WaylandShellWindow::updateExclusionZone);
+	QObject::connect(this, &ProxyShellWindow::marginsChanged, this, &WaylandShellWindow::updateExclusionZone);
 	// clang-format on
 
 	this->setAnchors(this->mAnchors);
 	this->setMargins(this->mMargins);
 	this->setExclusionMode(this->mExclusionMode); // also sets exclusion zone
-	this->setLayer(this->mLayer);
+	this->mWayland->setLayer(this->mLayer);
 	this->shellWindow->setScope(this->mScope);
-	this->setKeyboardFocus(this->mKeyboardFocus);
+	this->mWayland->setKeyboardFocus(this->mKeyboardFocus);
 
 	this->connected = true;
 }
 
-QQuickWindow* ProxyShellWindow::disownWindow() {
+QQuickWindow* WaylandShellWindow::disownWindow() {
 	QObject::disconnect(this->shellWindow, nullptr, this, nullptr);
 	return this->ProxyWindowBase::disownWindow();
 }
 
-void ProxyShellWindow::setWidth(qint32 width) {
+void WaylandShellWindow::setWidth(qint32 width) {
 	this->mWidth = width;
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (!anchors.mLeft || !anchors.mRight) this->ProxyWindowBase::setWidth(width);
+	if (!anchors.mLeft || !anchors.mRight) this->ProxyShellWindow::setWidth(width);
 }
 
-void ProxyShellWindow::setHeight(qint32 height) {
+void WaylandShellWindow::setHeight(qint32 height) {
 	this->mHeight = height;
 
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
-	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(height);
+	if (!anchors.mTop || !anchors.mBottom) this->ProxyShellWindow::setHeight(height);
 }
 
-void ProxyShellWindow::setAnchors(Anchors anchors) {
+void WaylandShellWindow::setAnchors(Anchors anchors) {
 	if (this->window == nullptr) {
 		this->mAnchors = anchors;
 		return;
@@ -79,7 +90,7 @@ void ProxyShellWindow::setAnchors(Anchors anchors) {
 	this->shellWindow->setAnchors(lsAnchors);
 }
 
-Anchors ProxyShellWindow::anchors() const {
+Anchors WaylandShellWindow::anchors() const {
 	if (this->window == nullptr) return this->mAnchors;
 
 	auto lsAnchors = this->shellWindow->anchors();
@@ -93,7 +104,7 @@ Anchors ProxyShellWindow::anchors() const {
 	return anchors;
 }
 
-void ProxyShellWindow::setExclusiveZone(qint32 zone) {
+void WaylandShellWindow::setExclusiveZone(qint32 zone) {
 	if (zone < 0) zone = 0;
 	if (this->connected && zone == this->mExclusionZone) return;
 	this->mExclusionZone = zone;
@@ -104,14 +115,14 @@ void ProxyShellWindow::setExclusiveZone(qint32 zone) {
 	}
 }
 
-qint32 ProxyShellWindow::exclusiveZone() const {
+qint32 WaylandShellWindow::exclusiveZone() const {
 	if (this->window == nullptr) return this->mExclusionZone;
 	else return this->shellWindow->exclusionZone();
 }
 
-ExclusionMode::Enum ProxyShellWindow::exclusionMode() const { return this->mExclusionMode; }
+ExclusionMode::Enum WaylandShellWindow::exclusionMode() const { return this->mExclusionMode; }
 
-void ProxyShellWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
+void WaylandShellWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
 	if (this->connected && exclusionMode == this->mExclusionMode) return;
 	this->mExclusionMode = exclusionMode;
 
@@ -128,7 +139,7 @@ void ProxyShellWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
 	}
 }
 
-void ProxyShellWindow::setMargins(Margins margins) {
+void WaylandShellWindow::setMargins(Margins margins) {
 	if (this->window == nullptr) this->mMargins = margins;
 	else {
 		auto lsMargins = QMargins(margins.mLeft, margins.mTop, margins.mRight, margins.mBottom);
@@ -136,7 +147,7 @@ void ProxyShellWindow::setMargins(Margins margins) {
 	}
 }
 
-Margins ProxyShellWindow::margins() const {
+Margins WaylandShellWindow::margins() const {
 	if (this->window == nullptr) return this->mMargins;
 	auto lsMargins = this->shellWindow->margins();
 
@@ -149,9 +160,9 @@ Margins ProxyShellWindow::margins() const {
 	return margins;
 }
 
-void ProxyShellWindow::setLayer(Layer::Enum layer) {
-	if (this->window == nullptr) {
-		this->mLayer = layer;
+void WaylandShellWindowExtensions::setLayer(Layer::Enum layer) {
+	if (this->window->window == nullptr) {
+		this->window->mLayer = layer;
 		return;
 	}
 
@@ -166,14 +177,14 @@ void ProxyShellWindow::setLayer(Layer::Enum layer) {
 	}
 	// clang-format on
 
-	this->shellWindow->setLayer(lsLayer);
+	this->window->shellWindow->setLayer(lsLayer);
 }
 
-Layer::Enum ProxyShellWindow::layer() const {
-	if (this->window == nullptr) return this->mLayer;
+Layer::Enum WaylandShellWindowExtensions::layer() const {
+	if (this->window->window == nullptr) return this->window->mLayer;
 
 	auto layer = Layer::Top;
-	auto lsLayer = this->shellWindow->layer();
+	auto lsLayer = this->window->shellWindow->layer();
 
 	// clang-format off
 	switch (lsLayer) {
@@ -187,19 +198,19 @@ Layer::Enum ProxyShellWindow::layer() const {
 	return layer;
 }
 
-void ProxyShellWindow::setScope(const QString& scope) {
-	if (this->window == nullptr) this->mScope = scope;
-	else this->shellWindow->setScope(scope);
+void WaylandShellWindowExtensions::setScope(const QString& scope) {
+	if (this->window->window == nullptr) this->window->mScope = scope;
+	else this->window->shellWindow->setScope(scope);
 }
 
-QString ProxyShellWindow::scope() const {
-	if (this->window == nullptr) return this->mScope;
-	else return this->shellWindow->scope();
+QString WaylandShellWindowExtensions::scope() const {
+	if (this->window->window == nullptr) return this->window->mScope;
+	else return this->window->shellWindow->scope();
 }
 
-void ProxyShellWindow::setKeyboardFocus(KeyboardFocus::Enum focus) {
-	if (this->window == nullptr) {
-		this->mKeyboardFocus = focus;
+void WaylandShellWindowExtensions::setKeyboardFocus(KeyboardFocus::Enum focus) {
+	if (this->window->window == nullptr) {
+		this->window->mKeyboardFocus = focus;
 		return;
 	}
 
@@ -213,14 +224,14 @@ void ProxyShellWindow::setKeyboardFocus(KeyboardFocus::Enum focus) {
 	}
 	// clang-format on
 
-	this->shellWindow->setKeyboardInteractivity(lsFocus);
+	this->window->shellWindow->setKeyboardInteractivity(lsFocus);
 }
 
-KeyboardFocus::Enum ProxyShellWindow::keyboardFocus() const {
-	if (this->window == nullptr) return this->mKeyboardFocus;
+KeyboardFocus::Enum WaylandShellWindowExtensions::keyboardFocus() const {
+	if (this->window->window == nullptr) return this->window->mKeyboardFocus;
 
 	auto focus = KeyboardFocus::None;
-	auto lsFocus = this->shellWindow->keyboardInteractivity();
+	auto lsFocus = this->window->shellWindow->keyboardInteractivity();
 
 	// clang-format off
 	switch (lsFocus) {
@@ -233,9 +244,9 @@ KeyboardFocus::Enum ProxyShellWindow::keyboardFocus() const {
 	return focus;
 }
 
-void ProxyShellWindow::setScreenConfiguration(ScreenConfiguration::Enum configuration) {
-	if (this->window == nullptr) {
-		this->mScreenConfiguration = configuration;
+void WaylandShellWindowExtensions::setScreenConfiguration(ScreenConfiguration::Enum configuration) {
+	if (this->window->window == nullptr) {
+		this->window->mScreenConfiguration = configuration;
 		return;
 	}
 
@@ -248,14 +259,14 @@ void ProxyShellWindow::setScreenConfiguration(ScreenConfiguration::Enum configur
 	}
 	// clang-format on
 
-	this->shellWindow->setScreenConfiguration(lsConfiguration);
+	this->window->shellWindow->setScreenConfiguration(lsConfiguration);
 }
 
-ScreenConfiguration::Enum ProxyShellWindow::screenConfiguration() const {
-	if (this->window == nullptr) return this->mScreenConfiguration;
+ScreenConfiguration::Enum WaylandShellWindowExtensions::screenConfiguration() const {
+	if (this->window->window == nullptr) return this->window->mScreenConfiguration;
 
 	auto configuration = ScreenConfiguration::Window;
-	auto lsConfiguration = this->shellWindow->screenConfiguration();
+	auto lsConfiguration = this->window->shellWindow->screenConfiguration();
 
 	// clang-format off
 	switch (lsConfiguration) {
@@ -267,7 +278,7 @@ ScreenConfiguration::Enum ProxyShellWindow::screenConfiguration() const {
 	return configuration;
 }
 
-void ProxyShellWindow::updateExclusionZone() {
+void WaylandShellWindow::updateExclusionZone() {
 	if (this->window != nullptr && this->exclusionMode() == ExclusionMode::Auto) {
 		auto anchors = this->anchors();
 

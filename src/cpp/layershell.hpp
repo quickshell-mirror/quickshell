@@ -3,62 +3,10 @@
 #include <LayerShellQt/window.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
-#include <qquickwindow.h>
-#include <qscreen.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
-#include <qvariant.h>
-#include <qwindow.h>
 
-#include "proxywindow.hpp"
-
-class Anchors {
-	Q_GADGET;
-	Q_PROPERTY(bool left MEMBER mLeft);
-	Q_PROPERTY(bool right MEMBER mRight);
-	Q_PROPERTY(bool top MEMBER mTop);
-	Q_PROPERTY(bool bottom MEMBER mBottom);
-
-public:
-	bool mLeft = false;
-	bool mRight = false;
-	bool mTop = false;
-	bool mBottom = false;
-};
-
-class Margins {
-	Q_GADGET;
-	Q_PROPERTY(qint32 left MEMBER mLeft);
-	Q_PROPERTY(qint32 right MEMBER mRight);
-	Q_PROPERTY(qint32 top MEMBER mTop);
-	Q_PROPERTY(qint32 bottom MEMBER mBottom);
-
-public:
-	qint32 mLeft = 0;
-	qint32 mRight = 0;
-	qint32 mTop = 0;
-	qint32 mBottom = 0;
-};
-
-namespace ExclusionMode { // NOLINT
-Q_NAMESPACE;
-QML_ELEMENT;
-
-enum Enum {
-	/// Respect the exclusion zone of other shell layers and optionally set one
-	Normal = 0,
-	/// Ignore exclusion zones of other shell layers. You cannot set an exclusion zone in this mode.
-	Ignore = 1,
-	/// Decide the exclusion zone based on the window dimensions and anchors.
-	///
-	/// Will attempt to reseve exactly enough space for the window and its margins if
-	/// exactly 3 anchors are connected.
-	Auto = 2,
-};
-Q_ENUM_NS(Enum);
-
-} // namespace ExclusionMode
+#include "shellwindow.hpp"
 
 namespace Layer { // NOLINT
 Q_NAMESPACE;
@@ -109,78 +57,69 @@ Q_ENUM_NS(Enum);
 
 } // namespace ScreenConfiguration
 
-///! Decorationless window attached to screen edges by anchors.
-/// Decorationless window attached to screen edges by anchors.
-///
-/// #### Example
-/// The following snippet creates a white bar attached to the bottom of [TODO] screen.
-///
-/// ```qml
-/// ShellWindow {
-///   anchors {
-///     left: true
-///     bottom: true
-///     right: true
-///   }
-///
-///   Text {
-///     anchors.horizontalCenter: parent.horizontalCenter
-///     anchors.verticalCenter: parent.verticalCenter
-///     text: "Hello!"
-///   }
-/// }
-/// ```
-class ProxyShellWindow: public ProxyWindowBase {
-	// clang-format off
+class WaylandShellWindowExtensions;
+
+class WaylandShellWindow: public ProxyShellWindow {
 	Q_OBJECT;
-	/// Anchors attach a shell window to the sides of the screen.
-	/// By default all anchors are disabled to avoid blocking the entire screen due to a misconfiguration.
-	///
-	/// > [!INFO] When two opposite anchors are attached at the same time, the corrosponding dimension
-	/// > (width or height) will be forced to equal the screen width/height.
-	/// > Margins can be used to create anchored windows that are also disconnected from the monitor sides.
-	Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
-	/// The amount of space reserved for the shell layer relative to its anchors.
-	///
-	/// > [!INFO] Some systems will require exactly 3 anchors to be attached for the exclusion zone to take
-	/// > effect.
-	Q_PROPERTY(qint32 exclusionZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusionZoneChanged);
-	/// Defaults to `ExclusionMode.Normal`.
-	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
-	/// Offsets from the sides of the screen.
-	///
-	/// > [!INFO] Only applies to edges with anchors
-	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
+	Q_PROPERTY(WaylandShellWindowExtensions* wayland MEMBER mWayland CONSTANT);
+	QML_NAMED_ELEMENT(ShellWindow);
+
+public:
+	explicit WaylandShellWindow(QObject* parent = nullptr);
+
+	WaylandShellWindowExtensions* wayland();
+
+	void setupWindow() override;
+	QQuickWindow* disownWindow() override;
+
+	void setWidth(qint32 width) override;
+	void setHeight(qint32 height) override;
+
+	void setAnchors(Anchors anchors) override;
+	[[nodiscard]] Anchors anchors() const override;
+
+	void setExclusiveZone(qint32 zone) override;
+	[[nodiscard]] qint32 exclusiveZone() const override;
+
+	void setExclusionMode(ExclusionMode::Enum exclusionMode) override;
+	[[nodiscard]] ExclusionMode::Enum exclusionMode() const override;
+
+	void setMargins(Margins margins) override;
+	[[nodiscard]] Margins margins() const override;
+
+protected slots:
+	void updateExclusionZone();
+
+private:
+	WaylandShellWindowExtensions* mWayland = nullptr;
+
+	LayerShellQt::Window* shellWindow = nullptr;
+	Layer::Enum mLayer = Layer::Top;
+	QString mScope;
+	KeyboardFocus::Enum mKeyboardFocus = KeyboardFocus::None;
+	ScreenConfiguration::Enum mScreenConfiguration = ScreenConfiguration::Window;
+
+	bool connected = false;
+
+	friend class WaylandShellWindowExtensions;
+};
+
+class WaylandShellWindowExtensions: public QObject {
+	Q_OBJECT;
 	/// The shell layer the window sits in. Defaults to `Layer.Top`.
 	Q_PROPERTY(Layer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
 	Q_PROPERTY(QString scope READ scope WRITE setScope);
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
-	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
-	Q_PROPERTY(ScreenConfiguration::Enum screenConfiguration READ screenConfiguration WRITE setScreenConfiguration);
-	QML_NAMED_ELEMENT(ShellWindow);
-	// clang-format on
+	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY
+	               keyboardFocusChanged);
+	Q_PROPERTY(ScreenConfiguration::Enum screenConfiguration READ screenConfiguration WRITE
+	               setScreenConfiguration);
+	QML_ELEMENT;
+	QML_UNCREATABLE("WaylandShellWindowExtensions cannot be created");
 
 public:
-	void setupWindow() override;
-	QQuickWindow* disownWindow() override;
-
-	QQmlListProperty<QObject> data();
-
-	void setWidth(qint32 width) override;
-
-	void setHeight(qint32 height) override;
-
-	void setAnchors(Anchors anchors);
-	[[nodiscard]] Anchors anchors() const;
-
-	void setExclusiveZone(qint32 zone);
-	[[nodiscard]] qint32 exclusiveZone() const;
-
-	void setExclusionMode(ExclusionMode::Enum exclusionMode);
-	[[nodiscard]] ExclusionMode::Enum exclusionMode() const;
-
-	void setMargins(Margins margins);
-	[[nodiscard]] Margins margins() const;
+	explicit WaylandShellWindowExtensions(WaylandShellWindow* window):
+	    QObject(window), window(window) {}
 
 	void setLayer(Layer::Enum layer);
 	[[nodiscard]] Layer::Enum layer() const;
@@ -195,26 +134,11 @@ public:
 	[[nodiscard]] ScreenConfiguration::Enum screenConfiguration() const;
 
 signals:
-	void anchorsChanged();
-	void marginsChanged();
-	void exclusionZoneChanged();
-	void exclusionModeChanged();
 	void layerChanged();
 	void keyboardFocusChanged();
 
-private slots:
-	void updateExclusionZone();
-
 private:
-	LayerShellQt::Window* shellWindow = nullptr;
-	ExclusionMode::Enum mExclusionMode = ExclusionMode::Normal;
-	qint32 mExclusionZone = 0;
-	Anchors mAnchors;
-	Margins mMargins;
-	Layer::Enum mLayer = Layer::Top;
-	QString mScope;
-	KeyboardFocus::Enum mKeyboardFocus = KeyboardFocus::None;
-	ScreenConfiguration::Enum mScreenConfiguration = ScreenConfiguration::Window;
+	WaylandShellWindow* window;
 
-	bool connected = false;
+	friend class WaylandShellWindow;
 };
