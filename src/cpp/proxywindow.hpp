@@ -33,6 +33,7 @@ class ProxyWindowBase: public Reloadable {
 	/// >
 	/// > Use **only** if you know what you are doing.
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
+	Q_PROPERTY(QQuickItem* contentItem READ contentItem);
 	/// If the window is shown or hidden. Defaults to true.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
@@ -117,6 +118,7 @@ public:
 	virtual QQuickWindow* disownWindow();
 
 	[[nodiscard]] QQuickWindow* backingWindow() const;
+	[[nodiscard]] QQuickItem* contentItem() const;
 
 	[[nodiscard]] virtual bool isVisible() const;
 	virtual void setVisible(bool visible);
@@ -155,7 +157,7 @@ protected:
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
 	QQuickWindow* window = nullptr;
-	QQuickItem* contentItem = nullptr;
+	QQuickItem* mContentItem = nullptr;
 
 private:
 	void updateMask();

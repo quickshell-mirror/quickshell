@@ -13,8 +13,8 @@
 #include "reload.hpp"
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent): Reloadable(parent) {
-	this->contentItem = new QQuickItem(); // NOLINT
-	this->contentItem->setParent(this);
+	this->mContentItem = new QQuickItem(); // NOLINT
+	this->mContentItem->setParent(this);
 
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onHeightChanged);
@@ -37,12 +37,12 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	this->setupWindow();
 
-	Reloadable::reloadRecursive(this->contentItem, oldInstance);
+	Reloadable::reloadRecursive(this->mContentItem, oldInstance);
 
-	this->contentItem->setParentItem(this->window->contentItem());
+	this->mContentItem->setParentItem(this->window->contentItem());
 
-	this->contentItem->setWidth(this->width());
-	this->contentItem->setHeight(this->height());
+	this->mContentItem->setWidth(this->width());
+	this->mContentItem->setHeight(this->height());
 
 	emit this->windowConnected();
 	this->window->setVisible(this->mVisible);
@@ -69,7 +69,7 @@ void ProxyWindowBase::setupWindow() {
 QQuickWindow* ProxyWindowBase::disownWindow() {
 	QObject::disconnect(this->window, nullptr, this, nullptr);
 
-	this->contentItem->setParentItem(nullptr);
+	this->mContentItem->setParentItem(nullptr);
 
 	auto* window = this->window;
 	this->window = nullptr;
@@ -77,6 +77,7 @@ QQuickWindow* ProxyWindowBase::disownWindow() {
 }
 
 QQuickWindow* ProxyWindowBase::backingWindow() const { return this->window; }
+QQuickItem* ProxyWindowBase::contentItem() const { return this->mContentItem; }
 
 bool ProxyWindowBase::isVisible() const {
 	if (this->window == nullptr) return this->mVisible;
@@ -161,12 +162,12 @@ void ProxyWindowBase::updateMask() {
 }
 
 QQmlListProperty<QObject> ProxyWindowBase::data() {
-	return this->contentItem->property("data").value<QQmlListProperty<QObject>>();
+	return this->mContentItem->property("data").value<QQmlListProperty<QObject>>();
 }
 
-void ProxyWindowBase::onWidthChanged() { this->contentItem->setWidth(this->width()); }
+void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
 
-void ProxyWindowBase::onHeightChanged() { this->contentItem->setHeight(this->height()); }
+void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
 
 void ProxyFloatingWindow::setWidth(qint32 width) {
 	if (this->window == nullptr || !this->window->isVisible()) this->ProxyWindowBase::setWidth(width);
