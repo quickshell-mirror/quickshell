@@ -45,6 +45,9 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->mContentItem->setWidth(this->width());
 	this->mContentItem->setHeight(this->height());
 
+	// without this the dangling screen pointer wont be updated to a real screen
+	emit this->screenChanged();
+
 	emit this->windowConnected();
 	this->window->setVisible(this->mVisible);
 }

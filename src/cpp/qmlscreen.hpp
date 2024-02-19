@@ -28,7 +28,7 @@ class QuickShellScreenInfo: public QObject {
 	/// The name of the screen as seen by the operating system.
 	///
 	/// Usually something like `DP-1`, `HDMI-1`, `eDP-1`.
-	Q_PROPERTY(QString name READ name);
+	Q_PROPERTY(QString name READ name CONSTANT);
 	Q_PROPERTY(qint32 width READ width NOTIFY geometryChanged);
 	Q_PROPERTY(qint32 height READ height NOTIFY geometryChanged);
 	/// The number of physical pixels per millimeter.
@@ -57,10 +57,17 @@ public:
 
 	QScreen* screen;
 
+private:
+	void warnDangling() const;
+	bool dangling = false;
+
 signals:
 	void geometryChanged();
 	void physicalPixelDensityChanged();
 	void logicalPixelDensityChanged();
 	void orientationChanged();
 	void primaryOrientationChanged();
+
+private slots:
+	void screenDestroyed();
 };
