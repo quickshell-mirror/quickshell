@@ -12,10 +12,8 @@
 #include <qwindow.h>
 
 #include "proxywindow.hpp"
-#include "qmlscreen.hpp"
 
 void ProxyShellWindow::setupWindow() {
-	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyShellWindow::screenChanged);
 	this->shellWindow = LayerShellQt::Window::get(this->window);
 
 	this->ProxyWindowBase::setupWindow();
@@ -32,7 +30,6 @@ void ProxyShellWindow::setupWindow() {
 	QObject::connect(this, &ProxyShellWindow::marginsChanged, this, &ProxyShellWindow::updateExclusionZone);
 	// clang-format on
 
-	this->window->setScreen(this->mScreen);
 	this->setAnchors(this->mAnchors);
 	this->setMargins(this->mMargins);
 	this->setExclusionMode(this->mExclusionMode); // also sets exclusion zone
@@ -62,37 +59,6 @@ void ProxyShellWindow::setHeight(qint32 height) {
 	// only update the actual size if not blocked by anchors
 	auto anchors = this->anchors();
 	if (!anchors.mTop || !anchors.mBottom) this->ProxyWindowBase::setHeight(height);
-}
-
-void ProxyShellWindow::setScreen(QuickShellScreenInfo* screen) {
-	if (this->mScreen != nullptr) {
-		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
-	}
-
-	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
-	if (qscreen != nullptr) {
-		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyShellWindow::onScreenDestroyed);
-	}
-
-	if (this->window == nullptr) this->mScreen = qscreen;
-	else this->window->setScreen(qscreen);
-}
-
-void ProxyShellWindow::onScreenDestroyed() { this->mScreen = nullptr; }
-
-QuickShellScreenInfo* ProxyShellWindow::screen() const {
-	QScreen* qscreen = nullptr;
-
-	if (this->window == nullptr) {
-		if (this->mScreen != nullptr) qscreen = this->mScreen;
-	} else {
-		qscreen = this->window->screen();
-	}
-
-	return new QuickShellScreenInfo(
-	    const_cast<ProxyShellWindow*>(this), // NOLINT
-	    qscreen
-	);
 }
 
 void ProxyShellWindow::setAnchors(Anchors anchors) {

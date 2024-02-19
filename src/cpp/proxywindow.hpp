@@ -12,6 +12,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
 
@@ -38,6 +39,10 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
+	/// The screen that the window currently occupies.
+	///
+	/// > [!INFO] This cannot be changed while the window is visible.
+	Q_PROPERTY(QuickShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	/// The background color of the window. Defaults to white.
 	///
 	/// > [!WARNING] This seems to behave weirdly when using transparent colors on some systems.
@@ -129,6 +134,9 @@ public:
 	[[nodiscard]] virtual qint32 height() const;
 	virtual void setHeight(qint32 height);
 
+	virtual void setScreen(QuickShellScreenInfo* screen);
+	[[nodiscard]] QuickShellScreenInfo* screen() const;
+
 	[[nodiscard]] QColor color() const;
 	void setColor(QColor color);
 
@@ -142,6 +150,7 @@ signals:
 	void visibleChanged();
 	void widthChanged();
 	void heightChanged();
+	void screenChanged();
 	void colorChanged();
 	void maskChanged();
 
@@ -149,11 +158,13 @@ private slots:
 	void onMaskChanged();
 	void onWidthChanged();
 	void onHeightChanged();
+	void onScreenDestroyed();
 
 protected:
 	bool mVisible = true;
 	qint32 mWidth = 100;
 	qint32 mHeight = 100;
+	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
 	QQuickWindow* window = nullptr;

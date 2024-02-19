@@ -9,6 +9,7 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
+#include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
 
@@ -53,6 +54,7 @@ void ProxyWindowBase::setupWindow() {
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
+	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
 
 	QObject::connect(this, &ProxyWindowBase::maskChanged, this, &ProxyWindowBase::onMaskChanged);
@@ -60,6 +62,7 @@ void ProxyWindowBase::setupWindow() {
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
 	// clang-format on
 
+	this->window->setScreen(this->mScreen);
 	this->setWidth(this->mWidth);
 	this->setHeight(this->mHeight);
 	this->setColor(this->mColor);
@@ -113,6 +116,37 @@ void ProxyWindowBase::setHeight(qint32 height) {
 		this->mHeight = height;
 		emit this->heightChanged();
 	} else this->window->setHeight(height);
+}
+
+void ProxyWindowBase::setScreen(QuickShellScreenInfo* screen) {
+	if (this->mScreen != nullptr) {
+		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
+	}
+
+	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
+	if (qscreen != nullptr) {
+		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
+	}
+
+	if (this->window == nullptr) this->mScreen = qscreen;
+	else this->window->setScreen(qscreen);
+}
+
+void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
+
+QuickShellScreenInfo* ProxyWindowBase::screen() const {
+	QScreen* qscreen = nullptr;
+
+	if (this->window == nullptr) {
+		if (this->mScreen != nullptr) qscreen = this->mScreen;
+	} else {
+		qscreen = this->window->screen();
+	}
+
+	return new QuickShellScreenInfo(
+	    const_cast<ProxyWindowBase*>(this), // NOLINT
+	    qscreen
+	);
 }
 
 QColor ProxyWindowBase::color() const {

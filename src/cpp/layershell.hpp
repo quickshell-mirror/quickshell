@@ -12,7 +12,6 @@
 #include <qwindow.h>
 
 #include "proxywindow.hpp"
-#include "qmlscreen.hpp"
 
 class Anchors {
 	Q_GADGET;
@@ -134,10 +133,6 @@ Q_ENUM_NS(Enum);
 class ProxyShellWindow: public ProxyWindowBase {
 	// clang-format off
 	Q_OBJECT;
-	/// The screen that the shell window currently occupies.
-	///
-	/// > [!INFO] This cannot be changed while the shell window is visible.
-	Q_PROPERTY(QuickShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	/// Anchors attach a shell window to the sides of the screen.
 	/// By default all anchors are disabled to avoid blocking the entire screen due to a misconfiguration.
 	///
@@ -175,9 +170,6 @@ public:
 
 	void setHeight(qint32 height) override;
 
-	void setScreen(QuickShellScreenInfo* screen);
-	[[nodiscard]] QuickShellScreenInfo* screen() const;
-
 	void setAnchors(Anchors anchors);
 	[[nodiscard]] Anchors anchors() const;
 
@@ -203,7 +195,6 @@ public:
 	[[nodiscard]] ScreenConfiguration::Enum screenConfiguration() const;
 
 signals:
-	void screenChanged();
 	void anchorsChanged();
 	void marginsChanged();
 	void exclusionZoneChanged();
@@ -213,11 +204,9 @@ signals:
 
 private slots:
 	void updateExclusionZone();
-	void onScreenDestroyed();
 
 private:
 	LayerShellQt::Window* shellWindow = nullptr;
-	QScreen* mScreen = nullptr;
 	ExclusionMode::Enum mExclusionMode = ExclusionMode::Normal;
 	qint32 mExclusionZone = 0;
 	Anchors mAnchors;
