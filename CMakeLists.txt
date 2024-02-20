@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LAYERSHELL "Enable wayland layershell support" ON)
 
+option(WAYLAND "Enable wayland support" ON)
+
 add_compile_options(-Wall -Wextra)
 
 # nix workaround
@@ -19,8 +21,17 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
+set(QT_DEPS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+set(QT_FPDEPS Gui Qml Quick QuickControls2)
+
+if (WAYLAND)
+	list(APPEND QT_DEPS Qt6::WaylandClient Qt6::WaylandClientPrivate)
+	list(APPEND QT_FPDEPS WaylandClient)
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 qt_standard_project_setup(REQUIRES 6.6)
 
+add_subdirectory(src/wayland)
 add_subdirectory(src/core)

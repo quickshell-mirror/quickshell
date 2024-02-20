@@ -16,10 +16,7 @@ qt_add_executable(quickshell
 
 qt_add_qml_module(quickshell URI QuickShell)
 
-# qml type registration requires this
-target_include_directories(quickshell PRIVATE src/core)
-
-target_link_libraries(quickshell PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-wayland)
 
 if (LAYERSHELL)
 	find_package(LayerShellQt REQUIRED)

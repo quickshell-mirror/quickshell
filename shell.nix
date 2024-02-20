@@ -20,6 +20,9 @@ in pkgs.mkShell {
     clang-tools_17
     cmake
 
+    pkg-config
+    wayland-scanner
+
     qt6.wrapQtAppsHook
     makeWrapper
   ];
@@ -29,8 +32,11 @@ in pkgs.mkShell {
     qt6.qtdeclarative
     qt6.qtwayland
     qtlayershell
+    wayland
+    wayland-protocols
   ];
 
+  QTWAYLANDSCANNER = "${pkgs.qt6.qtwayland}/libexec/qtwaylandscanner";
   TIDYFOX = "${tidyfox}/lib/libtidyfox.so";
 
   shellHook = ''
