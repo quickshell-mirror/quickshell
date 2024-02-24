@@ -7,8 +7,9 @@
 #include <qscreen.h>
 #include <qtypes.h>
 
-QuickShellScreenInfo::QuickShellScreenInfo(QObject* parent, QScreen* screen):
-    QObject(parent), screen(screen) {
+QuickShellScreenInfo::QuickShellScreenInfo(QObject* parent, QScreen* screen)
+    : QObject(parent)
+    , screen(screen) {
 
 	if (this->screen != nullptr) {
 		// clang-format off

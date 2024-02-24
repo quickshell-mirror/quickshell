@@ -16,13 +16,4 @@ qt_add_executable(quickshell
 
 qt_add_qml_module(quickshell URI QuickShell)
 
-target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-wayland)
-
-if (LAYERSHELL)
-	find_package(LayerShellQt REQUIRED)
-
-	target_link_libraries(quickshell PRIVATE LayerShellQtInterface)
-	target_compile_definitions(quickshell PRIVATE CONF_LAYERSHELL)
-
-	target_sources(quickshell PRIVATE layershell.cpp)
-endif()
+target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin)

@@ -1,4 +1,9 @@
-qt_add_library(quickshell-wayland STATIC)
+qt_add_library(quickshell-wayland STATIC
+	shell_integration.cpp
+	layer_surface.cpp
+	layershell.cpp
+	waylandshellwindow.cpp
+)
 
 qt_add_qml_module(quickshell-wayland URI QuickShell.Wayland)
 
@@ -48,5 +53,7 @@ function (wl_proto name path)
 	target_sources(quickshell-wayland PRIVATE ${PROTO_BUILD_PATH}/wayland-${name}.c)
 	target_sources(quickshell-wayland PRIVATE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
 endfunction()
+
+wl_proto("wlr-layer-shell-unstable-v1" "${PROTO_SRC_PATH}/wlr-layer-shell-unstable-v1.xml")
 
 target_include_directories(quickshell-wayland PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wl-proto)

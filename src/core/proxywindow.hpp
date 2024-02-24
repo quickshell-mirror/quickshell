@@ -154,10 +154,10 @@ signals:
 	void colorChanged();
 	void maskChanged();
 
-private slots:
+protected slots:
+	virtual void onWidthChanged();
+	virtual void onHeightChanged();
 	void onMaskChanged();
-	void onWidthChanged();
-	void onHeightChanged();
 	void onScreenDestroyed();
 
 protected:

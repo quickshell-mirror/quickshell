@@ -13,7 +13,9 @@
 ///
 /// [ProxyWindowBase]: ../proxywindowbase
 /// [PersistentProperties]: ../persistentproperties
-class Reloadable: public QObject, public QQmlParserStatus {
+class Reloadable
+    : public QObject
+    , public QQmlParserStatus {
 	Q_OBJECT;
 	Q_INTERFACES(QQmlParserStatus);
 	/// An additional identifier that can be used to try to match a reloadable object to its

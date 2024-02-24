@@ -31,12 +31,12 @@ SpaceBeforeInheritanceColon: false
 SpaceBeforeParens: ControlStatementsExceptControlMacros
 SortIncludes: CaseSensitive
 PointerAlignment: Left
-PackConstructorInitializers: NextLine
+PackConstructorInitializers: CurrentLine
 LineEnding: LF
 InsertBraces: false
-BreakConstructorInitializers: AfterColon
+BreakConstructorInitializers: BeforeComma
 BreakBeforeBraces: Custom
-BreakInheritanceList: AfterColon
+BreakInheritanceList: BeforeComma
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
 AlwaysBreakTemplateDeclarations: Yes

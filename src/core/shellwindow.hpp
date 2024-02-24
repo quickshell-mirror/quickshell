@@ -20,6 +20,18 @@ class Anchors {
 	Q_PROPERTY(bool bottom MEMBER mBottom);
 
 public:
+	[[nodiscard]] bool horizontalConstraint() const noexcept { return this->mLeft && this->mRight; }
+	[[nodiscard]] bool verticalConstraint() const noexcept { return this->mTop && this->mBottom; }
+
+	[[nodiscard]] bool operator==(const Anchors& other) const noexcept {
+		// clang-format off
+		return this->mLeft == other.mLeft
+			&& this->mRight == other.mRight
+			&& this->mTop == other.mTop
+			&& this->mBottom == other.mBottom;
+		// clang-format on
+	}
+
 	bool mLeft = false;
 	bool mRight = false;
 	bool mTop = false;
@@ -34,6 +46,15 @@ class Margins {
 	Q_PROPERTY(qint32 bottom MEMBER mBottom);
 
 public:
+	[[nodiscard]] bool operator==(const Margins& other) const noexcept {
+		// clang-format off
+		return this->mLeft == other.mLeft
+			&& this->mRight == other.mRight
+			&& this->mTop == other.mTop
+			&& this->mBottom == other.mBottom;
+		// clang-format on
+	}
+
 	qint32 mLeft = 0;
 	qint32 mRight = 0;
 	qint32 mTop = 0;

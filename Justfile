@@ -30,4 +30,4 @@ clean:
 	rm -rf {{builddir}}
 
 run *ARGS='': build
-	{{builddir}}/quickshell {{ARGS}}
+	{{builddir}}/src/core/quickshell {{ARGS}}

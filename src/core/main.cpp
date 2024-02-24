@@ -10,10 +10,6 @@
 
 #include "rootwrapper.hpp"
 
-#ifdef CONF_LAYERSHELL
-#include <LayerShellQt/shell.h>
-#endif
-
 int main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
 	QGuiApplication::setApplicationName("quickshell");
@@ -41,10 +37,6 @@ int main(int argc, char** argv) {
 		qCritical() << "config file does not exist";
 		return -1;
 	}
-
-#if CONF_LAYERSHELL
-	LayerShellQt::Shell::useLayerShell();
-#endif
 
 	// Base window transparency appears to be additive.
 	// Use a fully transparent window with a colored rect.

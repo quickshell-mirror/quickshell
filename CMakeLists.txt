@@ -5,8 +5,6 @@ set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(LAYERSHELL "Enable wayland layershell support" ON)
-
 option(WAYLAND "Enable wayland support" ON)
 
 add_compile_options(-Wall -Wextra)

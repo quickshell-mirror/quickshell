@@ -12,8 +12,10 @@
 #include "shell.hpp"
 #include "watcher.hpp"
 
-RootWrapper::RootWrapper(QString rootPath):
-    QObject(nullptr), rootPath(std::move(rootPath)), engine(this) {
+RootWrapper::RootWrapper(QString rootPath)
+    : QObject(nullptr)
+    , rootPath(std::move(rootPath))
+    , engine(this) {
 	this->reloadGraph(true);
 
 	if (this->root == nullptr) {
