@@ -11,7 +11,9 @@ qt_add_executable(quickshell
 	watcher.cpp
 	region.cpp
 	persistentprops.cpp
-	shellwindow.cpp
+	windowinterface.cpp
+	floatingwindow.cpp
+	panelinterface.cpp
 )
 
 qt_add_qml_module(quickshell URI QuickShell)

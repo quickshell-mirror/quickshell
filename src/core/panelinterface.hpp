@@ -1,16 +1,8 @@
 #pragma once
 
-#include <qobject.h>
-#include <qqmlintegration.h>
-#include <qqmllist.h>
-#include <qquickwindow.h>
-#include <qscreen.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
-#include <qvariant.h>
-#include <qwindow.h>
 
-#include "proxywindow.hpp"
+#include "windowinterface.hpp"
 
 class Anchors {
 	Q_GADGET;
@@ -87,7 +79,7 @@ Q_ENUM_NS(Enum);
 /// The following snippet creates a white bar attached to the bottom of the screen.
 ///
 /// ```qml
-/// ShellWindow {
+/// PanelWindow {
 ///   anchors {
 ///     left: true
 ///     bottom: true
@@ -101,7 +93,7 @@ Q_ENUM_NS(Enum);
 ///   }
 /// }
 /// ```
-class ProxyShellWindow: public ProxyWindowBase {
+class PanelWindowInterface: public WindowInterface {
 	// clang-format off
 	Q_OBJECT;
 	/// Anchors attach a shell window to the sides of the screen.
@@ -111,45 +103,36 @@ class ProxyShellWindow: public ProxyWindowBase {
 	/// > (width or height) will be forced to equal the screen width/height.
 	/// > Margins can be used to create anchored windows that are also disconnected from the monitor sides.
 	Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
-	/// The amount of space reserved for the shell layer relative to its anchors.
-	///
-	/// > [!INFO] Some systems will require exactly 3 anchors to be attached for the exclusion zone to take
-	/// > effect.
-	Q_PROPERTY(qint32 exclusionZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusionZoneChanged);
-	/// Defaults to `ExclusionMode.Normal`.
-	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// Offsets from the sides of the screen.
 	///
 	/// > [!INFO] Only applies to edges with anchors
 	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
+	/// The amount of space reserved for the shell layer relative to its anchors.
+	///
+	/// > [!INFO] Either 1 or 3 anchors are required for the zone to take effect.
+	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
+	/// Defaults to `ExclusionMode.Auto`.
+	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	// clang-format on
 
 public:
-	explicit ProxyShellWindow(QObject* parent = nullptr): ProxyWindowBase(parent) {}
+	explicit PanelWindowInterface(QObject* parent = nullptr): WindowInterface(parent) {}
 
-	QQmlListProperty<QObject> data();
-
-	virtual void setAnchors(Anchors anchors) = 0;
 	[[nodiscard]] virtual Anchors anchors() const = 0;
+	virtual void setAnchors(Anchors anchors) = 0;
 
-	virtual void setExclusiveZone(qint32 zone) = 0;
-	[[nodiscard]] virtual qint32 exclusiveZone() const = 0;
-
-	virtual void setExclusionMode(ExclusionMode::Enum exclusionMode) = 0;
-	[[nodiscard]] virtual ExclusionMode::Enum exclusionMode() const = 0;
-
-	virtual void setMargins(Margins margins) = 0;
 	[[nodiscard]] virtual Margins margins() const = 0;
+	virtual void setMargins(Margins margins) = 0;
+
+	[[nodiscard]] virtual qint32 exclusiveZone() const = 0;
+	virtual void setExclusiveZone(qint32 exclusiveZone) = 0;
+
+	[[nodiscard]] virtual ExclusionMode::Enum exclusionMode() const = 0;
+	virtual void setExclusionMode(ExclusionMode::Enum exclusionMode) = 0;
 
 signals:
 	void anchorsChanged();
 	void marginsChanged();
-	void exclusionZoneChanged();
+	void exclusiveZoneChanged();
 	void exclusionModeChanged();
-
-protected:
-	ExclusionMode::Enum mExclusionMode = ExclusionMode::Normal;
-	qint32 mExclusionZone = 0;
-	Anchors mAnchors;
-	Margins mMargins;
 };

@@ -2,7 +2,7 @@ qt_add_library(quickshell-wayland STATIC
 	shell_integration.cpp
 	layer_surface.cpp
 	layershell.cpp
-	waylandshellwindow.cpp
+	waylandlayershell.cpp
 )
 
 qt_add_qml_module(quickshell-wayland URI QuickShell.Wayland)

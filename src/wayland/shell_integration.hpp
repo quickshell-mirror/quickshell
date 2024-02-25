@@ -5,7 +5,7 @@
 #include <qtwaylandclientexports.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
-class Q_WAYLANDCLIENT_EXPORT QSWaylandLayerShellIntegration
+class QSWaylandLayerShellIntegration
     : public QtWaylandClient::QWaylandShellIntegrationTemplate<QSWaylandLayerShellIntegration>
     , public QtWayland::zwlr_layer_shell_v1 {
 public:

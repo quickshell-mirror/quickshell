@@ -203,14 +203,4 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 }
 
 void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
-
 void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
-
-void ProxyFloatingWindow::setWidth(qint32 width) {
-	if (this->window == nullptr || !this->window->isVisible()) this->ProxyWindowBase::setWidth(width);
-}
-
-void ProxyFloatingWindow::setHeight(qint32 height) {
-	if (this->window == nullptr || !this->window->isVisible())
-		this->ProxyWindowBase::setHeight(height);
-}

@@ -9,7 +9,7 @@
 #include <qvariant.h>
 #include <qwindow.h>
 
-#include "../core/shellwindow.hpp"
+#include "../core/panelinterface.hpp"
 #include "layer_surface.hpp"
 #include "shell_integration.hpp"
 

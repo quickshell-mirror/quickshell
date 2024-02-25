@@ -6,7 +6,7 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
-#include "../core/shellwindow.hpp"
+#include "../core/panelinterface.hpp"
 
 namespace Layer { // NOLINT
 Q_NAMESPACE;
@@ -14,8 +14,12 @@ QML_ELEMENT;
 
 enum Enum {
 	Background = 0,
+	/// Above background, usually below windows
 	Bottom = 1,
+	/// Commonly used for panels, app launchers, and docks.
+	/// Usually renders over normal windows and below fullscreen windows.
 	Top = 2,
+	/// Usually renders over fullscreen windows
 	Overlay = 3,
 };
 Q_ENUM_NS(Enum);

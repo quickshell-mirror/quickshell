@@ -12,7 +12,7 @@
 #include <qtypes.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
-#include "../core/shellwindow.hpp"
+#include "../core/panelinterface.hpp"
 #include "layershell.hpp"
 #include "shell_integration.hpp"
 

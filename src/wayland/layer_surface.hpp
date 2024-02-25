@@ -10,7 +10,7 @@
 #include "layershell.hpp"
 #include "shell_integration.hpp"
 
-class Q_WAYLANDCLIENT_EXPORT QSWaylandLayerSurface
+class QSWaylandLayerSurface
     : public QtWaylandClient::QWaylandShellSurface
     , public QtWayland::zwlr_layer_surface_v1 {
 public:
