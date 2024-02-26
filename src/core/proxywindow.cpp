@@ -124,7 +124,7 @@ void ProxyWindowBase::setHeight(qint32 height) {
 	} else this->window->setHeight(height);
 }
 
-void ProxyWindowBase::setScreen(QuickShellScreenInfo* screen) {
+void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	if (this->mScreen != nullptr) {
 		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
 	}
@@ -140,7 +140,7 @@ void ProxyWindowBase::setScreen(QuickShellScreenInfo* screen) {
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
 
-QuickShellScreenInfo* ProxyWindowBase::screen() const {
+QuickshellScreenInfo* ProxyWindowBase::screen() const {
 	QScreen* qscreen = nullptr;
 
 	if (this->window == nullptr) {
@@ -149,7 +149,7 @@ QuickShellScreenInfo* ProxyWindowBase::screen() const {
 		qscreen = this->window->screen();
 	}
 
-	return new QuickShellScreenInfo(
+	return new QuickshellScreenInfo(
 	    const_cast<ProxyWindowBase*>(this), // NOLINT
 	    qscreen
 	);

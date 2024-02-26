@@ -23,7 +23,7 @@ class WindowInterface: public Reloadable {
 	/// The screen that the window currently occupies.
 	///
 	/// > [!INFO] This cannot be changed after windowConnected.
-	Q_PROPERTY(QuickShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
+	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	/// The background color of the window. Defaults to white.
 	///
 	/// > [!WARNING] This seems to behave weirdly when using transparent colors on some systems.
@@ -102,8 +102,8 @@ public:
 	[[nodiscard]] virtual qint32 height() const = 0;
 	virtual void setHeight(qint32 height) = 0;
 
-	[[nodiscard]] virtual QuickShellScreenInfo* screen() const = 0;
-	virtual void setScreen(QuickShellScreenInfo* screen) = 0;
+	[[nodiscard]] virtual QuickshellScreenInfo* screen() const = 0;
+	virtual void setScreen(QuickshellScreenInfo* screen) = 0;
 
 	[[nodiscard]] virtual QColor color() const = 0;
 	virtual void setColor(QColor color) = 0;

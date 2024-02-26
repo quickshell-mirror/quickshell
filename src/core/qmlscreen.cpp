@@ -7,33 +7,33 @@
 #include <qscreen.h>
 #include <qtypes.h>
 
-QuickShellScreenInfo::QuickShellScreenInfo(QObject* parent, QScreen* screen)
+QuickshellScreenInfo::QuickshellScreenInfo(QObject* parent, QScreen* screen)
     : QObject(parent)
     , screen(screen) {
 
 	if (this->screen != nullptr) {
 		// clang-format off
-		QObject::connect(this->screen, &QScreen::geometryChanged, this, &QuickShellScreenInfo::geometryChanged);
-		QObject::connect(this->screen, &QScreen::physicalDotsPerInchChanged, this, &QuickShellScreenInfo::physicalPixelDensityChanged);
-		QObject::connect(this->screen, &QScreen::logicalDotsPerInchChanged, this, &QuickShellScreenInfo::logicalPixelDensityChanged);
-		QObject::connect(this->screen, &QScreen::orientationChanged, this, &QuickShellScreenInfo::orientationChanged);
-		QObject::connect(this->screen, &QScreen::primaryOrientationChanged, this, &QuickShellScreenInfo::primaryOrientationChanged);
-		QObject::connect(this->screen, &QObject::destroyed, this, &QuickShellScreenInfo::screenDestroyed);
+		QObject::connect(this->screen, &QScreen::geometryChanged, this, &QuickshellScreenInfo::geometryChanged);
+		QObject::connect(this->screen, &QScreen::physicalDotsPerInchChanged, this, &QuickshellScreenInfo::physicalPixelDensityChanged);
+		QObject::connect(this->screen, &QScreen::logicalDotsPerInchChanged, this, &QuickshellScreenInfo::logicalPixelDensityChanged);
+		QObject::connect(this->screen, &QScreen::orientationChanged, this, &QuickshellScreenInfo::orientationChanged);
+		QObject::connect(this->screen, &QScreen::primaryOrientationChanged, this, &QuickshellScreenInfo::primaryOrientationChanged);
+		QObject::connect(this->screen, &QObject::destroyed, this, &QuickshellScreenInfo::screenDestroyed);
 		// clang-format on
 	}
 }
 
-bool QuickShellScreenInfo::operator==(QuickShellScreenInfo& other) const {
+bool QuickshellScreenInfo::operator==(QuickshellScreenInfo& other) const {
 	return this->screen == other.screen;
 }
 
-void QuickShellScreenInfo::warnDangling() const {
+void QuickshellScreenInfo::warnDangling() const {
 	if (this->dangling) {
 		qWarning() << "attempted to use dangling screen object";
 	}
 }
 
-QString QuickShellScreenInfo::name() const {
+QString QuickshellScreenInfo::name() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return "{ NULL SCREEN }";
@@ -42,7 +42,7 @@ QString QuickShellScreenInfo::name() const {
 	return this->screen->name();
 }
 
-qint32 QuickShellScreenInfo::width() const {
+qint32 QuickshellScreenInfo::width() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return 0;
@@ -51,7 +51,7 @@ qint32 QuickShellScreenInfo::width() const {
 	return this->screen->size().width();
 }
 
-qint32 QuickShellScreenInfo::height() const {
+qint32 QuickshellScreenInfo::height() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return 0;
@@ -60,7 +60,7 @@ qint32 QuickShellScreenInfo::height() const {
 	return this->screen->size().height();
 }
 
-qreal QuickShellScreenInfo::physicalPixelDensity() const {
+qreal QuickshellScreenInfo::physicalPixelDensity() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return 0.0;
@@ -69,7 +69,7 @@ qreal QuickShellScreenInfo::physicalPixelDensity() const {
 	return this->screen->physicalDotsPerInch() / 25.4;
 }
 
-qreal QuickShellScreenInfo::logicalPixelDensity() const {
+qreal QuickshellScreenInfo::logicalPixelDensity() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return 0.0;
@@ -78,7 +78,7 @@ qreal QuickShellScreenInfo::logicalPixelDensity() const {
 	return this->screen->logicalDotsPerInch() / 25.4;
 }
 
-qreal QuickShellScreenInfo::devicePixelRatio() const {
+qreal QuickshellScreenInfo::devicePixelRatio() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return 0.0;
@@ -87,7 +87,7 @@ qreal QuickShellScreenInfo::devicePixelRatio() const {
 	return this->screen->devicePixelRatio();
 }
 
-Qt::ScreenOrientation QuickShellScreenInfo::orientation() const {
+Qt::ScreenOrientation QuickshellScreenInfo::orientation() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return Qt::PrimaryOrientation;
@@ -96,7 +96,7 @@ Qt::ScreenOrientation QuickShellScreenInfo::orientation() const {
 	return this->screen->orientation();
 }
 
-Qt::ScreenOrientation QuickShellScreenInfo::primaryOrientation() const {
+Qt::ScreenOrientation QuickshellScreenInfo::primaryOrientation() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
 		return Qt::PrimaryOrientation;
@@ -105,7 +105,7 @@ Qt::ScreenOrientation QuickShellScreenInfo::primaryOrientation() const {
 	return this->screen->primaryOrientation();
 }
 
-void QuickShellScreenInfo::screenDestroyed() {
+void QuickshellScreenInfo::screenDestroyed() {
 	this->screen = nullptr;
 	this->dangling = true;
 }

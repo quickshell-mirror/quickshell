@@ -1,5 +1,5 @@
-name = "QuickShell"
-description = "Core QuickShell types"
+name = "Quickshell"
+description = "Core Quickshell types"
 headers = [
 	"qmlglobal.hpp",
 	"qmlscreen.hpp",

@@ -79,7 +79,7 @@ void WaylandLayershell::setHeight(qint32 height) {
 	}
 }
 
-void WaylandLayershell::setScreen(QuickShellScreenInfo* screen) {
+void WaylandLayershell::setScreen(QuickshellScreenInfo* screen) {
 	this->ProxyWindowBase::setScreen(screen);
 	this->ext->setUseWindowScreen(screen != nullptr);
 }
@@ -197,7 +197,7 @@ QQuickItem* WaylandPanelInterface::contentItem() const { return this->layer->con
 proxyPair(bool, isVisible, setVisible);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
-proxyPair(QuickShellScreenInfo*, screen, setScreen);
+proxyPair(QuickshellScreenInfo*, screen, setScreen);
 proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
 

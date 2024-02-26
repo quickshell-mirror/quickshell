@@ -52,7 +52,7 @@ QQuickItem* FloatingWindowInterface::contentItem() const { return this->window->
 proxyPair(bool, isVisible, setVisible);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
-proxyPair(QuickShellScreenInfo*, screen, setScreen);
+proxyPair(QuickshellScreenInfo*, screen, setScreen);
 proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
 

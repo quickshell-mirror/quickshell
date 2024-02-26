@@ -20,10 +20,10 @@
 ///
 /// [ShellWindow]: ../shellwindow
 /// [Screen]: https://doc.qt.io/qt-6/qml-qtquick-screen.html
-class QuickShellScreenInfo: public QObject {
+class QuickshellScreenInfo: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(ShellScreen);
-	QML_UNCREATABLE("ShellScreen can only be obtained via QuickShell.screens");
+	QML_UNCREATABLE("ShellScreen can only be obtained via Quickshell.screens");
 	// clang-format off
 	/// The name of the screen as seen by the operating system.
 	///
@@ -42,9 +42,9 @@ class QuickShellScreenInfo: public QObject {
 	// clang-format on
 
 public:
-	QuickShellScreenInfo(QObject* parent, QScreen* screen); //: QObject(parent), screen(screen) {}
+	QuickshellScreenInfo(QObject* parent, QScreen* screen); //: QObject(parent), screen(screen) {}
 
-	bool operator==(QuickShellScreenInfo& other) const;
+	bool operator==(QuickshellScreenInfo& other) const;
 
 	[[nodiscard]] QString name() const;
 	[[nodiscard]] qint32 width() const;

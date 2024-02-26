@@ -38,7 +38,7 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
-	Q_PROPERTY(QuickShellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
+	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
@@ -73,8 +73,8 @@ public:
 	[[nodiscard]] virtual qint32 height() const;
 	virtual void setHeight(qint32 height);
 
-	[[nodiscard]] virtual QuickShellScreenInfo* screen() const;
-	virtual void setScreen(QuickShellScreenInfo* screen);
+	[[nodiscard]] virtual QuickshellScreenInfo* screen() const;
+	virtual void setScreen(QuickshellScreenInfo* screen);
 
 	[[nodiscard]] QColor color() const;
 	virtual void setColor(QColor color);

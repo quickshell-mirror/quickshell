@@ -1,5 +1,5 @@
-name = "QuickShell.Wayland"
-description = "Wayland specific QuickShell types"
+name = "Quickshell.Wayland"
+description = "Wayland specific Quickshell types"
 headers = [
 	"layershell.hpp",
 	"waylandlayershell.hpp",

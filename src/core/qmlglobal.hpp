@@ -9,7 +9,7 @@
 
 #include "qmlscreen.hpp"
 
-class QuickShellGlobal: public QObject {
+class QuickshellGlobal: public QObject {
 	Q_OBJECT;
 	/// All currently connected screens.
 	///
@@ -24,25 +24,25 @@ class QuickShellGlobal: public QObject {
 	///     }
 	///
 	///     // see Variants for details
-	///     variants: QuickShell.screens.map(screen => ({ screen }))
+	///     variants: Quickshell.screens.map(screen => ({ screen }))
 	///   }
 	/// }
 	/// ```
 	///
 	/// This creates an instance of your window once on every screen.
 	/// As screens are added or removed your window will be created or destroyed on those screens.
-	Q_PROPERTY(QQmlListProperty<QuickShellScreenInfo> screens READ screens NOTIFY screensChanged);
+	Q_PROPERTY(QQmlListProperty<QuickshellScreenInfo> screens READ screens NOTIFY screensChanged);
 	QML_SINGLETON;
-	QML_NAMED_ELEMENT(QuickShell);
+	QML_NAMED_ELEMENT(Quickshell);
 
 public:
-	QuickShellGlobal(QObject* parent = nullptr);
+	QuickshellGlobal(QObject* parent = nullptr);
 
-	QQmlListProperty<QuickShellScreenInfo> screens();
+	QQmlListProperty<QuickshellScreenInfo> screens();
 
 	/// Reload the shell from the [ShellRoot].
 	///
-	/// `hard` - perform a hard reload. If this is false, QuickShell will attempt to reuse windows
+	/// `hard` - perform a hard reload. If this is false, Quickshell will attempt to reuse windows
 	/// that already exist. If true windows will be recreated.
 	///
 	/// See [Reloadable] for more information on what can be reloaded and how.
@@ -57,8 +57,8 @@ public slots:
 	void updateScreens();
 
 private:
-	static qsizetype screensCount(QQmlListProperty<QuickShellScreenInfo>* prop);
-	static QuickShellScreenInfo* screenAt(QQmlListProperty<QuickShellScreenInfo>* prop, qsizetype i);
+	static qsizetype screensCount(QQmlListProperty<QuickshellScreenInfo>* prop);
+	static QuickshellScreenInfo* screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i);
 
-	QVector<QuickShellScreenInfo*> mScreens;
+	QVector<QuickshellScreenInfo*> mScreens;
 };

@@ -25,10 +25,10 @@ public:
 ///! Creates instances of a component based on a given set of variants.
 /// Creates and destroys instances of the given component when the given property changes.
 ///
-/// See [QuickShell.screens] for an example of using `Variants` to create copies of a window per
+/// See [Quickshell.screens] for an example of using `Variants` to create copies of a window per
 /// screen.
 ///
-/// [QuickShell.screens]: ../quickshell#prop.screens
+/// [Quickshell.screens]: ../quickshell#prop.screens
 class Variants: public Reloadable {
 	Q_OBJECT;
 	/// The component to create instances of

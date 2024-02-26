@@ -41,7 +41,7 @@ public:
 	void setWidth(qint32 width) override;
 	void setHeight(qint32 height) override;
 
-	void setScreen(QuickShellScreenInfo* screen) override;
+	void setScreen(QuickshellScreenInfo* screen) override;
 
 	[[nodiscard]] Layer::Enum layer() const;
 	void setLayer(Layer::Enum layer); // NOLINT
@@ -107,8 +107,8 @@ public:
 	[[nodiscard]] qint32 height() const override;
 	void setHeight(qint32 height) override;
 
-	[[nodiscard]] QuickShellScreenInfo* screen() const override;
-	void setScreen(QuickShellScreenInfo* screen) override;
+	[[nodiscard]] QuickshellScreenInfo* screen() const override;
+	void setScreen(QuickshellScreenInfo* screen) override;
 
 	[[nodiscard]] QColor color() const override;
 	void setColor(QColor color) override;

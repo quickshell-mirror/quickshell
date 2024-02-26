@@ -17,4 +17,4 @@ qt_add_executable(quickshell
 	panelinterface.cpp
 )
 
-qt_add_qml_module(quickshell URI QuickShell)
+qt_add_qml_module(quickshell URI Quickshell)

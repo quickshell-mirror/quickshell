@@ -10,7 +10,7 @@ add_library(quickshell-wayland-init OBJECT init.cpp)
 
 target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin quickshell-wayland-init)
 
-qt_add_qml_module(quickshell-wayland URI QuickShell.Wayland)
+qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols)

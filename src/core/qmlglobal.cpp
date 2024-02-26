@@ -14,40 +14,40 @@
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
-QuickShellGlobal::QuickShellGlobal(QObject* parent): QObject(parent) {
+QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 	auto* app = QCoreApplication::instance();
 	auto* guiApp = qobject_cast<QGuiApplication*>(app);
 
 	if (guiApp != nullptr) {
 		// clang-format off
-		QObject::connect(guiApp, &QGuiApplication::primaryScreenChanged, this, &QuickShellGlobal::updateScreens);
-		QObject::connect(guiApp, &QGuiApplication::screenAdded, this, &QuickShellGlobal::updateScreens);
-		QObject::connect(guiApp, &QGuiApplication::screenRemoved, this, &QuickShellGlobal::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::primaryScreenChanged, this, &QuickshellGlobal::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::screenAdded, this, &QuickshellGlobal::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::screenRemoved, this, &QuickshellGlobal::updateScreens);
 		// clang-format on
 
 		this->updateScreens();
 	}
 }
 
-qsizetype QuickShellGlobal::screensCount(QQmlListProperty<QuickShellScreenInfo>* prop) {
-	return static_cast<QuickShellGlobal*>(prop->object)->mScreens.size(); // NOLINT
+qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* prop) {
+	return static_cast<QuickshellGlobal*>(prop->object)->mScreens.size(); // NOLINT
 }
 
-QuickShellScreenInfo*
-QuickShellGlobal::screenAt(QQmlListProperty<QuickShellScreenInfo>* prop, qsizetype i) {
-	return static_cast<QuickShellGlobal*>(prop->object)->mScreens.at(i); // NOLINT
+QuickshellScreenInfo*
+QuickshellGlobal::screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i) {
+	return static_cast<QuickshellGlobal*>(prop->object)->mScreens.at(i); // NOLINT
 }
 
-QQmlListProperty<QuickShellScreenInfo> QuickShellGlobal::screens() {
-	return QQmlListProperty<QuickShellScreenInfo>(
+QQmlListProperty<QuickshellScreenInfo> QuickshellGlobal::screens() {
+	return QQmlListProperty<QuickshellScreenInfo>(
 	    this,
 	    nullptr,
-	    &QuickShellGlobal::screensCount,
-	    &QuickShellGlobal::screenAt
+	    &QuickshellGlobal::screensCount,
+	    &QuickshellGlobal::screenAt
 	);
 }
 
-void QuickShellGlobal::reload(bool hard) {
+void QuickshellGlobal::reload(bool hard) {
 	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
 	auto* root = qobject_cast<RootWrapper*>(rootobj);
 
@@ -59,7 +59,7 @@ void QuickShellGlobal::reload(bool hard) {
 	root->reloadGraph(hard);
 }
 
-void QuickShellGlobal::updateScreens() {
+void QuickshellGlobal::updateScreens() {
 	auto screens = QGuiApplication::screens();
 	this->mScreens.resize(screens.size());
 
@@ -69,7 +69,7 @@ void QuickShellGlobal::updateScreens() {
 			this->mScreens[i]->setParent(nullptr); // delete if not owned by the js engine
 		}
 
-		this->mScreens[i] = new QuickShellScreenInfo(this, screens[i]);
+		this->mScreens[i] = new QuickshellScreenInfo(this, screens[i]);
 	}
 
 	emit this->screensChanged();
