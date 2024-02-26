@@ -5,6 +5,7 @@
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
+#include <qquickwindow.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -16,6 +17,31 @@
 WaylandLayershell::WaylandLayershell(QObject* parent)
     : ProxyWindowBase(parent)
     , ext(new LayershellWindowExtension(this)) {}
+
+QQuickWindow* WaylandLayershell::createWindow(QObject* oldInstance) {
+	auto* old = qobject_cast<WaylandLayershell*>(oldInstance);
+	QQuickWindow* window = nullptr;
+
+	if (old == nullptr || old->window == nullptr) {
+		window = new QQuickWindow();
+	} else {
+		window = old->disownWindow();
+
+		if (this->ext->attach(window)) {
+			return window;
+		} else {
+			window->deleteLater();
+			window = new QQuickWindow();
+		}
+	}
+
+	if (!this->ext->attach(window)) {
+		qWarning() << "Could not attach Layershell extension to new QQUickWindow. Layer will not "
+		              "behave correctly.";
+	}
+
+	return window;
+}
 
 void WaylandLayershell::setupWindow() {
 	this->ProxyWindowBase::setupWindow();
@@ -32,10 +58,6 @@ void WaylandLayershell::setupWindow() {
 	QObject::connect(this, &WaylandLayershell::anchorsChanged, this, &WaylandLayershell::updateAutoExclusion);
 	QObject::connect(this, &WaylandLayershell::marginsChanged, this, &WaylandLayershell::updateAutoExclusion);
 	// clang-format on
-
-	if (!this->ext->attach(this->window)) {
-		// todo: discard window
-	}
 }
 
 void WaylandLayershell::setWidth(qint32 width) {

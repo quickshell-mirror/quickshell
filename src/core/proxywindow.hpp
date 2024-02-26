@@ -55,6 +55,7 @@ public:
 
 	void onReload(QObject* oldInstance) override;
 
+	virtual QQuickWindow* createWindow(QObject* oldInstance);
 	virtual void setupWindow();
 
 	// Disown the backing window and delete all its children.

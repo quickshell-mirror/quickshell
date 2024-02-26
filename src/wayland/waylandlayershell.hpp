@@ -2,6 +2,8 @@
 
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qquickitem.h>
+#include <qquickwindow.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -30,6 +32,7 @@ class WaylandLayershell: public ProxyWindowBase {
 public:
 	explicit WaylandLayershell(QObject* parent = nullptr);
 
+	QQuickWindow* createWindow(QObject* oldInstance) override;
 	void setupWindow() override;
 
 	void setWidth(qint32 width) override;

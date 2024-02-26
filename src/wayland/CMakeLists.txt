@@ -13,7 +13,6 @@ pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protoc
 find_package(Qt6 REQUIRED COMPONENTS WaylandClient)
 
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS} wayland-client)
-message(STATUS Qt6::WaylandClient)
 
 # wayland protocols
 

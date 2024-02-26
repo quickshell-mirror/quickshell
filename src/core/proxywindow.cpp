@@ -28,14 +28,7 @@ ProxyWindowBase::~ProxyWindowBase() {
 }
 
 void ProxyWindowBase::onReload(QObject* oldInstance) {
-	auto* old = qobject_cast<ProxyWindowBase*>(oldInstance);
-
-	if (old == nullptr || old->window == nullptr) {
-		this->window = new QQuickWindow();
-	} else {
-		this->window = old->disownWindow();
-	}
-
+	this->window = this->createWindow(oldInstance);
 	this->setupWindow();
 
 	Reloadable::reloadRecursive(this->mContentItem, oldInstance);
@@ -50,6 +43,16 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	emit this->windowConnected();
 	this->window->setVisible(this->mVisible);
+}
+
+QQuickWindow* ProxyWindowBase::createWindow(QObject* oldInstance) {
+	auto* old = qobject_cast<ProxyWindowBase*>(oldInstance);
+
+	if (old == nullptr || old->window == nullptr) {
+		return new QQuickWindow();
+	} else {
+		return old->disownWindow();
+	}
 }
 
 void ProxyWindowBase::setupWindow() {
