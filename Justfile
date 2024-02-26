@@ -7,7 +7,7 @@ lint:
 	find src -type f -name "*.cpp" -print0 | parallel -q0 --eta clang-tidy --load={{ env_var("TIDYFOX") }}
 
 configure target='debug' *FLAGS='':
-	cmake -B {{builddir}} \
+	cmake -GNinja -B {{builddir}} \
 		-DCMAKE_BUILD_TYPE={{ if target == "debug" { "Debug" } else { "Release" } }} \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON {{FLAGS}}
 

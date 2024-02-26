@@ -12,6 +12,7 @@ in pkgs.mkShell {
     clang-tools_17
     parallel
     cmake
+    ninja
 
     pkg-config
     wayland-scanner
