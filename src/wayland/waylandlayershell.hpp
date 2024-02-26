@@ -7,10 +7,12 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/doc.hpp"
 #include "../core/proxywindow.hpp"
 #include "layershell.hpp"
 
 class WaylandLayershell: public ProxyWindowBase {
+	QSDOC_BASECLASS(PanelWindowInterface);
 	// clang-format off
 	Q_OBJECT;
 	/// The shell layer the window sits in. Defaults to `Layer.Top`.
@@ -22,10 +24,10 @@ class WaylandLayershell: public ProxyWindowBase {
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
 	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 
-	Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
-	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
-	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
-	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
+	QSDOC_HIDE Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
+	QSDOC_HIDE Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
+	QSDOC_HIDE Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
+	QSDOC_HIDE Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
 	QML_ATTACHED(WaylandLayershell);
 	QML_ELEMENT;
 	// clang-format on
@@ -68,10 +70,10 @@ signals:
 	void layerChanged();
 	void namespaceChanged();
 	void keyboardFocusChanged();
-	void anchorsChanged();
-	void exclusiveZoneChanged();
-	void exclusionModeChanged();
-	void marginsChanged();
+	QSDOC_HIDE void anchorsChanged();
+	QSDOC_HIDE void exclusiveZoneChanged();
+	QSDOC_HIDE void exclusionModeChanged();
+	QSDOC_HIDE void marginsChanged();
 
 private slots:
 	void updateAutoExclusion();

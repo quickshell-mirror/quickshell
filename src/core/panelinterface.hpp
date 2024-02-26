@@ -2,6 +2,7 @@
 
 #include <qtmetamacros.h>
 
+#include "doc.hpp"
 #include "windowinterface.hpp"
 
 class Anchors {
@@ -94,6 +95,7 @@ Q_ENUM_NS(Enum);
 /// }
 /// ```
 class PanelWindowInterface: public WindowInterface {
+	QSDOC_NAMED_ELEMENT(PanelWindow);
 	// clang-format off
 	Q_OBJECT;
 	/// Anchors attach a shell window to the sides of the screen.
