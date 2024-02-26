@@ -31,5 +31,5 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 qt_standard_project_setup(REQUIRES 6.6)
 
-add_subdirectory(src/wayland)
 add_subdirectory(src/core)
+add_subdirectory(src/wayland)

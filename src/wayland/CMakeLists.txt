@@ -5,6 +5,11 @@ qt_add_library(quickshell-wayland STATIC
 	waylandlayershell.cpp
 )
 
+# required to make sure the constructor is linked
+add_library(quickshell-wayland-init OBJECT init.cpp)
+
+target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin quickshell-wayland-init)
+
 qt_add_qml_module(quickshell-wayland URI QuickShell.Wayland)
 
 find_package(PkgConfig REQUIRED)
@@ -13,6 +18,7 @@ pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protoc
 find_package(Qt6 REQUIRED COMPONENTS WaylandClient)
 
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS} wayland-client)
+target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS} wayland-client)
 
 # wayland protocols
 

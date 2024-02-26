@@ -87,7 +87,6 @@ private:
 
 class WaylandPanelInterface: public PanelWindowInterface {
 	Q_OBJECT;
-	QML_NAMED_ELEMENT(PanelWindow); // temp
 
 public:
 	explicit WaylandPanelInterface(QObject* parent = nullptr);

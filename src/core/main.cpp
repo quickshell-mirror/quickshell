@@ -8,6 +8,7 @@
 #include <qstandardpaths.h>
 #include <qstring.h>
 
+#include "plugin.hpp"
 #include "rootwrapper.hpp"
 
 int main(int argc, char** argv) {
@@ -37,6 +38,8 @@ int main(int argc, char** argv) {
 		qCritical() << "config file does not exist";
 		return -1;
 	}
+
+	QuickshellPlugin::initPlugins();
 
 	// Base window transparency appears to be additive.
 	// Use a fully transparent window with a colored rect.

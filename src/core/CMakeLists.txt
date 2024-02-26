@@ -1,5 +1,6 @@
 qt_add_executable(quickshell
 	main.cpp
+	plugin.cpp
 	shell.cpp
 	variants.cpp
 	rootwrapper.cpp
@@ -17,5 +18,3 @@ qt_add_executable(quickshell
 )
 
 qt_add_qml_module(quickshell URI QuickShell)
-
-target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin)
