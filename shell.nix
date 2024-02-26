@@ -10,6 +10,7 @@ in pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     just
     clang-tools_17
+    parallel
     cmake
 
     pkg-config

@@ -1,16 +1,10 @@
 builddir := 'build'
 
-with_cpphpp := 'find src -type f \( -name "*.cpp" -o -name "*.hpp" \) -print0 | xargs -0'
-with_cpp := 'find src -type f -name "*.cpp" -print0 | xargs -0'
-
 fmt:
-    {{with_cpphpp}} clang-format -i
+    find src -type f \( -name "*.cpp" -o -name "*.hpp" \) -print0 | xargs -0 clang-format -i
 
 lint:
-    {{with_cpp}} clang-tidy --load={{ env_var("TIDYFOX") }}
-
-fixlint:
-    {{with_cpp}} clang-tidy --load={{ env_var("TIDYFOX") }}
+	find src -type f -name "*.cpp" -print0 | parallel -q0 --eta clang-tidy --load={{ env_var("TIDYFOX") }}
 
 configure target='debug' *FLAGS='':
 	cmake -B {{builddir}} \
