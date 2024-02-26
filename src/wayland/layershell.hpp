@@ -49,18 +49,6 @@ Q_ENUM_NS(Enum);
 
 } // namespace KeyboardFocus
 
-namespace ScreenConfiguration { // NOLINT
-Q_NAMESPACE;
-QML_ELEMENT;
-
-enum Enum {
-	Window = 0,
-	Compositor = 1,
-};
-Q_ENUM_NS(Enum);
-
-} // namespace ScreenConfiguration
-
 class QSWaylandLayerSurface;
 
 class LayershellWindowExtension: public QObject {
