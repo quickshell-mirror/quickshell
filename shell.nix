@@ -6,14 +6,6 @@
     rev = "1f062cc198d1112d13e5128fa1f2ee3dbffe613b";
     sha256 = "kbt0Zc1qHE5fhqBkKz8iue+B+ZANjF1AR/RdgmX1r0I=";
   }) {};
-
-  qtlayershell = pkgs.callPackage (import (pkgs.fetchFromGitea {
-    domain = "git.outfoxxed.me";
-    owner = "outfoxxed";
-    repo = "layer-shell-qt-nokde";
-    rev = "2ebe7b313efbacfcd62ec39e2fda6b4c740d0770";
-    sha256 = "N/nMwf5LQMMwCJvG7J/6xug/EUppHedQCngzCkH8Auk=";
-  })) {}; #pkgs.callPackage (import /home/admin/programming/outfoxxed/layer-shell-qt) {};
 in pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     just
@@ -31,7 +23,6 @@ in pkgs.mkShell {
     qt6.qtbase
     qt6.qtdeclarative
     qt6.qtwayland
-    qtlayershell
     wayland
     wayland-protocols
   ];
