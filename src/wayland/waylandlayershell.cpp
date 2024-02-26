@@ -150,6 +150,14 @@ void WaylandLayershell::updateAutoExclusion() {
 	}
 }
 
+WaylandLayershell* WaylandLayershell::qmlAttachedProperties(QObject* object) {
+	if (auto* obj = qobject_cast<WaylandPanelInterface*>(object)) {
+		return obj->layer;
+	} else {
+		return nullptr;
+	}
+}
+
 // WaylandPanelInterface
 
 WaylandPanelInterface::WaylandPanelInterface(QObject* parent)

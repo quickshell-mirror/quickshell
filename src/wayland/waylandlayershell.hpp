@@ -26,6 +26,7 @@ class WaylandLayershell: public ProxyWindowBase {
 	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
+	QML_ATTACHED(WaylandLayershell);
 	QML_ELEMENT;
 	// clang-format on
 
@@ -60,6 +61,8 @@ public:
 
 	[[nodiscard]] Margins margins() const;
 	void setMargins(Margins margins); // NOLINT
+
+	static WaylandLayershell* qmlAttachedProperties(QObject* object);
 
 signals:
 	void layerChanged();
@@ -131,4 +134,6 @@ public:
 
 private:
 	WaylandLayershell* layer;
+
+	friend class WaylandLayershell;
 };
