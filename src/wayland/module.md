@@ -1,7 +1,7 @@
 name = "Quickshell.Wayland"
 description = "Wayland specific Quickshell types"
 headers = [
-	"layershell.hpp",
-	"waylandlayershell.hpp",
+	"wlr_layershell/window.hpp",
+	"wlr_layershell.hpp",
 ]
 -----

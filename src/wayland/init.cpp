@@ -2,7 +2,7 @@
 #include <qqml.h>
 
 #include "../core/plugin.hpp"
-#include "waylandlayershell.hpp"
+#include "wlr_layershell.hpp"
 
 namespace {
 
@@ -15,6 +15,14 @@ class WaylandPlugin: public QuickshellPlugin {
 		// If any types are defined inside a module using QML_ELEMENT then all QML_ELEMENT types
 		// will not be registered. This can be worked around with a module import which makes
 		// the QML_ELMENT module import the old register-type style module.
+
+		qmlRegisterModuleImport(
+		    "Quickshell.Wayland",
+		    QQmlModuleImportModuleAny,
+		    "Quickshell.Wayland._WlrLayerShell",
+		    QQmlModuleImportLatest
+		);
+
 		qmlRegisterModuleImport(
 		    "Quickshell",
 		    QQmlModuleImportModuleAny,

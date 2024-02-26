@@ -9,9 +9,9 @@
 
 #include "../core/doc.hpp"
 #include "../core/proxywindow.hpp"
-#include "layershell.hpp"
+#include "wlr_layershell/window.hpp"
 
-class WaylandLayershell: public ProxyWindowBase {
+class WlrLayershell: public ProxyWindowBase {
 	QSDOC_BASECLASS(PanelWindowInterface);
 	// clang-format off
 	Q_OBJECT;
@@ -28,12 +28,12 @@ class WaylandLayershell: public ProxyWindowBase {
 	QSDOC_HIDE Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
 	QSDOC_HIDE Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	QSDOC_HIDE Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
-	QML_ATTACHED(WaylandLayershell);
+	QML_ATTACHED(WlrLayershell);
 	QML_ELEMENT;
 	// clang-format on
 
 public:
-	explicit WaylandLayershell(QObject* parent = nullptr);
+	explicit WlrLayershell(QObject* parent = nullptr);
 
 	QQuickWindow* createWindow(QObject* oldInstance) override;
 	void setupWindow() override;
@@ -64,7 +64,7 @@ public:
 	[[nodiscard]] Margins margins() const;
 	void setMargins(Margins margins); // NOLINT
 
-	static WaylandLayershell* qmlAttachedProperties(QObject* object);
+	static WlrLayershell* qmlAttachedProperties(QObject* object);
 
 signals:
 	void layerChanged();
@@ -134,7 +134,7 @@ public:
 	// NOLINTEND
 
 private:
-	WaylandLayershell* layer;
+	WlrLayershell* layer;
 
-	friend class WaylandLayershell;
+	friend class WlrLayershell;
 };

@@ -7,8 +7,8 @@
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 #include <qwindow.h>
 
-#include "layershell.hpp"
 #include "shell_integration.hpp"
+#include "window.hpp"
 
 class QSWaylandLayerSurface
     : public QtWaylandClient::QWaylandShellSurface

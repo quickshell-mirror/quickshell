@@ -1,4 +1,4 @@
-#include "waylandlayershell.hpp"
+#include "wlr_layershell.hpp"
 #include <utility>
 
 #include <qlogging.h>
@@ -12,14 +12,14 @@
 #include "../core/panelinterface.hpp"
 #include "../core/proxywindow.hpp"
 #include "../core/qmlscreen.hpp"
-#include "layershell.hpp"
+#include "wlr_layershell/window.hpp"
 
-WaylandLayershell::WaylandLayershell(QObject* parent)
+WlrLayershell::WlrLayershell(QObject* parent)
     : ProxyWindowBase(parent)
     , ext(new LayershellWindowExtension(this)) {}
 
-QQuickWindow* WaylandLayershell::createWindow(QObject* oldInstance) {
-	auto* old = qobject_cast<WaylandLayershell*>(oldInstance);
+QQuickWindow* WlrLayershell::createWindow(QObject* oldInstance) {
+	auto* old = qobject_cast<WlrLayershell*>(oldInstance);
 	QQuickWindow* window = nullptr;
 
 	if (old == nullptr || old->window == nullptr) {
@@ -43,25 +43,25 @@ QQuickWindow* WaylandLayershell::createWindow(QObject* oldInstance) {
 	return window;
 }
 
-void WaylandLayershell::setupWindow() {
+void WlrLayershell::setupWindow() {
 	this->ProxyWindowBase::setupWindow();
 
 	// clang-format off
-	QObject::connect(this->ext, &LayershellWindowExtension::layerChanged, this, &WaylandLayershell::layerChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::keyboardFocusChanged, this, &WaylandLayershell::keyboardFocusChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::anchorsChanged, this, &WaylandLayershell::anchorsChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::exclusiveZoneChanged, this, &WaylandLayershell::exclusiveZoneChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::marginsChanged, this, &WaylandLayershell::marginsChanged);
+	QObject::connect(this->ext, &LayershellWindowExtension::layerChanged, this, &WlrLayershell::layerChanged);
+	QObject::connect(this->ext, &LayershellWindowExtension::keyboardFocusChanged, this, &WlrLayershell::keyboardFocusChanged);
+	QObject::connect(this->ext, &LayershellWindowExtension::anchorsChanged, this, &WlrLayershell::anchorsChanged);
+	QObject::connect(this->ext, &LayershellWindowExtension::exclusiveZoneChanged, this, &WlrLayershell::exclusiveZoneChanged);
+	QObject::connect(this->ext, &LayershellWindowExtension::marginsChanged, this, &WlrLayershell::marginsChanged);
 
-	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &WaylandLayershell::updateAutoExclusion);
-	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &WaylandLayershell::updateAutoExclusion);
-	QObject::connect(this, &WaylandLayershell::anchorsChanged, this, &WaylandLayershell::updateAutoExclusion);
+	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &WlrLayershell::updateAutoExclusion);
+	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &WlrLayershell::updateAutoExclusion);
+	QObject::connect(this, &WlrLayershell::anchorsChanged, this, &WlrLayershell::updateAutoExclusion);
 	// clang-format on
 
 	this->updateAutoExclusion();
 }
 
-void WaylandLayershell::setWidth(qint32 width) {
+void WlrLayershell::setWidth(qint32 width) {
 	this->mWidth = width;
 
 	// only update the actual size if not blocked by anchors
@@ -70,7 +70,7 @@ void WaylandLayershell::setWidth(qint32 width) {
 	}
 }
 
-void WaylandLayershell::setHeight(qint32 height) {
+void WlrLayershell::setHeight(qint32 height) {
 	this->mHeight = height;
 
 	// only update the actual size if not blocked by anchors
@@ -79,24 +79,24 @@ void WaylandLayershell::setHeight(qint32 height) {
 	}
 }
 
-void WaylandLayershell::setScreen(QuickshellScreenInfo* screen) {
+void WlrLayershell::setScreen(QuickshellScreenInfo* screen) {
 	this->ProxyWindowBase::setScreen(screen);
 	this->ext->setUseWindowScreen(screen != nullptr);
 }
 
 // NOLINTBEGIN
 #define extPair(type, get, set)                                                                    \
-	type WaylandLayershell::get() const { return this->ext->get(); }                                 \
-	void WaylandLayershell::set(type value) { this->ext->set(value); }
+	type WlrLayershell::get() const { return this->ext->get(); }                                     \
+	void WlrLayershell::set(type value) { this->ext->set(value); }
 
 extPair(Layer::Enum, layer, setLayer);
 extPair(KeyboardFocus::Enum, keyboardFocus, setKeyboardFocus);
 extPair(Margins, margins, setMargins);
 // NOLINTEND
 
-Anchors WaylandLayershell::anchors() const { return this->ext->anchors(); }
+Anchors WlrLayershell::anchors() const { return this->ext->anchors(); }
 
-void WaylandLayershell::setAnchors(Anchors anchors) {
+void WlrLayershell::setAnchors(Anchors anchors) {
 	this->ext->setAnchors(anchors);
 
 	// explicitly set width values are tracked so the entire screen isn't covered if an anchor is removed.
@@ -104,24 +104,24 @@ void WaylandLayershell::setAnchors(Anchors anchors) {
 	if (!anchors.verticalConstraint()) this->ProxyWindowBase::setHeight(this->mHeight);
 }
 
-QString WaylandLayershell::ns() const { return this->ext->ns(); }
+QString WlrLayershell::ns() const { return this->ext->ns(); }
 
-void WaylandLayershell::setNamespace(QString ns) {
+void WlrLayershell::setNamespace(QString ns) {
 	this->ext->setNamespace(std::move(ns));
 	emit this->namespaceChanged();
 }
 
-qint32 WaylandLayershell::exclusiveZone() const { return this->ext->exclusiveZone(); }
+qint32 WlrLayershell::exclusiveZone() const { return this->ext->exclusiveZone(); }
 
-void WaylandLayershell::setExclusiveZone(qint32 exclusiveZone) {
+void WlrLayershell::setExclusiveZone(qint32 exclusiveZone) {
 	this->mExclusiveZone = exclusiveZone;
 	this->setExclusionMode(ExclusionMode::Normal);
 	this->ext->setExclusiveZone(exclusiveZone);
 }
 
-ExclusionMode::Enum WaylandLayershell::exclusionMode() const { return this->mExclusionMode; }
+ExclusionMode::Enum WlrLayershell::exclusionMode() const { return this->mExclusionMode; }
 
-void WaylandLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
+void WlrLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
 	this->mExclusionMode = exclusionMode;
 	if (exclusionMode == this->mExclusionMode) return;
 
@@ -134,7 +134,7 @@ void WaylandLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
 	}
 }
 
-void WaylandLayershell::setAutoExclusion() {
+void WlrLayershell::setAutoExclusion() {
 	const auto anchors = this->anchors();
 	auto zone = 0;
 
@@ -144,13 +144,13 @@ void WaylandLayershell::setAutoExclusion() {
 	this->ext->setExclusiveZone(zone);
 }
 
-void WaylandLayershell::updateAutoExclusion() {
+void WlrLayershell::updateAutoExclusion() {
 	if (this->mExclusionMode == ExclusionMode::Auto) {
 		this->setAutoExclusion();
 	}
 }
 
-WaylandLayershell* WaylandLayershell::qmlAttachedProperties(QObject* object) {
+WlrLayershell* WlrLayershell::qmlAttachedProperties(QObject* object) {
 	if (auto* obj = qobject_cast<WaylandPanelInterface*>(object)) {
 		return obj->layer;
 	} else {
@@ -162,7 +162,7 @@ WaylandLayershell* WaylandLayershell::qmlAttachedProperties(QObject* object) {
 
 WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
     : PanelWindowInterface(parent)
-    , layer(new WaylandLayershell(this)) {
+    , layer(new WlrLayershell(this)) {
 
 	// clang-format off
 	QObject::connect(this->layer, &ProxyWindowBase::windowConnected, this, &WaylandPanelInterface::windowConnected);
@@ -174,10 +174,10 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &ProxyWindowBase::maskChanged, this, &WaylandPanelInterface::maskChanged);
 
 	// panel specific
-	QObject::connect(this->layer, &WaylandLayershell::anchorsChanged, this, &WaylandPanelInterface::anchorsChanged);
-	QObject::connect(this->layer, &WaylandLayershell::marginsChanged, this, &WaylandPanelInterface::marginsChanged);
-	QObject::connect(this->layer, &WaylandLayershell::exclusiveZoneChanged, this, &WaylandPanelInterface::exclusiveZoneChanged);
-	QObject::connect(this->layer, &WaylandLayershell::exclusionModeChanged, this, &WaylandPanelInterface::exclusionModeChanged);
+	QObject::connect(this->layer, &WlrLayershell::anchorsChanged, this, &WaylandPanelInterface::anchorsChanged);
+	QObject::connect(this->layer, &WlrLayershell::marginsChanged, this, &WaylandPanelInterface::marginsChanged);
+	QObject::connect(this->layer, &WlrLayershell::exclusiveZoneChanged, this, &WaylandPanelInterface::exclusiveZoneChanged);
+	QObject::connect(this->layer, &WlrLayershell::exclusionModeChanged, this, &WaylandPanelInterface::exclusionModeChanged);
 	// clang-format on
 }
 

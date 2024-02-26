@@ -1,4 +1,4 @@
-#include "layer_surface.hpp"
+#include "surface.hpp"
 
 #include <private/qwaylanddisplay_p.h>
 #include <private/qwaylandscreen_p.h>
@@ -12,9 +12,9 @@
 #include <qtypes.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
-#include "../core/panelinterface.hpp"
-#include "layershell.hpp"
+#include "../../core/panelinterface.hpp"
 #include "shell_integration.hpp"
+#include "window.hpp"
 
 // clang-format off
 [[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const Layer::Enum& layer) noexcept;

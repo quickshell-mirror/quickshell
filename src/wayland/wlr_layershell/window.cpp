@@ -1,4 +1,4 @@
-#include "layershell.hpp"
+#include "window.hpp"
 #include <utility>
 
 #include <private/qwaylandwindow_p.h>
@@ -9,9 +9,9 @@
 #include <qvariant.h>
 #include <qwindow.h>
 
-#include "../core/panelinterface.hpp"
-#include "layer_surface.hpp"
+#include "../../core/panelinterface.hpp"
 #include "shell_integration.hpp"
+#include "surface.hpp"
 
 LayershellWindowExtension* LayershellWindowExtension::get(QWindow* window) {
 	auto v = window->property("layershell_ext");

@@ -1,24 +1,7 @@
-qt_add_library(quickshell-wayland STATIC
-	shell_integration.cpp
-	layer_surface.cpp
-	layershell.cpp
-	waylandlayershell.cpp
-)
-
-# required to make sure the constructor is linked
-add_library(quickshell-wayland-init OBJECT init.cpp)
-
-target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin quickshell-wayland-init)
-
-qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols)
 
 find_package(Qt6 REQUIRED COMPONENTS WaylandClient)
-
-target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS} wayland-client)
-target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS} wayland-client)
 
 # wayland protocols
 
@@ -45,20 +28,33 @@ execute_process(
 
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
 
-set(PROTO_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/wl-proto)
-set(PROTO_BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/wl-proto)
-make_directory(${PROTO_BUILD_PATH})
+function (wl_proto target name path)
+	set(PROTO_BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/wl-proto/${name})
+	make_directory(${PROTO_BUILD_PATH})
 
-function (wl_proto name path)
 	execute_process(COMMAND ${waylandscanner} client-header ${path} ${PROTO_BUILD_PATH}/wayland-${name}-client-protocol.h)
 	execute_process(COMMAND ${waylandscanner} private-code ${path} ${PROTO_BUILD_PATH}/wayland-${name}.c)
 	execute_process(COMMAND ${qtwaylandscanner} client-header ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.h)
 	execute_process(COMMAND ${qtwaylandscanner} client-code ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
 
-	target_sources(quickshell-wayland PRIVATE ${PROTO_BUILD_PATH}/wayland-${name}.c)
-	target_sources(quickshell-wayland PRIVATE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
+	target_sources(${target} PRIVATE ${PROTO_BUILD_PATH}/wayland-${name}.c)
+	target_sources(${target} PRIVATE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
+	target_include_directories(${target} PRIVATE ${PROTO_BUILD_PATH})
 endfunction()
 
-wl_proto("wlr-layer-shell-unstable-v1" "${PROTO_SRC_PATH}/wlr-layer-shell-unstable-v1.xml")
+# -----
 
-target_include_directories(quickshell-wayland PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wl-proto)
+qt_add_library(quickshell-wayland STATIC
+	wlr_layershell.cpp
+)
+
+qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)
+
+# required to make sure the constructor is linked
+add_library(quickshell-wayland-init OBJECT init.cpp)
+
+add_subdirectory(wlr_layershell)
+target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
+
+target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-waylandplugin quickshell-wayland-init)

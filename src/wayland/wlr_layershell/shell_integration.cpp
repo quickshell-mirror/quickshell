@@ -4,7 +4,7 @@
 #include <private/qwaylandshellsurface_p.h>
 #include <private/qwaylandwindow_p.h>
 
-#include "layer_surface.hpp"
+#include "surface.hpp"
 #include "wayland-wlr-layer-shell-unstable-v1-client-protocol.h"
 
 QSWaylandLayerShellIntegration::QSWaylandLayerShellIntegration()

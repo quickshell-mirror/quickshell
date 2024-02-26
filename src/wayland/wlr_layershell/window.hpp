@@ -6,7 +6,7 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
-#include "../core/panelinterface.hpp"
+#include "../../core/panelinterface.hpp"
 
 namespace Layer { // NOLINT
 Q_NAMESPACE;
