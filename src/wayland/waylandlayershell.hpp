@@ -18,7 +18,7 @@ class WaylandLayershell: public ProxyWindowBase {
 	/// Similar to the class property of windows. Can be used to identify the window to external tools.
 	///
 	/// Cannot be set after windowConnected.
-	Q_PROPERTY(QString namespace READ ns WRITE setNamespace);
+	Q_PROPERTY(QString namespace READ ns WRITE setNamespace NOTIFY namespaceChanged);
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
 	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 

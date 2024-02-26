@@ -6,10 +6,11 @@ headers = [
 	"reload.hpp",
 	"shell.hpp",
 	"variants.hpp",
-	"proxywindow.hpp",
-	"layershell.hpp",
 	"region.hpp",
+	"proxywindow.hpp",
 	"persistentprops.hpp",
+	"windowinterface.hpp",
+	"panelinterface.hpp",
+	"floatingwindow.hpp",
 ]
 -----
-The core types provided by QuickShell
