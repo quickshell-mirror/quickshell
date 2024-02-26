@@ -56,8 +56,9 @@ void WaylandLayershell::setupWindow() {
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &WaylandLayershell::updateAutoExclusion);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &WaylandLayershell::updateAutoExclusion);
 	QObject::connect(this, &WaylandLayershell::anchorsChanged, this, &WaylandLayershell::updateAutoExclusion);
-	QObject::connect(this, &WaylandLayershell::marginsChanged, this, &WaylandLayershell::updateAutoExclusion);
 	// clang-format on
+
+	this->updateAutoExclusion();
 }
 
 void WaylandLayershell::setWidth(qint32 width) {
@@ -113,7 +114,6 @@ void WaylandLayershell::setNamespace(QString ns) {
 qint32 WaylandLayershell::exclusiveZone() const { return this->ext->exclusiveZone(); }
 
 void WaylandLayershell::setExclusiveZone(qint32 exclusiveZone) {
-	qDebug() << "set exclusion" << exclusiveZone;
 	this->mExclusiveZone = exclusiveZone;
 
 	if (this->mExclusionMode == ExclusionMode::Normal) {
