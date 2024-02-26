@@ -108,6 +108,7 @@ class PanelWindowInterface: public WindowInterface {
 	/// > [!INFO] Only applies to edges with anchors
 	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
 	/// The amount of space reserved for the shell layer relative to its anchors.
+	/// Setting this property sets `exclusionMode` to `Normal`.
 	///
 	/// > [!INFO] Either 1 or 3 anchors are required for the zone to take effect.
 	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);

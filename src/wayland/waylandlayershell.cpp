@@ -115,16 +115,16 @@ qint32 WaylandLayershell::exclusiveZone() const { return this->ext->exclusiveZon
 
 void WaylandLayershell::setExclusiveZone(qint32 exclusiveZone) {
 	this->mExclusiveZone = exclusiveZone;
-
-	if (this->mExclusionMode == ExclusionMode::Normal) {
-		this->ext->setExclusiveZone(exclusiveZone);
-	}
+	this->setExclusionMode(ExclusionMode::Normal);
+	this->ext->setExclusiveZone(exclusiveZone);
 }
 
 ExclusionMode::Enum WaylandLayershell::exclusionMode() const { return this->mExclusionMode; }
 
 void WaylandLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
 	this->mExclusionMode = exclusionMode;
+	if (exclusionMode == this->mExclusionMode) return;
+
 	if (exclusionMode == ExclusionMode::Normal) {
 		this->ext->setExclusiveZone(this->mExclusiveZone);
 	} else if (exclusionMode == ExclusionMode::Ignore) {
