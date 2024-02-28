@@ -22,7 +22,7 @@ message(STATUS "Found wayland-scanner at ${waylandscanner}")
 
 execute_process(
 	COMMAND pkg-config --variable=pkgdatadir wayland-protocols
-	OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
+	OUTPUT_VARIABLE WAYLAND_PROTOCOLS
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -54,6 +54,7 @@ qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)
 add_library(quickshell-wayland-init OBJECT init.cpp)
 
 add_subdirectory(wlr_layershell)
+add_subdirectory(session_lock)
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
 target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
 
