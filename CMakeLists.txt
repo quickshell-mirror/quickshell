@@ -6,6 +6,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(WAYLAND "Enable wayland support" ON)
+option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol" ON)
+option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
+
+message(STATUS "Quickshell configuration")
+message(STATUS "  Wayland: ${WAYLAND}")
+if (WAYLAND)
+	message(STATUS "    Wlroots Layershell: ${WAYLAND_WLR_LAYERSHELL}")
+	message(STATUS "    Session Lock: ${WAYLAND_SESSION_LOCK}")
+endif ()
 
 add_compile_options(-Wall -Wextra)
 
@@ -32,4 +41,7 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 qt_standard_project_setup(REQUIRES 6.6)
 
 add_subdirectory(src/core)
-add_subdirectory(src/wayland)
+
+if (WAYLAND)
+	add_subdirectory(src/wayland)
+endif ()

@@ -2,7 +2,10 @@
 #include <qqml.h>
 
 #include "../core/plugin.hpp"
+
+#ifdef QS_WAYLAND_WLR_LAYERSHELL
 #include "wlr_layershell.hpp"
+#endif
 
 namespace {
 
@@ -10,6 +13,7 @@ class WaylandPlugin: public QuickshellPlugin {
 	bool applies() override { return QGuiApplication::platformName() == "wayland"; }
 
 	void registerTypes() override {
+#ifdef QS_WAYLAND_WLR_LAYERSHELL
 		qmlRegisterType<WaylandPanelInterface>("Quickshell._WaylandOverlay", 1, 0, "PanelWindow");
 
 		// If any types are defined inside a module using QML_ELEMENT then all QML_ELEMENT types
@@ -29,6 +33,7 @@ class WaylandPlugin: public QuickshellPlugin {
 		    "Quickshell._WaylandOverlay",
 		    QQmlModuleImportLatest
 		);
+#endif
 	}
 };
 

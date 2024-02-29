@@ -18,3 +18,5 @@ qt_add_executable(quickshell
 )
 
 qt_add_qml_module(quickshell URI Quickshell)
+
+target_link_libraries(quickshell PRIVATE ${QT_DEPS})
