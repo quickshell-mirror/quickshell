@@ -8,11 +8,13 @@
 
 #include "../../core/panelinterface.hpp"
 
+///! WlrLayershell layer
 namespace Layer { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
 enum Enum {
+	/// Below bottom
 	Background = 0,
 	/// Above background, usually below windows
 	Bottom = 1,
@@ -26,9 +28,7 @@ Q_ENUM_NS(Enum);
 
 } // namespace Layer
 
-/// Type of keyboard focus that will be accepted by a [ShellWindow]
-///
-/// [ShellWindow]: ../shellwindow
+///! WlrLayershell keyboard focus mode
 namespace KeyboardFocus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;

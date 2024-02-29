@@ -11,6 +11,32 @@
 #include "../core/proxywindow.hpp"
 #include "wlr_layershell/window.hpp"
 
+///! Wlroots layershell window
+/// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
+///
+/// #### Attached property
+/// `WlrLayershell` works as an attached property of [PanelWindow] which you should use instead if you can,
+/// as it is platform independent.
+/// ```qml
+/// PanelWindow {
+///   // When PanelWindow is backed with WlrLayershell this will work
+///   WlrLayershell.layer: Layer.Bottom
+/// }
+/// ```
+///
+/// To maintain platform compatibility you can dynamically set layershell specific properties.
+/// ```qml
+/// PanelWindow {
+///   Component.onCompleted: {
+///     if (this.WlrLayershell != null) {
+///       this.WlrLayershell.layer = Layer.Bottom;
+///     }
+///   }
+/// }
+/// ```
+///
+/// [zwlr_layer_shell_v1]: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
+/// [PanelWindow]: ../../quickshell/panelwindow
 class WlrLayershell: public ProxyWindowBase {
 	QSDOC_BASECLASS(PanelWindowInterface);
 	// clang-format off
