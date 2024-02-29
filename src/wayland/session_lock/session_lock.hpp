@@ -13,7 +13,7 @@ class SessionLockManager: public QObject {
 	Q_OBJECT;
 
 public:
-	SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
+	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
 	Q_DISABLE_COPY_MOVE(SessionLockManager);
 
 	// Returns true if a lock was acquired.
@@ -57,7 +57,7 @@ class LockWindowExtension: public QObject {
 	Q_OBJECT;
 
 public:
-	LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
+	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
 	~LockWindowExtension() override;
 
 	// Attach this lock extension to the given window.

@@ -46,6 +46,7 @@ endfunction()
 
 qt_add_library(quickshell-wayland STATIC
 	wlr_layershell.cpp
+	session_lock.cpp
 )
 
 qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)

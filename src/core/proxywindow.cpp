@@ -134,8 +134,10 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
 	}
 
-	if (this->window == nullptr) this->mScreen = qscreen;
-	else this->window->setScreen(qscreen);
+	if (this->window == nullptr) {
+		this->mScreen = qscreen;
+		emit this->screenChanged();
+	} else this->window->setScreen(qscreen);
 }
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }

@@ -17,10 +17,10 @@ QSWaylandSessionLock::~QSWaylandSessionLock() { this->unlock(); }
 
 void QSWaylandSessionLock::unlock() {
 	if (this->isInitialized()) {
-		if (this->locked) this->unlock_and_destroy();
-		else this->destroy();
+		if (this->finished) this->destroy();
+		else this->unlock_and_destroy();
 
-		this->locked = false;
+		this->secure = false;
 		this->manager->active = nullptr;
 
 		emit this->unlocked();
@@ -29,14 +29,15 @@ void QSWaylandSessionLock::unlock() {
 
 bool QSWaylandSessionLock::active() const { return this->isInitialized(); }
 
-bool QSWaylandSessionLock::hasCompositorLock() const { return this->locked; }
+bool QSWaylandSessionLock::hasCompositorLock() const { return this->secure; }
 
 void QSWaylandSessionLock::ext_session_lock_v1_locked() {
-	this->locked = true;
+	this->secure = true;
 	emit this->compositorLocked();
 }
 
 void QSWaylandSessionLock::ext_session_lock_v1_finished() {
-	this->locked = false;
+	this->secure = false;
+	this->finished = true;
 	this->unlock();
 }

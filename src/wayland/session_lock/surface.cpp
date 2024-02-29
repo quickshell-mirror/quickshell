@@ -40,7 +40,10 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 	this->init(this->ext->lock->get_lock_surface(window->waylandSurface()->object(), output));
 }
 
-QSWaylandSessionLockSurface::~QSWaylandSessionLockSurface() { this->destroy(); }
+QSWaylandSessionLockSurface::~QSWaylandSessionLockSurface() {
+	if (this->ext != nullptr) this->ext->surface = nullptr;
+	this->destroy();
+}
 
 bool QSWaylandSessionLockSurface::isExposed() const { return this->configured; }
 
@@ -60,7 +63,7 @@ bool QSWaylandSessionLockSurface::handleExpose(const QRegion& region) {
 
 void QSWaylandSessionLockSurface::setExtension(LockWindowExtension* ext) {
 	if (ext == nullptr) {
-		this->window()->window()->close();
+		if (this->window() != nullptr) this->window()->window()->close();
 	} else {
 		if (this->ext != nullptr) {
 			this->ext->surface = nullptr;

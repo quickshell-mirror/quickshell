@@ -34,5 +34,6 @@ private:
 	QSWaylandSessionLockManager* manager; // static and not dealloc'd
 
 	// true when the compositor determines the session is locked
-	bool locked = false;
+	bool secure = false;
+	bool finished = false;
 };

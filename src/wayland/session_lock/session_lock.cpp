@@ -21,7 +21,7 @@ static QSWaylandSessionLockManager* manager() {
 }
 
 bool SessionLockManager::lock() {
-	if (SessionLockManager::sessionLocked()) return false;
+	if (this->isLocked() || SessionLockManager::sessionLocked()) return false;
 	this->mLock = manager()->acquireLock();
 	this->mLock->setParent(this);
 
