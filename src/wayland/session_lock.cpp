@@ -46,7 +46,7 @@ void SessionLock::onReload(QObject* oldInstance) {
 	// clang-format on
 
 	if (this->lockTarget) {
-		this->manager->lock();
+		if (!this->manager->lock()) this->lockTarget = false;
 		this->updateSurfaces(old);
 	} else {
 		this->setLocked(false);
@@ -133,7 +133,7 @@ void SessionLock::setLocked(bool locked) {
 	}
 
 	if (locked) {
-		this->manager->lock();
+		if (!this->manager->lock()) this->lockTarget = false;
 		this->updateSurfaces();
 		if (this->lockTarget) emit this->lockStateChanged();
 	} else {
