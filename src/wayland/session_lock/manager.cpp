@@ -18,3 +18,6 @@ QSWaylandSessionLock* QSWaylandSessionLockManager::acquireLock() {
 }
 
 bool QSWaylandSessionLockManager::isLocked() const { return this->active != nullptr; }
+bool QSWaylandSessionLockManager::isSecure() const {
+	return this->isLocked() && this->active->hasCompositorLock();
+}

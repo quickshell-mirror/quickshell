@@ -26,6 +26,7 @@ public:
 	[[nodiscard]] bool isLocked() const;
 
 	static bool sessionLocked();
+	static bool isSecure();
 
 signals:
 	// This signal is sent once the compositor considers the session to be fully locked.

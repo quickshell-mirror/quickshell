@@ -89,7 +89,10 @@ void SessionLock::updateSurfaces(SessionLock* old) {
 				instance->onReload(oldInstance);
 
 				this->surfaces[screen] = instance;
-				instance->show();
+			}
+
+			for (auto* surface: this->surfaces.values()) {
+				surface->show();
 			}
 		}
 	}
@@ -117,7 +120,7 @@ bool SessionLock::isLocked() const {
 }
 
 bool SessionLock::isSecure() const {
-	return this->manager != nullptr && SessionLockManager::sessionLocked();
+	return this->manager != nullptr && SessionLockManager::isSecure();
 }
 
 void SessionLock::setLocked(bool locked) {

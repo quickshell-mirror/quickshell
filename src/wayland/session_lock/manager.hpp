@@ -17,6 +17,7 @@ public:
 	// Create a new session lock if there is no currently active lock, otherwise null.
 	QSWaylandSessionLock* acquireLock();
 	[[nodiscard]] bool isLocked() const;
+	[[nodiscard]] bool isSecure() const;
 
 	static bool sessionLocked();
 

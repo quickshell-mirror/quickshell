@@ -44,6 +44,7 @@ bool SessionLockManager::unlock() {
 
 bool SessionLockManager::isLocked() const { return this->mLock != nullptr; }
 bool SessionLockManager::sessionLocked() { return manager()->isLocked(); }
+bool SessionLockManager::isSecure() { return manager()->isSecure(); }
 
 LockWindowExtension::~LockWindowExtension() {
 	if (this->surface != nullptr) {
