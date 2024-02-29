@@ -94,7 +94,8 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
 		this->window()->handleExpose(QRect(QPoint(), this->size));
 		if (this->visible) this->initVisible();
 	} else {
-		this->window()->applyConfigureWhenPossible();
+		// applyConfigureWhenPossible runs too late and causes a protocol error on reconfigure.
+		this->window()->resizeFromApplyConfigure(this->size);
 	}
 }
 
