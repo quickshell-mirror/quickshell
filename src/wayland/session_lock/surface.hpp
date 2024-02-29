@@ -22,7 +22,7 @@ public:
 	void applyConfigure() override;
 	bool handleExpose(const QRegion& region) override;
 
-	void setExtension(LockWindowExtension*);
+	void setExtension(LockWindowExtension* ext);
 	void setVisible();
 
 private:

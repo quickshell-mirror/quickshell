@@ -14,7 +14,6 @@ class SessionLockManager: public QObject {
 
 public:
 	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
-	Q_DISABLE_COPY_MOVE(SessionLockManager);
 
 	// Returns true if a lock was acquired.
 	// If true is returned the caller must watch the global screen list and create/destroy
@@ -59,6 +58,7 @@ class LockWindowExtension: public QObject {
 public:
 	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
 	~LockWindowExtension() override;
+	Q_DISABLE_COPY_MOVE(LockWindowExtension);
 
 	// Attach this lock extension to the given window.
 	// The extension is reparented to the window and replaces any existing lock extension.

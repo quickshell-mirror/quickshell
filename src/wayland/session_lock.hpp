@@ -15,7 +15,6 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/doc.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
@@ -48,8 +47,6 @@ public:
 
 	[[nodiscard]] QQmlComponent* surfaceComponent() const;
 	void setSurfaceComponent(QQmlComponent* surfaceComponent);
-
-	QSDOC_HIDE Q_INVOKABLE void rip();
 
 signals:
 	void lockStateChanged();

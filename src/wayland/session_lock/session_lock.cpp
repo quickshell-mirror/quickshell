@@ -10,8 +10,9 @@
 #include "shell_integration.hpp"
 #include "surface.hpp"
 
-static QSWaylandSessionLockManager* manager() {
-	static QSWaylandSessionLockManager* manager = nullptr;
+namespace {
+QSWaylandSessionLockManager* manager() {
+	static QSWaylandSessionLockManager* manager = nullptr; // NOLINT
 
 	if (manager == nullptr) {
 		manager = new QSWaylandSessionLockManager();
@@ -19,6 +20,7 @@ static QSWaylandSessionLockManager* manager() {
 
 	return manager;
 }
+} // namespace
 
 bool SessionLockManager::lock() {
 	if (this->isLocked() || SessionLockManager::sessionLocked()) return false;
@@ -79,7 +81,7 @@ bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 			return false;
 		}
 
-		static QSWaylandSessionLockIntegration* lockIntegration = nullptr;
+		static QSWaylandSessionLockIntegration* lockIntegration = nullptr; // NOLINT
 		if (lockIntegration == nullptr) {
 			lockIntegration = new QSWaylandSessionLockIntegration();
 			if (!lockIntegration->initialize(waylandWindow->display())) {
@@ -105,6 +107,6 @@ bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 }
 
 void LockWindowExtension::setVisible() {
-	if (this->surface == nullptr) immediatelyVisible = true;
+	if (this->surface == nullptr) this->immediatelyVisible = true;
 	else this->surface->setVisible();
 }

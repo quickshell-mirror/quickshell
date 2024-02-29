@@ -56,17 +56,12 @@ class LayershellWindowExtension: public QObject {
 
 public:
 	LayershellWindowExtension(QObject* parent = nullptr): QObject(parent) {}
-	~LayershellWindowExtension() override = default;
-	LayershellWindowExtension(LayershellWindowExtension&&) = delete;
-	LayershellWindowExtension(const LayershellWindowExtension&) = delete;
-	void operator=(LayershellWindowExtension&&) = delete;
-	void operator=(const LayershellWindowExtension&) = delete;
 
 	// returns the layershell extension if attached, otherwise nullptr
 	static LayershellWindowExtension* get(QWindow* window);
 
 	// Attach this layershell extension to the given window.
-	// The extension is reparented to the window and replaces any existing extensions.
+	// The extension is reparented to the window and replaces any existing layershell extension.
 	// Returns false if the window cannot be used.
 	bool attach(QWindow* window);
 

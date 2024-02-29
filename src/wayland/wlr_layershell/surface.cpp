@@ -23,12 +23,11 @@
 [[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept;
 // clang-format on
 
-// clang-format off
 QSWaylandLayerSurface::QSWaylandLayerSurface(
     QSWaylandLayerShellIntegration* shell,
     QtWaylandClient::QWaylandWindow* window
-): QtWaylandClient::QWaylandShellSurface(window) {
-	// clang-format on
+)
+    : QtWaylandClient::QWaylandShellSurface(window) {
 
 	auto* qwindow = window->window();
 	this->ext = LayershellWindowExtension::get(qwindow);
@@ -37,7 +36,7 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 		throw "QSWaylandLayerSurface created with null LayershellWindowExtension";
 	}
 
-	wl_output* output = nullptr; // NOLINT (import)
+	wl_output* output = nullptr; // NOLINT (include)
 	if (this->ext->useWindowScreen) {
 		auto* waylandScreen =
 		    dynamic_cast<QtWaylandClient::QWaylandScreen*>(qwindow->screen()->handle());
@@ -45,8 +44,8 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 		if (waylandScreen != nullptr) {
 			output = waylandScreen->output();
 		} else {
-			qWarning() << "Layershell screen is set but does not corrospond to a real screen. Letting "
-			              "the compositor pick.";
+			qWarning(
+			) << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
 		}
 	}
 

@@ -7,7 +7,7 @@
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
 #include <qobject.h>
-#include <wayland-client-protocol.h>
+#include <qtypes.h>
 
 #include "lock.hpp"
 #include "session_lock.hpp"
@@ -27,7 +27,7 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 		throw nullptr;
 	}
 
-	wl_output* output = nullptr;
+	wl_output* output = nullptr; // NOLINT (include)
 	auto* waylandScreen = dynamic_cast<QtWaylandClient::QWaylandScreen*>(qwindow->screen()->handle());
 
 	if (waylandScreen != nullptr) {
@@ -75,7 +75,7 @@ void QSWaylandSessionLockSurface::setExtension(LockWindowExtension* ext) {
 }
 
 void QSWaylandSessionLockSurface::setVisible() {
-	if (this->configured && !this->visible) initVisible();
+	if (this->configured && !this->visible) this->initVisible();
 	this->visible = true;
 }
 
@@ -92,7 +92,7 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
 
 		this->window()->resizeFromApplyConfigure(this->size);
 		this->window()->handleExpose(QRect(QPoint(), this->size));
-		if (this->visible) initVisible();
+		if (this->visible) this->initVisible();
 	} else {
 		this->window()->applyConfigureWhenPossible();
 	}
@@ -105,10 +105,10 @@ void QSWaylandSessionLockSurface::initVisible() {
 	// We attach a dummy buffer to satisfy ext_session_lock_v1.
 	this->initBuf = new QtWaylandClient::QWaylandShmBuffer(
 	    this->window()->display(),
-	    size,
+	    this->size,
 	    QImage::Format_ARGB32
 	);
 
-	this->window()->waylandSurface()->attach(initBuf->buffer(), 0, 0);
+	this->window()->waylandSurface()->attach(this->initBuf->buffer(), 0, 0);
 	this->window()->window()->setVisible(true);
 }

@@ -2,6 +2,7 @@
 
 #include <private/qwaylandshellsurface_p.h>
 #include <private/qwaylandwindow_p.h>
+#include <qtclasshelpermacros.h>
 #include <qtwaylandclientexports.h>
 #include <qtypes.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
@@ -20,10 +21,7 @@ public:
 	);
 
 	~QSWaylandLayerSurface() override;
-	QSWaylandLayerSurface(QSWaylandLayerSurface&&) = delete;
-	QSWaylandLayerSurface(const QSWaylandLayerSurface&) = delete;
-	void operator=(QSWaylandLayerSurface&&) = delete;
-	void operator=(const QSWaylandLayerSurface&) = delete;
+	Q_DISABLE_COPY_MOVE(QSWaylandLayerSurface);
 
 	[[nodiscard]] bool isExposed() const override;
 	void applyConfigure() override;

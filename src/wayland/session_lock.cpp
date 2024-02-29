@@ -1,17 +1,21 @@
 #include "session_lock.hpp"
 
 #include <qcolor.h>
+#include <qcoreapplication.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
+#include <qqmllist.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/qmlscreen.hpp"
+#include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
 
 void SessionLock::onReload(QObject* oldInstance) {
@@ -136,12 +140,6 @@ void SessionLock::setLocked(bool locked) {
 
 QQmlComponent* SessionLock::surfaceComponent() const { return this->mSurfaceComponent; }
 
-void SessionLock::rip() {
-	if (this->isLocked()) {
-		exit(1);
-	}
-}
-
 void SessionLock::setSurfaceComponent(QQmlComponent* surfaceComponent) {
 	if (this->mSurfaceComponent != nullptr) this->mSurfaceComponent->deleteLater();
 	if (surfaceComponent != nullptr) surfaceComponent->setParent(this);
@@ -194,7 +192,7 @@ void SessionLockSurface::onReload(QObject* oldInstance) {
 	// clang-format on
 
 	if (auto* parent = qobject_cast<SessionLock*>(this->parent())) {
-		if (!this->ext->attach(window, parent->manager)) {
+		if (!this->ext->attach(this->window, parent->manager)) {
 			qWarning(
 			) << "Failed to attach LockWindowExtension to window. Surface will not behave correctly.";
 		}
@@ -202,9 +200,6 @@ void SessionLockSurface::onReload(QObject* oldInstance) {
 		qWarning(
 		) << "SessionLockSurface parent is not a SessionLock. Surface will not behave correctly.";
 	}
-
-	// without this the dangling screen pointer wont be updated to a real screen
-	emit this->screenChanged();
 }
 
 QQuickWindow* SessionLockSurface::disownWindow() {

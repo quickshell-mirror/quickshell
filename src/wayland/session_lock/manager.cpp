@@ -1,7 +1,5 @@
 #include "manager.hpp"
 
-#include <qdebug.h>
-#include <qlogging.h>
 #include <qwaylandclientextension.h>
 
 #include "lock.hpp"

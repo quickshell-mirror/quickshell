@@ -1,7 +1,7 @@
 #include "lock.hpp"
 
-#include <private/qwaylandshellintegration_p.h>
 #include <qtmetamacros.h>
+#include <wayland-ext-session-lock-v1-client-protocol.h>
 
 #include "manager.hpp"
 
