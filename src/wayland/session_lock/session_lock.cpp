@@ -68,7 +68,10 @@ bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 	if (current != nullptr) {
 		current->surface->setExtension(this);
 	} else {
+		// Qt appears to be resetting the window's screen on creation on some systems. This works around it.
+		auto* screen = window->screen();
 		window->create();
+		window->setScreen(screen);
 
 		waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow*>(window->handle());
 		if (waylandWindow == nullptr) {

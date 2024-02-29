@@ -54,7 +54,10 @@ bool LayershellWindowExtension::attach(QWindow* window) {
 	}
 
 	if (!hasSurface) {
+		// Qt appears to be resetting the window's screen on creation on some systems. This works around it.
+		auto* screen = window->screen();
 		window->create();
+		window->setScreen(screen);
 
 		auto* waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow*>(window->handle());
 		if (waylandWindow == nullptr) {
