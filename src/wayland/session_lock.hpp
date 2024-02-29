@@ -21,15 +21,54 @@
 
 class SessionLockSurface;
 
-/// Note: Very untested. Do anything outside of the obvious use cases and you WILL red screen.
+///! Wayland session locker.
+/// Wayland session lock implemented using the [ext_session_lock_v1] protocol.
+///
+/// SessionLock will create an instance of its `surface` component for every screen when
+/// `locked` is set to true. The `surface` component must create a [SessionLockSurface]
+/// which will be displayed on each screen.
+///
+/// The below example will create a session lock that disappears when the button is clicked.
+/// ```qml
+/// SessionLock {
+///   id: lock
+///
+///   SessionLockSurface {
+///     Button {
+///       text: "unlock me"
+///       onClicked: lock.locked = false
+///     }
+///   }
+/// }
+///
+/// // ...
+/// lock.locked = true
+/// ```
+///
+/// > [!WARNING] If the SessionLock is destroyed or quickshell exits without setting `locked`
+/// > to false, conformant compositors will leave the screen locked and painted with a solid
+/// > color.
+/// >
+/// > This is what makes the session lock secure. The lock dying will not expose your session,
+/// > but it will render it inoperable.
+///
+/// [ext_session_lock_v1]: https://wayland.app/protocols/ext-session-lock-v1
+/// [SessionLockSurface]: ../sessionlocksurface
 class SessionLock: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
-	/// Note: only one SessionLock may be locked at a time.
+	/// Controls the lock state.
+	///
+	/// > [!WARNING] Only one SessionLock may be locked at a time. Attempting to enable a lock while
+	/// > another lock is enabled will do nothing.
 	Q_PROPERTY(bool locked READ isLocked WRITE setLocked NOTIFY lockStateChanged);
-	/// Returns the *compositor* lock state, which will only be set to true after all surfaces are in place.
+	/// The compositor lock state.
+	///
+	/// This is set to true once the compositor has confirmed all screens are covered with locks.
 	Q_PROPERTY(bool secure READ isSecure NOTIFY secureStateChanged);
-	/// Component that will be instantiated for each screen. Must be a `SessionLockSurface`.
+	/// The surface that will be created for each screen. Must create a [SessionLockSurface].
+	///
+	/// [SessionLockSurface]: ../sessionlocksurface
 	Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
 	// clang-format on
 	QML_ELEMENT;
@@ -68,17 +107,21 @@ private:
 	friend class SessionLockSurface;
 };
 
+///! Surface to display with a `SessionLock`.
+/// Surface displayed by a [SessionLock] when it is locked.
+///
+/// [SessionLock]: ../sessionlock
 class SessionLockSurface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem);
-	/// If the window has been presented yet.
+	/// If the surface has been made visible.
+	///
+	/// Note: SessionLockSurfaces will never become invisible, they will only be destroyed.
 	Q_PROPERTY(bool visible READ isVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height NOTIFY heightChanged);
-	/// The screen that the window currently occupies.
-	///
-	/// > [!INFO] This cannot be changed after windowConnected.
+	/// The screen that the surface is displayed on.
 	Q_PROPERTY(QuickshellScreenInfo* screen READ screen NOTIFY screenChanged);
 	/// The background color of the window. Defaults to white.
 	///
