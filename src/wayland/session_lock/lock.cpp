@@ -13,7 +13,12 @@ QSWaylandSessionLock::QSWaylandSessionLock(
 	this->init(lock); // if isInitialized is false that means we already unlocked.
 }
 
-QSWaylandSessionLock::~QSWaylandSessionLock() { this->unlock(); }
+QSWaylandSessionLock::~QSWaylandSessionLock() {
+	if (this->isInitialized()) {
+		// This will intentionally lock the session if the lock is destroyed without calling unlock.
+		this->destroy();
+	}
+}
 
 void QSWaylandSessionLock::unlock() {
 	if (this->isInitialized()) {

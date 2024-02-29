@@ -36,6 +36,7 @@ bool SessionLockManager::lock() {
 
 bool SessionLockManager::unlock() {
 	if (!this->isLocked()) return false;
+	this->mLock->unlock();
 	auto* lock = this->mLock;
 	this->mLock = nullptr;
 	delete lock;
