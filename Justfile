@@ -25,3 +25,6 @@ clean:
 
 run *ARGS='': build
 	{{builddir}}/src/core/quickshell {{ARGS}}
+
+test *ARGS='': build
+	ctest --test-dir build --output-on-failure {{ARGS}}

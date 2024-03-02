@@ -12,5 +12,7 @@ headers = [
 	"windowinterface.hpp",
 	"panelinterface.hpp",
 	"floatingwindow.hpp",
+	"datastream.hpp",
+	"socket.hpp",
 ]
 -----
