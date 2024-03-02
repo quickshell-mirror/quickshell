@@ -78,6 +78,7 @@ void SessionLock::updateSurfaces(SessionLock* old) {
 
 				if (instance == nullptr) {
 					qWarning() << "SessionLock.surface does not create a SessionLockSurface. Aborting lock.";
+					if (instanceObj != nullptr) instanceObj->deleteLater();
 					this->unlock();
 					return;
 				}
