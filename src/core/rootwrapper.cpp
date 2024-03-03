@@ -7,8 +7,10 @@
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
+#include <qtimer.h>
 #include <qurl.h>
 
+#include "reload.hpp"
 #include "shell.hpp"
 #include "watcher.hpp"
 
@@ -48,14 +50,21 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	component.completeCreate();
 
-	newRoot->onReload(hard ? nullptr : this->root);
+	auto* oldRoot = this->root;
+	this->root = newRoot;
 
-	if (this->root != nullptr) {
-		this->root->deleteLater();
-		this->root = nullptr;
+	this->root->onReload(hard ? nullptr : oldRoot);
+
+	if (oldRoot != nullptr) {
+		oldRoot->deleteLater();
+
+		QTimer::singleShot(0, [this, newRoot]() {
+			if (this->root == newRoot) PostReloadHook::postReloadTree(this->root);
+		});
+	} else {
+		PostReloadHook::postReloadTree(newRoot);
 	}
 
-	this->root = newRoot;
 	this->onConfigChanged();
 }
 

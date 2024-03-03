@@ -75,3 +75,13 @@ QObject* Reloadable::getChildByReloadId(QObject* parent, const QString& reloadId
 
 	return nullptr;
 }
+
+void PostReloadHook::postReloadTree(QObject* root) {
+	for (auto* child: root->children()) {
+		PostReloadHook::postReloadTree(child);
+	}
+
+	if (auto* self = dynamic_cast<PostReloadHook*>(root)) {
+		self->onPostReload();
+	}
+}

@@ -1,19 +1,24 @@
 #include "socket.hpp"
 #include <utility>
 
+#include <qfile.h>
+#include <qlocalserver.h>
 #include <qlocalsocket.h>
+#include <qlogging.h>
 #include <qobject.h>
+#include <qqmlcomponent.h>
+#include <qqmlengine.h>
 #include <qtmetamacros.h>
 
 #include "datastream.hpp"
 
 void Socket::setSocket(QLocalSocket* socket) {
 	if (this->socket != nullptr) this->socket->deleteLater();
-
 	this->socket = socket;
-	socket->setParent(this);
 
 	if (socket != nullptr) {
+		socket->setParent(this);
+
 		// clang-format off
 		QObject::connect(this->socket, &QLocalSocket::connected, this, &Socket::onSocketConnected);
 		QObject::connect(this->socket, &QLocalSocket::disconnected, this, &Socket::onSocketDisconnected);
@@ -73,5 +78,122 @@ void Socket::connectPathSocket() {
 		socket->setServerName(this->mPath);
 		this->setSocket(socket);
 		this->socket->connectToServer(QIODevice::ReadWrite);
+	}
+}
+
+void Socket::write(const QString& data) {
+	if (this->socket != nullptr) {
+		this->socket->write(data.toUtf8());
+	}
+}
+
+SocketServer::~SocketServer() { this->disableServer(); }
+
+void SocketServer::onPostReload() {
+	this->postReload = true;
+	if (this->isActivatable()) this->enableServer();
+}
+
+bool SocketServer::isActive() const { return this->server != nullptr; }
+
+void SocketServer::setActive(bool active) {
+	this->activeTarget = active;
+	if (active == (this->server != nullptr)) return;
+
+	if (active) {
+		if (this->isActivatable()) this->enableServer();
+	} else this->disableServer();
+}
+
+QString SocketServer::path() const { return this->mPath; }
+
+void SocketServer::setPath(QString path) {
+	if (this->mPath == path) return;
+	this->mPath = std::move(path);
+	emit this->pathChanged();
+
+	if (this->isActivatable()) this->enableServer();
+}
+
+QQmlComponent* SocketServer::handler() const { return this->mHandler; }
+
+void SocketServer::setHandler(QQmlComponent* handler) {
+	if (this->mHandler != nullptr) this->mHandler->deleteLater();
+	this->mHandler = handler;
+
+	if (handler != nullptr) {
+		handler->setParent(this);
+	}
+}
+
+bool SocketServer::isActivatable() {
+	return this->server == nullptr && this->postReload && this->activeTarget && !this->mPath.isEmpty()
+	    && this->handler() != nullptr;
+}
+
+void SocketServer::enableServer() {
+	this->disableServer();
+
+	this->server = new QLocalServer(this);
+	QObject::connect(
+	    this->server,
+	    &QLocalServer::newConnection,
+	    this,
+	    &SocketServer::onNewConnection
+	);
+
+	if (!this->server->listen(this->mPath)) {
+		qWarning() << "could not start socket server at" << this->mPath;
+		this->disableServer();
+	}
+
+	this->activeTarget = false;
+	emit this->activeStatusChanged();
+}
+
+void SocketServer::disableServer() {
+	auto wasActive = this->server != nullptr;
+
+	if (this->server != nullptr) {
+		for (auto* socket: this->mSockets) {
+			socket->deleteLater();
+		}
+
+		this->mSockets.clear();
+		this->server->deleteLater();
+		this->server = nullptr;
+	}
+
+	if (this->mPath != nullptr) {
+		if (QFile::exists(this->mPath) && !QFile::remove(this->mPath)) {
+			qWarning() << "failed to delete socket file at" << this->mPath;
+		}
+	}
+
+	if (wasActive) emit this->activeStatusChanged();
+}
+
+void SocketServer::onNewConnection() {
+	if (auto* connection = this->server->nextPendingConnection()) {
+		auto* instanceObj = this->mHandler->create(QQmlEngine::contextForObject(this));
+		auto* instance = qobject_cast<Socket*>(instanceObj);
+
+		if (instance == nullptr) {
+			qWarning() << "SocketServer.handler does not create a Socket. Dropping connection.";
+			if (instanceObj != nullptr) instanceObj->deleteLater();
+			connection->deleteLater();
+			return;
+		}
+
+		this->mSockets.append(instance);
+		instance->setParent(this);
+
+		if (instance->isConnected()) {
+			qWarning() << "SocketServer.handler created a socket with an existing connection. Dropping "
+			              "new connection.";
+			connection->deleteLater();
+		} else {
+			instance->setSocket(connection);
+		}
 	}
 }
