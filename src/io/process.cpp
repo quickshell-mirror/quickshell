@@ -141,8 +141,9 @@ void Process::startProcessIfReady() {
 }
 
 void Process::onStarted() {
-	emit this->started();
+	emit this->pidChanged();
 	emit this->runningChanged();
+	emit this->started();
 }
 
 void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
@@ -153,6 +154,7 @@ void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
 
 	emit this->exited(exitCode, exitStatus);
 	emit this->runningChanged();
+	emit this->pidChanged();
 }
 
 void Process::onErrorOccurred(QProcess::ProcessError error) {
