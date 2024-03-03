@@ -3,5 +3,6 @@ description = "Io types"
 headers = [
 	"datastream.hpp",
 	"socket.hpp",
+	"process.hpp",
 ]
 -----

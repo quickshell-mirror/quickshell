@@ -1,5 +1,6 @@
 qt_add_library(quickshell-io STATIC
 	datastream.cpp
+	process.cpp
 )
 
 if (SOCKETS)
