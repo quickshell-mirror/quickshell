@@ -26,6 +26,11 @@ RootWrapper::RootWrapper(QString rootPath)
 	}
 }
 
+RootWrapper::~RootWrapper() {
+	// event loop may no longer be running so deleteLater is not an option
+	delete this->root;
+}
+
 void RootWrapper::reloadGraph(bool hard) {
 	if (this->root != nullptr) {
 		this->engine.clearComponentCache();

@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qqmlengine.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qurl.h>
 
@@ -13,6 +14,8 @@ class RootWrapper: public QObject {
 
 public:
 	explicit RootWrapper(QString rootPath);
+	~RootWrapper() override;
+	Q_DISABLE_COPY_MOVE(RootWrapper);
 
 	void reloadGraph(bool hard);
 
