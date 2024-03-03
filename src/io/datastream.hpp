@@ -37,7 +37,7 @@ protected:
 private slots:
 	void onReaderDestroyed();
 
-private:
+protected:
 	DataStreamParser* mReader = nullptr;
 	QByteArray buffer;
 };

@@ -41,6 +41,7 @@ void Socket::setPath(QString path) {
 }
 
 void Socket::onSocketConnected() {
+	this->buffer.clear();
 	this->connected = true;
 	this->targetConnected = false;
 	this->disconnecting = false;
@@ -52,6 +53,7 @@ void Socket::onSocketDisconnected() {
 	this->disconnecting = false;
 	this->socket->deleteLater();
 	this->socket = nullptr;
+	this->buffer.clear();
 	emit this->connectionStateChanged();
 
 	if (this->targetConnected) this->connectPathSocket();
