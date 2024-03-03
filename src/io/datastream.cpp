@@ -35,6 +35,7 @@ void DataStream::onReaderDestroyed() {
 }
 
 void DataStream::onBytesAvailable() {
+	if (this->mReader == nullptr) return;
 	auto buf = this->ioDevice()->readAll();
 	this->mReader->parseBytes(buf, this->buffer);
 }
