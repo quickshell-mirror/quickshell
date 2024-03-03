@@ -41,6 +41,12 @@ void Process::setStdoutParser(DataStreamParser* parser) {
 
 	if (this->mStdoutParser != nullptr) {
 		QObject::disconnect(this->mStdoutParser, nullptr, this, nullptr);
+
+		if (this->process != nullptr) {
+			this->process->closeReadChannel(QProcess::StandardOutput);
+			this->process->readAllStandardOutput(); // discard
+			this->stdoutBuffer.clear();
+		}
 	}
 
 	this->mStdoutParser = parser;
@@ -68,6 +74,12 @@ void Process::setStderrParser(DataStreamParser* parser) {
 
 	if (this->mStderrParser != nullptr) {
 		QObject::disconnect(this->mStderrParser, nullptr, this, nullptr);
+
+		if (this->process != nullptr) {
+			this->process->closeReadChannel(QProcess::StandardError);
+			this->process->readAllStandardError(); // discard
+			this->stderrBuffer.clear();
+		}
 	}
 
 	this->mStderrParser = parser;
@@ -86,6 +98,19 @@ void Process::setStderrParser(DataStreamParser* parser) {
 void Process::onStderrParserDestroyed() {
 	this->mStderrParser = nullptr;
 	emit this->stderrParserChanged();
+}
+
+bool Process::stdinEnabled() const { return this->mStdinEnabled; }
+
+void Process::setStdinEnabled(bool enabled) {
+	if (enabled == this->mStdinEnabled) return;
+	this->mStdinEnabled = enabled;
+
+	if (!enabled && this->process != nullptr) {
+		this->process->closeWriteChannel();
+	}
+
+	emit this->stdinEnabledChanged();
 }
 
 void Process::startProcessIfReady() {
@@ -107,6 +132,10 @@ void Process::startProcessIfReady() {
 
 	this->stdoutBuffer.clear();
 	this->stderrBuffer.clear();
+
+	if (this->mStdoutParser == nullptr) this->process->closeReadChannel(QProcess::StandardOutput);
+	if (this->mStderrParser == nullptr) this->process->closeReadChannel(QProcess::StandardError);
+	if (!this->mStdinEnabled) this->process->closeWriteChannel();
 
 	this->process->start(cmd, args);
 }

@@ -51,10 +51,15 @@ class Process: public QObject {
 	/// > [!INFO] You can use `["sh", "-c", <your command>]` to execute your command with
 	/// > the system shell.
 	Q_PROPERTY(QList<QString> command READ command WRITE setCommand NOTIFY commandChanged);
-	/// The parser for STDOUT. If the parser is null no data will be read.
+	/// The parser for stdout. If the parser is null the process's stdout channel will be closed
+	/// and no further data will be read, even if a new parser is attached.
 	Q_PROPERTY(DataStreamParser* stdout READ stdoutParser WRITE setStdoutParser NOTIFY stdoutParserChanged);
-	/// The parser for STDERR. If the parser is null no data will be read.
+	/// The parser for stderr. If the parser is null the process's stdout channel will be closed
+	/// and no further data will be read, even if a new parser is attached.
 	Q_PROPERTY(DataStreamParser* stderr READ stderrParser WRITE setStderrParser NOTIFY stderrParserChanged);
+	/// If stdin is enabled. Defaults to true. If this property is set to false the process's stdin channel
+	/// will be closed and [write](#func.write) will do nothing, even if set back to true.
+	Q_PROPERTY(bool stdinEnabled READ stdinEnabled WRITE setStdinEnabled NOTIFY stdinEnabledChanged);
 	// clang-format on
 	QML_ELEMENT;
 
@@ -64,7 +69,7 @@ public:
 	/// Sends a signal to the process if `running` is true, otherwise does nothing.
 	Q_INVOKABLE void signal(qint32 signal);
 
-	/// Writes to the process's STDIN. Does nothing if `running` is false.
+	/// Writes to the process's stdin. Does nothing if `running` is false.
 	Q_INVOKABLE void write(const QString& data);
 
 	[[nodiscard]] bool isRunning() const;
@@ -81,6 +86,9 @@ public:
 	[[nodiscard]] DataStreamParser* stderrParser() const;
 	void setStderrParser(DataStreamParser* parser);
 
+	[[nodiscard]] bool stdinEnabled() const;
+	void setStdinEnabled(bool enabled);
+
 signals:
 	void started();
 	void exited(qint32 exitCode, QProcess::ExitStatus exitStatus);
@@ -90,6 +98,7 @@ signals:
 	void commandChanged();
 	void stdoutParserChanged();
 	void stderrParserChanged();
+	void stdinEnabledChanged();
 
 private slots:
 	void onStarted();
@@ -111,4 +120,5 @@ private:
 	QByteArray stderrBuffer;
 
 	bool targetRunning = false;
+	bool mStdinEnabled = false;
 };
