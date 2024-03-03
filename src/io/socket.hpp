@@ -9,7 +9,7 @@
 #include <qtmetamacros.h>
 
 #include "datastream.hpp"
-#include "reload.hpp"
+#include "../core/reload.hpp"
 
 ///! Unix socket listener.
 class Socket: public DataStream {
