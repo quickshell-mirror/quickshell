@@ -8,8 +8,10 @@
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
+#include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
@@ -73,4 +75,11 @@ void QuickshellGlobal::updateScreens() {
 	}
 
 	emit this->screensChanged();
+}
+
+QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
+	auto vstr = variable.toStdString();
+	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant();
+
+	return qEnvironmentVariable(vstr.data());
 }

@@ -6,6 +6,7 @@
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "qmlscreen.hpp"
 
@@ -49,6 +50,9 @@ public:
 	///
 	/// [Reloadable]: ../reloadable
 	Q_INVOKABLE void reload(bool hard);
+
+	/// Returns the string value of an environment variable or null if it is not set.
+	Q_INVOKABLE QVariant env(const QString& variable);
 
 signals:
 	void screensChanged();

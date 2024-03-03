@@ -8,8 +8,8 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
-#include "datastream.hpp"
 #include "../core/reload.hpp"
+#include "datastream.hpp"
 
 ///! Unix socket listener.
 class Socket: public DataStream {
