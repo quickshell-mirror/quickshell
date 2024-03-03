@@ -79,7 +79,7 @@ void QuickshellGlobal::updateScreens() {
 
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	auto vstr = variable.toStdString();
-	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant();
+	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
 }

@@ -20,7 +20,7 @@ void Process::setRunning(bool running) {
 }
 
 QVariant Process::pid() const {
-	if (this->process == nullptr) return QVariant();
+	if (this->process == nullptr) return QVariant::fromValue(nullptr);
 	return QVariant::fromValue(this->process->processId());
 }
 
