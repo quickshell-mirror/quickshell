@@ -76,7 +76,7 @@ private:
 	static QObject* getChildByReloadId(QObject* parent, const QString& reloadId);
 };
 
-///! Basic type that propagates reloads to child items in order.
+///! Scope that propagates reloads to child items in order.
 /// Convenience type equivalent to setting `reloadableId` on properties in a
 /// QtObject instance.
 ///
@@ -87,7 +87,7 @@ private:
 ///   Variants {
 ///     variants: ...
 ///
-///     ReloadPropagator {
+///     Scope {
 ///       // everything in here behaves the same as if it was defined
 ///       // directly in `Variants` reload-wise.
 ///     }
@@ -97,7 +97,7 @@ class ReloadPropagator: public Reloadable {
 	Q_OBJECT;
 	Q_PROPERTY(QQmlListProperty<QObject> children READ data);
 	Q_CLASSINFO("DefaultProperty", "children");
-	QML_ELEMENT;
+	QML_NAMED_ELEMENT(Scope);
 
 public:
 	explicit ReloadPropagator(QObject* parent = nullptr): Reloadable(parent) {}
