@@ -18,7 +18,40 @@
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
+QuickshellSettings* QuickshellSettings::instance() {
+	static QuickshellSettings* instance = nullptr; // NOLINT
+	if (instance == nullptr) {
+		QJSEngine::setObjectOwnership(instance, QJSEngine::CppOwnership);
+		instance = new QuickshellSettings();
+	}
+	return instance;
+}
+
+void QuickshellSettings::reset() { QuickshellSettings::instance()->mWatchFiles = true; }
+
+QString QuickshellSettings::workingDirectory() const { // NOLINT
+	return QDir::current().absolutePath();
+}
+
+void QuickshellSettings::setWorkingDirectory(QString workingDirectory) { // NOLINT
+	QDir::setCurrent(workingDirectory);
+	emit this->workingDirectoryChanged();
+}
+
+bool QuickshellSettings::watchFiles() const { return this->mWatchFiles; }
+
+void QuickshellSettings::setWatchFiles(bool watchFiles) {
+	if (watchFiles == this->mWatchFiles) return;
+	this->mWatchFiles = watchFiles;
+	emit this->watchFilesChanged();
+}
+
 QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
+	// clang-format off
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::workingDirectoryChanged, this, &QuickshellGlobal::workingDirectoryChanged);
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &QuickshellGlobal::watchFilesChanged);
+	// clang-format on
+
 	auto* app = QCoreApplication::instance();
 	auto* guiApp = qobject_cast<QGuiApplication*>(app);
 
@@ -63,6 +96,22 @@ void QuickshellGlobal::reload(bool hard) {
 	root->reloadGraph(hard);
 }
 
+QString QuickshellGlobal::workingDirectory() const { // NOLINT
+	return QuickshellSettings::instance()->workingDirectory();
+}
+
+void QuickshellGlobal::setWorkingDirectory(QString workingDirectory) { // NOLINT
+	QuickshellSettings::instance()->setWorkingDirectory(std::move(workingDirectory));
+}
+
+bool QuickshellGlobal::watchFiles() const { // NOLINT
+	return QuickshellSettings::instance()->watchFiles();
+}
+
+void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
+	QuickshellSettings::instance()->setWatchFiles(watchFiles);
+}
+
 void QuickshellGlobal::updateScreens() {
 	auto screens = QGuiApplication::screens();
 	this->mScreens.resize(screens.size());
@@ -84,30 +133,4 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
-}
-
-QString QuickshellGlobal::workingDirectory() const { // NOLINT
-	return QDir::current().absolutePath();
-}
-
-void QuickshellGlobal::setWorkingDirectory(const QString& workingDirectory) { // NOLINT
-	QDir::setCurrent(workingDirectory);
-	emit this->workingDirectoryChanged();
-}
-
-static QuickshellGlobal* g_instance = nullptr; // NOLINT
-
-QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* /*unused*/, QJSEngine* /*unused*/) {
-	return QuickshellGlobal::instance();
-}
-
-QuickshellGlobal* QuickshellGlobal::instance() {
-	if (g_instance == nullptr) g_instance = new QuickshellGlobal();
-	QJSEngine::setObjectOwnership(g_instance, QJSEngine::CppOwnership);
-	return g_instance;
-}
-
-void QuickshellGlobal::deleteInstance() {
-	delete g_instance;
-	g_instance = nullptr;
 }

@@ -12,6 +12,37 @@
 
 #include "qmlscreen.hpp"
 
+///! Accessor for some options under the Quickshell type.
+class QuickshellSettings: public QObject {
+	Q_OBJECT;
+	// clang-format off
+	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
+	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
+	/// If true then the configuration will be reloaded whenever any files change.
+	/// Defaults to true.
+	Q_PROPERTY(bool watchFiles READ watchFiles WRITE setWatchFiles NOTIFY watchFilesChanged);
+	// clang-format on
+	QML_ELEMENT;
+	QML_UNCREATABLE("singleton");
+
+public:
+	[[nodiscard]] QString workingDirectory() const;
+	void setWorkingDirectory(QString workingDirectory);
+
+	[[nodiscard]] bool watchFiles() const;
+	void setWatchFiles(bool watchFiles);
+
+	static QuickshellSettings* instance();
+	static void reset();
+
+signals:
+	void workingDirectoryChanged();
+	void watchFilesChanged();
+
+private:
+	bool mWatchFiles = true;
+};
+
 class QuickshellGlobal: public QObject {
 	Q_OBJECT;
 	// clang-format off
@@ -38,6 +69,9 @@ class QuickshellGlobal: public QObject {
 	Q_PROPERTY(QQmlListProperty<QuickshellScreenInfo> screens READ screens NOTIFY screensChanged);
 	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
 	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
+	/// If true then the configuration will be reloaded whenever any files change.
+	/// Defaults to true.
+	Q_PROPERTY(bool watchFiles READ watchFiles WRITE setWatchFiles NOTIFY watchFilesChanged);
 	// clang-format on
 	QML_SINGLETON;
 	QML_NAMED_ELEMENT(Quickshell);
@@ -61,15 +95,15 @@ public:
 	Q_INVOKABLE QVariant env(const QString& variable);
 
 	[[nodiscard]] QString workingDirectory() const;
-	void setWorkingDirectory(const QString& workingDirectory);
+	void setWorkingDirectory(QString workingDirectory);
 
-	static QuickshellGlobal* create(QQmlEngine* /*unused*/, QJSEngine* /*unused*/);
-	static QuickshellGlobal* instance();
-	static void deleteInstance();
+	[[nodiscard]] bool watchFiles() const;
+	void setWatchFiles(bool watchFiles);
 
 signals:
 	void screensChanged();
 	void workingDirectoryChanged();
+	void watchFilesChanged();
 
 public slots:
 	void updateScreens();

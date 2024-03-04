@@ -1,16 +1,7 @@
 #include "shell.hpp"
 
-#include <qdir.h>
-#include <qtmetamacros.h>
+#include "qmlglobal.hpp"
 
-void ShellRoot::setConfig(ShellConfig config) {
-	this->mConfig = config;
-
-	emit this->configChanged();
-}
-
-ShellConfig ShellRoot::config() const { return this->mConfig; }
-
-void ShellConfig::setWorkingDirectory(const QString& workingDirectory) { // NOLINT
-	QDir::setCurrent(workingDirectory);
+QuickshellSettings* ShellRoot::settings() const { // NOLINT
+	return QuickshellSettings::instance();
 }

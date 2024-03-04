@@ -21,8 +21,8 @@ static DisownedProcessContext* disownedCtx; // NOLINT
 
 Process::Process(QObject* parent): QObject(parent) {
 	QObject::connect(
-	    QuickshellGlobal::instance(),
-	    &QuickshellGlobal::workingDirectoryChanged,
+	    QuickshellSettings::instance(),
+	    &QuickshellSettings::workingDirectoryChanged,
 	    this,
 	    &Process::onGlobalWorkingDirectoryChanged
 	);

@@ -27,6 +27,10 @@ RootWrapper::RootWrapper(QString rootPath)
 	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
 	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
 
+	// clang-format off
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &RootWrapper::onWatchFilesChanged);
+	// clang-format on
+
 	this->reloadGraph(true);
 
 	if (this->root == nullptr) {
@@ -37,13 +41,12 @@ RootWrapper::RootWrapper(QString rootPath)
 
 RootWrapper::~RootWrapper() {
 	// event loop may no longer be running so deleteLater is not an option
-	QuickshellGlobal::deleteInstance();
 	delete this->root;
 }
 
 void RootWrapper::reloadGraph(bool hard) {
 	if (this->root != nullptr) {
-		QuickshellGlobal::deleteInstance();
+		QuickshellSettings::reset();
 		this->engine.clearComponentCache();
 	}
 
@@ -87,17 +90,15 @@ void RootWrapper::reloadGraph(bool hard) {
 		QuickshellPlugin::runOnReload();
 	}
 
-	this->onConfigChanged();
+	this->onWatchFilesChanged();
 }
 
-void RootWrapper::onConfigChanged() {
-	auto config = this->root->config();
+void RootWrapper::onWatchFilesChanged() {
+	auto watchFiles = QuickshellSettings::instance()->watchFiles();
 
-	if (config.mWatchFiles && this->configWatcher == nullptr) {
+	if (watchFiles && this->configWatcher == nullptr) {
 		this->configWatcher = new FiletreeWatcher();
 		this->configWatcher->addPath(QFileInfo(this->rootPath).dir().path());
-
-		QObject::connect(this->root, &ShellRoot::configChanged, this, &RootWrapper::onConfigChanged);
 
 		QObject::connect(
 		    this->configWatcher,
@@ -105,7 +106,7 @@ void RootWrapper::onConfigChanged() {
 		    this,
 		    &RootWrapper::onWatchedFilesChanged
 		);
-	} else if (!config.mWatchFiles && this->configWatcher != nullptr) {
+	} else if (!watchFiles && this->configWatcher != nullptr) {
 		this->configWatcher->deleteLater();
 		this->configWatcher = nullptr;
 	}

@@ -20,7 +20,7 @@ public:
 	void reloadGraph(bool hard);
 
 private slots:
-	void onConfigChanged();
+	void onWatchFilesChanged();
 	void onWatchedFilesChanged();
 
 private:
