@@ -21,7 +21,9 @@ int main(int argc, char** argv) {
 	parser.addVersionOption();
 
 	auto configOption = QCommandLineOption({"c", "config"}, "Path to configuration file.", "path");
+	auto workdirOption = QCommandLineOption({"d", "workdir"}, "Initial working directory.", "path");
 	parser.addOption(configOption);
+	parser.addOption(workdirOption);
 	parser.process(app);
 
 	QString configPath;
@@ -37,6 +39,10 @@ int main(int argc, char** argv) {
 	if (!QFile(configPath).exists()) {
 		qCritical() << "config file does not exist";
 		return -1;
+	}
+
+	if (parser.isSet(workdirOption)) {
+		QDir::setCurrent(parser.value(workdirOption));
 	}
 
 	QuickshellPlugin::initPlugins();

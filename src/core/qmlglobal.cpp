@@ -1,4 +1,5 @@
 #include "qmlglobal.hpp"
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
