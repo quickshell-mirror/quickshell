@@ -5,10 +5,12 @@
 #include <qdir.h>
 #include <qlist.h>
 #include <qlogging.h>
+#include <qmap.h>
 #include <qobject.h>
 #include <qprocess.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
@@ -35,6 +37,16 @@ QVariant Process::pid() const {
 	return QVariant::fromValue(this->process->processId());
 }
 
+QList<QString> Process::command() const { return this->mCommand; }
+
+void Process::setCommand(QList<QString> command) {
+	if (this->mCommand == command) return;
+	this->mCommand = std::move(command);
+	emit this->commandChanged();
+
+	this->startProcessIfReady();
+}
+
 QString Process::workingDirectory() const {
 	if (this->mWorkingDirectory.isEmpty()) return QDir::current().absolutePath();
 	else return this->mWorkingDirectory;
@@ -54,14 +66,20 @@ void Process::onGlobalWorkingDirectoryChanged() {
 	}
 }
 
-QList<QString> Process::command() const { return this->mCommand; }
+QMap<QString, QVariant> Process::environment() const { return this->mEnvironment; }
 
-void Process::setCommand(QList<QString> command) {
-	if (this->mCommand == command) return;
-	this->mCommand = std::move(command);
-	emit this->commandChanged();
+void Process::setEnvironment(QMap<QString, QVariant> environment) {
+	if (environment == this->mEnvironment) return;
+	this->mEnvironment = std::move(environment);
+	emit this->environmentChanged();
+}
 
-	this->startProcessIfReady();
+bool Process::environmentCleared() const { return this->mClearEnvironment; }
+
+void Process::setEnvironmentCleared(bool cleared) {
+	if (cleared == this->mClearEnvironment) return;
+	this->mClearEnvironment = cleared;
+	emit this->environmentClearChanged();
 }
 
 DataStreamParser* Process::stdoutParser() const { return this->mStdoutParser; }
@@ -167,8 +185,31 @@ void Process::startProcessIfReady() {
 	if (this->mStderrParser == nullptr) this->process->closeReadChannel(QProcess::StandardError);
 	if (!this->mStdinEnabled) this->process->closeWriteChannel();
 
-	if (!this->mWorkingDirectory.isEmpty())
+	if (!this->mWorkingDirectory.isEmpty()) {
 		this->process->setWorkingDirectory(this->mWorkingDirectory);
+	}
+
+	if (!this->mEnvironment.isEmpty() || this->mClearEnvironment) {
+		auto sysenv = QProcessEnvironment::systemEnvironment();
+		auto env = this->mClearEnvironment ? QProcessEnvironment() : sysenv;
+
+		for (auto& name: this->mEnvironment.keys()) {
+			auto value = this->mEnvironment.value(name);
+			if (!value.isValid()) continue;
+
+			if (this->mClearEnvironment) {
+				if (value.isNull()) {
+					if (sysenv.contains(name)) env.insert(name, sysenv.value(name));
+				} else env.insert(name, value.toString());
+			} else {
+				if (value.isNull()) env.remove(name);
+				else env.insert(name, value.toString());
+			}
+		}
+
+		this->process->setProcessEnvironment(env);
+	}
+
 	this->process->start(cmd, args);
 }
 
