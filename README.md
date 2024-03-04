@@ -1,6 +1,11 @@
 # quickshell
 
-TODO
+Simple and flexbile QtQuick based desktop shell toolkit.
+
+Hosts: [outfoxxed's gitea], [github]
+
+[outfoxxed's gitea]: https://git.outfoxxed.me/outfoxxed/quickshell
+[github]: https://github.com/outfoxxed/quickshell
 
 #### License
 
