@@ -3,14 +3,18 @@ qt_add_library(quickshell-io STATIC
 	process.cpp
 )
 
+add_library(quickshell-io-init OBJECT init.cpp)
+
 if (SOCKETS)
 	target_sources(quickshell-io PRIVATE socket.cpp)
 endif()
 
 qt_add_qml_module(quickshell-io URI Quickshell.Io)
-target_link_libraries(quickshell-io PRIVATE ${QT_DEPS})
 
-target_link_libraries(quickshell PRIVATE quickshell-ioplugin)
+target_link_libraries(quickshell-io PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-io-init PRIVATE ${QT_DEPS})
+
+target_link_libraries(quickshell PRIVATE quickshell-ioplugin quickshell-io-init)
 
 if (TESTS)
 	add_subdirectory(test)

@@ -25,3 +25,9 @@ void QuickshellPlugin::initPlugins() {
 		plugin->registerTypes();
 	}
 }
+
+void QuickshellPlugin::runOnReload() {
+	for (QuickshellPlugin* plugin: plugins) {
+		plugin->onReload();
+	}
+}

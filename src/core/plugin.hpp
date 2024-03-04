@@ -15,9 +15,11 @@ public:
 	virtual bool applies() { return true; }
 	virtual void init() {}
 	virtual void registerTypes() {}
+	virtual void onReload() {}
 
 	static void registerPlugin(QuickshellPlugin& plugin);
 	static void initPlugins();
+	static void runOnReload();
 };
 
 // NOLINTBEGIN

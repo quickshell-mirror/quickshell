@@ -12,6 +12,7 @@
 #include <qtimer.h>
 #include <qurl.h>
 
+#include "plugin.hpp"
 #include "qmlglobal.hpp"
 #include "reload.hpp"
 #include "shell.hpp"
@@ -41,9 +42,8 @@ RootWrapper::~RootWrapper() {
 }
 
 void RootWrapper::reloadGraph(bool hard) {
-	QuickshellGlobal::deleteInstance();
-
 	if (this->root != nullptr) {
+		QuickshellGlobal::deleteInstance();
 		this->engine.clearComponentCache();
 	}
 
@@ -77,10 +77,14 @@ void RootWrapper::reloadGraph(bool hard) {
 		oldRoot->deleteLater();
 
 		QTimer::singleShot(0, [this, newRoot]() {
-			if (this->root == newRoot) PostReloadHook::postReloadTree(this->root);
+			if (this->root == newRoot) {
+				QuickshellPlugin::runOnReload();
+				PostReloadHook::postReloadTree(this->root);
+			}
 		});
 	} else {
 		PostReloadHook::postReloadTree(newRoot);
+		QuickshellPlugin::runOnReload();
 	}
 
 	this->onConfigChanged();

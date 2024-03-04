@@ -15,6 +15,10 @@
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
 
+// When the process ends this have no parent and is just leaked,
+// meaning the destructor never runs and they are never killed.
+static DisownedProcessContext* disownedCtx; // NOLINT
+
 Process::Process(QObject* parent): QObject(parent) {
 	QObject::connect(
 	    QuickshellGlobal::instance(),
@@ -22,6 +26,13 @@ Process::Process(QObject* parent): QObject(parent) {
 	    this,
 	    &Process::onGlobalWorkingDirectoryChanged
 	);
+}
+
+Process::~Process() {
+	if (!this->mLifetimeManaged && this->process != nullptr) {
+		if (disownedCtx == nullptr) disownedCtx = new DisownedProcessContext(); // NOLINT
+		disownedCtx->reparent(this->process);
+	}
 }
 
 bool Process::isRunning() const { return this->process != nullptr; }
@@ -161,6 +172,14 @@ void Process::setStdinEnabled(bool enabled) {
 	emit this->stdinEnabledChanged();
 }
 
+bool Process::isLifetimeManaged() const { return this->mLifetimeManaged; }
+
+void Process::setLifetimeManaged(bool managed) {
+	if (managed == this->mLifetimeManaged) return;
+	this->mLifetimeManaged = managed;
+	emit this->lifetimeManagedChanged();
+}
+
 void Process::startProcessIfReady() {
 	if (this->process != nullptr || !this->targetRunning || this->mCommand.isEmpty()) return;
 	this->targetRunning = false;
@@ -260,4 +279,14 @@ void Process::signal(qint32 signal) {
 void Process::write(const QString& data) {
 	if (this->process == nullptr) return;
 	this->process->write(data.toUtf8());
+}
+
+void DisownedProcessContext::reparent(QProcess* process) {
+	process->setParent(this);
+	QObject::connect(process, &QProcess::finished, this, [process]() { process->deleteLater(); });
+}
+
+void DisownedProcessContext::destroyInstance() {
+	delete disownedCtx;
+	disownedCtx = nullptr;
 }

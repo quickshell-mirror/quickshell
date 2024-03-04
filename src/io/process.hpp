@@ -4,6 +4,7 @@
 #include <qobject.h>
 #include <qprocess.h>
 #include <qqmlintegration.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -43,7 +44,8 @@ class Process: public QObject {
 	Q_PROPERTY(bool running READ isRunning WRITE setRunning NOTIFY runningChanged);
 	/// The process ID of the running process or `null` if `running` is false.
 	Q_PROPERTY(QVariant pid READ pid NOTIFY pidChanged);
-	/// The command to execute.
+	/// The command to execute. Each argument is its own string, which means you don't have
+	/// to deal with quoting anything.
 	///
 	/// If the process is already running changing this property will affect the next
 	/// started process. If the property has been changed after starting a process it will
@@ -112,11 +114,21 @@ class Process: public QObject {
 	/// If stdin is enabled. Defaults to true. If this property is set to false the process's stdin channel
 	/// will be closed and [write](#func.write) will do nothing, even if set back to true.
 	Q_PROPERTY(bool stdinEnabled READ stdinEnabled WRITE setStdinEnabled NOTIFY stdinEnabledChanged);
+	/// If the process should be killed when the Process object is destroyed or quickshell exits.
+	/// Defaults to true.
+	///
+	/// This property may be changed while the process is running and will affect it.
+	///
+	/// > [!WARNING] If set to false the process will still be killed if the quickshell config reloads.
+	/// > It will not be killed if quickshell exits normally or crashes.
+	Q_PROPERTY(bool manageLifetime READ isLifetimeManaged WRITE setLifetimeManaged NOTIFY lifetimeManagedChanged);
 	// clang-format on
 	QML_ELEMENT;
 
 public:
 	explicit Process(QObject* parent = nullptr);
+	~Process() override;
+	Q_DISABLE_COPY_MOVE(Process);
 
 	/// Sends a signal to the process if `running` is true, otherwise does nothing.
 	Q_INVOKABLE void signal(qint32 signal);
@@ -150,6 +162,9 @@ public:
 	[[nodiscard]] bool stdinEnabled() const;
 	void setStdinEnabled(bool enabled);
 
+	[[nodiscard]] bool isLifetimeManaged() const;
+	void setLifetimeManaged(bool managed);
+
 signals:
 	void started();
 	void exited(qint32 exitCode, QProcess::ExitStatus exitStatus);
@@ -163,6 +178,7 @@ signals:
 	void stdoutParserChanged();
 	void stderrParserChanged();
 	void stdinEnabledChanged();
+	void lifetimeManagedChanged();
 
 private slots:
 	void onStarted();
@@ -189,4 +205,15 @@ private:
 	bool targetRunning = false;
 	bool mStdinEnabled = false;
 	bool mClearEnvironment = false;
+	bool mLifetimeManaged = true;
+};
+
+class DisownedProcessContext: public QObject {
+	Q_OBJECT;
+
+	void reparent(QProcess* process);
+	friend class Process;
+
+public:
+	static void destroyInstance();
 };
