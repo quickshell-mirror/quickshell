@@ -122,8 +122,8 @@ void WlrLayershell::setExclusiveZone(qint32 exclusiveZone) {
 ExclusionMode::Enum WlrLayershell::exclusionMode() const { return this->mExclusionMode; }
 
 void WlrLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
-	this->mExclusionMode = exclusionMode;
 	if (exclusionMode == this->mExclusionMode) return;
+	this->mExclusionMode = exclusionMode;
 
 	if (exclusionMode == ExclusionMode::Normal) {
 		this->ext->setExclusiveZone(this->mExclusiveZone);
