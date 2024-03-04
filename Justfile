@@ -27,4 +27,7 @@ run *ARGS='': build
 	{{builddir}}/src/core/quickshell {{ARGS}}
 
 test *ARGS='': build
-	ctest --test-dir build --output-on-failure {{ARGS}}
+	ctest --test-dir {{builddir}} --output-on-failure {{ARGS}}
+
+install *ARGS='': clean (configure "release") build
+	cmake --install {{builddir}} {{ARGS}}

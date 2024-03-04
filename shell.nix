@@ -1,36 +1,27 @@
-{ pkgs ? import <nixpkgs> {} }: let
+{
+  pkgs ? import <nixpkgs> {},
+  quickshell ? pkgs.callPackage ./default.nix {},
+  ...
+}: let
   tidyfox = import (pkgs.fetchFromGitea {
     domain = "git.outfoxxed.me";
     owner = "outfoxxed";
     repo = "tidyfox";
     rev = "1f062cc198d1112d13e5128fa1f2ee3dbffe613b";
     sha256 = "kbt0Zc1qHE5fhqBkKz8iue+B+ZANjF1AR/RdgmX1r0I=";
-  }) {};
+  }) { inherit pkgs; };
 in pkgs.mkShell {
+  inputsFrom = [ quickshell ];
+
   nativeBuildInputs = with pkgs; [
     just
     clang-tools_17
     parallel
-    cmake
-    ninja
-
-    pkg-config
-    wayland-scanner
-
-    qt6.wrapQtAppsHook
     makeWrapper
   ];
 
-  buildInputs = with pkgs; [
-    qt6.qtbase
-    qt6.qtdeclarative
-    qt6.qtwayland
-    wayland
-    wayland-protocols
-  ];
-
-  QTWAYLANDSCANNER = "${pkgs.qt6.qtwayland}/libexec/qtwaylandscanner";
   TIDYFOX = "${tidyfox}/lib/libtidyfox.so";
+  QTWAYLANDSCANNER = quickshell.QTWAYLANDSCANNER;
 
   shellHook = ''
     export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
@@ -39,7 +30,7 @@ in pkgs.mkShell {
     # https://discourse.nixos.org/t/qt-development-environment-on-a-flake-system/23707/5
     setQtEnvironment=$(mktemp)
     random=$(openssl rand -base64 20 | sed "s/[^a-zA-Z0-9]//g")
-    makeWrapper "$(type -p sh)" "$setQtEnvironment" "''${qtWrapperArgs[@]}" --argv0 "$random"
+    makeShellWrapper "$(type -p sh)" "$setQtEnvironment" "''${qtWrapperArgs[@]}" --argv0 "$random"
     sed "/$random/d" -i "$setQtEnvironment"
     source "$setQtEnvironment"
 

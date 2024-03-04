@@ -13,7 +13,7 @@ option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol"
 option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
 
 message(STATUS "Quickshell configuration")
-message(STATUS "  Build tests: ${TESTS}")
+message(STATUS "  Build tests: ${BUILD_TESTING}")
 message(STATUS "  Sockets: ${SOCKETS}")
 message(STATUS "  Wayland: ${WAYLAND}")
 if (WAYLAND)
@@ -36,7 +36,7 @@ endif()
 set(QT_DEPS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 set(QT_FPDEPS Gui Qml Quick QuickControls2)
 
-if (TESTS)
+if (BUILD_TESTING)
 	enable_testing()
 	list(APPEND QT_FPDEPS Test)
 endif()
@@ -61,3 +61,5 @@ add_subdirectory(src/io)
 if (WAYLAND)
 	add_subdirectory(src/wayland)
 endif ()
+
+install(TARGETS quickshell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
