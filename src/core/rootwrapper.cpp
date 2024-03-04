@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <utility>
 
+#include <qcoreapplication.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qlogging.h>
@@ -21,6 +22,10 @@ RootWrapper::RootWrapper(QString rootPath)
     , rootPath(std::move(rootPath))
     , engine(this)
     , originalWorkingDirectory(QDir::current().absolutePath()) {
+	auto* app = QCoreApplication::instance();
+	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
+	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
+
 	this->reloadGraph(true);
 
 	if (this->root == nullptr) {
