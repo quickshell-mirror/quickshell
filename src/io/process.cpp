@@ -2,6 +2,7 @@
 #include <csignal> // NOLINT
 #include <utility>
 
+#include <qdir.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
@@ -9,7 +10,17 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
+
+Process::Process(QObject* parent): QObject(parent) {
+	QObject::connect(
+	    QuickshellGlobal::instance(),
+	    &QuickshellGlobal::workingDirectoryChanged,
+	    this,
+	    &Process::onGlobalWorkingDirectoryChanged
+	);
+}
 
 bool Process::isRunning() const { return this->process != nullptr; }
 
@@ -22,6 +33,25 @@ void Process::setRunning(bool running) {
 QVariant Process::pid() const {
 	if (this->process == nullptr) return QVariant::fromValue(nullptr);
 	return QVariant::fromValue(this->process->processId());
+}
+
+QString Process::workingDirectory() const {
+	if (this->mWorkingDirectory.isEmpty()) return QDir::current().absolutePath();
+	else return this->mWorkingDirectory;
+}
+
+void Process::setWorkingDirectory(const QString& workingDirectory) {
+	auto absolute =
+	    workingDirectory.isEmpty() ? workingDirectory : QDir(workingDirectory).absolutePath();
+	if (absolute == this->mWorkingDirectory) return;
+	this->mWorkingDirectory = absolute;
+	emit this->workingDirectoryChanged();
+}
+
+void Process::onGlobalWorkingDirectoryChanged() {
+	if (this->mWorkingDirectory.isEmpty()) {
+		emit this->workingDirectoryChanged();
+	}
 }
 
 QList<QString> Process::command() const { return this->mCommand; }
@@ -137,6 +167,8 @@ void Process::startProcessIfReady() {
 	if (this->mStderrParser == nullptr) this->process->closeReadChannel(QProcess::StandardError);
 	if (!this->mStdinEnabled) this->process->closeWriteChannel();
 
+	if (!this->mWorkingDirectory.isEmpty())
+		this->process->setWorkingDirectory(this->mWorkingDirectory);
 	this->process->start(cmd, args);
 }
 

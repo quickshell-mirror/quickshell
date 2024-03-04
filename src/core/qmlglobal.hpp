@@ -1,7 +1,9 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qjsengine.h>
 #include <qobject.h>
+#include <qqmlengine.h>
 #include <qqmlintegration.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
@@ -12,6 +14,7 @@
 
 class QuickshellGlobal: public QObject {
 	Q_OBJECT;
+	// clang-format off
 	/// All currently connected screens.
 	///
 	/// This property updates as connected screens change.
@@ -33,6 +36,9 @@ class QuickshellGlobal: public QObject {
 	/// This creates an instance of your window once on every screen.
 	/// As screens are added or removed your window will be created or destroyed on those screens.
 	Q_PROPERTY(QQmlListProperty<QuickshellScreenInfo> screens READ screens NOTIFY screensChanged);
+	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
+	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
+	// clang-format on
 	QML_SINGLETON;
 	QML_NAMED_ELEMENT(Quickshell);
 
@@ -54,8 +60,16 @@ public:
 	/// Returns the string value of an environment variable or null if it is not set.
 	Q_INVOKABLE QVariant env(const QString& variable);
 
+	[[nodiscard]] QString workingDirectory() const;
+	void setWorkingDirectory(const QString& workingDirectory);
+
+	static QuickshellGlobal* create(QQmlEngine* /*unused*/, QJSEngine* /*unused*/);
+	static QuickshellGlobal* instance();
+	static void deleteInstance();
+
 signals:
 	void screensChanged();
+	void workingDirectoryChanged();
 
 public slots:
 	void updateScreens();

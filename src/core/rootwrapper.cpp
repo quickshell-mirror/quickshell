@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <utility>
 
+#include <qdir.h>
 #include <qfileinfo.h>
 #include <qlogging.h>
 #include <qobject.h>
@@ -10,6 +11,7 @@
 #include <qtimer.h>
 #include <qurl.h>
 
+#include "qmlglobal.hpp"
 #include "reload.hpp"
 #include "shell.hpp"
 #include "watcher.hpp"
@@ -17,7 +19,8 @@
 RootWrapper::RootWrapper(QString rootPath)
     : QObject(nullptr)
     , rootPath(std::move(rootPath))
-    , engine(this) {
+    , engine(this)
+    , originalWorkingDirectory(QDir::current().absolutePath()) {
 	this->reloadGraph(true);
 
 	if (this->root == nullptr) {
@@ -28,13 +31,18 @@ RootWrapper::RootWrapper(QString rootPath)
 
 RootWrapper::~RootWrapper() {
 	// event loop may no longer be running so deleteLater is not an option
+	QuickshellGlobal::deleteInstance();
 	delete this->root;
 }
 
 void RootWrapper::reloadGraph(bool hard) {
+	QuickshellGlobal::deleteInstance();
+
 	if (this->root != nullptr) {
 		this->engine.clearComponentCache();
 	}
+
+	QDir::setCurrent(this->originalWorkingDirectory);
 
 	auto component = QQmlComponent(&this->engine, QUrl::fromLocalFile(this->rootPath));
 

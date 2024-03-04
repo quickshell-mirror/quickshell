@@ -42,6 +42,14 @@ class Process: public QObject {
 	Q_PROPERTY(bool running READ isRunning WRITE setRunning NOTIFY runningChanged);
 	/// The process ID of the running process or `null` if `running` is false.
 	Q_PROPERTY(QVariant pid READ pid NOTIFY pidChanged);
+	/// The working directory of the process. Defaults to [quickshell's working directory].
+	///
+	/// If the process is already running changing this property will affect the next
+	/// started process. If the property has been changed after starting a process it will
+	/// return the new value, not the one for the currently running process.
+	///
+	/// [quickshell's working directory]: ../../quickshell/quickshell#prop.workingDirectory
+	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
 	/// The command to execute.
 	///
 	/// If the process is already running changing this property will affect the next
@@ -64,7 +72,7 @@ class Process: public QObject {
 	QML_ELEMENT;
 
 public:
-	explicit Process(QObject* parent = nullptr): QObject(parent) {}
+	explicit Process(QObject* parent = nullptr);
 
 	/// Sends a signal to the process if `running` is true, otherwise does nothing.
 	Q_INVOKABLE void signal(qint32 signal);
@@ -76,6 +84,9 @@ public:
 	void setRunning(bool running);
 
 	[[nodiscard]] QVariant pid() const;
+
+	[[nodiscard]] QString workingDirectory() const;
+	void setWorkingDirectory(const QString& workingDirectory);
 
 	[[nodiscard]] QList<QString> command() const;
 	void setCommand(QList<QString> command);
@@ -95,6 +106,7 @@ signals:
 
 	void runningChanged();
 	void pidChanged();
+	void workingDirectoryChanged();
 	void commandChanged();
 	void stdoutParserChanged();
 	void stderrParserChanged();
@@ -108,11 +120,13 @@ private slots:
 	void onStderrReadyRead();
 	void onStdoutParserDestroyed();
 	void onStderrParserDestroyed();
+	void onGlobalWorkingDirectoryChanged();
 
 private:
 	void startProcessIfReady();
 
 	QProcess* process = nullptr;
+	QString mWorkingDirectory;
 	QList<QString> mCommand;
 	DataStreamParser* mStdoutParser = nullptr;
 	DataStreamParser* mStderrParser = nullptr;

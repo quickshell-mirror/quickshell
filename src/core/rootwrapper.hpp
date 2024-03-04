@@ -28,4 +28,5 @@ private:
 	QQmlEngine engine;
 	ShellRoot* root = nullptr;
 	FiletreeWatcher* configWatcher = nullptr;
+	QString originalWorkingDirectory;
 };

@@ -2,7 +2,9 @@
 
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
+#include <qdir.h>
 #include <qguiapplication.h>
+#include <qjsengine.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
@@ -82,4 +84,30 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
+}
+
+QString QuickshellGlobal::workingDirectory() const { // NOLINT
+	return QDir::current().absolutePath();
+}
+
+void QuickshellGlobal::setWorkingDirectory(const QString& workingDirectory) { // NOLINT
+	QDir::setCurrent(workingDirectory);
+	emit this->workingDirectoryChanged();
+}
+
+static QuickshellGlobal* g_instance = nullptr; // NOLINT
+
+QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* /*unused*/, QJSEngine* /*unused*/) {
+	return QuickshellGlobal::instance();
+}
+
+QuickshellGlobal* QuickshellGlobal::instance() {
+	if (g_instance == nullptr) g_instance = new QuickshellGlobal();
+	QJSEngine::setObjectOwnership(g_instance, QJSEngine::CppOwnership);
+	return g_instance;
+}
+
+void QuickshellGlobal::deleteInstance() {
+	delete g_instance;
+	g_instance = nullptr;
 }
