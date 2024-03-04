@@ -25,7 +25,7 @@ class ShellRoot: public ReloadPropagator {
 	/// Defaults to true.
 	///
 	/// `config.workingDirectory` corrosponds to [Quickshell.workingDirectory](../quickshell#prop.workingDirectory).
-	Q_PROPERTY(ShellConfig config READ config WRITE setConfig);
+	Q_PROPERTY(ShellConfig config READ config WRITE setConfig NOTIFY configChanged);
 	QML_ELEMENT;
 
 public:
