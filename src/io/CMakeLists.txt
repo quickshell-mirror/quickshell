@@ -9,7 +9,7 @@ if (SOCKETS)
 	target_sources(quickshell-io PRIVATE socket.cpp)
 endif()
 
-qt_add_qml_module(quickshell-io URI Quickshell.Io)
+qt_add_qml_module(quickshell-io URI Quickshell.Io VERSION 0.1)
 
 target_link_libraries(quickshell-io PRIVATE ${QT_DEPS})
 target_link_libraries(quickshell-io-init PRIVATE ${QT_DEPS})

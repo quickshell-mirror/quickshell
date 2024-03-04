@@ -17,6 +17,6 @@ qt_add_executable(quickshell
 	panelinterface.cpp
 )
 
-qt_add_qml_module(quickshell URI Quickshell)
+qt_add_qml_module(quickshell URI Quickshell VERSION 0.1)
 
 target_link_libraries(quickshell PRIVATE ${QT_DEPS})

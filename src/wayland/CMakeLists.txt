@@ -45,7 +45,7 @@ endfunction()
 # -----
 
 qt_add_library(quickshell-wayland STATIC)
-qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland)
+qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland VERSION 0.1)
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)
