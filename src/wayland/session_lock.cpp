@@ -73,7 +73,8 @@ void SessionLock::updateSurfaces(SessionLock* old) {
 
 		for (auto* screen: screens) {
 			if (!this->surfaces.contains(screen)) {
-				auto* instanceObj = this->mSurfaceComponent->create(QQmlEngine::contextForObject(this));
+				auto* instanceObj =
+				    this->mSurfaceComponent->create(QQmlEngine::contextForObject(this->mSurfaceComponent));
 				auto* instance = qobject_cast<SessionLockSurface*>(instanceObj);
 
 				if (instance == nullptr) {

@@ -177,7 +177,7 @@ void SocketServer::disableServer() {
 
 void SocketServer::onNewConnection() {
 	if (auto* connection = this->server->nextPendingConnection()) {
-		auto* instanceObj = this->mHandler->create(QQmlEngine::contextForObject(this));
+		auto* instanceObj = this->mHandler->create(QQmlEngine::contextForObject(this->mHandler));
 		auto* instance = qobject_cast<Socket*>(instanceObj);
 
 		if (instance == nullptr) {

@@ -95,7 +95,7 @@ void Variants::updateVariants() {
 
 			auto* instance = this->mComponent->createWithInitialProperties(
 			    variant,
-			    QQmlEngine::contextForObject(this)
+			    QQmlEngine::contextForObject(this->mComponent)
 			);
 
 			if (instance == nullptr) {
