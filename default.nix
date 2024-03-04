@@ -15,7 +15,7 @@
   enableWayland ? true,
 }: stdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
-  version = "0.1";
+  version = "0.1.0";
   src = nix-gitignore.gitignoreSource [] ./.;
 
   nativeBuildInputs = with pkgs; [
@@ -53,6 +53,7 @@
   meta = with lib; {
     homepage = "https://git.outfoxxed.me/outfoxxed/quickshell";
     description = "Simple and flexbile QtQuick based desktop shell toolkit";
+    license = licenses.lgpl3Only;
     platforms = platforms.linux;
   };
 }
