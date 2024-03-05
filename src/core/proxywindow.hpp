@@ -97,6 +97,7 @@ protected slots:
 	virtual void onWidthChanged();
 	virtual void onHeightChanged();
 	void onMaskChanged();
+	void onMaskDestroyed();
 	void onScreenDestroyed();
 
 protected:

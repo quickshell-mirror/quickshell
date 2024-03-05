@@ -172,20 +172,30 @@ void ProxyWindowBase::setColor(QColor color) {
 PendingRegion* ProxyWindowBase::mask() const { return this->mMask; }
 
 void ProxyWindowBase::setMask(PendingRegion* mask) {
+	if (mask == this->mMask) return;
+
 	if (this->mMask != nullptr) {
-		this->mMask->deleteLater();
+		QObject::disconnect(this->mMask, nullptr, this, nullptr);
 	}
+
+	this->mMask = mask;
 
 	if (mask != nullptr) {
 		mask->setParent(this);
-		this->mMask = mask;
+		QObject::connect(mask, &QObject::destroyed, this, &ProxyWindowBase::onMaskDestroyed);
 		QObject::connect(mask, &PendingRegion::changed, this, &ProxyWindowBase::maskChanged);
-		emit this->maskChanged();
 	}
+
+	emit this->maskChanged();
 }
 
 void ProxyWindowBase::onMaskChanged() {
 	if (this->window != nullptr) this->updateMask();
+}
+
+void ProxyWindowBase::onMaskDestroyed() {
+	this->mMask = nullptr;
+	emit this->maskChanged();
 }
 
 void ProxyWindowBase::updateMask() {
