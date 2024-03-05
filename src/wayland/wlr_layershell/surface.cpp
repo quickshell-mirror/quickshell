@@ -69,7 +69,10 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 	this->set_size(size.width(), size.height());
 }
 
-QSWaylandLayerSurface::~QSWaylandLayerSurface() { this->destroy(); }
+QSWaylandLayerSurface::~QSWaylandLayerSurface() {
+	this->ext->surface = nullptr;
+	this->destroy();
+}
 
 void QSWaylandLayerSurface::zwlr_layer_surface_v1_configure(
     quint32 serial,
