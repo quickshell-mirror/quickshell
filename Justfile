@@ -8,7 +8,7 @@ lint:
 
 configure target='debug' *FLAGS='':
 	cmake -GNinja -B {{builddir}} \
-		-DCMAKE_BUILD_TYPE={{ if target == "debug" { "Debug" } else { "Release" } }} \
+		-DCMAKE_BUILD_TYPE={{ if target == "debug" { "Debug" } else { "RelWithDebInfo" } }} \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON {{FLAGS}}
 
 	ln -sf {{builddir}}/compile_commands.json compile_commands.json
@@ -18,6 +18,8 @@ _configure_if_clean:
 
 build: _configure_if_clean
 	cmake --build {{builddir}}
+
+release: (configure "release") build
 
 clean:
 	rm -f compile_commands.json
@@ -29,5 +31,5 @@ run *ARGS='': build
 test *ARGS='': build
 	ctest --test-dir {{builddir}} --output-on-failure {{ARGS}}
 
-install *ARGS='': clean (configure "release") build
+install *ARGS='':
 	cmake --install {{builddir}} {{ARGS}}

@@ -88,8 +88,7 @@ Q_ENUM_NS(Enum);
 ///   }
 ///
 ///   Text {
-///     anchors.horizontalCenter: parent.horizontalCenter
-///     anchors.verticalCenter: parent.verticalCenter
+///     anchors.centerIn: parent
 ///     text: "Hello!"
 ///   }
 /// }
