@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
 	QString configPath;
 	if (parser.isSet(configOption)) {
-		configPath = parser.value(configOption);
+		configPath = QFileInfo(parser.value(configOption)).canonicalFilePath();
 	} else {
 		configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
 		configPath = QDir(QDir(configPath).filePath("quickshell")).filePath("shell.qml");
