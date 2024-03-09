@@ -26,16 +26,26 @@ class QuickshellSettings: public QObject {
 	QML_UNCREATABLE("singleton");
 
 public:
+	QuickshellSettings();
+
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(QString workingDirectory);
 
 	[[nodiscard]] bool watchFiles() const;
 	void setWatchFiles(bool watchFiles);
 
+	[[nodiscard]] bool quitOnLastClosed() const;
+	void setQuitOnLastClosed(bool exitOnLastClosed);
+
 	static QuickshellSettings* instance();
 	static void reset();
 
 signals:
+	/// Sent when the last window is closed.
+	///
+	/// To make the application exit when the last window is closed run `Qt.quit()`.
+	void lastWindowClosed();
+
 	void workingDirectoryChanged();
 	void watchFilesChanged();
 
@@ -105,6 +115,11 @@ public:
 	void setWatchFiles(bool watchFiles);
 
 signals:
+	/// Sent when the last window is closed.
+	///
+	/// To make the application exit when the last window is closed run `Qt.quit()`.
+	void lastWindowClosed();
+
 	void screensChanged();
 	void workingDirectoryChanged();
 	void watchFilesChanged();

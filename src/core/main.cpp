@@ -252,6 +252,7 @@ int main(int argc, char** argv) {
 	QQuickWindow::setDefaultAlphaBuffer(true);
 
 	auto root = RootWrapper(configFilePath);
+	QGuiApplication::setQuitOnLastWindowClosed(false);
 
 	return QGuiApplication::exec();
 }

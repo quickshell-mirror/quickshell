@@ -20,6 +20,15 @@
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
+QuickshellSettings::QuickshellSettings() {
+	QObject::connect(
+	    static_cast<QGuiApplication*>(QGuiApplication::instance()), // NOLINT
+	    &QGuiApplication::lastWindowClosed,
+	    this,
+	    &QuickshellSettings::lastWindowClosed
+	);
+}
+
 QuickshellSettings* QuickshellSettings::instance() {
 	static QuickshellSettings* instance = nullptr; // NOLINT
 	if (instance == nullptr) {
@@ -52,6 +61,7 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 	// clang-format off
 	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::workingDirectoryChanged, this, &QuickshellGlobal::workingDirectoryChanged);
 	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &QuickshellGlobal::watchFilesChanged);
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::lastWindowClosed, this, &QuickshellGlobal::lastWindowClosed);
 	// clang-format on
 
 	auto* app = QCoreApplication::instance();
