@@ -46,6 +46,8 @@ void Variants::onReload(QObject* oldInstance) {
 		if (instance != nullptr) instance->onReload(oldInstance);
 		else Reloadable::reloadChildrenRecursive(instanceObj, oldInstance);
 	}
+
+	this->loaded = true;
 }
 
 void Variants::setVariants(QVariantList variants) {
@@ -108,6 +110,11 @@ void Variants::updateVariants() {
 
 			instance->setParent(this);
 			this->instances.insert(variant, instance);
+
+			if (this->loaded) {
+				if (auto* reloadable = qobject_cast<Reloadable*>(instance)) reloadable->onReload(nullptr);
+				else Reloadable::reloadChildrenRecursive(instance, nullptr);
+			}
 		}
 
 	outer:;

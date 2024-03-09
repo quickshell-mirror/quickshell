@@ -53,4 +53,5 @@ private:
 	QQmlComponent* mComponent = nullptr;
 	QVariantList mVariants;
 	AwfulMap<QVariantMap, QObject*> instances;
+	bool loaded = false;
 };
