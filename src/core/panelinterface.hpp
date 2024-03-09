@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
 #include "doc.hpp"
@@ -11,6 +12,7 @@ class Anchors {
 	Q_PROPERTY(bool right MEMBER mRight);
 	Q_PROPERTY(bool top MEMBER mTop);
 	Q_PROPERTY(bool bottom MEMBER mBottom);
+	QML_VALUE_TYPE(anchors);
 
 public:
 	[[nodiscard]] bool horizontalConstraint() const noexcept { return this->mLeft && this->mRight; }
@@ -37,6 +39,7 @@ class Margins {
 	Q_PROPERTY(qint32 right MEMBER mRight);
 	Q_PROPERTY(qint32 top MEMBER mTop);
 	Q_PROPERTY(qint32 bottom MEMBER mBottom);
+	QML_VALUE_TYPE(margins);
 
 public:
 	[[nodiscard]] bool operator==(const Margins& other) const noexcept {
@@ -94,7 +97,6 @@ Q_ENUM_NS(Enum);
 /// }
 /// ```
 class PanelWindowInterface: public WindowInterface {
-	QSDOC_NAMED_ELEMENT(PanelWindow);
 	// clang-format off
 	Q_OBJECT;
 	/// Anchors attach a shell window to the sides of the screen.
@@ -116,6 +118,7 @@ class PanelWindowInterface: public WindowInterface {
 	/// Defaults to `ExclusionMode.Auto`.
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	// clang-format on
+	QSDOC_NAMED_ELEMENT(PanelWindow);
 
 public:
 	explicit PanelWindowInterface(QObject* parent = nullptr): WindowInterface(parent) {}

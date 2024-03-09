@@ -54,6 +54,7 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 qt_standard_project_setup(REQUIRES 6.6)
+set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
 
 add_subdirectory(src/core)
 add_subdirectory(src/io)
