@@ -187,6 +187,8 @@ void SocketServer::onNewConnection() {
 			return;
 		}
 
+		QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
+
 		this->mSockets.append(instance);
 		instance->setParent(this);
 

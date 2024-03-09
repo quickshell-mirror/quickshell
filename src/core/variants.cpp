@@ -104,6 +104,8 @@ void Variants::updateVariants() {
 				continue;
 			}
 
+			QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
+
 			instance->setParent(this);
 			this->instances.insert(variant, instance);
 		}

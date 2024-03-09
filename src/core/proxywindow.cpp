@@ -1,6 +1,7 @@
 #include "proxywindow.hpp"
 
 #include <qobject.h>
+#include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
@@ -13,8 +14,10 @@
 #include "region.hpp"
 #include "reload.hpp"
 
-ProxyWindowBase::ProxyWindowBase(QObject* parent): Reloadable(parent) {
-	this->mContentItem = new QQuickItem(); // NOLINT
+ProxyWindowBase::ProxyWindowBase(QObject* parent)
+    : Reloadable(parent)
+    , mContentItem(new QQuickItem()) {
+	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
 
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
@@ -34,7 +37,6 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 	Reloadable::reloadRecursive(this->mContentItem, oldInstance);
 
 	this->mContentItem->setParentItem(this->window->contentItem());
-
 	this->mContentItem->setWidth(this->width());
 	this->mContentItem->setHeight(this->height());
 

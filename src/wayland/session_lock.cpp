@@ -157,6 +157,7 @@ SessionLockSurface::SessionLockSurface(QObject* parent)
     : Reloadable(parent)
     , mContentItem(new QQuickItem())
     , ext(new LockWindowExtension(this)) {
+	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
 
 	// clang-format off
