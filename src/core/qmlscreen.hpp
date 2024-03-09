@@ -1,9 +1,12 @@
 #pragma once
 
+#include <qdebug.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qqmlinfo.h>
 #include <qqmlintegration.h>
 #include <qscreen.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -55,6 +58,8 @@ public:
 	[[nodiscard]] Qt::ScreenOrientation orientation() const;
 	[[nodiscard]] Qt::ScreenOrientation primaryOrientation() const;
 
+	[[nodiscard]] Q_INVOKABLE QString toString() const;
+
 	QScreen* screen;
 
 private:
@@ -71,3 +76,5 @@ signals:
 private slots:
 	void screenDestroyed();
 };
+
+QDebug operator<<(QDebug debug, const QuickshellScreenInfo* screen);

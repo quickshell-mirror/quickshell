@@ -109,3 +109,21 @@ void QuickshellScreenInfo::screenDestroyed() {
 	this->screen = nullptr;
 	this->dangling = true;
 }
+
+QDebug operator<<(QDebug debug, const QuickshellScreenInfo* screen) {
+	if (screen == nullptr) {
+		debug.nospace() << "QuickshellScreenInfo(nullptr)";
+		return debug;
+	}
+
+	debug.nospace() << screen->metaObject()->className() << '(' << static_cast<const void*>(screen)
+	                << ", screen=" << screen->screen << ')';
+
+	return debug;
+}
+
+QString QuickshellScreenInfo::toString() const {
+	QString str;
+	QDebug(&str) << this;
+	return str;
+}
