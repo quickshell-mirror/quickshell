@@ -17,6 +17,7 @@ qt_add_executable(quickshell
 	panelinterface.cpp
 )
 
+set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
 qt_add_qml_module(quickshell URI Quickshell VERSION 0.1)
 
 target_link_libraries(quickshell PRIVATE ${QT_DEPS})

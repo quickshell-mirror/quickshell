@@ -20,7 +20,7 @@
 int main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
 	QGuiApplication::setApplicationName("quickshell");
-	QGuiApplication::setApplicationVersion("0.1.0");
+	QGuiApplication::setApplicationVersion("0.1.0 (" GIT_REVISION ")");
 
 	QCommandLineParser parser;
 	parser.addHelpOption();

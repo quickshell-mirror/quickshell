@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(quickshell VERSION "0.0.1")
+project(quickshell VERSION "0.1.0")
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
@@ -20,6 +20,14 @@ if (WAYLAND)
 	message(STATUS "    Wlroots Layershell: ${WAYLAND_WLR_LAYERSHELL}")
 	message(STATUS "    Session Lock: ${WAYLAND_SESSION_LOCK}")
 endif ()
+
+if (NOT DEFINED GIT_REVISION)
+	execute_process(
+		COMMAND git rev-parse HEAD
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_REVISION
+	)
+endif()
 
 add_compile_options(-Wall -Wextra)
 

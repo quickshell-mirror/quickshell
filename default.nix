@@ -11,6 +11,16 @@
   wayland,
   wayland-protocols,
 
+  gitRev ? (let
+    headExists = builtins.pathExists ./.git/HEAD;
+    headContent = builtins.readFile ./.git/HEAD;
+  in if headExists
+     then (let
+       matches = builtins.match "ref: refs/heads/(.*)\n" headContent;
+     in if matches != null
+        then builtins.readFile ./.git/refs/heads/${builtins.elemAt matches 0}
+        else headContent)
+     else "unknown"),
   debug ? false,
   enableWayland ? true,
 }: stdenv.mkDerivation {
@@ -44,7 +54,9 @@
     cmakeConfigurePhase
   '';
 
-  cmakeFlags = lib.optional (!enableWayland) "-DWAYLAND=OFF";
+  cmakeFlags = [
+    "-DGIT_REVISION=${gitRev}"
+  ] ++ lib.optional (!enableWayland) "-DWAYLAND=OFF";
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;
