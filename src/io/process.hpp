@@ -43,7 +43,7 @@ class Process: public QObject {
 	/// ```
 	Q_PROPERTY(bool running READ isRunning WRITE setRunning NOTIFY runningChanged);
 	/// The process ID of the running process or `null` if `running` is false.
-	Q_PROPERTY(QVariant pid READ pid NOTIFY pidChanged);
+	Q_PROPERTY(QVariant processId READ processId NOTIFY processIdChanged);
 	/// The command to execute. Each argument is its own string, which means you don't have
 	/// to deal with quoting anything.
 	///
@@ -139,7 +139,7 @@ public:
 	[[nodiscard]] bool isRunning() const;
 	void setRunning(bool running);
 
-	[[nodiscard]] QVariant pid() const;
+	[[nodiscard]] QVariant processId() const;
 
 	[[nodiscard]] QList<QString> command() const;
 	void setCommand(QList<QString> command);
@@ -170,7 +170,7 @@ signals:
 	void exited(qint32 exitCode, QProcess::ExitStatus exitStatus);
 
 	void runningChanged();
-	void pidChanged();
+	void processIdChanged();
 	void commandChanged();
 	void workingDirectoryChanged();
 	void environmentChanged();

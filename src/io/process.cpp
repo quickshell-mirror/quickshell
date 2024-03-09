@@ -43,7 +43,7 @@ void Process::setRunning(bool running) {
 	else if (this->isRunning()) this->process->terminate();
 }
 
-QVariant Process::pid() const {
+QVariant Process::processId() const {
 	if (this->process == nullptr) return QVariant::fromValue(nullptr);
 	return QVariant::fromValue(this->process->processId());
 }
@@ -233,7 +233,7 @@ void Process::startProcessIfReady() {
 }
 
 void Process::onStarted() {
-	emit this->pidChanged();
+	emit this->processIdChanged();
 	emit this->runningChanged();
 	emit this->started();
 }
@@ -246,7 +246,7 @@ void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
 
 	emit this->exited(exitCode, exitStatus);
 	emit this->runningChanged();
-	emit this->pidChanged();
+	emit this->processIdChanged();
 }
 
 void Process::onErrorOccurred(QProcess::ProcessError error) {

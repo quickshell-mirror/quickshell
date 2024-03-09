@@ -46,6 +46,8 @@ private:
 class QuickshellGlobal: public QObject {
 	Q_OBJECT;
 	// clang-format off
+	/// Quickshell's process id.
+	Q_PROPERTY(qint32 processId READ processId CONSTANT);
 	/// All currently connected screens.
 	///
 	/// This property updates as connected screens change.
@@ -77,6 +79,8 @@ class QuickshellGlobal: public QObject {
 	QML_NAMED_ELEMENT(Quickshell);
 
 public:
+	[[nodiscard]] qint32 processId() const;
+
 	QuickshellGlobal(QObject* parent = nullptr);
 
 	QQmlListProperty<QuickshellScreenInfo> screens();

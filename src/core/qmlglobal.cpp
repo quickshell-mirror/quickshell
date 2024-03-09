@@ -15,6 +15,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <unistd.h>
 
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
@@ -65,6 +66,10 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 		this->updateScreens();
 	}
+}
+
+qint32 QuickshellGlobal::processId() const { // NOLINT
+	return getpid();
 }
 
 qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* prop) {
