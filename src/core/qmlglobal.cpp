@@ -120,17 +120,31 @@ void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 
 void QuickshellGlobal::updateScreens() {
 	auto screens = QGuiApplication::screens();
-	this->mScreens.resize(screens.size());
+	auto newScreens = QList<QuickshellScreenInfo*>();
 
-	for (auto i = 0; i < screens.size(); i++) {
-		if (this->mScreens[i] != nullptr) {
-			this->mScreens[i]->screen = nullptr;
-			this->mScreens[i]->setParent(nullptr); // delete if not owned by the js engine
+	for (auto* newScreen: screens) {
+		for (auto i = 0; i < this->mScreens.length(); i++) {
+			auto* oldScreen = this->mScreens[i];
+			if (newScreen == oldScreen->screen) {
+				newScreens.push_back(oldScreen);
+				this->mScreens.remove(i);
+				goto next;
+			}
 		}
 
-		this->mScreens[i] = new QuickshellScreenInfo(this, screens[i]);
+		{
+			auto* si = new QuickshellScreenInfo(this, newScreen);
+			QQmlEngine::setObjectOwnership(si, QQmlEngine::CppOwnership);
+			newScreens.push_back(si);
+		}
+	next:;
 	}
 
+	for (auto* oldScreen: this->mScreens) {
+		oldScreen->deleteLater();
+	}
+
+	this->mScreens = newScreens;
 	emit this->screensChanged();
 }
 
