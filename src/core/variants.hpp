@@ -28,6 +28,9 @@ public:
 /// See [Quickshell.screens] for an example of using `Variants` to create copies of a window per
 /// screen.
 ///
+/// > [!WARNING] BUG: Variants currently fails to reload children if the variant set is changed as
+/// > it is instantiated. (usually due to a mutation during variant creation)
+///
 /// [Quickshell.screens]: ../quickshell#prop.screens
 class Variants: public Reloadable {
 	Q_OBJECT;

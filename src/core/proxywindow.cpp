@@ -139,7 +139,12 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	if (this->window == nullptr) {
 		this->mScreen = qscreen;
 		emit this->screenChanged();
-	} else this->window->setScreen(qscreen);
+	} else {
+		auto reshow = this->window->isVisible();
+		if (reshow) this->window->setVisible(false);
+		this->window->setScreen(qscreen);
+		if (reshow) this->window->setVisible(true);
+	}
 }
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
