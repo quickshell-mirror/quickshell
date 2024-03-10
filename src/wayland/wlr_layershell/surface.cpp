@@ -1,4 +1,5 @@
 #include "surface.hpp"
+#include <any>
 
 #include <private/qwaylanddisplay_p.h>
 #include <private/qwaylandscreen_p.h>
@@ -164,4 +165,15 @@ QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept {
 	    anchors.horizontalConstraint() ? 0 : size.width(),
 	    anchors.verticalConstraint() ? 0 : size.height()
 	);
+}
+
+void QSWaylandLayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {
+	std::any role = popup->surfaceRole();
+
+	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) { // NOLINT
+		this->get_popup(*popupRole);
+	} else {
+		qWarning() << "Cannot attach popup" << popup << "to shell surface" << this
+		           << "as the popup is not an xdg_popup.";
+	}
 }

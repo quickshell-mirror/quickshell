@@ -27,6 +27,8 @@ public:
 	void applyConfigure() override;
 	void setWindowGeometry(const QRect& geometry) override;
 
+	void attachPopup(QtWaylandClient::QWaylandShellSurface* popup) override;
+
 private:
 	void zwlr_layer_surface_v1_configure(quint32 serial, quint32 width, quint32 height) override;
 	void zwlr_layer_surface_v1_closed() override;

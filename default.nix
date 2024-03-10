@@ -26,7 +26,7 @@
 }: stdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
-  src = nix-gitignore.gitignoreSource [] ./.;
+  src = nix-gitignore.gitignoreSource "/docs\n/examples\n" ./.;
 
   nativeBuildInputs = with pkgs; [
     cmake
