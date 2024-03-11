@@ -46,6 +46,7 @@ set(QT_FPDEPS Gui Qml Quick QuickControls2)
 
 if (BUILD_TESTING)
 	enable_testing()
+	add_definitions(-DQS_TEST)
 	list(APPEND QT_FPDEPS Test)
 endif()
 

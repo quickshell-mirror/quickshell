@@ -34,7 +34,7 @@ class ProxyWindowBase: public Reloadable {
 	/// >
 	/// > Use **only** if you know what you are doing.
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
-	Q_PROPERTY(QQuickItem* contentItem READ contentItem);
+	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
@@ -67,6 +67,9 @@ public:
 	[[nodiscard]] virtual bool isVisible() const;
 	virtual void setVisible(bool visible);
 
+	[[nodiscard]] virtual qint32 x() const;
+	[[nodiscard]] virtual qint32 y() const;
+
 	[[nodiscard]] virtual qint32 width() const;
 	virtual void setWidth(qint32 width);
 
@@ -87,6 +90,8 @@ public:
 signals:
 	void windowConnected();
 	void visibleChanged();
+	void xChanged();
+	void yChanged();
 	void widthChanged();
 	void heightChanged();
 	void screenChanged();

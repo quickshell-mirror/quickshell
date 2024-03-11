@@ -12,17 +12,19 @@
 #include "region.hpp"
 #include "reload.hpp"
 
+class ProxyWindowBase;
+
 class WindowInterface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
-	Q_PROPERTY(QQuickItem* contentItem READ contentItem);
+	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
 	/// If the window is shown or hidden. Defaults to true.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	/// The screen that the window currently occupies.
 	///
-	/// > [!INFO] This cannot be changed after windowConnected.
+	/// This may be modified to move the window to the given screen.
 	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	/// The background color of the window. Defaults to white.
 	///
@@ -92,6 +94,7 @@ class WindowInterface: public Reloadable {
 public:
 	explicit WindowInterface(QObject* parent = nullptr): Reloadable(parent) {}
 
+	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
 
 	[[nodiscard]] virtual bool isVisible() const = 0;

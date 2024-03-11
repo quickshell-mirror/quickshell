@@ -121,6 +121,7 @@ public:
 
 	void onReload(QObject* oldInstance) override;
 
+	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
 	[[nodiscard]] QQuickItem* contentItem() const override;
 
 	// NOLINTBEGIN

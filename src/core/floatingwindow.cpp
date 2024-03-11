@@ -42,6 +42,7 @@ void FloatingWindowInterface::onReload(QObject* oldInstance) {
 }
 
 QQmlListProperty<QObject> FloatingWindowInterface::data() { return this->window->data(); }
+ProxyWindowBase* FloatingWindowInterface::proxyWindow() const { return this->window; }
 QQuickItem* FloatingWindowInterface::contentItem() const { return this->window->contentItem(); }
 
 // NOLINTBEGIN
@@ -57,6 +58,4 @@ proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
 
 #undef proxyPair
-#undef proxySet
-#undef proxyGet
 // NOLINTEND

@@ -12,5 +12,6 @@ headers = [
 	"windowinterface.hpp",
 	"panelinterface.hpp",
 	"floatingwindow.hpp",
+	"popupwindow.hpp",
 ]
 -----

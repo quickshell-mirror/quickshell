@@ -9,3 +9,6 @@
 // make the type visible in the docs even if not a QML_ELEMENT
 #define QSDOC_ELEMENT
 #define QSDOC_NAMED_ELEMENT(name)
+
+// overridden properties
+#define QSDOC_PROPERTY_OVERRIDE(...)

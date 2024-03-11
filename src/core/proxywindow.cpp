@@ -61,6 +61,8 @@ QQuickWindow* ProxyWindowBase::createWindow(QObject* oldInstance) {
 void ProxyWindowBase::setupWindow() {
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
+	QObject::connect(this->window, &QWindow::xChanged, this, &ProxyWindowBase::xChanged);
+	QObject::connect(this->window, &QWindow::yChanged, this, &ProxyWindowBase::yChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
@@ -76,6 +78,10 @@ void ProxyWindowBase::setupWindow() {
 	this->setHeight(this->mHeight);
 	this->setColor(this->mColor);
 	this->updateMask();
+
+	// notify initial x and y positions
+	emit this->xChanged();
+	emit this->yChanged();
 }
 
 QQuickWindow* ProxyWindowBase::disownWindow() {
@@ -101,6 +107,16 @@ void ProxyWindowBase::setVisible(bool visible) {
 		this->mVisible = visible;
 		emit this->visibleChanged();
 	} else this->window->setVisible(visible);
+}
+
+qint32 ProxyWindowBase::x() const {
+	if (this->window == nullptr) return 0;
+	else return this->window->x();
+}
+
+qint32 ProxyWindowBase::y() const {
+	if (this->window == nullptr) return 0;
+	else return this->window->y();
 }
 
 qint32 ProxyWindowBase::width() const {

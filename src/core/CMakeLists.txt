@@ -15,9 +15,14 @@ qt_add_executable(quickshell
 	windowinterface.cpp
 	floatingwindow.cpp
 	panelinterface.cpp
+	popupwindow.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
 qt_add_qml_module(quickshell URI Quickshell VERSION 0.1)
 
 target_link_libraries(quickshell PRIVATE ${QT_DEPS})
+
+if (BUILD_TESTING)
+	add_subdirectory(test)
+endif()

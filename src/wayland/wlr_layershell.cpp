@@ -187,6 +187,7 @@ void WaylandPanelInterface::onReload(QObject* oldInstance) {
 }
 
 QQmlListProperty<QObject> WaylandPanelInterface::data() { return this->layer->data(); }
+ProxyWindowBase* WaylandPanelInterface::proxyWindow() const { return this->layer; }
 QQuickItem* WaylandPanelInterface::contentItem() const { return this->layer->contentItem(); }
 
 // NOLINTBEGIN
@@ -206,4 +207,6 @@ proxyPair(Anchors, anchors, setAnchors);
 proxyPair(Margins, margins, setMargins);
 proxyPair(qint32, exclusiveZone, setExclusiveZone);
 proxyPair(ExclusionMode::Enum, exclusionMode, setExclusionMode);
+
+#undef proxyPair
 // NOLINTEND
