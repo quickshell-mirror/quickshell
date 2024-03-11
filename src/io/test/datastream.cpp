@@ -19,25 +19,25 @@ void TestSplitParser::splits_data() { // NOLINT
 
 	// NOLINTBEGIN
 	// clang-format off
-		QTest::addRow("simple") << "-"
-			<< "foo" << "-"
-			<< QList<QString>("foo") << "";
+	QTest::addRow("simple") << "-"
+		<< "foo" << "-"
+		<< QList<QString>("foo") << "";
 
-		QTest::addRow("multiple") << "-"
-			<< "foo" << "-bar-baz-"
-			<< QList<QString>({ "foo", "bar", "baz" }) << "";
+	QTest::addRow("multiple") << "-"
+		<< "foo" << "-bar-baz-"
+		<< QList<QString>({ "foo", "bar", "baz" }) << "";
 
-		QTest::addRow("incomplete") << "-"
-			<< "foo" << "-bar-baz"
-			<< QList<QString>({ "foo", "bar" }) << "baz";
+	QTest::addRow("incomplete") << "-"
+		<< "foo" << "-bar-baz"
+		<< QList<QString>({ "foo", "bar" }) << "baz";
 
-		QTest::addRow("longsplit") << "12345"
-			<< "foo1234" << "5bar12345"
-			<< QList<QString>({ "foo", "bar" }) << "";
+	QTest::addRow("longsplit") << "12345"
+		<< "foo1234" << "5bar12345"
+		<< QList<QString>({ "foo", "bar" }) << "";
 
-		QTest::addRow("longsplit-incomplete") << "123"
-			<< "foo12" << "3bar123baz"
-			<< QList<QString>({ "foo", "bar" }) << "baz";
+	QTest::addRow("longsplit-incomplete") << "123"
+		<< "foo12" << "3bar123baz"
+		<< QList<QString>({ "foo", "bar" }) << "baz";
 	// clang-format on
 	// NOLINTEND
 }

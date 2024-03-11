@@ -7,8 +7,8 @@ Hosts: [outfoxxed's gitea], [github]
 [outfoxxed's gitea]: https://git.outfoxxed.me/outfoxxed/quickshell
 [github]: https://github.com/outfoxxed/quickshell
 
-Documentation can be built from the [quickshell-docs](https://git.outfoxxed.me/outfoxxed/quickshell-docs) repo,
-though is currently pretty lacking.
+Documentation available at [quickshell.outfoxxed.me](https://quickshell.outfoxxed.me) or
+can be built from the [quickshell-docs](https://git.outfoxxed.me/outfoxxed/quickshell-docs) repo.
 
 Some fully working examples can be found in the [quickshell-examples](https://git.outfoxxed.me/outfoxxed/quickshell-examples) 
 repo.
