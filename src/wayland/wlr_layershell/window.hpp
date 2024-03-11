@@ -9,7 +9,7 @@
 #include "../../core/panelinterface.hpp"
 
 ///! WlrLayershell layer
-namespace Layer { // NOLINT
+namespace WlrLayer { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
@@ -29,7 +29,7 @@ Q_ENUM_NS(Enum);
 } // namespace Layer
 
 ///! WlrLayershell keyboard focus mode
-namespace KeyboardFocus { // NOLINT
+namespace WlrKeyboardFocus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
@@ -74,11 +74,11 @@ public:
 	void setExclusiveZone(qint32 exclusiveZone);
 	[[nodiscard]] qint32 exclusiveZone() const;
 
-	void setLayer(Layer::Enum layer);
-	[[nodiscard]] Layer::Enum layer() const;
+	void setLayer(WlrLayer::Enum layer);
+	[[nodiscard]] WlrLayer::Enum layer() const;
 
-	void setKeyboardFocus(KeyboardFocus::Enum focus);
-	[[nodiscard]] KeyboardFocus::Enum keyboardFocus() const;
+	void setKeyboardFocus(WlrKeyboardFocus::Enum focus);
+	[[nodiscard]] WlrKeyboardFocus::Enum keyboardFocus() const;
 
 	// no effect if configured
 	void setUseWindowScreen(bool value);
@@ -101,9 +101,9 @@ private:
 	Anchors mAnchors;
 	Margins mMargins;
 	qint32 mExclusiveZone = 0;
-	Layer::Enum mLayer = Layer::Top;
+	WlrLayer::Enum mLayer = WlrLayer::Top;
 	QString mNamespace = "quickshell";
-	KeyboardFocus::Enum mKeyboardFocus = KeyboardFocus::None;
+	WlrKeyboardFocus::Enum mKeyboardFocus = WlrKeyboardFocus::None;
 
 	friend class QSWaylandLayerSurface;
 };

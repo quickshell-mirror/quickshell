@@ -20,7 +20,7 @@
 /// ```qml
 /// PanelWindow {
 ///   // When PanelWindow is backed with WlrLayershell this will work
-///   WlrLayershell.layer: Layer.Bottom
+///   WlrLayershell.layer: WlrLayer.Bottom
 /// }
 /// ```
 ///
@@ -29,7 +29,7 @@
 /// PanelWindow {
 ///   Component.onCompleted: {
 ///     if (this.WlrLayershell != null) {
-///       this.WlrLayershell.layer = Layer.Bottom;
+///       this.WlrLayershell.layer = WlrLayer.Bottom;
 ///     }
 ///   }
 /// }
@@ -41,14 +41,14 @@ class WlrLayershell: public ProxyWindowBase {
 	QSDOC_BASECLASS(PanelWindowInterface);
 	// clang-format off
 	Q_OBJECT;
-	/// The shell layer the window sits in. Defaults to `Layer.Top`.
-	Q_PROPERTY(Layer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
+	/// The shell layer the window sits in. Defaults to `WlrLayer.Top`.
+	Q_PROPERTY(WlrLayer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
 	/// Similar to the class property of windows. Can be used to identify the window to external tools.
 	///
 	/// Cannot be set after windowConnected.
 	Q_PROPERTY(QString namespace READ ns WRITE setNamespace NOTIFY namespaceChanged);
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
-	Q_PROPERTY(KeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
+	Q_PROPERTY(WlrKeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 
 	QSDOC_HIDE Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
 	QSDOC_HIDE Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
@@ -69,14 +69,14 @@ public:
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 
-	[[nodiscard]] Layer::Enum layer() const;
-	void setLayer(Layer::Enum layer); // NOLINT
+	[[nodiscard]] WlrLayer::Enum layer() const;
+	void setLayer(WlrLayer::Enum layer); // NOLINT
 
 	[[nodiscard]] QString ns() const;
 	void setNamespace(QString ns);
 
-	[[nodiscard]] KeyboardFocus::Enum keyboardFocus() const;
-	void setKeyboardFocus(KeyboardFocus::Enum focus); // NOLINT
+	[[nodiscard]] WlrKeyboardFocus::Enum keyboardFocus() const;
+	void setKeyboardFocus(WlrKeyboardFocus::Enum focus); // NOLINT
 
 	[[nodiscard]] Anchors anchors() const;
 	void setAnchors(Anchors anchors);

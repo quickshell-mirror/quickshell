@@ -89,8 +89,8 @@ void WlrLayershell::setScreen(QuickshellScreenInfo* screen) {
 	type WlrLayershell::get() const { return this->ext->get(); }                                     \
 	void WlrLayershell::set(type value) { this->ext->set(value); }
 
-extPair(Layer::Enum, layer, setLayer);
-extPair(KeyboardFocus::Enum, keyboardFocus, setKeyboardFocus);
+extPair(WlrLayer::Enum, layer, setLayer);
+extPair(WlrKeyboardFocus::Enum, keyboardFocus, setKeyboardFocus);
 extPair(Margins, margins, setMargins);
 // NOLINTEND
 

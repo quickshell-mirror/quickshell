@@ -18,9 +18,9 @@
 #include "window.hpp"
 
 // clang-format off
-[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const Layer::Enum& layer) noexcept;
+[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept;
 [[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors) noexcept;
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::keyboard_interactivity toWaylandKeyboardFocus(const KeyboardFocus::Enum& focus) noexcept;
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::keyboard_interactivity toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept;
 [[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept;
 // clang-format on
 
@@ -127,12 +127,12 @@ void QSWaylandLayerSurface::updateKeyboardFocus() {
 	this->set_keyboard_interactivity(toWaylandKeyboardFocus(this->ext->mKeyboardFocus));
 }
 
-QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const Layer::Enum& layer) noexcept {
+QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
 	switch (layer) {
-	case Layer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
-	case Layer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
-	case Layer::Top: return QtWayland::zwlr_layer_shell_v1::layer_top;
-	case Layer::Overlay: return QtWayland::zwlr_layer_shell_v1::layer_overlay;
+	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
+	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
+	case WlrLayer::Top: return QtWayland::zwlr_layer_shell_v1::layer_top;
+	case WlrLayer::Overlay: return QtWayland::zwlr_layer_shell_v1::layer_overlay;
 	}
 
 	return QtWayland::zwlr_layer_shell_v1::layer_top;
@@ -148,12 +148,12 @@ QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors
 }
 
 QtWayland::zwlr_layer_surface_v1::keyboard_interactivity
-toWaylandKeyboardFocus(const KeyboardFocus::Enum& focus) noexcept {
+toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
 	switch (focus) {
-	case KeyboardFocus::None: return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
-	case KeyboardFocus::Exclusive:
+	case WlrKeyboardFocus::None: return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
+	case WlrKeyboardFocus::Exclusive:
 		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_exclusive;
-	case KeyboardFocus::OnDemand:
+	case WlrKeyboardFocus::OnDemand:
 		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_on_demand;
 	}
 

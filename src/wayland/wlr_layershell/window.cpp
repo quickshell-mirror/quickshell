@@ -113,7 +113,7 @@ void LayershellWindowExtension::setExclusiveZone(qint32 exclusiveZone) {
 
 qint32 LayershellWindowExtension::exclusiveZone() const { return this->mExclusiveZone; }
 
-void LayershellWindowExtension::setLayer(Layer::Enum layer) {
+void LayershellWindowExtension::setLayer(WlrLayer::Enum layer) {
 	if (layer != this->mLayer) {
 		this->mLayer = layer;
 		if (this->surface != nullptr) this->surface->updateLayer();
@@ -121,9 +121,9 @@ void LayershellWindowExtension::setLayer(Layer::Enum layer) {
 	}
 }
 
-Layer::Enum LayershellWindowExtension::layer() const { return this->mLayer; }
+WlrLayer::Enum LayershellWindowExtension::layer() const { return this->mLayer; }
 
-void LayershellWindowExtension::setKeyboardFocus(KeyboardFocus::Enum focus) {
+void LayershellWindowExtension::setKeyboardFocus(WlrKeyboardFocus::Enum focus) {
 	if (focus != this->mKeyboardFocus) {
 		this->mKeyboardFocus = focus;
 		if (this->surface != nullptr) this->surface->updateKeyboardFocus();
@@ -131,7 +131,7 @@ void LayershellWindowExtension::setKeyboardFocus(KeyboardFocus::Enum focus) {
 	}
 }
 
-KeyboardFocus::Enum LayershellWindowExtension::keyboardFocus() const {
+WlrKeyboardFocus::Enum LayershellWindowExtension::keyboardFocus() const {
 	return this->mKeyboardFocus;
 }
 

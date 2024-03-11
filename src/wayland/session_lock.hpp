@@ -19,21 +19,21 @@
 #include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
 
-class SessionLockSurface;
+class WlSessionLockSurface;
 
 ///! Wayland session locker.
 /// Wayland session lock implemented using the [ext_session_lock_v1] protocol.
 ///
-/// SessionLock will create an instance of its `surface` component for every screen when
-/// `locked` is set to true. The `surface` component must create a [SessionLockSurface]
+/// WlSessionLock will create an instance of its `surface` component for every screen when
+/// `locked` is set to true. The `surface` component must create a [WlSessionLockSurface]
 /// which will be displayed on each screen.
 ///
 /// The below example will create a session lock that disappears when the button is clicked.
 /// ```qml
-/// SessionLock {
+/// WlSessionLock {
 ///   id: lock
 ///
-///   SessionLockSurface {
+///   WlSessionLockSurface {
 ///     Button {
 ///       text: "unlock me"
 ///       onClicked: lock.locked = false
@@ -45,7 +45,7 @@ class SessionLockSurface;
 /// lock.locked = true
 /// ```
 ///
-/// > [!WARNING] If the SessionLock is destroyed or quickshell exits without setting `locked`
+/// > [!WARNING] If the WlSessionLock is destroyed or quickshell exits without setting `locked`
 /// > to false, conformant compositors will leave the screen locked and painted with a solid
 /// > color.
 /// >
@@ -53,29 +53,29 @@ class SessionLockSurface;
 /// > but it will render it inoperable.
 ///
 /// [ext_session_lock_v1]: https://wayland.app/protocols/ext-session-lock-v1
-/// [SessionLockSurface]: ../sessionlocksurface
-class SessionLock: public Reloadable {
+/// [WlSessionLockSurface]: ../wlsessionlocksurface
+class WlSessionLock: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
 	/// Controls the lock state.
 	///
-	/// > [!WARNING] Only one SessionLock may be locked at a time. Attempting to enable a lock while
+	/// > [!WARNING] Only one WlSessionLock may be locked at a time. Attempting to enable a lock while
 	/// > another lock is enabled will do nothing.
 	Q_PROPERTY(bool locked READ isLocked WRITE setLocked NOTIFY lockStateChanged);
 	/// The compositor lock state.
 	///
 	/// This is set to true once the compositor has confirmed all screens are covered with locks.
 	Q_PROPERTY(bool secure READ isSecure NOTIFY secureStateChanged);
-	/// The surface that will be created for each screen. Must create a [SessionLockSurface].
+	/// The surface that will be created for each screen. Must create a [WlSessionLockSurface].
 	///
-	/// [SessionLockSurface]: ../sessionlocksurface
+	/// [WlSessionLockSurface]: ../wlsessionlocksurface
 	Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
 	// clang-format on
 	QML_ELEMENT;
 	Q_CLASSINFO("DefaultProperty", "surface");
 
 public:
-	explicit SessionLock(QObject* parent = nullptr): Reloadable(parent) {}
+	explicit WlSessionLock(QObject* parent = nullptr): Reloadable(parent) {}
 
 	void onReload(QObject* oldInstance) override;
 
@@ -97,21 +97,21 @@ private slots:
 	void onScreensChanged();
 
 private:
-	void updateSurfaces(SessionLock* old = nullptr);
+	void updateSurfaces(WlSessionLock* old = nullptr);
 
 	SessionLockManager* manager = nullptr;
 	QQmlComponent* mSurfaceComponent = nullptr;
-	QMap<QScreen*, SessionLockSurface*> surfaces;
+	QMap<QScreen*, WlSessionLockSurface*> surfaces;
 	bool lockTarget = false;
 
-	friend class SessionLockSurface;
+	friend class WlSessionLockSurface;
 };
 
-///! Surface to display with a `SessionLock`.
-/// Surface displayed by a [SessionLock] when it is locked.
+///! Surface to display with a `WlSessionLock`.
+/// Surface displayed by a [WlSessionLock] when it is locked.
 ///
-/// [SessionLock]: ../sessionlock
-class SessionLockSurface: public Reloadable {
+/// [WlSessionLock]: ../wlsessionlock
+class WlSessionLockSurface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem);
@@ -142,13 +142,13 @@ class SessionLockSurface: public Reloadable {
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
-	QML_ELEMENT;
+	QML_NAMED_ELEMENT(WlSessionLockSurface);
 	Q_CLASSINFO("DefaultProperty", "data");
 
 public:
-	explicit SessionLockSurface(QObject* parent = nullptr);
-	~SessionLockSurface() override;
-	Q_DISABLE_COPY_MOVE(SessionLockSurface);
+	explicit WlSessionLockSurface(QObject* parent = nullptr);
+	~WlSessionLockSurface() override;
+	Q_DISABLE_COPY_MOVE(WlSessionLockSurface);
 
 	void onReload(QObject* oldInstance) override;
 	QQuickWindow* disownWindow();
