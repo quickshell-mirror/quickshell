@@ -53,6 +53,23 @@ private:
 	bool mWatchFiles = true;
 };
 
+class QuickshellTracked: public QObject {
+	Q_OBJECT;
+
+public:
+	QuickshellTracked();
+
+	QVector<QuickshellScreenInfo*> screens;
+
+	static QuickshellTracked* instance();
+
+private slots:
+	void updateScreens();
+
+signals:
+	void screensChanged();
+};
+
 class QuickshellGlobal: public QObject {
 	Q_OBJECT;
 	// clang-format off
@@ -124,12 +141,7 @@ signals:
 	void workingDirectoryChanged();
 	void watchFilesChanged();
 
-public slots:
-	void updateScreens();
-
 private:
 	static qsizetype screensCount(QQmlListProperty<QuickshellScreenInfo>* prop);
 	static QuickshellScreenInfo* screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i);
-
-	QVector<QuickshellScreenInfo*> mScreens;
 };

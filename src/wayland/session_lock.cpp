@@ -78,7 +78,8 @@ void WlSessionLock::updateSurfaces(WlSessionLock* old) {
 				auto* instance = qobject_cast<WlSessionLockSurface*>(instanceObj);
 
 				if (instance == nullptr) {
-					qWarning() << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
+					qWarning(
+					) << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
 					if (instanceObj != nullptr) instanceObj->deleteLater();
 					this->unlock();
 					return;

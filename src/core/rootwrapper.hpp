@@ -25,7 +25,7 @@ private slots:
 
 private:
 	QString rootPath;
-	QQmlEngine engine;
+	QQmlEngine* engine = nullptr;
 	ShellRoot* root = nullptr;
 	FiletreeWatcher* configWatcher = nullptr;
 	QString originalWorkingDirectory;

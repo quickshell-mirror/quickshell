@@ -1,5 +1,4 @@
 #include "main.hpp"
-
 #include <iostream>
 
 #include <qcommandlineoption.h>

@@ -57,38 +57,81 @@ void QuickshellSettings::setWatchFiles(bool watchFiles) {
 	emit this->watchFilesChanged();
 }
 
-QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
-	// clang-format off
-	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::workingDirectoryChanged, this, &QuickshellGlobal::workingDirectoryChanged);
-	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &QuickshellGlobal::watchFilesChanged);
-	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::lastWindowClosed, this, &QuickshellGlobal::lastWindowClosed);
-	// clang-format on
-
+QuickshellTracked::QuickshellTracked() {
 	auto* app = QCoreApplication::instance();
 	auto* guiApp = qobject_cast<QGuiApplication*>(app);
 
 	if (guiApp != nullptr) {
 		// clang-format off
-		QObject::connect(guiApp, &QGuiApplication::primaryScreenChanged, this, &QuickshellGlobal::updateScreens);
-		QObject::connect(guiApp, &QGuiApplication::screenAdded, this, &QuickshellGlobal::updateScreens);
-		QObject::connect(guiApp, &QGuiApplication::screenRemoved, this, &QuickshellGlobal::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::primaryScreenChanged, this, &QuickshellTracked::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::screenAdded, this, &QuickshellTracked::updateScreens);
+		QObject::connect(guiApp, &QGuiApplication::screenRemoved, this, &QuickshellTracked::updateScreens);
 		// clang-format on
 
 		this->updateScreens();
 	}
 }
 
+QuickshellTracked* QuickshellTracked::instance() {
+	static QuickshellTracked* instance = nullptr; // NOLINT
+	if (instance == nullptr) {
+		QJSEngine::setObjectOwnership(instance, QJSEngine::CppOwnership);
+		instance = new QuickshellTracked();
+	}
+	return instance;
+}
+
+void QuickshellTracked::updateScreens() {
+	auto screens = QGuiApplication::screens();
+	auto newScreens = QList<QuickshellScreenInfo*>();
+
+	for (auto* newScreen: screens) {
+		for (auto i = 0; i < this->screens.length(); i++) {
+			auto* oldScreen = this->screens[i];
+			if (newScreen == oldScreen->screen) {
+				newScreens.push_back(oldScreen);
+				this->screens.remove(i);
+				goto next;
+			}
+		}
+
+		{
+			auto* si = new QuickshellScreenInfo(this, newScreen);
+			QQmlEngine::setObjectOwnership(si, QQmlEngine::CppOwnership);
+			newScreens.push_back(si);
+		}
+	next:;
+	}
+
+	for (auto* oldScreen: this->screens) {
+		oldScreen->deleteLater();
+	}
+
+	this->screens = newScreens;
+	emit this->screensChanged();
+}
+
+QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
+	// clang-format off
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::workingDirectoryChanged, this, &QuickshellGlobal::workingDirectoryChanged);
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &QuickshellGlobal::watchFilesChanged);
+	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::lastWindowClosed, this, &QuickshellGlobal::lastWindowClosed);
+
+	QObject::connect(QuickshellTracked::instance(), &QuickshellTracked::screensChanged, this, &QuickshellGlobal::screensChanged);
+	// clang-format on
+}
+
 qint32 QuickshellGlobal::processId() const { // NOLINT
 	return getpid();
 }
 
-qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* prop) {
-	return static_cast<QuickshellGlobal*>(prop->object)->mScreens.size(); // NOLINT
+qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* /*unused*/) {
+	return QuickshellTracked::instance()->screens.size();
 }
 
 QuickshellScreenInfo*
-QuickshellGlobal::screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i) {
-	return static_cast<QuickshellGlobal*>(prop->object)->mScreens.at(i); // NOLINT
+QuickshellGlobal::screenAt(QQmlListProperty<QuickshellScreenInfo>* /*unused*/, qsizetype i) {
+	return QuickshellTracked::instance()->screens.at(i);
 }
 
 QQmlListProperty<QuickshellScreenInfo> QuickshellGlobal::screens() {
@@ -126,36 +169,6 @@ bool QuickshellGlobal::watchFiles() const { // NOLINT
 
 void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
-}
-
-void QuickshellGlobal::updateScreens() {
-	auto screens = QGuiApplication::screens();
-	auto newScreens = QList<QuickshellScreenInfo*>();
-
-	for (auto* newScreen: screens) {
-		for (auto i = 0; i < this->mScreens.length(); i++) {
-			auto* oldScreen = this->mScreens[i];
-			if (newScreen == oldScreen->screen) {
-				newScreens.push_back(oldScreen);
-				this->mScreens.remove(i);
-				goto next;
-			}
-		}
-
-		{
-			auto* si = new QuickshellScreenInfo(this, newScreen);
-			QQmlEngine::setObjectOwnership(si, QQmlEngine::CppOwnership);
-			newScreens.push_back(si);
-		}
-	next:;
-	}
-
-	for (auto* oldScreen: this->mScreens) {
-		oldScreen->deleteLater();
-	}
-
-	this->mScreens = newScreens;
-	emit this->screensChanged();
 }
 
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT

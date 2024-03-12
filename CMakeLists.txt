@@ -70,21 +70,26 @@ file(GENERATE
 	CONTENT ""
 )
 
-add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
-target_link_libraries(qt-pch PRIVATE ${QT_DEPS})
-target_precompile_headers(qt-pch PUBLIC
-	<memory>
-	<qobject.h>
-	<qqmlengine.h>
-	<qlist.h>
-	<qcolor.h>
-	<qquickitem.h>
-	<qevent.h>
-)
+# pch breaks clang-tidy..... somehow
+if (NOT NO_PCH)
+	add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
+	target_link_libraries(qt-pch PRIVATE ${QT_DEPS})
+	target_precompile_headers(qt-pch PUBLIC
+		<memory>
+		<qobject.h>
+		<qqmlengine.h>
+		<qlist.h>
+		<qcolor.h>
+		<qquickitem.h>
+		<qevent.h>
+	)
+endif()
 
 function (qs_pch target)
-	target_precompile_headers(${target} REUSE_FROM qt-pch)
-	target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
+	if (NOT NO_PCH)
+		target_precompile_headers(${target} REUSE_FROM qt-pch)
+		target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
+  endif()
 endfunction()
 
 add_subdirectory(src)

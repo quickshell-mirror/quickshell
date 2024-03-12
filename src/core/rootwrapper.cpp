@@ -21,12 +21,7 @@
 RootWrapper::RootWrapper(QString rootPath)
     : QObject(nullptr)
     , rootPath(std::move(rootPath))
-    , engine(this)
     , originalWorkingDirectory(QDir::current().absolutePath()) {
-	auto* app = QCoreApplication::instance();
-	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
-	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
-
 	// clang-format off
 	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &RootWrapper::onWatchFilesChanged);
 	// clang-format on
@@ -45,16 +40,22 @@ RootWrapper::~RootWrapper() {
 }
 
 void RootWrapper::reloadGraph(bool hard) {
+	auto* oldEngine = this->engine;
+	this->engine = new QQmlEngine(this);
+
+	auto* app = QCoreApplication::instance();
+	QObject::connect(this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
+	QObject::connect(this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
+
 	if (this->root != nullptr) {
 		QuickshellSettings::reset();
-		this->engine.clearComponentCache();
 	}
 
 	QDir::setCurrent(this->originalWorkingDirectory);
 
-	auto component = QQmlComponent(&this->engine, QUrl::fromLocalFile(this->rootPath));
+	auto component = QQmlComponent(this->engine, QUrl::fromLocalFile(this->rootPath));
 
-	auto* obj = component.beginCreate(this->engine.rootContext());
+	auto* obj = component.beginCreate(this->engine->rootContext());
 
 	if (obj == nullptr) {
 		qWarning() << component.errorString().toStdString().c_str();
@@ -89,6 +90,8 @@ void RootWrapper::reloadGraph(bool hard) {
 		PostReloadHook::postReloadTree(newRoot);
 		QuickshellPlugin::runOnReload();
 	}
+
+	delete oldEngine;
 
 	this->onWatchFilesChanged();
 }

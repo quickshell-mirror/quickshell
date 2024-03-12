@@ -26,7 +26,7 @@ enum Enum {
 };
 Q_ENUM_NS(Enum);
 
-} // namespace Layer
+} // namespace WlrLayer
 
 ///! WlrLayershell keyboard focus mode
 namespace WlrKeyboardFocus { // NOLINT
@@ -47,7 +47,7 @@ enum Enum {
 };
 Q_ENUM_NS(Enum);
 
-} // namespace KeyboardFocus
+} // namespace WlrKeyboardFocus
 
 class QSWaylandLayerSurface;
 
