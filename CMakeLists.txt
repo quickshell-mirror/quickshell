@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(quickshell VERSION "0.1.0")
+project(quickshell VERSION "0.1.0" LANGUAGES CXX C)
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
@@ -64,6 +64,28 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
+
+file(GENERATE
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp
+	CONTENT ""
+)
+
+add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
+target_link_libraries(qt-pch PRIVATE ${QT_DEPS})
+target_precompile_headers(qt-pch PUBLIC
+	<memory>
+	<qobject.h>
+	<qqmlengine.h>
+	<qlist.h>
+	<qcolor.h>
+	<qquickitem.h>
+	<qevent.h>
+)
+
+function (qs_pch target)
+	target_precompile_headers(${target} REUSE_FROM qt-pch)
+	target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
+endfunction()
 
 add_subdirectory(src/core)
 add_subdirectory(src/io)

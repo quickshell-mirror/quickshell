@@ -3,7 +3,7 @@
   nix-gitignore,
   pkgs,
   keepDebugInfo,
-  stdenv ? (keepDebugInfo pkgs.stdenv),
+  buildStdenv ? pkgs.clang17Stdenv,
 
   cmake,
   ninja,
@@ -23,7 +23,7 @@
      else "unknown"),
   debug ? false,
   enableWayland ? true,
-}: stdenv.mkDerivation {
+}: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
   src = nix-gitignore.gitignoreSource "/docs\n/examples\n" ./.;

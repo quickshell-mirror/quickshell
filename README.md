@@ -47,6 +47,8 @@ This repo has a nix flake you can use to install the package directly:
 Quickshell's binary is available at `quickshell.packages.<system>.default` to be added to
 lists such as `environment.systemPackages` or `home.packages`.
 
+Note: by default this package is built with clang as it is significantly faster.
+
 ## Manual
 
 If not using nix, you'll have to build from source.

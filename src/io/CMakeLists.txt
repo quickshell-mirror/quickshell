@@ -16,6 +16,10 @@ target_link_libraries(quickshell-io-init PRIVATE ${QT_DEPS})
 
 target_link_libraries(quickshell PRIVATE quickshell-ioplugin quickshell-io-init)
 
+qs_pch(quickshell-io)
+qs_pch(quickshell-ioplugin)
+qs_pch(quickshell-io-init)
+
 if (BUILD_TESTING)
 	add_subdirectory(test)
 endif()

@@ -22,6 +22,7 @@ set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION
 qt_add_qml_module(quickshell URI Quickshell VERSION 0.1)
 
 target_link_libraries(quickshell PRIVATE ${QT_DEPS})
+qs_pch(quickshell)
 
 if (BUILD_TESTING)
 	add_subdirectory(test)

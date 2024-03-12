@@ -37,9 +37,15 @@ function (wl_proto target name path)
 	execute_process(COMMAND ${qtwaylandscanner} client-header ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.h)
 	execute_process(COMMAND ${qtwaylandscanner} client-code ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
 
-	target_sources(${target} PRIVATE ${PROTO_BUILD_PATH}/wayland-${name}.c)
-	target_sources(${target} PRIVATE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
-	target_include_directories(${target} PRIVATE ${PROTO_BUILD_PATH})
+	add_library(wl-proto-${name}
+		${PROTO_BUILD_PATH}/wayland-${name}.c
+		${PROTO_BUILD_PATH}/qwayland-${name}.cpp
+	)
+
+	target_include_directories(wl-proto-${name} INTERFACE ${PROTO_BUILD_PATH})
+	target_link_libraries(wl-proto-${name} Qt6::WaylandClient Qt6::WaylandClientPrivate)
+
+	target_link_libraries(${target} PRIVATE wl-proto-${name})
 endfunction()
 
 # -----
@@ -64,5 +70,9 @@ endif()
 
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
 target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
+
+qs_pch(quickshell-wayland)
+qs_pch(quickshell-waylandplugin)
+qs_pch(quickshell-wayland-init)
 
 target_link_libraries(quickshell PRIVATE quickshell-waylandplugin quickshell-wayland-init)

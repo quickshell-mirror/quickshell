@@ -10,7 +10,7 @@
     rev = "1f062cc198d1112d13e5128fa1f2ee3dbffe613b";
     sha256 = "kbt0Zc1qHE5fhqBkKz8iue+B+ZANjF1AR/RdgmX1r0I=";
   }) { inherit pkgs; };
-in pkgs.mkShell {
+in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
   inputsFrom = [ quickshell ];
 
   nativeBuildInputs = with pkgs; [
