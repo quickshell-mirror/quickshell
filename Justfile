@@ -26,7 +26,7 @@ clean:
 	rm -rf {{builddir}}
 
 run *ARGS='': build
-	{{builddir}}/src/core/quickshell {{ARGS}}
+	{{builddir}}/src/quickshell {{ARGS}}
 
 test *ARGS='': build
 	ctest --test-dir {{builddir}} --output-on-failure {{ARGS}}

@@ -1,3 +1,5 @@
+#include "main.hpp"
+
 #include <iostream>
 
 #include <qcommandlineoption.h>
@@ -17,7 +19,7 @@
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
 
-int main(int argc, char** argv) {
+int qs_main(int argc, char** argv) {
 	const auto app = QGuiApplication(argc, argv);
 	QGuiApplication::setApplicationName("quickshell");
 	QGuiApplication::setApplicationVersion("0.1.0 (" GIT_REVISION ")");

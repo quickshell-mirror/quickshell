@@ -87,11 +87,4 @@ function (qs_pch target)
 	target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
 endfunction()
 
-add_subdirectory(src/core)
-add_subdirectory(src/io)
-
-if (WAYLAND)
-	add_subdirectory(src/wayland)
-endif ()
-
-install(TARGETS quickshell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_subdirectory(src)
