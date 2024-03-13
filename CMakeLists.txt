@@ -65,13 +65,13 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
 
-file(GENERATE
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp
-	CONTENT ""
-)
-
 # pch breaks clang-tidy..... somehow
 if (NOT NO_PCH)
+	file(GENERATE
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp
+		CONTENT ""
+	)
+
 	add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
 	target_link_libraries(qt-pch PRIVATE ${QT_DEPS})
 	target_precompile_headers(qt-pch PUBLIC

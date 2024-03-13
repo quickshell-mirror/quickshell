@@ -16,6 +16,7 @@
 #include "qmlglobal.hpp"
 #include "reload.hpp"
 #include "shell.hpp"
+#include "singleton.hpp"
 #include "watcher.hpp"
 
 RootWrapper::RootWrapper(QString rootPath)
@@ -49,6 +50,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	if (this->root != nullptr) {
 		QuickshellSettings::reset();
+		SingletonRegistry::instance()->flip();
 	}
 
 	QDir::setCurrent(this->originalWorkingDirectory);
