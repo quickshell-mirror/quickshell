@@ -8,7 +8,9 @@
 #include <qqmlcomponent.h>
 #include <qqmlparserstatus.h>
 #include <qtmetamacros.h>
+#include <qvariant.h>
 
+#include "doc.hpp"
 #include "reload.hpp"
 
 // extremely inefficient map
@@ -22,8 +24,14 @@ public:
 	QList<QPair<K, V>> values;
 };
 
-///! Creates instances of a component based on a given set of variants.
+///! Creates instances of a component based on a given model.
 /// Creates and destroys instances of the given component when the given property changes.
+///
+/// `Variants` is similar to [Repeater] except it is for *non Item* objects, and acts as
+/// a reload scope.
+///
+/// Each non duplicate value passed to [model](#prop.model) will create a new instance of
+/// [delegate](#prop.delegate) with its `modelData` property set to that value.
 ///
 /// See [Quickshell.screens] for an example of using `Variants` to create copies of a window per
 /// screen.
@@ -31,30 +39,39 @@ public:
 /// > [!WARNING] BUG: Variants currently fails to reload children if the variant set is changed as
 /// > it is instantiated. (usually due to a mutation during variant creation)
 ///
+/// [Repeater]: https://doc.qt.io/qt-6/qml-qtquick-repeater.html
 /// [Quickshell.screens]: ../quickshell#prop.screens
 class Variants: public Reloadable {
 	Q_OBJECT;
-	/// The component to create instances of
-	Q_PROPERTY(QQmlComponent* component MEMBER mComponent);
+	/// The component to create instances of.
+	///
+	/// The delegate should define a `modelData` property that will be popuplated with a value
+	/// from the [model](#prop.model).
+	Q_PROPERTY(QQmlComponent* delegate MEMBER mDelegate);
 	/// The list of sets of properties to create instances with.
 	/// Each set creates an instance of the component, which are updated when the input sets update.
-	Q_PROPERTY(QList<QVariant> variants MEMBER mVariants WRITE setVariants);
-	Q_CLASSINFO("DefaultProperty", "component");
+	QSDOC_PROPERTY_OVERRIDE(QList<QVariant> model READ model WRITE setModel NOTIFY modelChanged);
+	QSDOC_HIDE Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged);
+	Q_CLASSINFO("DefaultProperty", "delegate");
 	QML_ELEMENT;
 
 public:
 	explicit Variants(QObject* parent = nullptr): Reloadable(parent) {}
 
 	void onReload(QObject* oldInstance) override;
-
 	void componentComplete() override;
 
+	[[nodiscard]] QVariant model() const;
+	void setModel(const QVariant& model);
+
+signals:
+	void modelChanged();
+
 private:
-	void setVariants(QVariantList variants);
 	void updateVariants();
 
-	QQmlComponent* mComponent = nullptr;
-	QVariantList mVariants;
-	AwfulMap<QVariantMap, QObject*> instances;
+	QQmlComponent* mDelegate = nullptr;
+	QVariantList mModel;
+	AwfulMap<QVariant, QObject*> instances;
 	bool loaded = false;
 };

@@ -83,12 +83,12 @@ class QuickshellGlobal: public QObject {
 	/// ```qml
 	/// ShellRoot {
 	///   Variants {
-	///     ShellWindow {
-	///       // ...
-	///     }
-	///
 	///     // see Variants for details
-	///     variants: Quickshell.screens.map(screen => ({ screen }))
+	///     variants: Quickshell.screens
+	///     PanelWindow {
+	///       property var modelData
+	///       screen: modelData
+	///     }
 	///   }
 	/// }
 	/// ```

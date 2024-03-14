@@ -6,6 +6,9 @@
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlengine.h>
+#include <qqmllist.h>
+#include <qtmetamacros.h>
+#include <qvariant.h>
 
 #include "reload.hpp"
 
@@ -17,27 +20,44 @@ void Variants::onReload(QObject* oldInstance) {
 		if (old != nullptr) {
 			auto& values = old->instances.values;
 
-			int matchcount = 0;
-			int matchi = 0;
-			int i = 0;
-			for (auto& [valueSet, _]: values) {
-				int count = 0;
-				for (auto& [k, v]: variant.toStdMap()) {
-					if (valueSet.contains(k) && valueSet.value(k) == v) {
-						count++;
+			if (variant.canConvert<QVariantMap>()) {
+				auto variantMap = variant.value<QVariantMap>();
+
+				int matchcount = 0;
+				int matchi = 0;
+				int i = 0;
+				for (auto& [value, _]: values) {
+					if (!value.canConvert<QVariantMap>()) continue;
+					auto valueSet = value.value<QVariantMap>();
+
+					int count = 0;
+					for (auto [k, v]: variantMap.asKeyValueRange()) {
+						if (valueSet.contains(k) && valueSet.value(k) == v) {
+							count++;
+						}
 					}
+
+					if (count > matchcount) {
+						matchcount = count;
+						matchi = i;
+					}
+
+					i++;
 				}
 
-				if (count > matchcount) {
-					matchcount = count;
-					matchi = i;
+				if (matchcount > 0) {
+					oldInstance = values.takeAt(matchi).second;
 				}
+			} else {
+				int i = 0;
+				for (auto& [value, _]: values) {
+					if (variant == value) {
+						oldInstance = values.takeAt(i).second;
+						break;
+					}
 
-				i++;
-			}
-
-			if (matchcount > 0) {
-				oldInstance = values.takeAt(matchi).second;
+					i++;
+				}
 			}
 		}
 
@@ -50,9 +70,32 @@ void Variants::onReload(QObject* oldInstance) {
 	this->loaded = true;
 }
 
-void Variants::setVariants(QVariantList variants) {
-	this->mVariants = std::move(variants);
+QVariant Variants::model() const { return QVariant::fromValue(this->mModel); }
+
+void Variants::setModel(const QVariant& model) {
+	if (model.canConvert<QVariantList>()) {
+		this->mModel = model.value<QVariantList>();
+	} else if (model.canConvert<QQmlListReference>()) {
+		auto list = model.value<QQmlListReference>();
+		if (!list.isReadable()) {
+			qWarning() << "Non readable list" << model << "assigned to Variants.model, Ignoring.";
+			return;
+		}
+
+		QVariantList model;
+		auto size = list.count();
+		for (auto i = 0; i < size; i++) {
+			model.push_back(QVariant::fromValue(list.at(i)));
+		}
+
+		this->mModel = std::move(model);
+	} else {
+		qWarning() << "Non list data" << model << "assigned to Variants.model, Ignoring.";
+		return;
+	}
+
 	this->updateVariants();
+	emit this->modelChanged();
 }
 
 void Variants::componentComplete() {
@@ -61,14 +104,14 @@ void Variants::componentComplete() {
 }
 
 void Variants::updateVariants() {
-	if (this->mComponent == nullptr) {
+	if (this->mDelegate == nullptr) {
 		qWarning() << "Variants instance does not have a component specified";
 		return;
 	}
 
 	// clean up removed entries
 	for (auto iter = this->instances.values.begin(); iter < this->instances.values.end();) {
-		if (this->mVariants.contains(iter->first)) {
+		if (this->mModel.contains(iter->first)) {
 			iter++;
 		} else {
 			iter->second->deleteLater();
@@ -76,32 +119,31 @@ void Variants::updateVariants() {
 		}
 	}
 
-	for (auto iter = this->mVariants.begin(); iter < this->mVariants.end(); iter++) {
-		auto& variantObj = *iter;
-		if (!variantObj.canConvert<QVariantMap>()) {
-			qWarning() << "value passed to Variants is not an object and will be ignored:" << variantObj;
-		} else {
-			auto variant = variantObj.value<QVariantMap>();
-
-			for (auto iter2 = this->mVariants.begin(); iter2 < iter; iter2++) {
-				if (*iter2 == variantObj) {
-					qWarning() << "same value specified twice in Variants, duplicates will be ignored:"
-					           << variantObj;
-					goto outer;
-				}
+	for (auto iter = this->mModel.begin(); iter < this->mModel.end(); iter++) {
+		auto& variant = *iter;
+		for (auto iter2 = this->mModel.begin(); iter2 < iter; iter2++) {
+			if (*iter2 == variant) {
+				qWarning() << "same value specified twice in Variants, duplicates will be ignored:"
+				           << variant;
+				goto outer;
 			}
+		}
 
+		{
 			if (this->instances.contains(variant)) {
 				continue; // we dont need to recreate this one
 			}
 
-			auto* instance = this->mComponent->createWithInitialProperties(
-			    variant,
-			    QQmlEngine::contextForObject(this->mComponent)
+			auto variantMap = QVariantMap();
+			variantMap.insert("modelData", variant);
+
+			auto* instance = this->mDelegate->createWithInitialProperties(
+			    variantMap,
+			    QQmlEngine::contextForObject(this->mDelegate)
 			);
 
 			if (instance == nullptr) {
-				qWarning() << this->mComponent->errorString().toStdString().c_str();
+				qWarning() << this->mDelegate->errorString().toStdString().c_str();
 				qWarning() << "failed to create variant with object" << variant;
 				continue;
 			}
