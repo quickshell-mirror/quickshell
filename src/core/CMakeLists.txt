@@ -9,7 +9,6 @@ qt_add_library(quickshell-core STATIC
 	rootwrapper.cpp
 	qmlglobal.cpp
 	qmlscreen.cpp
-	watcher.cpp
 	region.cpp
 	persistentprops.cpp
 	windowinterface.cpp
@@ -18,6 +17,8 @@ qt_add_library(quickshell-core STATIC
 	popupwindow.cpp
 	singleton.cpp
 	generation.cpp
+	scan.cpp
+	qsintercept.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")

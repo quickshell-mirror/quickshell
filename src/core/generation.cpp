@@ -1,7 +1,9 @@
 #include "generation.hpp"
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
+#include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
@@ -9,11 +11,19 @@
 #include <qtimer.h>
 
 #include "plugin.hpp"
+#include "qsintercept.hpp"
 #include "reload.hpp"
+#include "scan.hpp"
 
 static QHash<QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
-EngineGeneration::EngineGeneration() { g_generations.insert(&this->engine, this); }
+EngineGeneration::EngineGeneration(QmlScanner scanner)
+    : scanner(std::move(scanner))
+    , interceptNetFactory(this->scanner.qmldirIntercepts) {
+	g_generations.insert(&this->engine, this);
+
+	this->engine.setNetworkAccessManagerFactory(&this->interceptNetFactory);
+}
 
 EngineGeneration::~EngineGeneration() {
 	g_generations.remove(&this->engine);
@@ -38,6 +48,30 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	} else {
 		QuickshellPlugin::runOnReload();
 		PostReloadHook::postReloadTree(this->root);
+	}
+}
+
+void EngineGeneration::setWatchingFiles(bool watching) {
+	if (watching) {
+		if (this->watcher == nullptr) {
+			this->watcher = new QFileSystemWatcher();
+
+			for (auto& file: this->scanner.scannedFiles) {
+				this->watcher->addPath(file);
+			}
+
+			QObject::connect(
+			    this->watcher,
+			    &QFileSystemWatcher::fileChanged,
+			    this,
+			    &EngineGeneration::filesChanged
+			);
+		}
+	} else {
+		if (this->watcher != nullptr) {
+			delete this->watcher;
+			this->watcher = nullptr;
+		}
 	}
 }
 

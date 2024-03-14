@@ -7,7 +7,6 @@
 #include <qurl.h>
 
 #include "generation.hpp"
-#include "watcher.hpp"
 
 class RootWrapper: public QObject {
 	Q_OBJECT;
@@ -26,6 +25,5 @@ private slots:
 private:
 	QString rootPath;
 	EngineGeneration* generation = nullptr;
-	FiletreeWatcher* configWatcher = nullptr;
 	QString originalWorkingDirectory;
 };

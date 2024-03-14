@@ -12,8 +12,8 @@
 
 #include "generation.hpp"
 #include "qmlglobal.hpp"
+#include "scan.hpp"
 #include "shell.hpp"
-#include "watcher.hpp"
 
 RootWrapper::RootWrapper(QString rootPath)
     : QObject(nullptr)
@@ -42,7 +42,10 @@ RootWrapper::~RootWrapper() {
 }
 
 void RootWrapper::reloadGraph(bool hard) {
-	auto* generation = new EngineGeneration();
+	auto scanner = QmlScanner();
+	scanner.scanQmlFile(this->rootPath);
+
+	auto* generation = new EngineGeneration(std::move(scanner));
 
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {
@@ -51,7 +54,10 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	QDir::setCurrent(this->originalWorkingDirectory);
 
-	auto component = QQmlComponent(&generation->engine, QUrl::fromLocalFile(this->rootPath));
+	auto url = QUrl::fromLocalFile(this->rootPath);
+	// unless the original file comes from the qsintercept scheme
+	url.setScheme("qsintercept");
+	auto component = QQmlComponent(&generation->engine, url);
 
 	auto* obj = component.beginCreate(generation->engine.rootContext());
 
@@ -80,25 +86,20 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	qInfo() << "Configuration Loaded";
 
+	QObject::connect(
+	    this->generation,
+	    &EngineGeneration::filesChanged,
+	    this,
+	    &RootWrapper::onWatchedFilesChanged
+	);
+
 	this->onWatchFilesChanged();
 }
 
 void RootWrapper::onWatchFilesChanged() {
 	auto watchFiles = QuickshellSettings::instance()->watchFiles();
-
-	if (watchFiles && this->configWatcher == nullptr) {
-		this->configWatcher = new FiletreeWatcher();
-		this->configWatcher->addPath(QFileInfo(this->rootPath).dir().path());
-
-		QObject::connect(
-		    this->configWatcher,
-		    &FiletreeWatcher::fileChanged,
-		    this,
-		    &RootWrapper::onWatchedFilesChanged
-		);
-	} else if (!watchFiles && this->configWatcher != nullptr) {
-		this->configWatcher->deleteLater();
-		this->configWatcher = nullptr;
+	if (this->generation != nullptr) {
+		this->generation->setWatchingFiles(watchFiles);
 	}
 }
 

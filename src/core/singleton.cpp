@@ -1,11 +1,10 @@
 #include "singleton.hpp"
 
+#include <qhash.h>
 #include <qlogging.h>
-#include <qmap.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
-#include <qurl.h>
 
 #include "generation.hpp"
 #include "reload.hpp"

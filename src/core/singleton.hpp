@@ -1,9 +1,11 @@
 #pragma once
 
+#include <qhash.h>
 #include <qobject.h>
+#include <qqmlengine.h>
 #include <qqmlintegration.h>
-#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qurl.h>
 
 #include "reload.hpp"
@@ -26,5 +28,5 @@ public:
 	void onReload(SingletonRegistry* old);
 
 private:
-	QMap<QUrl, Singleton*> registry;
+	QHash<QUrl, Singleton*> registry;
 };
