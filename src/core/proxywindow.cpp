@@ -73,6 +73,13 @@ void ProxyWindowBase::setupWindow() {
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
 	// clang-format on
 
+	if (this->window->screen() != this->mScreen) {
+		auto reshow = this->window->isVisible();
+		if (reshow) this->window->setVisible(false);
+		this->window->setScreen(this->mScreen);
+		if (reshow) this->window->setVisible(true);
+	}
+
 	this->window->setScreen(this->mScreen);
 	this->setWidth(this->mWidth);
 	this->setHeight(this->mHeight);
