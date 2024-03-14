@@ -7,58 +7,48 @@
 #include <qqmlengine.h>
 #include <qurl.h>
 
+#include "generation.hpp"
 #include "reload.hpp"
 
 void Singleton::componentComplete() {
 	auto* context = QQmlEngine::contextForObject(this);
 
 	if (context == nullptr) {
-		qWarning() << "not registering singleton not created in the qml context:" << this;
+		qWarning() << "Not registering singleton not created in the qml context:" << this;
 		return;
 	}
 
 	auto url = context->baseUrl();
 
 	if (this->parent() != nullptr || context->contextObject() != this) {
-		qWarning() << "tried to register singleton" << this
+		qWarning() << "Tried to register singleton" << this
 		           << "which is not the root component of its file" << url;
 		return;
 	}
 
-	SingletonRegistry::instance()->install(url, this);
+	auto* generation = EngineGeneration::findObjectGeneration(this);
+
+	if (generation == nullptr) {
+		qWarning() << "Tried to register singleton" << this
+		           << "which has no associated engine generation" << url;
+		return;
+	}
+
+	generation->singletonRegistry.registerSingleton(url, this);
 	this->ReloadPropagator::componentComplete();
 }
 
-SingletonRegistry::~SingletonRegistry() {
-	delete this->previousRegistry;
-	delete this->currentRegistry;
-}
-
-void SingletonRegistry::install(const QUrl& url, Singleton* singleton) {
-	QObject* old = nullptr;
-
-	if (this->previousRegistry != nullptr) {
-		old = this->previousRegistry->value(url);
+void SingletonRegistry::registerSingleton(const QUrl& url, Singleton* singleton) {
+	if (this->registry.contains(url)) {
+		qWarning() << "Tried to register singleton twice for the same file" << url;
+		return;
 	}
 
-	if (this->currentRegistry == nullptr) {
-		this->currentRegistry = new QMap<QUrl, QObject*>();
-	}
-
-	this->currentRegistry->insert(url, singleton);
-	singleton->onReload(old);
+	this->registry.insert(url, singleton);
 }
 
-void SingletonRegistry::flip() {
-	delete this->previousRegistry;
-	this->previousRegistry = this->currentRegistry;
-	this->currentRegistry = nullptr;
-}
-
-SingletonRegistry* SingletonRegistry::instance() {
-	static SingletonRegistry* instance = nullptr; // NOLINT
-	if (instance == nullptr) {
-		instance = new SingletonRegistry();
+void SingletonRegistry::onReload(SingletonRegistry* old) {
+	for (auto [url, singleton]: this->registry.asKeyValueRange()) {
+		singleton->onReload(old == nullptr ? nullptr : old->registry.value(url));
 	}
-	return instance;
 }

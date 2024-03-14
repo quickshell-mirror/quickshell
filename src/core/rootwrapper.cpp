@@ -2,21 +2,17 @@
 #include <cstdlib>
 #include <utility>
 
-#include <qcoreapplication.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
-#include <qtimer.h>
 #include <qurl.h>
 
-#include "plugin.hpp"
+#include "generation.hpp"
 #include "qmlglobal.hpp"
-#include "reload.hpp"
 #include "shell.hpp"
-#include "singleton.hpp"
 #include "watcher.hpp"
 
 RootWrapper::RootWrapper(QString rootPath)
@@ -29,7 +25,7 @@ RootWrapper::RootWrapper(QString rootPath)
 
 	this->reloadGraph(true);
 
-	if (this->root == nullptr) {
+	if (this->generation == nullptr) {
 		qCritical() << "could not create scene graph, exiting";
 		exit(-1); // NOLINT
 	}
@@ -37,31 +33,32 @@ RootWrapper::RootWrapper(QString rootPath)
 
 RootWrapper::~RootWrapper() {
 	// event loop may no longer be running so deleteLater is not an option
-	delete this->root;
+	if (this->generation != nullptr) {
+		delete this->generation->root;
+		this->generation->root = nullptr;
+	}
+
+	delete this->generation;
 }
 
 void RootWrapper::reloadGraph(bool hard) {
-	auto* oldEngine = this->engine;
-	this->engine = new QQmlEngine(this);
+	auto* generation = new EngineGeneration();
 
-	auto* app = QCoreApplication::instance();
-	QObject::connect(this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
-	QObject::connect(this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
-
-	if (this->root != nullptr) {
+	// todo: move into EngineGeneration
+	if (this->generation != nullptr) {
 		QuickshellSettings::reset();
-		SingletonRegistry::instance()->flip();
 	}
 
 	QDir::setCurrent(this->originalWorkingDirectory);
 
-	auto component = QQmlComponent(this->engine, QUrl::fromLocalFile(this->rootPath));
+	auto component = QQmlComponent(&generation->engine, QUrl::fromLocalFile(this->rootPath));
 
-	auto* obj = component.beginCreate(this->engine->rootContext());
+	auto* obj = component.beginCreate(generation->engine.rootContext());
 
 	if (obj == nullptr) {
 		qWarning() << component.errorString().toStdString().c_str();
 		qWarning() << "failed to create root component";
+		delete generation;
 		return;
 	}
 
@@ -69,31 +66,19 @@ void RootWrapper::reloadGraph(bool hard) {
 	if (newRoot == nullptr) {
 		qWarning() << "root component was not a Quickshell.ShellRoot";
 		delete obj;
+		delete generation;
 		return;
 	}
 
+	generation->root = newRoot;
+
 	component.completeCreate();
 
-	auto* oldRoot = this->root;
-	this->root = newRoot;
+	generation->onReload(hard ? nullptr : this->generation);
+	if (hard) delete this->generation;
+	this->generation = generation;
 
-	this->root->onReload(hard ? nullptr : oldRoot);
-
-	if (oldRoot != nullptr) {
-		oldRoot->deleteLater();
-
-		QTimer::singleShot(0, [this, newRoot]() {
-			if (this->root == newRoot) {
-				QuickshellPlugin::runOnReload();
-				PostReloadHook::postReloadTree(this->root);
-			}
-		});
-	} else {
-		PostReloadHook::postReloadTree(newRoot);
-		QuickshellPlugin::runOnReload();
-	}
-
-	delete oldEngine;
+	qInfo() << "Configuration Loaded";
 
 	this->onWatchFilesChanged();
 }

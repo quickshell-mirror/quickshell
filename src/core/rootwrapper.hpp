@@ -6,7 +6,7 @@
 #include <qtmetamacros.h>
 #include <qurl.h>
 
-#include "shell.hpp"
+#include "generation.hpp"
 #include "watcher.hpp"
 
 class RootWrapper: public QObject {
@@ -25,8 +25,7 @@ private slots:
 
 private:
 	QString rootPath;
-	QQmlEngine* engine = nullptr;
-	ShellRoot* root = nullptr;
+	EngineGeneration* generation = nullptr;
 	FiletreeWatcher* configWatcher = nullptr;
 	QString originalWorkingDirectory;
 };

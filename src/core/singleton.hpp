@@ -21,15 +21,10 @@ public:
 class SingletonRegistry {
 public:
 	SingletonRegistry() = default;
-	~SingletonRegistry();
-	Q_DISABLE_COPY_MOVE(SingletonRegistry);
 
-	void install(const QUrl& url, Singleton* singleton);
-	void flip();
-
-	static SingletonRegistry* instance();
+	void registerSingleton(const QUrl& url, Singleton* singleton);
+	void onReload(SingletonRegistry* old);
 
 private:
-	QMap<QUrl, QObject*>* previousRegistry = nullptr;
-	QMap<QUrl, QObject*>* currentRegistry = nullptr;
+	QMap<QUrl, Singleton*> registry;
 };
