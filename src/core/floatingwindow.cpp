@@ -1,6 +1,7 @@
 #include "floatingwindow.hpp"
 
 #include <qobject.h>
+#include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qtypes.h>
@@ -37,6 +38,8 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 }
 
 void FloatingWindowInterface::onReload(QObject* oldInstance) {
+	QQmlEngine::setContextForObject(this->window, QQmlEngine::contextForObject(this));
+
 	auto* old = qobject_cast<FloatingWindowInterface*>(oldInstance);
 	this->window->onReload(old != nullptr ? old->window : nullptr);
 }

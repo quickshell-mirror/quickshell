@@ -2,6 +2,7 @@
 
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
@@ -11,6 +12,7 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
+#include "generation.hpp"
 #include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
@@ -33,6 +35,13 @@ ProxyWindowBase::~ProxyWindowBase() {
 
 void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->window = this->createWindow(oldInstance);
+
+	if (auto* generation = EngineGeneration::findObjectGeneration(this)) {
+		// All windows have effectively the same incubation controller so it dosen't matter
+		// which window it belongs to. We do want to replace the delay one though.
+		generation->registerIncubationController(this->window->incubationController());
+	}
+
 	this->setupWindow();
 
 	Reloadable::reloadRecursive(this->mContentItem, oldInstance);

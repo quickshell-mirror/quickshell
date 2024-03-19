@@ -182,6 +182,8 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 }
 
 void WaylandPanelInterface::onReload(QObject* oldInstance) {
+	QQmlEngine::setContextForObject(this->layer, QQmlEngine::contextForObject(this));
+
 	auto* old = qobject_cast<WaylandPanelInterface*>(oldInstance);
 	this->layer->onReload(old != nullptr ? old->layer : nullptr);
 }

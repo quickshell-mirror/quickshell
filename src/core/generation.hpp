@@ -1,9 +1,12 @@
 #pragma once
 
+#include <qcontainerfwd.h>
 #include <qfilesystemwatcher.h>
 #include <qobject.h>
+#include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
 
+#include "incubator.hpp"
 #include "qsintercept.hpp"
 #include "scan.hpp"
 #include "shell.hpp"
@@ -21,6 +24,8 @@ public:
 	void onReload(EngineGeneration* old);
 	void setWatchingFiles(bool watching);
 
+	void registerIncubationController(QQmlIncubationController* controller);
+
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
 	QmlScanner scanner;
@@ -29,7 +34,15 @@ public:
 	ShellRoot* root = nullptr;
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
+	DelayedQmlIncubationController delayedIncubationController;
 
 signals:
 	void filesChanged();
+
+private slots:
+	void incubationControllerDestroyed();
+
+private:
+	void assignIncubationController();
+	QVector<QQmlIncubationController*> incubationControllers;
 };

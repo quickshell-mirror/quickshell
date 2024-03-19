@@ -3,13 +3,18 @@
 
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
+#include <qdebug.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
+#include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
+#include <qqmlincubator.h>
 #include <qtimer.h>
 
+#include "incubator.hpp"
 #include "plugin.hpp"
 #include "qsintercept.hpp"
 #include "reload.hpp"
@@ -23,6 +28,7 @@ EngineGeneration::EngineGeneration(QmlScanner scanner)
 	g_generations.insert(&this->engine, this);
 
 	this->engine.setNetworkAccessManagerFactory(&this->interceptNetFactory);
+	this->engine.setIncubationController(&this->delayedIncubationController);
 }
 
 EngineGeneration::~EngineGeneration() {
@@ -31,6 +37,13 @@ EngineGeneration::~EngineGeneration() {
 }
 
 void EngineGeneration::onReload(EngineGeneration* old) {
+	if (old != nullptr) {
+		// if the old generation holds the window incubation controller as the
+		// new generation acquires it then incubators will hang intermittently
+		old->incubationControllers.clear();
+		old->engine.setIncubationController(&old->delayedIncubationController);
+	}
+
 	auto* app = QCoreApplication::instance();
 	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
 	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
@@ -73,6 +86,51 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 			this->watcher = nullptr;
 		}
 	}
+}
+
+void EngineGeneration::registerIncubationController(QQmlIncubationController* controller) {
+	auto* obj = dynamic_cast<QObject*>(controller);
+
+	// We only want controllers that we can swap out if destroyed.
+	// This happens if the window owning the active controller dies.
+	if (obj == nullptr) {
+		qCDebug(logIncubator) << "Could not register incubation controller as it is not a QObject"
+		                      << controller;
+
+		return;
+	}
+
+	this->incubationControllers.push_back(controller);
+
+	QObject::connect(
+	    obj,
+	    &QObject::destroyed,
+	    this,
+	    &EngineGeneration::incubationControllerDestroyed
+	);
+
+	qCDebug(logIncubator) << "Registered incubation controller" << controller;
+
+	if (this->engine.incubationController() == &this->delayedIncubationController) {
+		this->assignIncubationController();
+	}
+}
+
+void EngineGeneration::incubationControllerDestroyed() {
+	qCDebug(logIncubator) << "Active incubation controller destroyed, deregistering";
+
+	this->incubationControllers.removeAll(dynamic_cast<QQmlIncubationController*>(this->sender()));
+	this->assignIncubationController();
+}
+
+void EngineGeneration::assignIncubationController() {
+	auto* controller = this->incubationControllers.first();
+	if (controller == nullptr) controller = &this->delayedIncubationController;
+
+	qCDebug(logIncubator) << "Assigning incubation controller to engine:" << controller
+	                      << "fallback:" << (controller == &this->delayedIncubationController);
+
+	this->engine.setIncubationController(controller);
 }
 
 EngineGeneration* EngineGeneration::findObjectGeneration(QObject* object) {
