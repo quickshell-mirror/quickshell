@@ -44,6 +44,7 @@ private slots:
 	void incubationControllerDestroyed();
 
 private:
+	void postReload();
 	void assignIncubationController();
 	QVector<QQmlIncubationController*> incubationControllers;
 };

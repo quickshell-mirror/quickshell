@@ -55,14 +55,16 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	delete old;
 
 	if (old != nullptr) {
-		QTimer::singleShot(0, [this]() {
-			QuickshellPlugin::runOnReload();
-			PostReloadHook::postReloadTree(this->root);
-		});
+		QTimer::singleShot(0, [this]() { this->postReload(); });
 	} else {
-		QuickshellPlugin::runOnReload();
-		PostReloadHook::postReloadTree(this->root);
+		this->postReload();
 	}
+}
+
+void EngineGeneration::postReload() {
+	QuickshellPlugin::runOnReload();
+	PostReloadHook::postReloadTree(this->root);
+	this->singletonRegistry.onPostReload();
 }
 
 void EngineGeneration::setWatchingFiles(bool watching) {

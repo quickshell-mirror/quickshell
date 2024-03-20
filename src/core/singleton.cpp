@@ -51,3 +51,9 @@ void SingletonRegistry::onReload(SingletonRegistry* old) {
 		singleton->onReload(old == nullptr ? nullptr : old->registry.value(url));
 	}
 }
+
+void SingletonRegistry::onPostReload() {
+	for (auto* singleton: this->registry.values()) {
+		PostReloadHook::postReloadTree(singleton);
+	}
+}
