@@ -27,6 +27,7 @@ EngineGeneration::EngineGeneration(QmlScanner scanner)
     , interceptNetFactory(this->scanner.qmldirIntercepts) {
 	g_generations.insert(&this->engine, this);
 
+	this->engine.addUrlInterceptor(&this->urlInterceptor);
 	this->engine.setNetworkAccessManagerFactory(&this->interceptNetFactory);
 	this->engine.setIncubationController(&this->delayedIncubationController);
 }

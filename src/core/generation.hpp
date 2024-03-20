@@ -29,6 +29,7 @@ public:
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
 	QmlScanner scanner;
+	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;
 	QQmlEngine engine;
 	ShellRoot* root = nullptr;

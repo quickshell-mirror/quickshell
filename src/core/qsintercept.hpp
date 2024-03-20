@@ -5,10 +5,16 @@
 #include <qnetworkaccessmanager.h>
 #include <qnetworkreply.h>
 #include <qnetworkrequest.h>
+#include <qqmlabstracturlinterceptor.h>
 #include <qqmlnetworkaccessmanagerfactory.h>
 #include <qurl.h>
 
 Q_DECLARE_LOGGING_CATEGORY(logQsIntercept);
+
+class QsUrlInterceptor: public QQmlAbstractUrlInterceptor {
+public:
+	QUrl intercept(const QUrl& url, QQmlAbstractUrlInterceptor::DataType type) override;
+};
 
 class QsInterceptDataReply: public QNetworkReply {
 	Q_OBJECT;

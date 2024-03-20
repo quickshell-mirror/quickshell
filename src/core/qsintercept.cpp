@@ -9,10 +9,25 @@
 #include <qnetworkaccessmanager.h>
 #include <qnetworkrequest.h>
 #include <qobject.h>
+#include <qqmlabstracturlinterceptor.h>
 #include <qstring.h>
 #include <qtypes.h>
+#include <qurl.h>
 
 Q_LOGGING_CATEGORY(logQsIntercept, "quickshell.interceptor", QtWarningMsg);
+
+QUrl QsUrlInterceptor::intercept(const QUrl& url, QQmlAbstractUrlInterceptor::DataType type) {
+	// Some types such as Image take into account where they are loading from, and force
+	// asynchronous loading over a network. qsintercept is considered to be over a network.
+	if (type == QQmlAbstractUrlInterceptor::DataType::UrlString && url.scheme() == "qsintercept") {
+		auto newUrl = url;
+		newUrl.setScheme("file");
+		qCDebug(logQsIntercept) << "Rewrote intercept" << url << "to" << newUrl;
+		return newUrl;
+	}
+
+	return url;
+}
 
 QsInterceptDataReply::QsInterceptDataReply(const QString& qmldir, QObject* parent)
     : QNetworkReply(parent)
