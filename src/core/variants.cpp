@@ -8,6 +8,7 @@
 #include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qvariant.h>
 
 #include "reload.hpp"
@@ -15,10 +16,10 @@
 void Variants::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<Variants*>(oldInstance);
 
-	for (auto& [variant, instanceObj]: this->instances.values) {
+	for (auto& [variant, instanceObj]: this->mInstances.values) {
 		QObject* oldInstance = nullptr;
 		if (old != nullptr) {
-			auto& values = old->instances.values;
+			auto& values = old->mInstances.values;
 
 			if (variant.canConvert<QVariantMap>()) {
 				auto variantMap = variant.value<QVariantMap>();
@@ -96,6 +97,19 @@ void Variants::setModel(const QVariant& model) {
 
 	this->updateVariants();
 	emit this->modelChanged();
+	emit this->instancesChanged();
+}
+
+QQmlListProperty<QObject> Variants::instances() {
+	return QQmlListProperty<QObject>(this, nullptr, &Variants::instanceCount, &Variants::instanceAt);
+}
+
+qsizetype Variants::instanceCount(QQmlListProperty<QObject>* prop) {
+	return static_cast<Variants*>(prop->object)->mInstances.values.length(); // NOLINT
+}
+
+QObject* Variants::instanceAt(QQmlListProperty<QObject>* prop, qsizetype i) {
+	return static_cast<Variants*>(prop->object)->mInstances.values.at(i).second; // NOLINT
 }
 
 void Variants::componentComplete() {
@@ -110,12 +124,12 @@ void Variants::updateVariants() {
 	}
 
 	// clean up removed entries
-	for (auto iter = this->instances.values.begin(); iter < this->instances.values.end();) {
+	for (auto iter = this->mInstances.values.begin(); iter < this->mInstances.values.end();) {
 		if (this->mModel.contains(iter->first)) {
 			iter++;
 		} else {
 			iter->second->deleteLater();
-			iter = this->instances.values.erase(iter);
+			iter = this->mInstances.values.erase(iter);
 		}
 	}
 
@@ -130,7 +144,7 @@ void Variants::updateVariants() {
 		}
 
 		{
-			if (this->instances.contains(variant)) {
+			if (this->mInstances.contains(variant)) {
 				continue; // we dont need to recreate this one
 			}
 
@@ -151,7 +165,7 @@ void Variants::updateVariants() {
 			QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
 
 			instance->setParent(this);
-			this->instances.insert(variant, instance);
+			this->mInstances.insert(variant, instance);
 
 			if (this->loaded) {
 				if (auto* reloadable = qobject_cast<Reloadable*>(instance)) reloadable->onReload(nullptr);

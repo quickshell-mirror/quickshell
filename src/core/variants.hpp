@@ -6,6 +6,7 @@
 #include <qmap.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
+#include <qqmllist.h>
 #include <qqmlparserstatus.h>
 #include <qtmetamacros.h>
 #include <qvariant.h>
@@ -52,6 +53,8 @@ class Variants: public Reloadable {
 	/// Each set creates an instance of the component, which are updated when the input sets update.
 	QSDOC_PROPERTY_OVERRIDE(QList<QVariant> model READ model WRITE setModel NOTIFY modelChanged);
 	QSDOC_HIDE Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged);
+	/// Current instances of the delegate.
+	Q_PROPERTY(QQmlListProperty<QObject> instances READ instances NOTIFY instancesChanged);
 	Q_CLASSINFO("DefaultProperty", "delegate");
 	QML_ELEMENT;
 
@@ -64,14 +67,20 @@ public:
 	[[nodiscard]] QVariant model() const;
 	void setModel(const QVariant& model);
 
+	QQmlListProperty<QObject> instances();
+
 signals:
 	void modelChanged();
+	void instancesChanged();
 
 private:
+	static qsizetype instanceCount(QQmlListProperty<QObject>* prop);
+	static QObject* instanceAt(QQmlListProperty<QObject>* prop, qsizetype i);
+
 	void updateVariants();
 
 	QQmlComponent* mDelegate = nullptr;
 	QVariantList mModel;
-	AwfulMap<QVariant, QObject*> instances;
+	AwfulMap<QVariant, QObject*> mInstances;
 	bool loaded = false;
 };
