@@ -26,10 +26,14 @@ void PendingRegion::setItem(QQuickItem* item) {
 
 	this->mItem = item;
 
-	QObject::connect(this->mItem, &QQuickItem::xChanged, this, &PendingRegion::itemChanged);
-	QObject::connect(this->mItem, &QQuickItem::yChanged, this, &PendingRegion::itemChanged);
-	QObject::connect(this->mItem, &QQuickItem::widthChanged, this, &PendingRegion::itemChanged);
-	QObject::connect(this->mItem, &QQuickItem::heightChanged, this, &PendingRegion::itemChanged);
+	if (item != nullptr) {
+		QObject::connect(this->mItem, &QQuickItem::xChanged, this, &PendingRegion::itemChanged);
+		QObject::connect(this->mItem, &QQuickItem::yChanged, this, &PendingRegion::itemChanged);
+		QObject::connect(this->mItem, &QQuickItem::widthChanged, this, &PendingRegion::itemChanged);
+		QObject::connect(this->mItem, &QQuickItem::heightChanged, this, &PendingRegion::itemChanged);
+	}
+
+	emit this->itemChanged();
 }
 
 void PendingRegion::onItemDestroyed() { this->mItem = nullptr; }

@@ -245,14 +245,9 @@ void ProxyWindowBase::updateMask() {
 			auto windowRegion = QRegion(QRect(0, 0, this->width(), this->height()));
 			mask = this->mMask->applyTo(windowRegion);
 		}
-
-		if (mask.isEmpty()) {
-			this->window->setFlag(Qt::WindowTransparentForInput, true);
-		}
-	} else {
-		this->window->setFlag(Qt::WindowTransparentForInput, false);
 	}
 
+	this->window->setFlag(Qt::WindowTransparentForInput, this->mMask != nullptr && mask.isEmpty());
 	this->window->setMask(mask);
 }
 
