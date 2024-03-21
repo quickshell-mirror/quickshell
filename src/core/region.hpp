@@ -110,9 +110,16 @@ signals:
 
 private slots:
 	void onItemDestroyed();
+	void onChildDestroyed();
 
 private:
 	static void regionsAppend(QQmlListProperty<PendingRegion>* prop, PendingRegion* region);
+	static PendingRegion* regionAt(QQmlListProperty<PendingRegion>* prop, qsizetype i);
+	static void regionsClear(QQmlListProperty<PendingRegion>* prop);
+	static qsizetype regionsCount(QQmlListProperty<PendingRegion>* prop);
+	static void regionsRemoveLast(QQmlListProperty<PendingRegion>* prop);
+	static void
+	regionsReplace(QQmlListProperty<PendingRegion>* prop, qsizetype i, PendingRegion* region);
 
 	QQuickItem* mItem = nullptr;
 
