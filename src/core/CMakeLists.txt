@@ -21,6 +21,7 @@ qt_add_library(quickshell-core STATIC
 	qsintercept.cpp
 	incubator.cpp
 	lazyloader.cpp
+	easingcurve.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")

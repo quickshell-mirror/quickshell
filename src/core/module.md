@@ -15,5 +15,6 @@ headers = [
 	"popupwindow.hpp",
 	"singleton.hpp",
 	"lazyloader.hpp",
+	"easingcurve.hpp",
 ]
 -----
