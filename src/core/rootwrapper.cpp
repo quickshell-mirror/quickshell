@@ -46,6 +46,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	scanner.scanQmlFile(this->rootPath);
 
 	auto* generation = new EngineGeneration(std::move(scanner));
+	generation->wrapper = this;
 
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {

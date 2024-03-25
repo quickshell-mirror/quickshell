@@ -12,6 +12,8 @@
 #include "shell.hpp"
 #include "singleton.hpp"
 
+class RootWrapper;
+
 class EngineGeneration: public QObject {
 	Q_OBJECT;
 
@@ -28,6 +30,7 @@ public:
 
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
+	RootWrapper* wrapper = nullptr;
 	QmlScanner scanner;
 	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;

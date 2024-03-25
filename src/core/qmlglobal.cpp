@@ -17,6 +17,7 @@
 #include <qvariant.h>
 #include <unistd.h>
 
+#include "generation.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
@@ -144,8 +145,8 @@ QQmlListProperty<QuickshellScreenInfo> QuickshellGlobal::screens() {
 }
 
 void QuickshellGlobal::reload(bool hard) {
-	auto* rootobj = QQmlEngine::contextForObject(this)->engine()->parent();
-	auto* root = qobject_cast<RootWrapper*>(rootobj);
+	auto* generation = EngineGeneration::findObjectGeneration(this);
+	auto* root = generation == nullptr ? nullptr : generation->wrapper;
 
 	if (root == nullptr) {
 		qWarning() << "cannot find RootWrapper for reload, ignoring request";
