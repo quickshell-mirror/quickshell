@@ -42,7 +42,7 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 		// if the old generation holds the window incubation controller as the
 		// new generation acquires it then incubators will hang intermittently
 		old->incubationControllers.clear();
-		old->engine.setIncubationController(&old->delayedIncubationController);
+		old->assignIncubationController();
 	}
 
 	auto* app = QCoreApplication::instance();
@@ -52,10 +52,13 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	this->root->onReload(old == nullptr ? nullptr : old->root);
 	this->singletonRegistry.onReload(old == nullptr ? nullptr : &old->singletonRegistry);
 
-	delete old;
-
 	if (old != nullptr) {
-		QTimer::singleShot(0, [this]() { this->postReload(); });
+		QTimer::singleShot(0, [this, old]() {
+			// The delete must happen in the next tick or you get segfaults,
+			// seems to be deleteLater related.
+			delete old;
+			this->postReload();
+		});
 	} else {
 		this->postReload();
 	}
@@ -103,7 +106,7 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 		return;
 	}
 
-	this->incubationControllers.push_back(controller);
+	this->incubationControllers.push_back({controller, obj});
 
 	QObject::connect(
 	    obj,
@@ -120,14 +123,34 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 }
 
 void EngineGeneration::incubationControllerDestroyed() {
-	qCDebug(logIncubator) << "Active incubation controller destroyed, deregistering";
+	auto* sender = this->sender();
+	QQmlIncubationController* controller = nullptr;
 
-	this->incubationControllers.removeAll(dynamic_cast<QQmlIncubationController*>(this->sender()));
-	this->assignIncubationController();
+	this->incubationControllers.removeIf([&](QPair<QQmlIncubationController*, QObject*> other) {
+		if (sender == other.second) {
+			controller = other.first;
+			return true;
+		} else return false;
+	});
+
+	if (controller == nullptr) {
+		qCCritical(logIncubator) << "Destroyed incubation controller" << this->sender()
+		                         << "could not be identified, this may cause memory corruption";
+		qCCritical(logIncubator) << "Current registered incuabation controllers"
+		                         << this->incubationControllers;
+	} else {
+		qCDebug(logIncubator) << "Destroyed incubation controller" << controller << "deregistered";
+	}
+
+	if (this->engine.incubationController() == controller) {
+		qCDebug(logIncubator
+		) << "Destroyed incubation controller was currently active, reassigning from pool";
+		this->assignIncubationController();
+	}
 }
 
 void EngineGeneration::assignIncubationController() {
-	auto* controller = this->incubationControllers.first();
+	auto* controller = this->incubationControllers.first().first;
 	if (controller == nullptr) controller = &this->delayedIncubationController;
 
 	qCDebug(logIncubator) << "Assigning incubation controller to engine:" << controller

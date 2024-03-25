@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qfilesystemwatcher.h>
 #include <qobject.h>
+#include <qpair.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
 
@@ -49,5 +50,5 @@ private slots:
 private:
 	void postReload();
 	void assignIncubationController();
-	QVector<QQmlIncubationController*> incubationControllers;
+	QVector<QPair<QQmlIncubationController*, QObject*>> incubationControllers;
 };
