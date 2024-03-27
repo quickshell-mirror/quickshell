@@ -47,6 +47,9 @@ This repo has a nix flake you can use to install the package directly:
 Quickshell's binary is available at `quickshell.packages.<system>.default` to be added to
 lists such as `environment.systemPackages` or `home.packages`.
 
+`quickshell.packages.<system>.nvidia` is also available for nvidia users which fixes some
+common crashes.
+
 Note: by default this package is built with clang as it is significantly faster.
 
 ## Manual
@@ -74,6 +77,15 @@ To make a release build of quickshell run:
 ```sh
 $ just release
 ```
+
+If running an nvidia GPU, instead run:
+```sh
+$ just configure release -DNVIDIA_COMPAT=ON
+$ just build
+```
+
+(These commands are just aliases for cmake commands you can run directly,
+see the Justfile for more information.)
 
 If you have all the dependencies installed and they are in expected
 locations this will build correctly.

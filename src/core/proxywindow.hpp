@@ -12,6 +12,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "qmlglobal.hpp"
 #include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
@@ -54,18 +55,26 @@ public:
 	void operator=(ProxyWindowBase&&) = delete;
 
 	void onReload(QObject* oldInstance) override;
-
-	virtual QQuickWindow* createWindow(QObject* oldInstance);
-	virtual void setupWindow();
+	void createWindow();
+	void deleteWindow();
 
 	// Disown the backing window and delete all its children.
 	virtual QQuickWindow* disownWindow();
+
+	virtual QQuickWindow* retrieveWindow(QObject* oldInstance);
+	virtual QQuickWindow* createQQuickWindow();
+	virtual void connectWindow();
+	virtual void completeWindow();
+	virtual void postCompleteWindow();
+	[[nodiscard]] virtual bool deleteOnInvisible() const;
 
 	[[nodiscard]] QQuickWindow* backingWindow() const;
 	[[nodiscard]] QQuickItem* contentItem() const;
 
 	[[nodiscard]] virtual bool isVisible() const;
+	[[nodiscard]] virtual bool isVisibleDirect() const;
 	virtual void setVisible(bool visible);
+	virtual void setVisibleDirect(bool visible);
 
 	[[nodiscard]] virtual qint32 x() const;
 	[[nodiscard]] virtual qint32 y() const;
@@ -90,10 +99,12 @@ public:
 signals:
 	void windowConnected();
 	void visibleChanged();
+	void backerVisibilityChanged();
 	void xChanged();
 	void yChanged();
 	void widthChanged();
 	void heightChanged();
+	void windowTransformChanged();
 	void screenChanged();
 	void colorChanged();
 	void maskChanged();

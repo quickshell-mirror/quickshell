@@ -18,33 +18,34 @@ WlrLayershell::WlrLayershell(QObject* parent)
     : ProxyWindowBase(parent)
     , ext(new LayershellWindowExtension(this)) {}
 
-QQuickWindow* WlrLayershell::createWindow(QObject* oldInstance) {
+QQuickWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	auto* old = qobject_cast<WlrLayershell*>(oldInstance);
-	QQuickWindow* window = nullptr;
+	auto* window = old == nullptr ? nullptr : old->disownWindow();
 
-	if (old == nullptr || old->window == nullptr) {
-		window = new QQuickWindow();
-	} else {
-		window = old->disownWindow();
-
+	if (window != nullptr) {
 		if (this->ext->attach(window)) {
 			return window;
 		} else {
 			window->deleteLater();
-			window = new QQuickWindow();
 		}
 	}
 
+	return this->createQQuickWindow();
+}
+
+QQuickWindow* WlrLayershell::createQQuickWindow() {
+	auto* window = new QQuickWindow();
+
 	if (!this->ext->attach(window)) {
-		qWarning() << "Could not attach Layershell extension to new QQUickWindow. Layer will not "
+		qWarning() << "Could not attach Layershell extension to new QQuickWindow. Layer will not "
 		              "behave correctly.";
 	}
 
 	return window;
 }
 
-void WlrLayershell::setupWindow() {
-	this->ProxyWindowBase::setupWindow();
+void WlrLayershell::connectWindow() {
+	this->ProxyWindowBase::connectWindow();
 
 	// clang-format off
 	QObject::connect(this->ext, &LayershellWindowExtension::layerChanged, this, &WlrLayershell::layerChanged);
@@ -59,6 +60,15 @@ void WlrLayershell::setupWindow() {
 	// clang-format on
 
 	this->updateAutoExclusion();
+}
+
+bool WlrLayershell::deleteOnInvisible() const {
+	// Qt windows behave weirdly when geometry is modified and setVisible(false)
+	// is subsequently called in the same frame.
+	// It will attach buffers to the wayland surface unconditionally before
+	// the surface recieves a configure event, causing a protocol error.
+	// To remedy this we forcibly disallow window reuse.
+	return true;
 }
 
 void WlrLayershell::setWidth(qint32 width) {

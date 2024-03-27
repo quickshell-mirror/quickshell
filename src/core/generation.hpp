@@ -28,6 +28,7 @@ public:
 	void setWatchingFiles(bool watching);
 
 	void registerIncubationController(QQmlIncubationController* controller);
+	void deregisterIncubationController(QQmlIncubationController* controller);
 
 	static EngineGeneration* findObjectGeneration(QObject* object);
 

@@ -15,15 +15,19 @@ ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {
 	this->mVisible = false;
 }
 
-void ProxyPopupWindow::setupWindow() {
-	this->ProxyWindowBase::setupWindow();
+void ProxyPopupWindow::completeWindow() {
+	this->ProxyWindowBase::completeWindow();
 
 	this->window->setFlag(Qt::ToolTip);
 	this->updateTransientParent();
 }
 
+void ProxyPopupWindow::postCompleteWindow() {}
+
 qint32 ProxyPopupWindow::x() const {
-	return this->ProxyWindowBase::x() + 1; // QTBUG-121550
+	// QTBUG-121550
+	auto basepos = this->mParentProxyWindow == nullptr ? 0 : this->mParentProxyWindow->x();
+	return basepos + this->mRelativeX;
 }
 
 void ProxyPopupWindow::setParentWindow(QObject* parent) {
@@ -58,7 +62,7 @@ void ProxyPopupWindow::setParentWindow(QObject* parent) {
 
 		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::xChanged, this, &ProxyPopupWindow::updateX);
 		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::yChanged, this, &ProxyPopupWindow::updateY);
-		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::windowConnected, this, &ProxyPopupWindow::onParentConnected);
+		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::backerVisibilityChanged, this, &ProxyPopupWindow::onParentUpdated);
 		// clang-format on
 	}
 
@@ -68,18 +72,19 @@ void ProxyPopupWindow::setParentWindow(QObject* parent) {
 QObject* ProxyPopupWindow::parentWindow() const { return this->mParentWindow; }
 
 void ProxyPopupWindow::updateTransientParent() {
-	if (this->window == nullptr) return;
 	this->updateX();
 	this->updateY();
 
-	this->window->setTransientParent(
-	    this->mParentProxyWindow == nullptr ? nullptr : this->mParentProxyWindow->backingWindow()
-	);
+	if (this->window != nullptr) {
+		this->window->setTransientParent(
+		    this->mParentProxyWindow == nullptr ? nullptr : this->mParentProxyWindow->backingWindow()
+		);
+	}
 
 	this->updateVisible();
 }
 
-void ProxyPopupWindow::onParentConnected() { this->updateTransientParent(); }
+void ProxyPopupWindow::onParentUpdated() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::onParentDestroyed() {
 	this->mParentWindow = nullptr;
@@ -99,7 +104,8 @@ void ProxyPopupWindow::setVisible(bool visible) {
 }
 
 void ProxyPopupWindow::updateVisible() {
-	auto target = this->wantsVisible && this->mParentWindow != nullptr;
+	auto target = this->wantsVisible && this->mParentWindow != nullptr
+	           && this->mParentProxyWindow->isVisibleDirect();
 
 	if (target && this->window != nullptr && !this->window->isVisible()) {
 		this->updateX(); // QTBUG-121550
@@ -127,13 +133,12 @@ qint32 ProxyPopupWindow::relativeY() const { return this->mRelativeY; }
 void ProxyPopupWindow::updateX() {
 	if (this->mParentWindow == nullptr || this->window == nullptr) return;
 
-	// use the backing window's x to account for popups in popups with overridden x positions
-	auto target = this->mParentProxyWindow->backingWindow()->x() + this->relativeX();
+	auto target = this->x() - 1; // QTBUG-121550
 
-	auto reshow = this->window->isVisible() && (this->window->x() != target && this->x() != target);
-	if (reshow) this->window->setVisible(false);
-	this->window->setX(target - 1); // -1 due to QTBUG-121550
-	if (reshow && this->wantsVisible) this->window->setVisible(true);
+	auto reshow = this->isVisibleDirect() && (this->window->x() != target && this->x() != target);
+	if (reshow) this->setVisibleDirect(false);
+	if (this->window != nullptr) this->window->setX(target);
+	if (reshow && this->wantsVisible) this->setVisibleDirect(true);
 }
 
 void ProxyPopupWindow::updateY() {
@@ -141,11 +146,11 @@ void ProxyPopupWindow::updateY() {
 
 	auto target = this->mParentProxyWindow->y() + this->relativeY();
 
-	auto reshow = this->window->isVisible() && this->window->y() != target;
+	auto reshow = this->isVisibleDirect() && this->window->y() != target;
 	if (reshow) {
-		this->window->setVisible(false);
+		this->setVisibleDirect(false);
 		this->updateX(); // QTBUG-121550
 	}
-	this->window->setY(target);
-	if (reshow && this->wantsVisible) this->window->setVisible(true);
+	if (this->window != nullptr) this->window->setY(target);
+	if (reshow && this->wantsVisible) this->setVisibleDirect(true);
 }

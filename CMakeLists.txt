@@ -5,14 +5,18 @@ set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(TESTS "Build tests" OFF)
+option(BUILD_TESTING "Build tests" OFF)
+option(ASAN "Enable ASAN" OFF)
+option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
 
+option(NVIDIA_COMPAT "Workarounds for nvidia gpus" OFF)
 option(SOCKETS "Enable unix socket support" ON)
 option(WAYLAND "Enable wayland support" ON)
 option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol" ON)
 option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
 
 message(STATUS "Quickshell configuration")
+message(STATUS "  NVIDIA workarounds: ${NVIDIA_COMPAT}")
 message(STATUS "  Build tests: ${BUILD_TESTING}")
 message(STATUS "  Sockets: ${SOCKETS}")
 message(STATUS "  Wayland: ${WAYLAND}")
@@ -30,6 +34,15 @@ if (NOT DEFINED GIT_REVISION)
 endif()
 
 add_compile_options(-Wall -Wextra)
+
+if (FRAME_POINTERS)
+	add_compile_options(-fno-omit-frame-pointer)
+endif()
+
+if (ASAN)
+	add_compile_options(-fsanitize=address)
+	add_link_options(-fsanitize=address)
+endif()
 
 # nix workaround
 if (CMAKE_EXPORT_COMPILE_COMMANDS)
@@ -91,5 +104,9 @@ function (qs_pch target)
 		target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
   endif()
 endfunction()
+
+if (NVIDIA_COMPAT)
+	add_compile_definitions(NVIDIA_COMPAT)
+endif()
 
 add_subdirectory(src)

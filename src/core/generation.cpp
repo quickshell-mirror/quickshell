@@ -122,6 +122,32 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 	}
 }
 
+void EngineGeneration::deregisterIncubationController(QQmlIncubationController* controller) {
+	QObject* obj = nullptr;
+	this->incubationControllers.removeIf([&](QPair<QQmlIncubationController*, QObject*> other) {
+		if (controller == other.first) {
+			obj = other.second;
+			return true;
+		} else return false;
+	});
+
+	if (obj == nullptr) {
+		qCWarning(logIncubator) << "Failed to deregister incubation controller" << controller
+		                        << "as it was not registered to begin with";
+		qCWarning(logIncubator) << "Current registered incuabation controllers"
+		                        << this->incubationControllers;
+	} else {
+		QObject::disconnect(obj, nullptr, this, nullptr);
+		qCDebug(logIncubator) << "Deregistered incubation controller" << controller;
+	}
+
+	if (this->engine.incubationController() == controller) {
+		qCDebug(logIncubator
+		) << "Destroyed incubation controller was currently active, reassigning from pool";
+		this->assignIncubationController();
+	}
+}
+
 void EngineGeneration::incubationControllerDestroyed() {
 	auto* sender = this->sender();
 	QQmlIncubationController* controller = nullptr;
@@ -150,8 +176,9 @@ void EngineGeneration::incubationControllerDestroyed() {
 }
 
 void EngineGeneration::assignIncubationController() {
-	auto* controller = this->incubationControllers.first().first;
-	if (controller == nullptr) controller = &this->delayedIncubationController;
+	QQmlIncubationController* controller = nullptr;
+	if (this->incubationControllers.isEmpty()) controller = &this->delayedIncubationController;
+	else controller = this->incubationControllers.first().first;
 
 	qCDebug(logIncubator) << "Assigning incubation controller to engine:" << controller
 	                      << "fallback:" << (controller == &this->delayedIncubationController);
@@ -162,9 +189,14 @@ void EngineGeneration::assignIncubationController() {
 EngineGeneration* EngineGeneration::findObjectGeneration(QObject* object) {
 	while (object != nullptr) {
 		auto* context = QQmlEngine::contextForObject(object);
-		if (auto* generation = g_generations.value(context->engine())) {
-			return generation;
+
+		if (context != nullptr) {
+			if (auto* generation = g_generations.value(context->engine())) {
+				return generation;
+			}
 		}
+
+		object = object->parent();
 	}
 
 	return nullptr;

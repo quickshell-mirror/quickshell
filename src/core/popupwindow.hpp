@@ -62,7 +62,8 @@ class ProxyPopupWindow: public ProxyWindowBase {
 public:
 	explicit ProxyPopupWindow(QObject* parent = nullptr);
 
-	void setupWindow() override;
+	void completeWindow() override;
+	void postCompleteWindow() override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 	void setVisible(bool visible) override;
@@ -84,7 +85,7 @@ signals:
 	void relativeYChanged();
 
 private slots:
-	void onParentConnected();
+	void onParentUpdated();
 	void onParentDestroyed();
 	void updateX();
 	void updateY();

@@ -9,8 +9,11 @@
       (system: fn system nixpkgs.legacyPackages.${system});
   in {
     packages = forEachSystem (system: pkgs: rec {
-      quickshell = import ./package.nix { inherit pkgs; };
+      quickshell = pkgs.callPackage ./default.nix {};
+      quickshell-nvidia = pkgs.callPackage ./default.nix { nvidiaCompat = true; };
+
       default = quickshell;
+      nvidia = quickshell-nvidia;
     });
 
     devShells = forEachSystem (system: pkgs: rec {

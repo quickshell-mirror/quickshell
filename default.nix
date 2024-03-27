@@ -21,8 +21,10 @@
         then builtins.readFile ./.git/refs/heads/${builtins.elemAt matches 0}
         else headContent)
      else "unknown"),
+
   debug ? false,
   enableWayland ? true,
+  nvidiaCompat ? false,
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -56,7 +58,8 @@
 
   cmakeFlags = [
     "-DGIT_REVISION=${gitRev}"
-  ] ++ lib.optional (!enableWayland) "-DWAYLAND=OFF";
+  ] ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
+  ++ lib.optional nvidiaCompat "-DNVIDIA_COMPAT=ON";
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;

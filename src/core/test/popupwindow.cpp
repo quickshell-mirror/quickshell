@@ -1,6 +1,5 @@
 #include "popupwindow.hpp"
 
-#include <qlogging.h>
 #include <qquickwindow.h>
 #include <qsignalspy.h>
 #include <qtest.h>
@@ -52,7 +51,6 @@ void TestPopupWindow::reloadReparent() { // NOLINT
 
 	auto spy = QSignalSpy(oldWindow, &QWindow::visibleChanged);
 
-	qDebug() << "reload";
 	newParent.onReload(&parent);
 	newPopup.onReload(&popup);
 

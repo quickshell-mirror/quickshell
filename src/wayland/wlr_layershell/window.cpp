@@ -78,7 +78,6 @@ bool LayershellWindowExtension::attach(QWindow* window) {
 		waylandWindow->setShellIntegration(layershellIntegration);
 	}
 
-	this->setParent(window);
 	window->setProperty("layershell_ext", QVariant::fromValue(this));
 	return true;
 }
