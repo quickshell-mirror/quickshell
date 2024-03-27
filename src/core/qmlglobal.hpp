@@ -6,6 +6,7 @@
 #include <qqmlengine.h>
 #include <qqmlintegration.h>
 #include <qqmllist.h>
+#include <qscreen.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -60,6 +61,7 @@ public:
 	QuickshellTracked();
 
 	QVector<QuickshellScreenInfo*> screens;
+	QuickshellScreenInfo* screenInfo(QScreen* screen) const;
 
 	static QuickshellTracked* instance();
 

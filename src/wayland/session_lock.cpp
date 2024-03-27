@@ -14,6 +14,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/qmlglobal.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
@@ -243,10 +244,7 @@ QuickshellScreenInfo* WlSessionLockSurface::screen() const {
 		qscreen = this->window->screen();
 	}
 
-	return new QuickshellScreenInfo(
-	    const_cast<WlSessionLockSurface*>(this), // NOLINT
-	    qscreen
-	);
+	return QuickshellTracked::instance()->screenInfo(qscreen);
 }
 
 void WlSessionLockSurface::setScreen(QScreen* qscreen) {

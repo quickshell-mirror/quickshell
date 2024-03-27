@@ -11,6 +11,7 @@
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
+#include <qscreen.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -71,6 +72,14 @@ QuickshellTracked::QuickshellTracked() {
 
 		this->updateScreens();
 	}
+}
+
+QuickshellScreenInfo* QuickshellTracked::screenInfo(QScreen* screen) const {
+	for (auto* info: this->screens) {
+		if (info->screen == screen) return info;
+	}
+
+	return nullptr;
 }
 
 QuickshellTracked* QuickshellTracked::instance() {

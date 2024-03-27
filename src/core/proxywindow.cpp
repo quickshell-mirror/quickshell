@@ -13,6 +13,7 @@
 #include <qwindow.h>
 
 #include "generation.hpp"
+#include "qmlglobal.hpp"
 #include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
@@ -231,6 +232,8 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	}
 
 	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
+	if (qscreen == this->mScreen) return;
+
 	if (qscreen != nullptr) {
 		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
 	}
@@ -257,10 +260,7 @@ QuickshellScreenInfo* ProxyWindowBase::screen() const {
 		qscreen = this->window->screen();
 	}
 
-	return new QuickshellScreenInfo(
-	    const_cast<ProxyWindowBase*>(this), // NOLINT
-	    qscreen
-	);
+	return QuickshellTracked::instance()->screenInfo(qscreen);
 }
 
 QColor ProxyWindowBase::color() const {
