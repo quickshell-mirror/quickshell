@@ -51,6 +51,8 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->connectWindow();
 	this->completeWindow();
 
+	this->reloadComplete = true;
+
 	emit this->windowConnected();
 	this->postCompleteWindow();
 
@@ -164,7 +166,7 @@ bool ProxyWindowBase::isVisibleDirect() const {
 
 void ProxyWindowBase::setVisible(bool visible) {
 	this->mVisible = visible;
-	this->setVisibleDirect(visible);
+	if (this->reloadComplete) this->setVisibleDirect(visible);
 }
 
 void ProxyWindowBase::setVisibleDirect(bool visible) {

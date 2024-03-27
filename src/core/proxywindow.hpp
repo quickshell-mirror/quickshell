@@ -129,6 +129,7 @@ protected:
 	PendingRegion* mMask = nullptr;
 	QQuickWindow* window = nullptr;
 	QQuickItem* mContentItem = nullptr;
+	bool reloadComplete = false;
 
 private:
 	void updateMask();
