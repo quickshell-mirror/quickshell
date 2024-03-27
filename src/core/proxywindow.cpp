@@ -180,15 +180,14 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 			emit this->backerVisibilityChanged();
 		} else {
 			if (this->window != nullptr) {
-				emit this->backerVisibilityChanged();
 				this->window->setVisible(false);
+				emit this->backerVisibilityChanged();
 				this->deleteWindow();
 			}
 		}
 	} else if (this->window != nullptr) {
-		if (!visible) emit this->backerVisibilityChanged();
 		this->window->setVisible(visible);
-		if (visible) emit this->backerVisibilityChanged();
+		emit this->backerVisibilityChanged();
 	}
 }
 
