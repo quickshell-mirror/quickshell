@@ -29,9 +29,11 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	// clang-format off
 	QObject::connect(this->window, &ProxyWindowBase::windowConnected, this, &FloatingWindowInterface::windowConnected);
 	QObject::connect(this->window, &ProxyWindowBase::visibleChanged, this, &FloatingWindowInterface::visibleChanged);
+	QObject::connect(this->window, &ProxyWindowBase::backerVisibilityChanged, this, &FloatingWindowInterface::backingWindowVisibleChanged);
 	QObject::connect(this->window, &ProxyWindowBase::heightChanged, this, &FloatingWindowInterface::heightChanged);
 	QObject::connect(this->window, &ProxyWindowBase::widthChanged, this, &FloatingWindowInterface::widthChanged);
 	QObject::connect(this->window, &ProxyWindowBase::screenChanged, this, &FloatingWindowInterface::screenChanged);
+	QObject::connect(this->window, &ProxyWindowBase::windowTransformChanged, this, &FloatingWindowInterface::windowTransformChanged);
 	QObject::connect(this->window, &ProxyWindowBase::colorChanged, this, &FloatingWindowInterface::colorChanged);
 	QObject::connect(this->window, &ProxyWindowBase::maskChanged, this, &FloatingWindowInterface::maskChanged);
 	// clang-format on
@@ -47,6 +49,9 @@ void FloatingWindowInterface::onReload(QObject* oldInstance) {
 QQmlListProperty<QObject> FloatingWindowInterface::data() { return this->window->data(); }
 ProxyWindowBase* FloatingWindowInterface::proxyWindow() const { return this->window; }
 QQuickItem* FloatingWindowInterface::contentItem() const { return this->window->contentItem(); }
+bool FloatingWindowInterface::isBackingWindowVisible() const {
+	return this->window->isVisibleDirect();
+}
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \

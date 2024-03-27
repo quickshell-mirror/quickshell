@@ -18,14 +18,25 @@ class WindowInterface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
-	/// If the window is shown or hidden. Defaults to true.
+	/// If the window should be shown or hidden. Defaults to true.
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
+	/// If the window is currently shown. You should generally prefer [visible](#prop.visible).
+	///
+	/// This property is useful for ensuring windows spawn in a specific order, and you should
+	/// not use it in place of [visible](#prop.visible).
+	Q_PROPERTY(bool backingWindowVisible READ isBackingWindowVisible NOTIFY backingWindowVisibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	/// The screen that the window currently occupies.
 	///
 	/// This may be modified to move the window to the given screen.
 	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
+	/// Opaque property that will receive an update when factors that affect the window's position
+	/// and transform changed.
+	///
+	/// This property is intended to be used to force a binding update,
+	/// along with map[To|From]Item (which is not reactive).
+	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
 	/// The background color of the window. Defaults to white.
 	///
 	/// > [!WARNING] This seems to behave weirdly when using transparent colors on some systems.
@@ -98,6 +109,7 @@ public:
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
 
 	[[nodiscard]] virtual bool isVisible() const = 0;
+	[[nodiscard]] virtual bool isBackingWindowVisible() const = 0;
 	virtual void setVisible(bool visible) = 0;
 
 	[[nodiscard]] virtual qint32 width() const = 0;
@@ -108,6 +120,8 @@ public:
 
 	[[nodiscard]] virtual QuickshellScreenInfo* screen() const = 0;
 	virtual void setScreen(QuickshellScreenInfo* screen) = 0;
+
+	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
 
 	[[nodiscard]] virtual QColor color() const = 0;
 	virtual void setColor(QColor color) = 0;
@@ -120,9 +134,11 @@ public:
 signals:
 	void windowConnected();
 	void visibleChanged();
+	void backingWindowVisibleChanged();
 	void widthChanged();
 	void heightChanged();
 	void screenChanged();
+	void windowTransformChanged();
 	void colorChanged();
 	void maskChanged();
 };

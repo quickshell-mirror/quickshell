@@ -32,6 +32,7 @@ public:
 
 	// NOLINTBEGIN
 	[[nodiscard]] bool isVisible() const override;
+	[[nodiscard]] bool isBackingWindowVisible() const override;
 	void setVisible(bool visible) override;
 
 	[[nodiscard]] qint32 width() const override;

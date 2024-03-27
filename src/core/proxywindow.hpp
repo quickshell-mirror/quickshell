@@ -42,6 +42,8 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
+	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
+	Q_PROPERTY(bool backingWindowVisible READ isVisibleDirect NOTIFY backerVisibilityChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	Q_CLASSINFO("DefaultProperty", "data");
 
@@ -93,6 +95,8 @@ public:
 
 	[[nodiscard]] PendingRegion* mask() const;
 	virtual void setMask(PendingRegion* mask);
+
+	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
 
 	[[nodiscard]] QQmlListProperty<QObject> data();
 

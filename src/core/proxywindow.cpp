@@ -30,6 +30,12 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
 	QObject::connect(this, &ProxyWindowBase::maskChanged, this, &ProxyWindowBase::onMaskChanged);
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onMaskChanged);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
+
+	QObject::connect(this, &ProxyWindowBase::xChanged, this, &ProxyWindowBase::windowTransformChanged);
+	QObject::connect(this, &ProxyWindowBase::yChanged, this, &ProxyWindowBase::windowTransformChanged);
+	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::windowTransformChanged);
+	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::windowTransformChanged);
+	QObject::connect(this, &ProxyWindowBase::backerVisibilityChanged, this, &ProxyWindowBase::windowTransformChanged);
 	// clang-format on
 }
 
@@ -171,14 +177,15 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 			emit this->backerVisibilityChanged();
 		} else {
 			if (this->window != nullptr) {
-				this->window->setVisible(false);
 				emit this->backerVisibilityChanged();
+				this->window->setVisible(false);
 				this->deleteWindow();
 			}
 		}
 	} else if (this->window != nullptr) {
+		if (!visible) emit this->backerVisibilityChanged();
 		this->window->setVisible(visible);
-		emit this->backerVisibilityChanged();
+		if (visible) emit this->backerVisibilityChanged();
 	}
 }
 

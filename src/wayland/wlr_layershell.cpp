@@ -177,9 +177,11 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	// clang-format off
 	QObject::connect(this->layer, &ProxyWindowBase::windowConnected, this, &WaylandPanelInterface::windowConnected);
 	QObject::connect(this->layer, &ProxyWindowBase::visibleChanged, this, &WaylandPanelInterface::visibleChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::backerVisibilityChanged, this, &WaylandPanelInterface::backingWindowVisibleChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::heightChanged, this, &WaylandPanelInterface::heightChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::widthChanged, this, &WaylandPanelInterface::widthChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::screenChanged, this, &WaylandPanelInterface::screenChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::windowTransformChanged, this, &WaylandPanelInterface::windowTransformChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::colorChanged, this, &WaylandPanelInterface::colorChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::maskChanged, this, &WaylandPanelInterface::maskChanged);
 
@@ -201,6 +203,9 @@ void WaylandPanelInterface::onReload(QObject* oldInstance) {
 QQmlListProperty<QObject> WaylandPanelInterface::data() { return this->layer->data(); }
 ProxyWindowBase* WaylandPanelInterface::proxyWindow() const { return this->layer; }
 QQuickItem* WaylandPanelInterface::contentItem() const { return this->layer->contentItem(); }
+bool WaylandPanelInterface::isBackingWindowVisible() const {
+	return this->layer->isVisibleDirect();
+}
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \
