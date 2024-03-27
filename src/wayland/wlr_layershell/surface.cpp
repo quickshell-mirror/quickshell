@@ -34,7 +34,7 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 	this->ext = LayershellWindowExtension::get(qwindow);
 
 	if (this->ext == nullptr) {
-		throw "QSWaylandLayerSurface created with null LayershellWindowExtension";
+		qFatal() << "QSWaylandLayerSurface created with null LayershellWindowExtension";
 	}
 
 	wl_output* output = nullptr; // NOLINT (include)

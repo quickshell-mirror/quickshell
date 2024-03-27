@@ -19,12 +19,10 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 
 	if (this->ext == nullptr) {
 		qFatal() << "QSWaylandSessionLockSurface created with null LockWindowExtension";
-		throw nullptr;
 	}
 
 	if (this->ext->lock == nullptr) {
 		qFatal() << "QSWaylandSessionLock for QSWaylandSessionLockSurface died";
-		throw nullptr;
 	}
 
 	wl_output* output = nullptr; // NOLINT (include)
@@ -34,7 +32,6 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 		output = waylandScreen->output();
 	} else {
 		qFatal() << "Session lock screen does not corrospond to a real screen. Force closing window";
-		throw nullptr;
 	}
 
 	this->init(this->ext->lock->get_lock_surface(window->waylandSurface()->object(), output));

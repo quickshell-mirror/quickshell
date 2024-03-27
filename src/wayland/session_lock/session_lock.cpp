@@ -64,7 +64,8 @@ LockWindowExtension* LockWindowExtension::get(QWindow* window) {
 }
 
 bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
-	if (this->surface != nullptr) throw "Cannot change the attached window of a LockWindowExtension";
+	if (this->surface != nullptr)
+		qFatal() << "Cannot change the attached window of a LockWindowExtension";
 
 	auto* current = LockWindowExtension::get(window);
 	QtWaylandClient::QWaylandWindow* waylandWindow = nullptr;

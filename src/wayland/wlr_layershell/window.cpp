@@ -25,7 +25,7 @@ LayershellWindowExtension* LayershellWindowExtension::get(QWindow* window) {
 
 bool LayershellWindowExtension::attach(QWindow* window) {
 	if (this->surface != nullptr)
-		throw "Cannot change the attached window of a LayershellWindowExtension";
+		qFatal() << "Cannot change the attached window of a LayershellWindowExtension";
 
 	auto* current = LayershellWindowExtension::get(window);
 

@@ -13,7 +13,6 @@ QSWaylandSessionLockIntegration::createShellSurface(QtWaylandClient::QWaylandWin
 	if (lock == nullptr || lock->surface == nullptr || !lock->surface->isExposed()) {
 		qFatal() << "Visibility canary failed. A window with a LockWindowExtension MUST be set to "
 		            "visible via LockWindowExtension::setVisible";
-		throw nullptr;
 	}
 
 	return lock->surface;
