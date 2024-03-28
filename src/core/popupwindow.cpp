@@ -24,6 +24,11 @@ void ProxyPopupWindow::completeWindow() {
 
 void ProxyPopupWindow::postCompleteWindow() {}
 
+bool ProxyPopupWindow::deleteOnInvisible() const {
+	// Currently crashes in normal mode, do not have the time to debug it now.
+	return true;
+}
+
 qint32 ProxyPopupWindow::x() const {
 	// QTBUG-121550
 	auto basepos = this->mParentProxyWindow == nullptr ? 0 : this->mParentProxyWindow->x();

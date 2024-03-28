@@ -64,6 +64,7 @@ public:
 
 	void completeWindow() override;
 	void postCompleteWindow() override;
+	[[nodiscard]] bool deleteOnInvisible() const override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 	void setVisible(bool visible) override;
