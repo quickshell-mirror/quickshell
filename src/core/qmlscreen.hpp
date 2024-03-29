@@ -32,6 +32,8 @@ class QuickshellScreenInfo: public QObject {
 	///
 	/// Usually something like `DP-1`, `HDMI-1`, `eDP-1`.
 	Q_PROPERTY(QString name READ name CONSTANT);
+	Q_PROPERTY(qint32 x READ x NOTIFY geometryChanged);
+	Q_PROPERTY(qint32 y READ y NOTIFY geometryChanged);
 	Q_PROPERTY(qint32 width READ width NOTIFY geometryChanged);
 	Q_PROPERTY(qint32 height READ height NOTIFY geometryChanged);
 	/// The number of physical pixels per millimeter.
@@ -50,6 +52,8 @@ public:
 	bool operator==(QuickshellScreenInfo& other) const;
 
 	[[nodiscard]] QString name() const;
+	[[nodiscard]] qint32 x() const;
+	[[nodiscard]] qint32 y() const;
 	[[nodiscard]] qint32 width() const;
 	[[nodiscard]] qint32 height() const;
 	[[nodiscard]] qreal physicalPixelDensity() const;

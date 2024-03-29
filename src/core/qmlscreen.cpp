@@ -42,6 +42,24 @@ QString QuickshellScreenInfo::name() const {
 	return this->screen->name();
 }
 
+qint32 QuickshellScreenInfo::x() const {
+	if (this->screen == nullptr) {
+		this->warnDangling();
+		return 0;
+	}
+
+	return this->screen->geometry().x();
+}
+
+qint32 QuickshellScreenInfo::y() const {
+	if (this->screen == nullptr) {
+		this->warnDangling();
+		return 0;
+	}
+
+	return this->screen->geometry().y();
+}
+
 qint32 QuickshellScreenInfo::width() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
