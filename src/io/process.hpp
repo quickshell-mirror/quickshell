@@ -111,7 +111,7 @@ class Process: public QObject {
 	/// The parser for stderr. If the parser is null the process's stdout channel will be closed
 	/// and no further data will be read, even if a new parser is attached.
 	Q_PROPERTY(DataStreamParser* stderr READ stderrParser WRITE setStderrParser NOTIFY stderrParserChanged);
-	/// If stdin is enabled. Defaults to true. If this property is set to false the process's stdin channel
+	/// If stdin is enabled. Defaults to false. If this property is false the process's stdin channel
 	/// will be closed and [write](#func.write) will do nothing, even if set back to true.
 	Q_PROPERTY(bool stdinEnabled READ stdinEnabled WRITE setStdinEnabled NOTIFY stdinEnabledChanged);
 	/// If the process should be killed when the Process object is destroyed or quickshell exits.
