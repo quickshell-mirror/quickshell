@@ -1,8 +1,9 @@
 # quickshell
+<a href="https://matrix.to/#/#quickshell:outfoxxed.me"><img src="https://img.shields.io/badge/Join%20the%20matrix%20room-%23quickshell:outfoxxed.me-0dbd8b?logo=matrix&style=flat-square"></a>
 
 Simple and flexbile QtQuick based desktop shell toolkit.
 
-Hosts: [outfoxxed's gitea], [github]
+Hosted on: [outfoxxed's gitea], [github]
 
 [outfoxxed's gitea]: https://git.outfoxxed.me/outfoxxed/quickshell
 [github]: https://github.com/outfoxxed/quickshell
