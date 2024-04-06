@@ -1,6 +1,5 @@
 set_source_files_properties(org.freedesktop.DBus.Properties.xml PROPERTIES
 	CLASSNAME DBusPropertiesInterface
-	#INCLUDE dbus_properties_types.hpp
 )
 
 qt_add_dbus_interface(DBUS_INTERFACES

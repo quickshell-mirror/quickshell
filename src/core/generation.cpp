@@ -14,6 +14,7 @@
 #include <qqmlincubator.h>
 #include <qtimer.h>
 
+#include "iconimageprovider.hpp"
 #include "incubator.hpp"
 #include "plugin.hpp"
 #include "qsintercept.hpp"
@@ -30,6 +31,8 @@ EngineGeneration::EngineGeneration(QmlScanner scanner)
 	this->engine.addUrlInterceptor(&this->urlInterceptor);
 	this->engine.setNetworkAccessManagerFactory(&this->interceptNetFactory);
 	this->engine.setIncubationController(&this->delayedIncubationController);
+
+	this->engine.addImageProvider("icon", new IconImageProvider());
 }
 
 EngineGeneration::~EngineGeneration() {
