@@ -3,6 +3,8 @@
 #include <qcontainerfwd.h>
 #include <qfunctionpointer.h>
 
+class EngineGeneration;
+
 class QuickshellPlugin {
 public:
 	QuickshellPlugin() = default;
@@ -15,10 +17,12 @@ public:
 	virtual bool applies() { return true; }
 	virtual void init() {}
 	virtual void registerTypes() {}
+	virtual void constructGeneration(EngineGeneration& generation) {} // NOLINT
 	virtual void onReload() {}
 
 	static void registerPlugin(QuickshellPlugin& plugin);
 	static void initPlugins();
+	static void runConstructGeneration(EngineGeneration& generation);
 	static void runOnReload();
 };
 

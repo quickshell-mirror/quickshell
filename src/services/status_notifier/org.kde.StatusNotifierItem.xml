@@ -1,0 +1,54 @@
+<node>
+  <interface name="org.kde.StatusNotifierItem">
+    <property name="Category" type="s" access="read"/>
+    <property name="Id" type="s" access="read"/>
+    <property name="Title" type="s" access="read"/>
+    <property name="Status" type="s" access="read"/>
+    <property name="WindowId" type="u" access="read"/>
+    <property name="IconThemePath" type="s" access="read"/>
+    <property name="IconName" type="s" access="read"/>
+    <property name="IconPixmap" type="a(iiay)" access="read">
+			<annotation name="org.qtproject.QtDBus.QtTypeName" value="DBusSniIconPixmapList"/>
+		</property>
+    <property name="OverlayIconName" type="s" access="read"/>
+    <property name="OverlayIconPixmap" type="a(iiay)" access="read">
+			<annotation name="org.qtproject.QtDBus.QtTypeName" value="DBusSniIconPixmapList"/>
+		</property>
+    <property name="AttentionIconName" type="s" access="read"/>
+    <property name="AttentionIconPixmap" type="a(iiay)" access="read">
+			<annotation name="org.qtproject.QtDBus.QtTypeName" value="DBusSniIconPixmapList"/>
+		</property>
+    <property name="AttentionMovieName" type="s" access="read"/>
+    <property name="ToolTip" type="(sa(iiay)ss)" access="read">
+			<annotation name="org.qtproject.QtDBus.QtTypeName" value="DBusSniTooltip"/>
+		</property>
+    <property name="Menu" type="o" access="read"/>
+    <property name="ItemIsMenu" type="b" access="read"/>
+
+    <method name="ContextMenu">
+      <arg type="i" direction="in" name="x"/>
+      <arg type="i" direction="in" name="y"/>
+    </method>
+    <method name="Activate">
+      <arg type="i" direction="in" name="x"/>
+      <arg type="i" direction="in" name="y"/>
+    </method>
+    <method name="SecondaryActivate">
+      <arg type="i" direction="in" name="x"/>
+      <arg type="i" direction="in" name="y"/>
+    </method>
+    <method name="Scroll">
+      <arg type="i" direction="in" name="delta"/>
+      <arg type="s" direction="in" name="orientation"/>
+    </method>
+
+    <signal name="NewTitle"/>
+    <signal name="NewIcon"/>
+    <signal name="NewAttentionIcon"/>
+    <signal name="NewOverlayIcon"/>
+    <signal name="NewToolTip"/>
+    <signal name="NewStatus">
+      <arg type="s" name="status"/>
+    </signal>
+  </interface>
+</node>

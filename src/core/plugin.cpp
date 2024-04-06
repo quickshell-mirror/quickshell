@@ -3,6 +3,8 @@
 
 #include <qvector.h> // NOLINT (what??)
 
+#include "generation.hpp"
+
 static QVector<QuickshellPlugin*> plugins; // NOLINT
 
 void QuickshellPlugin::registerPlugin(QuickshellPlugin& plugin) { plugins.push_back(&plugin); }
@@ -23,6 +25,12 @@ void QuickshellPlugin::initPlugins() {
 
 	for (QuickshellPlugin* plugin: plugins) {
 		plugin->registerTypes();
+	}
+}
+
+void QuickshellPlugin::runConstructGeneration(EngineGeneration& generation) {
+	for (QuickshellPlugin* plugin: plugins) {
+		plugin->constructGeneration(generation);
 	}
 }
 

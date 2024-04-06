@@ -12,3 +12,5 @@ endif()
 if (WAYLAND)
 	add_subdirectory(wayland)
 endif ()
+
+add_subdirectory(services)

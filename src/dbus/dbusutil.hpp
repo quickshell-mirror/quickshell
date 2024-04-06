@@ -122,6 +122,9 @@ public:
 	void updateAllViaGetAll();
 	[[nodiscard]] QString toString() const;
 
+signals:
+	void getAllFinished();
+
 private slots:
 	void onPropertiesChanged(
 	    const QString& interfaceName,

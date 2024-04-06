@@ -1,0 +1,23 @@
+<node>
+  <interface name="org.kde.StatusNotifierWatcher">
+    <property name="ProtocolVersion" type="i" access="read"/>
+    <property name="RegisteredStatusNotifierItems" type="as" access="read"/>
+    <property name="IsStatusNotifierHostRegistered" type="b" access="read"/>
+
+    <method name="RegisterStatusNotifierItem">
+      <arg name="service" type="s" direction="in"/>
+    </method>
+    <method name="RegisterStatusNotifierHost">
+			<arg name="service" type="s" direction="in"/>
+    </method>
+
+    <signal name="StatusNotifierItemRegistered">
+      <arg type="s" direction="out" name="service"/>
+    </signal>
+    <signal name="StatusNotifierItemUnregistered">
+      <arg type="s" direction="out" name="service"/>
+    </signal>
+    <signal name="StatusNotifierHostRegistered"/>
+    <signal name="StatusNotifierHostUnregistered"/>
+  </interface>
+</node>

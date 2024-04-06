@@ -14,6 +14,7 @@ option(SOCKETS "Enable unix socket support" ON)
 option(WAYLAND "Enable wayland support" ON)
 option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol" ON)
 option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
+option(SERVICE_STATUS_NOTIFIER "StatusNotifierItem service" ON)
 
 message(STATUS "Quickshell configuration")
 message(STATUS "  NVIDIA workarounds: ${NVIDIA_COMPAT}")
@@ -24,6 +25,8 @@ if (WAYLAND)
 	message(STATUS "    Wlroots Layershell: ${WAYLAND_WLR_LAYERSHELL}")
 	message(STATUS "    Session Lock: ${WAYLAND_SESSION_LOCK}")
 endif ()
+message(STATUS "  Services")
+message(STATUS "    StatusNotifier: ${SERVICE_STATUS_NOTIFIER}")
 
 if (NOT DEFINED GIT_REVISION)
 	execute_process(
@@ -71,6 +74,10 @@ endif()
 if (WAYLAND)
 	list(APPEND QT_DEPS Qt6::WaylandClient Qt6::WaylandClientPrivate)
 	list(APPEND QT_FPDEPS WaylandClient)
+endif()
+
+if (SERVICE_STATUS_NOTIFIER)
+	set(DBUS ON)
 endif()
 
 if (DBUS)

@@ -1,8 +1,9 @@
 #include "iconimageprovider.hpp"
 
 #include <qicon.h>
-#include <qlogging.h>
 #include <qpixmap.h>
+#include <qsize.h>
+#include <qstring.h>
 
 QPixmap
 IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) {

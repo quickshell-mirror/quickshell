@@ -33,6 +33,8 @@ EngineGeneration::EngineGeneration(QmlScanner scanner)
 	this->engine.setIncubationController(&this->delayedIncubationController);
 
 	this->engine.addImageProvider("icon", new IconImageProvider());
+
+	QuickshellPlugin::runConstructGeneration(*this);
 }
 
 EngineGeneration::~EngineGeneration() {

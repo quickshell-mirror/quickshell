@@ -17,6 +17,7 @@
 #include <qmetatype.h>
 #include <qobject.h>
 #include <qpolygon.h>
+#include <qtmetamacros.h>
 #include <qvariant.h>
 
 #include "dbus_properties.h"
@@ -52,11 +53,15 @@ QDBusError demarshallVariant(const QVariant& variant, const QMetaType& type, voi
 				QDebug(&error) << "failed to deserialize dbus value" << variant << "into" << type;
 				return QDBusError(QDBusError::InvalidArgs, error);
 			}
+		} else {
+			QString error;
+			QDebug(&error) << "mismatched signature while trying to demarshall" << variant << "into"
+			               << type << "expected" << expectedSignature << "got" << signature;
+			return QDBusError(QDBusError::InvalidArgs, error);
 		}
 	} else {
 		QString error;
-		QDebug(&error) << "failed to deserialize variant" << variant
-		               << "which is not a primitive type or a dbus argument (what?)";
+		QDebug(&error) << "failed to deserialize variant" << variant << "into" << type;
 		return QDBusError(QDBusError::InvalidArgs, error);
 	}
 
@@ -226,6 +231,8 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 		}
 
 		delete call;
+
+		emit this->getAllFinished();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -262,7 +269,8 @@ void DBusPropertyGroup::onPropertiesChanged(
     const QStringList& invalidatedProperties
 ) {
 	if (interfaceName != this->interface->interface()) return;
-	qCDebug(logDbus) << "Received property change set and invalidations for" << this->toString();
+	qCDebug(logDbus).noquote() << "Received property change set and invalidations for"
+	                           << this->toString();
 
 	for (const auto& name: invalidatedProperties) {
 		auto prop = std::find_if(
