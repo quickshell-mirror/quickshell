@@ -17,6 +17,7 @@
 #include "qmlscreen.hpp"
 #include "region.hpp"
 #include "reload.hpp"
+#include "windowinterface.hpp"
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
     : Reloadable(parent)
@@ -47,7 +48,20 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 	auto wasVisible = this->window != nullptr && this->window->isVisible();
 	if (this->window == nullptr) this->window = new QQuickWindow();
 
-	Reloadable::reloadRecursive(this->mContentItem, oldInstance);
+	// The qml engine will leave the WindowInterface as owner of everything
+	// nested in an item, so we have to make sure the interface's children
+	// are also reloaded.
+	// Reparenting from the interface does not work reliably, so instead
+	// we check if the parent is one, as it proxies reloads to here.
+	if (auto* w = qobject_cast<WindowInterface*>(this->parent())) {
+		for (auto* child: w->children()) {
+			if (child == this) continue;
+			auto* oldInterfaceParent = oldInstance == nullptr ? nullptr : oldInstance->parent();
+			Reloadable::reloadRecursive(child, oldInterfaceParent);
+		}
+	}
+
+	Reloadable::reloadChildrenRecursive(this, oldInstance);
 
 	this->connectWindow();
 	this->completeWindow();
