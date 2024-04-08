@@ -17,7 +17,7 @@ public:
 	virtual bool applies() { return true; }
 	virtual void init() {}
 	virtual void registerTypes() {}
-	virtual void constructGeneration(EngineGeneration& generation) {} // NOLINT
+	virtual void constructGeneration(EngineGeneration& /*unused*/) {} // NOLINT
 	virtual void onReload() {}
 
 	static void registerPlugin(QuickshellPlugin& plugin);

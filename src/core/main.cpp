@@ -325,5 +325,7 @@ int qs_main(int argc, char** argv) {
 	auto root = RootWrapper(configFilePath);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
 
-	return QCoreApplication::exec();
+	auto code = QCoreApplication::exec();
+	delete app;
+	return code;
 }

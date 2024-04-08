@@ -33,6 +33,7 @@ if (NOT DEFINED GIT_REVISION)
 		COMMAND git rev-parse HEAD
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		OUTPUT_VARIABLE GIT_REVISION
+		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
 endif()
 
@@ -94,7 +95,7 @@ set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
 if (NOT NO_PCH)
 	file(GENERATE
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp
-		CONTENT ""
+		CONTENT "// intentionally empty"
 	)
 
 	add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
