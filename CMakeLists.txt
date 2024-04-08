@@ -57,8 +57,8 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-set(QT_DEPS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
-set(QT_FPDEPS Gui Qml Quick QuickControls2)
+set(QT_DEPS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets)
+set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets)
 
 if (BUILD_TESTING)
 	enable_testing()
