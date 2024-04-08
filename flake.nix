@@ -9,8 +9,10 @@
       (system: fn system nixpkgs.legacyPackages.${system});
   in {
     packages = forEachSystem (system: pkgs: rec {
-      quickshell = pkgs.callPackage ./default.nix {};
-      quickshell-nvidia = pkgs.callPackage ./default.nix { nvidiaCompat = true; };
+      quickshell = pkgs.callPackage ./default.nix {
+        gitRev = self.rev or self.dirtyRev;
+      };
+      quickshell-nvidia = quickshell.override { nvidiaCompat = true; };
 
       default = quickshell;
       nvidia = quickshell-nvidia;
