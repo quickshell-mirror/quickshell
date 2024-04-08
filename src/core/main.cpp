@@ -27,6 +27,7 @@ int qs_main(int argc, char** argv) {
 
 	auto useQApplication = false;
 	auto nativeTextRendering = false;
+	auto desktopSettingsAware = true;
 	QHash<QString, QString> envOverrides;
 
 	{
@@ -271,6 +272,7 @@ int qs_main(int argc, char** argv) {
 
 				if (pragma == "UseQApplication") useQApplication = true;
 				else if (pragma == "NativeTextRendering") nativeTextRendering = true;
+				else if (pragma == "IgnoreSystemSettings") desktopSettingsAware = false;
 				else if (pragma.startsWith("Env ")) {
 					auto envPragma = pragma.sliced(4);
 					auto splitIdx = envPragma.indexOf('=');
@@ -297,16 +299,15 @@ int qs_main(int argc, char** argv) {
 		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
-	QCoreApplication* app = nullptr;
+	QGuiApplication::setDesktopSettingsAware(desktopSettingsAware);
+
+	QGuiApplication* app = nullptr;
 
 	if (useQApplication) {
 		app = new QApplication(argc, argv);
 	} else {
 		app = new QGuiApplication(argc, argv);
 	}
-
-	QCoreApplication::setApplicationName("quickshell");
-	QCoreApplication::setApplicationVersion("0.1.0 (" GIT_REVISION ")");
 
 	if (!workingDirectory.isEmpty()) {
 		QDir::setCurrent(workingDirectory);
@@ -325,7 +326,7 @@ int qs_main(int argc, char** argv) {
 	auto root = RootWrapper(configFilePath);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
 
-	auto code = QCoreApplication::exec();
+	auto code = QGuiApplication::exec();
 	delete app;
 	return code;
 }
