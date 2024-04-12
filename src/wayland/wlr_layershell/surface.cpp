@@ -10,6 +10,7 @@
 #include <qpoint.h>
 #include <qrect.h>
 #include <qsize.h>
+#include <qtversionchecks.h>
 #include <qtypes.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
@@ -86,7 +87,11 @@ void QSWaylandLayerSurface::zwlr_layer_surface_v1_configure(
 	if (!this->configured) {
 		this->configured = true;
 		this->window()->resizeFromApplyConfigure(this->size);
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
 		this->window()->handleExpose(QRect(QPoint(), this->size));
+#else
+		this->window()->sendRecursiveExposeEvent();
+#endif
 	} else {
 		this->window()->applyConfigureWhenPossible();
 	}

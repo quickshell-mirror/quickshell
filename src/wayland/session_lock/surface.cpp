@@ -7,6 +7,7 @@
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qtversionchecks.h>
 #include <qtypes.h>
 
 #include "lock.hpp"
@@ -88,7 +89,11 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
 		this->configured = true;
 
 		this->window()->resizeFromApplyConfigure(this->size);
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
 		this->window()->handleExpose(QRect(QPoint(), this->size));
+#else
+		this->window()->sendRecursiveExposeEvent();
+#endif
 		if (this->visible) this->initVisible();
 	} else {
 		// applyConfigureWhenPossible runs too late and causes a protocol error on reconfigure.
