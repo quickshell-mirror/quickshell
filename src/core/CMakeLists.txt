@@ -23,6 +23,7 @@ qt_add_library(quickshell-core STATIC
 	lazyloader.cpp
 	easingcurve.cpp
 	iconimageprovider.cpp
+	transformwatcher.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")

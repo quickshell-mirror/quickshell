@@ -16,5 +16,6 @@ headers = [
 	"singleton.hpp",
 	"lazyloader.hpp",
 	"easingcurve.hpp",
+	"transformwatcher.hpp",
 ]
 -----
