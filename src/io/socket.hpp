@@ -2,6 +2,7 @@
 
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlintegration.h>
@@ -10,6 +11,8 @@
 
 #include "../core/reload.hpp"
 #include "datastream.hpp"
+
+Q_DECLARE_LOGGING_CATEGORY(logSocket);
 
 ///! Unix socket listener.
 class Socket: public DataStream {
@@ -30,7 +33,12 @@ public:
 	explicit Socket(QObject* parent = nullptr): DataStream(parent) {}
 
 	/// Write data to the socket. Does nothing if not connected.
+	///
+	/// Remember to call flush after your last write.
 	Q_INVOKABLE void write(const QString& data);
+
+	/// Flush any queued writes to the socket.
+	Q_INVOKABLE void flush();
 
 	// takes ownership
 	void setSocket(QLocalSocket* socket);
@@ -54,6 +62,7 @@ protected:
 private slots:
 	void onSocketConnected();
 	void onSocketDisconnected();
+	void onSocketError(QLocalSocket::LocalSocketError error);
 
 private:
 	void connectPathSocket();

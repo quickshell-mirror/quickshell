@@ -5,12 +5,15 @@
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
 #include <qtmetamacros.h>
 
 #include "datastream.hpp"
+
+Q_LOGGING_CATEGORY(logSocket, "quickshell.io.socket", QtWarningMsg);
 
 void Socket::setSocket(QLocalSocket* socket) {
 	if (this->socket != nullptr) this->socket->deleteLater();
@@ -22,7 +25,7 @@ void Socket::setSocket(QLocalSocket* socket) {
 		// clang-format off
 		QObject::connect(this->socket, &QLocalSocket::connected, this, &Socket::onSocketConnected);
 		QObject::connect(this->socket, &QLocalSocket::disconnected, this, &Socket::onSocketDisconnected);
-		QObject::connect(this->socket, &QLocalSocket::errorOccurred, this, &Socket::error);
+		QObject::connect(this->socket, &QLocalSocket::errorOccurred, this, &Socket::onSocketError);
 		QObject::connect(this->socket, &QLocalSocket::readyRead, this, &DataStream::onBytesAvailable);
 		// clang-format on
 
@@ -45,10 +48,12 @@ void Socket::onSocketConnected() {
 	this->connected = true;
 	this->targetConnected = false;
 	this->disconnecting = false;
+	qCDebug(logSocket) << "Socket connected:" << this;
 	emit this->connectionStateChanged();
 }
 
 void Socket::onSocketDisconnected() {
+	qCDebug(logSocket) << "Socket disconnected:" << this;
 	this->connected = false;
 	this->disconnecting = false;
 	this->socket->deleteLater();
@@ -57,6 +62,11 @@ void Socket::onSocketDisconnected() {
 	emit this->connectionStateChanged();
 
 	if (this->targetConnected) this->connectPathSocket();
+}
+
+void Socket::onSocketError(QLocalSocket::LocalSocketError error) {
+	qCWarning(logSocket) << "Socket error for" << this << error;
+	emit this->error(error);
 }
 
 bool Socket::isConnected() const { return this->connected; }
@@ -86,6 +96,12 @@ void Socket::connectPathSocket() {
 void Socket::write(const QString& data) {
 	if (this->socket != nullptr) {
 		this->socket->write(data.toUtf8());
+	}
+}
+
+void Socket::flush() {
+	if (this->socket != nullptr) {
+		this->socket->flush();
 	}
 }
 
