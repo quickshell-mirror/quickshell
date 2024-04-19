@@ -90,7 +90,7 @@ void WlSessionLock::updateSurfaces(WlSessionLock* old) {
 				instance->setScreen(screen);
 
 				auto* oldInstance = old == nullptr ? nullptr : old->surfaces.value(screen, nullptr);
-				instance->onReload(oldInstance);
+				instance->reload(oldInstance);
 
 				this->surfaces[screen] = instance;
 			}

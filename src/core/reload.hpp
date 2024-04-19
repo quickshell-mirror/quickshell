@@ -7,6 +7,8 @@
 #include <qqmlparserstatus.h>
 #include <qtmetamacros.h>
 
+class EngineGeneration;
+
 ///! The base class of all types that can be reloaded.
 /// Reloadables will attempt to take specific state from previous config revisions if possible.
 /// Some examples are [ProxyWindowBase] and [PersistentProperties]
@@ -56,14 +58,10 @@ class Reloadable
 public:
 	explicit Reloadable(QObject* parent = nullptr): QObject(parent) {}
 
-	// Called unconditionally in the reload phase, with nullptr if no source could be determined.
-	// If non null the old instance may or may not be of the same type, and should be checked
-	// by `onReload`.
-	virtual void onReload(QObject* oldInstance) = 0;
+	void reload(QObject* oldInstance = nullptr);
 
-	// TODO: onReload runs after initialization for reloadable objects created late
-	void classBegin() override {}
-	void componentComplete() override {}
+	void classBegin() override {};
+	void componentComplete() override;
 
 	// Reload objects in the parent->child graph recursively.
 	static void reloadRecursive(QObject* newObj, QObject* oldRoot);
@@ -71,6 +69,17 @@ public:
 	static void reloadChildrenRecursive(QObject* newRoot, QObject* oldRoot);
 
 	QString mReloadableId;
+	bool reloadComplete = false;
+	EngineGeneration* engineGeneration = nullptr;
+
+private slots:
+	void onReloadFinished();
+
+protected:
+	// Called unconditionally in the reload phase, with nullptr if no source could be determined.
+	// If non null the old instance may or may not be of the same type, and should be checked
+	// by `onReload`.
+	virtual void onReload(QObject* oldInstance) = 0;
 
 private:
 	static QObject* getChildByReloadId(QObject* parent, const QString& reloadId);

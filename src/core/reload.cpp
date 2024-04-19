@@ -4,6 +4,43 @@
 #include <qobject.h>
 #include <qqmllist.h>
 
+#include "generation.hpp"
+
+void Reloadable::componentComplete() {
+	this->engineGeneration = EngineGeneration::findObjectGeneration(this);
+
+	if (this->engineGeneration != nullptr) {
+		// When called this way there is no chance a reload will have old data,
+		// but this will at least help prevent weird behaviors due to never getting a reload.
+		if (this->engineGeneration->reloadComplete) this->reload();
+		else {
+			QObject::connect(
+			    this->engineGeneration,
+			    &EngineGeneration::reloadFinished,
+			    this,
+			    &Reloadable::onReloadFinished
+			);
+		}
+	}
+}
+
+void Reloadable::reload(QObject* oldInstance) {
+	if (this->reloadComplete) return;
+	this->onReload(oldInstance);
+	this->reloadComplete = true;
+
+	if (this->engineGeneration != nullptr) {
+		QObject::disconnect(
+		    this->engineGeneration,
+		    &EngineGeneration::reloadFinished,
+		    this,
+		    &Reloadable::onReloadFinished
+		);
+	}
+}
+
+void Reloadable::onReloadFinished() { this->reload(nullptr); }
+
 void ReloadPropagator::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<ReloadPropagator*>(oldInstance);
 
@@ -13,7 +50,7 @@ void ReloadPropagator::onReload(QObject* oldInstance) {
 			auto* oldChild = old == nullptr || old->mChildren.length() <= i
 			                   ? nullptr
 			                   : qobject_cast<Reloadable*>(old->mChildren.at(i));
-			newChild->onReload(oldChild);
+			newChild->reload(oldChild);
 		} else {
 			Reloadable::reloadRecursive(newChild, oldInstance);
 		}

@@ -48,7 +48,7 @@ void SingletonRegistry::registerSingleton(const QUrl& url, Singleton* singleton)
 
 void SingletonRegistry::onReload(SingletonRegistry* old) {
 	for (auto [url, singleton]: this->registry.asKeyValueRange()) {
-		singleton->onReload(old == nullptr ? nullptr : old->registry.value(url));
+		singleton->reload(old == nullptr ? nullptr : old->registry.value(url));
 	}
 }
 

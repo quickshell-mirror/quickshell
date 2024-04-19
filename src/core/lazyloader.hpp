@@ -152,7 +152,6 @@ private:
 	void incubateIfReady(bool overrideReloadCheck = false);
 	void waitForObjectCreation();
 
-	bool postReload = false;
 	bool targetLoading = false;
 	bool targetActive = false;
 	QObject* mItem = nullptr;

@@ -41,9 +41,11 @@ public:
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
 	DelayedQmlIncubationController delayedIncubationController;
+	bool reloadComplete = false;
 
 signals:
 	void filesChanged();
+	void reloadFinished();
 
 private slots:
 	void incubationControllerDestroyed();

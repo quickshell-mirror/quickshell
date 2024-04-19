@@ -23,13 +23,11 @@ void LazyLoader::onReload(QObject* oldInstance) {
 
 	if (this->mItem != nullptr) {
 		if (auto* reloadable = qobject_cast<Reloadable*>(this->mItem)) {
-			reloadable->onReload(old == nullptr ? nullptr : old->mItem);
+			reloadable->reload(old == nullptr ? nullptr : old->mItem);
 		} else {
 			Reloadable::reloadRecursive(this->mItem, old);
 		}
 	}
-
-	this->postReload = true;
 }
 
 QObject* LazyLoader::item() {
@@ -48,14 +46,6 @@ void LazyLoader::setItem(QObject* item) {
 
 	if (item != nullptr) {
 		item->setParent(this);
-
-		if (this->postReload) {
-			if (auto* reloadable = qobject_cast<Reloadable*>(this->mItem)) {
-				reloadable->onReload(nullptr);
-			} else {
-				Reloadable::reloadRecursive(this->mItem, nullptr);
-			}
-		}
 	}
 
 	this->targetActive = this->isActive();
@@ -160,7 +150,7 @@ void LazyLoader::setSource(QString source) {
 }
 
 void LazyLoader::incubateIfReady(bool overrideReloadCheck) {
-	if (!(this->postReload || overrideReloadCheck) || !(this->targetLoading || this->targetActive)
+	if (!(this->reloadComplete || overrideReloadCheck) || !(this->targetLoading || this->targetActive)
 	    || this->mComponent == nullptr || this->incubator != nullptr)
 	{
 		return;

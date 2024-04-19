@@ -43,7 +43,7 @@ void FloatingWindowInterface::onReload(QObject* oldInstance) {
 	QQmlEngine::setContextForObject(this->window, QQmlEngine::contextForObject(this));
 
 	auto* old = qobject_cast<FloatingWindowInterface*>(oldInstance);
-	this->window->onReload(old != nullptr ? old->window : nullptr);
+	this->window->reload(old != nullptr ? old->window : nullptr);
 }
 
 QQmlListProperty<QObject> FloatingWindowInterface::data() { return this->window->data(); }

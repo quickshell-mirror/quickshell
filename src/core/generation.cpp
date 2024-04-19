@@ -13,6 +13,7 @@
 #include <qqmlengine.h>
 #include <qqmlincubator.h>
 #include <qtimer.h>
+#include <qtmetamacros.h>
 
 #include "iconimageprovider.hpp"
 #include "incubator.hpp"
@@ -54,8 +55,10 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
 	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
 
-	this->root->onReload(old == nullptr ? nullptr : old->root);
+	this->root->reload(old == nullptr ? nullptr : old->root);
 	this->singletonRegistry.onReload(old == nullptr ? nullptr : &old->singletonRegistry);
+	this->reloadComplete = true;
+	emit this->reloadFinished();
 
 	if (old != nullptr) {
 		QTimer::singleShot(0, [this, old]() {
