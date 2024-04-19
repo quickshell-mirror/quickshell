@@ -25,6 +25,7 @@
   debug ? false,
   enableWayland ? true,
   nvidiaCompat ? false,
+  svgSupport ? true, # you almost always want this
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -43,7 +44,9 @@
   buildInputs = with pkgs; [
     qt6.qtbase
     qt6.qtdeclarative
-  ] ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ]);
+  ]
+  ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ])
+  ++ (lib.optionals svgSupport [ qt6.qtsvg ]);
 
   QTWAYLANDSCANNER = lib.optionalString enableWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
