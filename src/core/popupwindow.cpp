@@ -22,7 +22,9 @@ void ProxyPopupWindow::completeWindow() {
 	this->updateTransientParent();
 }
 
-void ProxyPopupWindow::postCompleteWindow() {}
+void ProxyPopupWindow::postCompleteWindow() {
+	this->ProxyWindowBase::setVisible(this->mVisible);
+}
 
 bool ProxyPopupWindow::deleteOnInvisible() const {
 	// Currently crashes in normal mode, do not have the time to debug it now.
