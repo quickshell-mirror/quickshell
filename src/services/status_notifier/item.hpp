@@ -61,6 +61,7 @@ private:
 
 	// bumped to inhibit caching
 	quint32 iconIndex = 0;
+	QString watcherId;
 };
 
 } // namespace qs::service::sni

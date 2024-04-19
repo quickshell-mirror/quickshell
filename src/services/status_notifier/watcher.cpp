@@ -68,17 +68,29 @@ void StatusNotifierWatcher::onServiceUnregistered(const QString& service) {
 		    << "Active StatusNotifierWatcher unregistered, attempting registration";
 		this->tryRegister();
 		return;
-	} else if (this->items.removeAll(service) != 0) {
-		qCDebug(logStatusNotifierWatcher).noquote()
-		    << "Unregistered StatusNotifierItem" << service << "from watcher";
-		emit this->StatusNotifierItemUnregistered(service);
-	} else if (this->hosts.removeAll(service) != 0) {
-		qCDebug(logStatusNotifierWatcher).noquote()
-		    << "Unregistered StatusNotifierHost" << service << "from watcher";
-		emit this->StatusNotifierHostUnregistered();
+		;
 	} else {
-		qCWarning(logStatusNotifierWatcher).noquote()
-		    << "Got service unregister event for untracked service" << service;
+		QString qualifiedItem;
+		this->items.removeIf([&](const QString& item) {
+			if (item.startsWith(service)) {
+				qualifiedItem = item;
+				return true;
+			} else return false;
+		});
+
+		if (!qualifiedItem.isEmpty()) {
+			qCDebug(logStatusNotifierWatcher).noquote()
+			    << "Unregistered StatusNotifierItem" << qualifiedItem << "from watcher";
+
+			emit this->StatusNotifierItemUnregistered(qualifiedItem);
+		} else if (this->hosts.removeAll(service) != 0) {
+			qCDebug(logStatusNotifierWatcher).noquote()
+			    << "Unregistered StatusNotifierHost" << service << "from watcher";
+			emit this->StatusNotifierHostUnregistered();
+		} else {
+			qCWarning(logStatusNotifierWatcher).noquote()
+			    << "Got service unregister event for untracked service" << service;
+		}
 	}
 
 	this->serviceWatcher.removeWatchedService(service);
@@ -112,23 +124,44 @@ void StatusNotifierWatcher::RegisterStatusNotifierHost(const QString& host) {
 }
 
 void StatusNotifierWatcher::RegisterStatusNotifierItem(const QString& item) {
-	if (this->items.contains(item)) {
+	auto qualifiedItem = this->qualifiedItem(item);
+	auto service = qualifiedItem.split("/").at(0);
+
+	if (this->items.contains(qualifiedItem)) {
 		qCDebug(logStatusNotifierWatcher).noquote()
-		    << "Skipping duplicate registration of StatusNotifierItem" << item << "to watcher";
+		    << "Skipping duplicate registration of StatusNotifierItem" << qualifiedItem << "to watcher";
 		return;
 	}
 
-	if (!QDBusConnection::sessionBus().interface()->serviceOwner(item).isValid()) {
+	if (!QDBusConnection::sessionBus().interface()->serviceOwner(service).isValid()) {
 		qCWarning(logStatusNotifierWatcher).noquote()
-		    << "Ignoring invalid StatusNotifierItem registration of" << item << "to watcher";
+		    << "Ignoring invalid StatusNotifierItem registration of" << qualifiedItem << "to watcher";
 		return;
 	}
 
-	this->serviceWatcher.addWatchedService(item);
-	this->items.push_back(item);
+	this->serviceWatcher.addWatchedService(service);
+	this->items.push_back(qualifiedItem);
+
 	qCDebug(logStatusNotifierWatcher).noquote()
-	    << "Registered StatusNotifierItem" << item << "to watcher";
-	emit this->StatusNotifierItemRegistered(item);
+	    << "Registered StatusNotifierItem" << qualifiedItem << "to watcher";
+
+	emit this->StatusNotifierItemRegistered(qualifiedItem);
+}
+
+QString StatusNotifierWatcher::qualifiedItem(const QString& item) {
+	// Registered items are often missing either the service id or the path.
+	QString qualifiedItem;
+	if (item.startsWith("/")) {
+		qualifiedItem = this->message().service() + item;
+	} else {
+		qualifiedItem = item;
+	}
+
+	if (!qualifiedItem.contains("/")) {
+		qualifiedItem += "/StatusNotifierItem";
+	}
+
+	return qualifiedItem;
 }
 
 StatusNotifierWatcher* StatusNotifierWatcher::instance() {

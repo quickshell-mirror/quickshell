@@ -8,4 +8,6 @@ public:
 	explicit IconImageProvider(): QQuickImageProvider(QQuickImageProvider::Pixmap) {}
 
 	QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override;
+
+	static QPixmap missingPixmap(const QSize& size);
 };

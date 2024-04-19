@@ -25,11 +25,15 @@ Q_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarni
 
 namespace qs::service::sni {
 
-StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent): QObject(parent) {
-	// spec is unclear about what exactly an item address is, so split off anything but the connection path
-	auto conn = address.split("/").value(0);
-	this->item =
-	    new DBusStatusNotifierItem(conn, "/StatusNotifierItem", QDBusConnection::sessionBus(), this);
+StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
+    : QObject(parent)
+    , watcherId(address) {
+	// spec is unclear about what exactly an item address is, so account for both combinations
+	auto splitIdx = address.indexOf('/');
+	auto conn = splitIdx == -1 ? address : address.sliced(0, splitIdx);
+	auto path = splitIdx == -1 ? "/StatusNotifierItem" : address.sliced(splitIdx);
+
+	this->item = new DBusStatusNotifierItem(conn, path, QDBusConnection::sessionBus(), this);
 
 	if (!this->item->isValid()) {
 		qCWarning(logStatusNotifierHost).noquote() << "Cannot create StatusNotifierItem for" << conn;
@@ -85,8 +89,7 @@ QString StatusNotifierItem::iconId() const {
 		if (!name.isEmpty() && overlayName.isEmpty()) return QString("image://icon/") + name;
 	}
 
-	return QString("image://service.sni/") + this->item->service() + "/"
-	     + QString::number(this->iconIndex);
+	return QString("image://service.sni/") + this->watcherId + "/" + QString::number(this->iconIndex);
 }
 
 QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {

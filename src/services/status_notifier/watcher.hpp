@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qdbuscontext.h>
 #include <qdbusinterface.h>
 #include <qdbusservicewatcher.h>
 #include <qlist.h>
@@ -12,7 +13,9 @@ Q_DECLARE_LOGGING_CATEGORY(logStatusNotifierWatcher);
 
 namespace qs::service::sni {
 
-class StatusNotifierWatcher: public QObject {
+class StatusNotifierWatcher
+    : public QObject
+    , protected QDBusContext {
 	Q_OBJECT;
 	Q_PROPERTY(qint32 ProtocolVersion READ protocolVersion);
 	Q_PROPERTY(bool IsStatusNotifierHostRegistered READ isHostRegistered);
@@ -46,6 +49,8 @@ private slots:
 	void onServiceUnregistered(const QString& service);
 
 private:
+	QString qualifiedItem(const QString& item);
+
 	QDBusServiceWatcher serviceWatcher;
 	QList<QString> hosts;
 	QList<QString> items;
