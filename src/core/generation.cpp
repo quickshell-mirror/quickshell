@@ -43,6 +43,17 @@ EngineGeneration::~EngineGeneration() {
 	if (this->root != nullptr) this->root->deleteLater();
 }
 
+void EngineGeneration::destroy() {
+	if (this->root != nullptr) {
+		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
+			delete this;
+		});
+
+		this->root->deleteLater();
+		this->root = nullptr;
+	}
+}
+
 void EngineGeneration::onReload(EngineGeneration* old) {
 	if (old != nullptr) {
 		// if the old generation holds the window incubation controller as the
@@ -61,12 +72,8 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	emit this->reloadFinished();
 
 	if (old != nullptr) {
-		QTimer::singleShot(0, [this, old]() {
-			// The delete must happen in the next tick or you get segfaults,
-			// seems to be deleteLater related.
-			delete old;
-			this->postReload();
-		});
+		old->destroy();
+		QObject::connect(old, &QObject::destroyed, this, [this]() { this->postReload(); });
 	} else {
 		this->postReload();
 	}

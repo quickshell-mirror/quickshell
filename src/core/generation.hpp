@@ -43,6 +43,8 @@ public:
 	DelayedQmlIncubationController delayedIncubationController;
 	bool reloadComplete = false;
 
+	void destroy();
+
 signals:
 	void filesChanged();
 	void reloadFinished();
