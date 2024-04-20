@@ -69,13 +69,13 @@ public:
 	);
 
 	// Primary activation action, generally triggered via a left click.
-	//Q_INVOKABLE void activate();
+	Q_INVOKABLE void activate();
 
 	// Secondary activation action, generally triggered via a middle click.
-	//Q_INVOKABLE void secondaryActivate();
+	Q_INVOKABLE void secondaryActivate();
 
 	// Scroll action, such as changing volume on a mixer.
-	//Q_INVOKABLE void scroll(qint32 delta, bool horizontal);
+	Q_INVOKABLE void scroll(qint32 delta, bool horizontal);
 
 	[[nodiscard]] QString id() const;
 	[[nodiscard]] QString title() const;

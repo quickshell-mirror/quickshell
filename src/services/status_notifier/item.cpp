@@ -153,6 +153,14 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 	return pixmap;
 }
 
+void StatusNotifierItem::activate() { this->item->Activate(0, 0); }
+
+void StatusNotifierItem::secondaryActivate() { this->item->SecondaryActivate(0, 0); }
+
+void StatusNotifierItem::scroll(qint32 delta, bool horizontal) {
+	this->item->Scroll(delta, horizontal ? "horizontal" : "vertical");
+}
+
 void StatusNotifierItem::updateIcon() {
 	this->iconIndex++;
 	emit this->iconChanged();

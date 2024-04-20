@@ -89,6 +89,14 @@ bool SystemTrayItem::onlyMenu() const {
 	return this->item->isMenu.get();
 }
 
+void SystemTrayItem::activate() { this->item->activate(); }
+
+void SystemTrayItem::secondaryActivate() { this->item->secondaryActivate(); }
+
+void SystemTrayItem::scroll(qint32 delta, bool horizontal) {
+	this->item->scroll(delta, horizontal);
+}
+
 SystemTray::SystemTray(QObject* parent): QObject(parent) {
 	auto* host = StatusNotifierHost::instance();
 

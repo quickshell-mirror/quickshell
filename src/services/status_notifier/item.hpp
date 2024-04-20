@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qpixmap.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../dbus/dbusutil.hpp"
 #include "dbus_item.h"
@@ -26,6 +27,10 @@ public:
 	[[nodiscard]] bool isReady() const;
 	[[nodiscard]] QString iconId() const;
 	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
+
+	void activate();
+	void secondaryActivate();
+	void scroll(qint32 delta, bool horizontal);
 
 	// clang-format off
 	dbus::DBusPropertyGroup properties;
