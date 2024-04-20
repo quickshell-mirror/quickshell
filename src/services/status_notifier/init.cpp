@@ -6,7 +6,7 @@ namespace {
 
 class SniPlugin: public QuickshellPlugin {
 	void constructGeneration(EngineGeneration& generation) override {
-		generation.engine.addImageProvider("service.sni", new qs::service::sni::TrayImageProvider());
+		generation.engine->addImageProvider("service.sni", new qs::service::sni::TrayImageProvider());
 	}
 };
 

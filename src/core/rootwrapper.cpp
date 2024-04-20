@@ -58,9 +58,9 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto url = QUrl::fromLocalFile(this->rootPath);
 	// unless the original file comes from the qsintercept scheme
 	url.setScheme("qsintercept");
-	auto component = QQmlComponent(&generation->engine, url);
+	auto component = QQmlComponent(generation->engine, url);
 
-	auto* obj = component.beginCreate(generation->engine.rootContext());
+	auto* obj = component.beginCreate(generation->engine->rootContext());
 
 	if (obj == nullptr) {
 		qWarning() << component.errorString().toStdString().c_str();

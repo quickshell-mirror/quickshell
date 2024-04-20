@@ -26,27 +26,46 @@ static QHash<QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
 EngineGeneration::EngineGeneration(QmlScanner scanner)
     : scanner(std::move(scanner))
-    , interceptNetFactory(this->scanner.qmldirIntercepts) {
-	g_generations.insert(&this->engine, this);
+    , interceptNetFactory(this->scanner.qmldirIntercepts)
+    , engine(new QQmlEngine()) {
+	g_generations.insert(this->engine, this);
 
-	this->engine.addUrlInterceptor(&this->urlInterceptor);
-	this->engine.setNetworkAccessManagerFactory(&this->interceptNetFactory);
-	this->engine.setIncubationController(&this->delayedIncubationController);
+	this->engine->addUrlInterceptor(&this->urlInterceptor);
+	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
+	this->engine->setIncubationController(&this->delayedIncubationController);
 
-	this->engine.addImageProvider("icon", new IconImageProvider());
+	this->engine->addImageProvider("icon", new IconImageProvider());
 
 	QuickshellPlugin::runConstructGeneration(*this);
 }
 
 EngineGeneration::~EngineGeneration() {
-	g_generations.remove(&this->engine);
-	if (this->root != nullptr) this->root->deleteLater();
+	g_generations.remove(this->engine);
+	delete this->engine;
 }
 
 void EngineGeneration::destroy() {
-	if (this->root != nullptr) {
+	// Multiple generations can detect a reload at the same time.
+	delete this->watcher;
+	this->watcher = nullptr;
+
+	// Yes all of this is actually necessary.
+	if (this->engine != nullptr && this->root != nullptr) {
 		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
-			delete this;
+			// The timer seems to fix *one* of the possible qml item destructor crashes.
+			QTimer::singleShot(0, [this]() {
+				// Garbage is not collected during engine destruction.
+				this->engine->collectGarbage();
+
+				QObject::connect(this->engine, &QObject::destroyed, this, [this]() { delete this; });
+
+				// Even after all of that there's still multiple failing assertions and segfaults.
+				// Pray you don't hit one.
+				// Note: it appeats *some* of the crashes are related to values owned by the generation.
+				// Test by commenting the connect() above.
+				this->engine->deleteLater();
+				this->engine = nullptr;
+			});
 		});
 
 		this->root->deleteLater();
@@ -63,8 +82,8 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	}
 
 	auto* app = QCoreApplication::instance();
-	QObject::connect(&this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
-	QObject::connect(&this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
+	QObject::connect(this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
+	QObject::connect(this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
 
 	this->root->reload(old == nullptr ? nullptr : old->root);
 	this->singletonRegistry.onReload(old == nullptr ? nullptr : &old->singletonRegistry);
@@ -72,14 +91,17 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	emit this->reloadFinished();
 
 	if (old != nullptr) {
-		old->destroy();
 		QObject::connect(old, &QObject::destroyed, this, [this]() { this->postReload(); });
+		old->destroy();
 	} else {
 		this->postReload();
 	}
 }
 
 void EngineGeneration::postReload() {
+	// This can be called on a generation during its destruction.
+	if (this->engine == nullptr || this->root == nullptr) return;
+
 	QuickshellPlugin::runOnReload();
 	PostReloadHook::postReloadTree(this->root);
 	this->singletonRegistry.onPostReload();
@@ -132,7 +154,10 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 
 	qCDebug(logIncubator) << "Registered incubation controller" << controller;
 
-	if (this->engine.incubationController() == &this->delayedIncubationController) {
+	// This function can run during destruction.
+	if (this->engine == nullptr) return;
+
+	if (this->engine->incubationController() == &this->delayedIncubationController) {
 		this->assignIncubationController();
 	}
 }
@@ -156,7 +181,10 @@ void EngineGeneration::deregisterIncubationController(QQmlIncubationController* 
 		qCDebug(logIncubator) << "Deregistered incubation controller" << controller;
 	}
 
-	if (this->engine.incubationController() == controller) {
+	// This function can run during destruction.
+	if (this->engine == nullptr) return;
+
+	if (this->engine->incubationController() == controller) {
 		qCDebug(logIncubator
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
@@ -183,7 +211,10 @@ void EngineGeneration::incubationControllerDestroyed() {
 		qCDebug(logIncubator) << "Destroyed incubation controller" << controller << "deregistered";
 	}
 
-	if (this->engine.incubationController() == controller) {
+	// This function can run during destruction.
+	if (this->engine == nullptr) return;
+
+	if (this->engine->incubationController() == controller) {
 		qCDebug(logIncubator
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
@@ -198,7 +229,7 @@ void EngineGeneration::assignIncubationController() {
 	qCDebug(logIncubator) << "Assigning incubation controller to engine:" << controller
 	                      << "fallback:" << (controller == &this->delayedIncubationController);
 
-	this->engine.setIncubationController(controller);
+	this->engine->setIncubationController(controller);
 }
 
 EngineGeneration* EngineGeneration::findObjectGeneration(QObject* object) {

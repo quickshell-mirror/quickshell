@@ -36,7 +36,7 @@ public:
 	QmlScanner scanner;
 	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;
-	QQmlEngine engine;
+	QQmlEngine* engine = nullptr;
 	ShellRoot* root = nullptr;
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
