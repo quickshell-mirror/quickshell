@@ -6,6 +6,7 @@
 #include <qicon.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qpainter.h>
 #include <qpixmap.h>
@@ -123,7 +124,13 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 			pixmap = icon.pixmap(size.width(), size.height());
 		} else {
 			const auto* icon = closestPixmap(size, this->attentionIconPixmaps.get());
-			if (icon != nullptr) pixmap = QPixmap::fromImage(icon->createImage());
+
+			if (icon != nullptr) {
+				const auto image =
+				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+				pixmap = QPixmap::fromImage(image);
+			}
 		}
 	} else {
 		if (!this->iconName.get().isEmpty()) {
@@ -131,7 +138,13 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 			pixmap = icon.pixmap(size.width(), size.height());
 		} else {
 			const auto* icon = closestPixmap(size, this->iconPixmaps.get());
-			if (icon != nullptr) pixmap = QPixmap::fromImage(icon->createImage());
+
+			if (icon != nullptr) {
+				const auto image =
+				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+				pixmap = QPixmap::fromImage(image);
+			}
 		}
 
 		QPixmap overlay;
@@ -140,7 +153,13 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 			overlay = icon.pixmap(pixmap.width(), pixmap.height());
 		} else {
 			const auto* icon = closestPixmap(pixmap.size(), this->overlayIconPixmaps.get());
-			if (icon != nullptr) overlay = QPixmap::fromImage(icon->createImage());
+
+			if (icon != nullptr) {
+				const auto image =
+				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+				overlay = QPixmap::fromImage(image);
+			}
 		}
 
 		if (!overlay.isNull()) {
