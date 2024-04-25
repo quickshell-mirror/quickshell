@@ -91,6 +91,7 @@ void WlSessionLock::updateSurfaces(WlSessionLock* old) {
 
 				auto* oldInstance = old == nullptr ? nullptr : old->surfaces.value(screen, nullptr);
 				instance->reload(oldInstance);
+				instance->attach();
 
 				this->surfaces[screen] = instance;
 			}
@@ -198,15 +199,15 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	QObject::connect(this->window, &QWindow::screenChanged, this, &WlSessionLockSurface::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &WlSessionLockSurface::colorChanged);
 	// clang-format on
+}
 
+void WlSessionLockSurface::attach() {
 	if (auto* parent = qobject_cast<WlSessionLock*>(this->parent())) {
 		if (!this->ext->attach(this->window, parent->manager)) {
-			qWarning(
-			) << "Failed to attach LockWindowExtension to window. Surface will not behave correctly.";
+			qFatal() << "Failed to attach WlSessionLockSurface";
 		}
 	} else {
-		qWarning(
-		) << "WlSessionLockSurface parent is not a WlSessionLock. Surface will not behave correctly.";
+		qFatal() << "Tried to attach a WlSessionLockSurface whose parent is not a WlSessionLock";
 	}
 }
 

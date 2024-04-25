@@ -153,6 +153,7 @@ public:
 	void onReload(QObject* oldInstance) override;
 	QQuickWindow* disownWindow();
 
+	void attach();
 	void show();
 
 	[[nodiscard]] QQuickItem* contentItem() const;
