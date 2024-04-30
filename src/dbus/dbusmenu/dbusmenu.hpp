@@ -24,8 +24,11 @@ Q_NAMESPACE;
 QML_ELEMENT;
 
 enum Enum {
+	/// This menu item does not have a checkbox or a radiobutton associated with it.
 	None = 0,
+	/// This menu item should draw a checkbox.
 	CheckBox = 1,
+	/// This menu item should draw a radiobutton.
 	RadioButton = 2,
 };
 Q_ENUM_NS(Enum);
@@ -41,19 +44,64 @@ QDebug operator<<(QDebug debug, const ToggleButtonType::Enum& toggleType);
 class DBusMenu;
 class DBusMenuPngImage;
 
+///! Menu item shared by an external program.
+/// Menu item shared by an external program via the
+/// [DBusMenu specification](https://github.com/AyatanaIndicators/libdbusmenu/blob/master/libdbusmenu-glib/dbus-menu.xml).
 class DBusMenuItem: public QObject {
 	Q_OBJECT;
 	// clang-format off
+	/// Handle to the root of this menu.
 	Q_PROPERTY(DBusMenu* menuHandle READ menuHandle CONSTANT);
+	/// Text of the menu item, including hotkey markup.
 	Q_PROPERTY(QString label READ label NOTIFY labelChanged);
+	/// Text of the menu item without hotkey markup.
 	Q_PROPERTY(QString cleanLabel READ cleanLabel NOTIFY labelChanged);
+  /// If the menu item should be shown as enabled.
+	///
+	/// > [!INFO] Disabled menu items are often used as headers in addition
+	/// > to actual disabled entries.
 	Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged);
+	/// Url of the menu item's icon or `""` if it doesn't have one.
+	///
+	/// This can be passed to [Image.source](https://doc.qt.io/qt-6/qml-qtquick-image.html#source-prop)
+	/// as shown below.
+	///
+	/// ```qml
+	/// Image {
+	///   source: menuItem.icon
+	///   // To get the best image quality, set the image source size to the same size
+	///   // as the rendered image.
+	///   sourceSize.width: width
+	///   sourceSize.height: height
+	/// }
+	/// ```
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
+	/// If this menu item has an associated checkbox or radiobutton.
+	///
+	/// > [!INFO] It is the responsibility of the remote application to update the state of
+	/// > checkboxes and radiobuttons via [checkState](#prop.checkState).
 	Q_PROPERTY(ToggleButtonType::Enum toggleType READ toggleType NOTIFY toggleTypeChanged);
+	/// The check state of the checkbox or radiobutton if applicable, as a
+  /// [Qt.CheckState](https://doc.qt.io/qt-6/qt.html#CheckState-enum).
 	Q_PROPERTY(Qt::CheckState checkState READ checkState NOTIFY checkStateChanged);
+	/// If this menu item should be rendered as a separator between other items.
+	///
+	/// No other properties have a meaningful value when `isSeparator` is true.
 	Q_PROPERTY(bool isSeparator READ isSeparator NOTIFY separatorChanged);
+	/// If this menu item reveals a submenu containing more items.
+	///
+	/// Any submenu items must be requested by setting [showChildren](#prop.showChildren).
 	Q_PROPERTY(bool hasChildren READ hasChildren NOTIFY hasChildrenChanged);
+	/// If submenu entries of this item should be shown.
+	///
+	/// When true, children of this menu item will be exposed via [children](#prop.children).
+	/// Setting this property will additionally send the `opened` and `closed` events to the
+	/// process that provided the menu.
 	Q_PROPERTY(bool showChildren READ isShowingChildren WRITE setShowChildren NOTIFY showingChildrenChanged);
+	/// Children of this menu item. Only populated when [showChildren](#prop.showChildren) is true.
+	///
+	/// > [!INFO] Use [hasChildren](#prop.hasChildren) to check if this item should reveal a submenu
+	/// > instead of checking if `children` is empty.
 	Q_PROPERTY(QQmlListProperty<DBusMenuItem> children READ children NOTIFY childrenChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(DBusMenu);
@@ -62,7 +110,12 @@ class DBusMenuItem: public QObject {
 public:
 	explicit DBusMenuItem(qint32 id, DBusMenu* menu, DBusMenuItem* parentMenu);
 
+	/// Send a `clicked` event to the remote application for this menu item.
 	Q_INVOKABLE void click();
+
+	/// Send a `hovered` event to the remote application for this menu item.
+	///
+	/// Note: we are not aware of any programs that use this in any meaningful way.
 	Q_INVOKABLE void hover() const;
 
 	[[nodiscard]] DBusMenu* menuHandle() const;
@@ -122,6 +175,8 @@ private:
 
 QDebug operator<<(QDebug debug, DBusMenuItem* item);
 
+///! Handle to a DBusMenu tree.
+/// Handle to a menu tree provided by a remote process.
 class DBusMenu: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(DBusMenuItem* menu READ menu CONSTANT);
