@@ -15,6 +15,7 @@
 #include <qstring.h>
 #include <qtmetamacros.h>
 
+#include "../../core/iconimageprovider.hpp"
 #include "../../dbus/dbusutil.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
@@ -49,15 +50,16 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewTitle, &this->title, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconName, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconPixmaps, &AbstractDBusProperty::update);
-	//QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconThemePath, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->overlayIconName, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->overlayIconPixmaps, &AbstractDBusProperty::update);
-	//QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->iconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->iconThemePath, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->attentionIconName, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->attentionIconPixmaps, &AbstractDBusProperty::update);
-	//QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->iconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->iconThemePath, &AbstractDBusProperty::update);
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewToolTip, &this->tooltip, &AbstractDBusProperty::update);
 
+	QObject::connect(&this->iconThemePath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 	QObject::connect(&this->iconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 	QObject::connect(&this->attentionIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 	QObject::connect(&this->overlayIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
@@ -83,11 +85,12 @@ bool StatusNotifierItem::isReady() const { return this->mReady; }
 QString StatusNotifierItem::iconId() const {
 	if (this->status.get() == "NeedsAttention") {
 		auto name = this->attentionIconName.get();
-		if (!name.isEmpty()) return QString("image://icon/") + name;
+		if (!name.isEmpty()) return IconImageProvider::requestString(name, this->iconThemePath.get());
 	} else {
 		auto name = this->iconName.get();
 		auto overlayName = this->overlayIconName.get();
-		if (!name.isEmpty() && overlayName.isEmpty()) return QString("image://icon/") + name;
+		if (!name.isEmpty() && overlayName.isEmpty())
+			return IconImageProvider::requestString(name, this->iconThemePath.get());
 	}
 
 	return QString("image://service.sni/") + this->watcherId + "/" + QString::number(this->iconIndex);

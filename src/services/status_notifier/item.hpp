@@ -39,7 +39,7 @@ public:
 	dbus::DBusProperty<QString> status {this->properties, "Status"};
 	dbus::DBusProperty<QString> category {this->properties, "Category"};
 	dbus::DBusProperty<quint32> windowId {this->properties, "WindowId"};
-	//dbus::DBusProperty<QString> iconThemePath {this->properties, "IconThemePath"};
+	dbus::DBusProperty<QString> iconThemePath {this->properties, "IconThemePath"};
 	dbus::DBusProperty<QString> iconName {this->properties, "IconName"};
 	dbus::DBusProperty<DBusSniIconPixmapList> iconPixmaps {this->properties, "IconPixmap"};
 	dbus::DBusProperty<QString> overlayIconName {this->properties, "OverlayIconName"};

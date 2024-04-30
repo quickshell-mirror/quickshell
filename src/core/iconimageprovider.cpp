@@ -10,7 +10,19 @@
 
 QPixmap
 IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) {
-	auto icon = QIcon::fromTheme(id);
+	QString iconName;
+	QString path;
+	auto splitIdx = id.indexOf("?path=");
+	if (splitIdx != -1) {
+		iconName = id.sliced(0, splitIdx);
+		path = id.sliced(splitIdx + 6);
+		qWarning() << "Searching custom icon paths is not yet supported. Icon path will be ignored for"
+		           << id;
+	} else {
+		iconName = id;
+	}
+
+	auto icon = QIcon::fromTheme(iconName);
 
 	auto targetSize = requestedSize.isValid() ? requestedSize : QSize(100, 100);
 	if (targetSize.width() == 0 || targetSize.height() == 0) targetSize = QSize(2, 2);
@@ -41,4 +53,14 @@ QPixmap IconImageProvider::missingPixmap(const QSize& size) {
 	painter.fillRect(halfWidth, 0, halfWidth, halfHeight, purple);
 	painter.fillRect(0, halfHeight, halfWidth, halfHeight, purple);
 	return pixmap;
+}
+
+QString IconImageProvider::requestString(const QString& icon, const QString& path) {
+	auto req = "image://icon/" + icon;
+
+	if (!path.isEmpty()) {
+		req += "?path=" + path;
+	}
+
+	return req;
 }
