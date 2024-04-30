@@ -19,7 +19,7 @@
 
 class DBusPropertiesInterface;
 
-Q_DECLARE_LOGGING_CATEGORY(logDbus);
+Q_DECLARE_LOGGING_CATEGORY(logDbusProperties);
 
 namespace qs::dbus {
 

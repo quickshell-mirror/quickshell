@@ -11,7 +11,7 @@
 #include <qtmetamacros.h>
 #include <unistd.h>
 
-#include "../../dbus/dbusutil.hpp"
+#include "../../dbus/properties.hpp"
 #include "dbus_watcher_interface.h"
 #include "item.hpp"
 #include "watcher.hpp"

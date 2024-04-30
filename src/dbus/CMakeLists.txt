@@ -8,7 +8,7 @@ qt_add_dbus_interface(DBUS_INTERFACES
 )
 
 qt_add_library(quickshell-dbus STATIC
-	dbusutil.cpp
+	properties.cpp
 	${DBUS_INTERFACES}
 )
 

@@ -9,7 +9,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../dbus/dbusutil.hpp"
+#include "../../dbus/properties.hpp"
 #include "host.hpp"
 #include "item.hpp"
 

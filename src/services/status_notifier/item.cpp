@@ -17,7 +17,7 @@
 #include <qtmetamacros.h>
 
 #include "../../core/iconimageprovider.hpp"
-#include "../../dbus/dbusutil.hpp"
+#include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
 #include "host.hpp"

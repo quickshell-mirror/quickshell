@@ -1,4 +1,4 @@
-#include "dbusutil.hpp"
+#include "properties.hpp"
 #include <algorithm>
 #include <utility>
 
@@ -22,7 +22,7 @@
 
 #include "dbus_properties.h"
 
-Q_LOGGING_CATEGORY(logDbus, "quickshell.dbus", QtWarningMsg);
+Q_LOGGING_CATEGORY(logDbusProperties, "quickshell.dbus.properties", QtWarningMsg);
 
 namespace qs::dbus {
 
@@ -114,27 +114,28 @@ void asyncReadPropertyInternal(
 void AbstractDBusProperty::tryUpdate(const QVariant& variant) {
 	auto error = this->read(variant);
 	if (error.isValid()) {
-		qCWarning(logDbus).noquote() << "Error demarshalling property update for" << this->toString();
-		qCWarning(logDbus) << error;
+		qCWarning(logDbusProperties).noquote()
+		    << "Error demarshalling property update for" << this->toString();
+		qCWarning(logDbusProperties) << error;
 	} else {
-		qCDebug(logDbus).noquote() << "Updated property" << this->toString() << "to"
-		                           << this->valueString();
+		qCDebug(logDbusProperties).noquote()
+		    << "Updated property" << this->toString() << "to" << this->valueString();
 	}
 }
 
 void AbstractDBusProperty::update() {
 	if (this->group == nullptr) {
-		qFatal(logDbus) << "Tried to update dbus property" << this->name
-		                << "which is not attached to a group";
+		qFatal(logDbusProperties) << "Tried to update dbus property" << this->name
+		                          << "which is not attached to a group";
 	} else {
 		const QString propStr = this->toString();
 
 		if (this->group->interface == nullptr) {
-			qFatal(logDbus).noquote() << "Tried to update property" << propStr
-			                          << "of a disconnected interface";
+			qFatal(logDbusProperties).noquote()
+			    << "Tried to update property" << propStr << "of a disconnected interface";
 		}
 
-		qCDebug(logDbus).noquote() << "Updating property" << propStr;
+		qCDebug(logDbusProperties).noquote() << "Updating property" << propStr;
 
 		auto pendingCall =
 		    this->group->propertyInterface->Get(this->group->interface->interface(), this->name);
@@ -145,8 +146,8 @@ void AbstractDBusProperty::update() {
 			const QDBusPendingReply<QDBusVariant> reply = *call;
 
 			if (reply.isError()) {
-				qCWarning(logDbus).noquote() << "Error updating property" << propStr;
-				qCWarning(logDbus) << reply.error();
+				qCWarning(logDbusProperties).noquote() << "Error updating property" << propStr;
+				qCWarning(logDbusProperties) << reply.error();
 			} else {
 				this->tryUpdate(reply.value().variant());
 			}
@@ -198,8 +199,8 @@ void DBusPropertyGroup::attachProperty(AbstractDBusProperty* property) {
 }
 
 void DBusPropertyGroup::updateAllDirect() {
-	qCDebug(logDbus).noquote() << "Updating all properties of" << this->toString()
-	                           << "via individual queries";
+	qCDebug(logDbusProperties).noquote()
+	    << "Updating all properties of" << this->toString() << "via individual queries";
 
 	if (this->interface == nullptr) {
 		qFatal() << "Attempted to update properties of disconnected property group";
@@ -211,7 +212,8 @@ void DBusPropertyGroup::updateAllDirect() {
 }
 
 void DBusPropertyGroup::updateAllViaGetAll() {
-	qCDebug(logDbus).noquote() << "Updating all properties of" << this->toString() << "via GetAll";
+	qCDebug(logDbusProperties).noquote()
+	    << "Updating all properties of" << this->toString() << "via GetAll";
 
 	if (this->interface == nullptr) {
 		qFatal() << "Attempted to update properties of disconnected property group";
@@ -224,11 +226,12 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 		const QDBusPendingReply<QVariantMap> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logDbus).noquote()
+			qCWarning(logDbusProperties).noquote()
 			    << "Error updating properties of" << this->toString() << "via GetAll";
-			qCWarning(logDbus) << reply.error();
+			qCWarning(logDbusProperties) << reply.error();
 		} else {
-			qCDebug(logDbus).noquote() << "Received GetAll property set for" << this->toString();
+			qCDebug(logDbusProperties).noquote()
+			    << "Received GetAll property set for" << this->toString();
 			this->updatePropertySet(reply.value());
 		}
 
@@ -248,7 +251,7 @@ void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties) {
 		);
 
 		if (prop == this->properties.end()) {
-			qCDebug(logDbus) << "Ignoring untracked property update" << name << "for" << this;
+			qCDebug(logDbusProperties) << "Ignoring untracked property update" << name << "for" << this;
 		} else {
 			(*prop)->tryUpdate(value);
 		}
@@ -270,8 +273,8 @@ void DBusPropertyGroup::onPropertiesChanged(
     const QStringList& invalidatedProperties
 ) {
 	if (interfaceName != this->interface->interface()) return;
-	qCDebug(logDbus).noquote() << "Received property change set and invalidations for"
-	                           << this->toString();
+	qCDebug(logDbusProperties).noquote()
+	    << "Received property change set and invalidations for" << this->toString();
 
 	for (const auto& name: invalidatedProperties) {
 		auto prop = std::find_if(
@@ -281,7 +284,8 @@ void DBusPropertyGroup::onPropertiesChanged(
 		);
 
 		if (prop == this->properties.end()) {
-			qCDebug(logDbus) << "Ignoring untracked property invalidation" << name << "for" << this;
+			qCDebug(logDbusProperties) << "Ignoring untracked property invalidation" << name << "for"
+			                           << this;
 		} else {
 			(*prop)->update();
 		}
