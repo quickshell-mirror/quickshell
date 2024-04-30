@@ -3,6 +3,7 @@
 
 #include <qdbusmetatype.h>
 #include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
 #include <qicon.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -175,9 +176,44 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 	return pixmap;
 }
 
-void StatusNotifierItem::activate() { this->item->Activate(0, 0); }
+void StatusNotifierItem::activate() {
+	auto pendingCall = this->item->Activate(0, 0);
+	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
 
-void StatusNotifierItem::secondaryActivate() { this->item->SecondaryActivate(0, 0); }
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logStatusNotifierItem).noquote()
+			    << "Error calling Activate method of StatusNotifierItem" << this->properties.toString();
+			qCWarning(logStatusNotifierItem) << reply.error();
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void StatusNotifierItem::secondaryActivate() {
+	auto pendingCall = this->item->SecondaryActivate(0, 0);
+	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logStatusNotifierItem).noquote()
+			    << "Error calling SecondaryActivate method of StatusNotifierItem"
+			    << this->properties.toString();
+			qCWarning(logStatusNotifierItem) << reply.error();
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
 
 void StatusNotifierItem::scroll(qint32 delta, bool horizontal) {
 	this->item->Scroll(delta, horizontal ? "horizontal" : "vertical");
