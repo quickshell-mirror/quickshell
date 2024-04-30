@@ -104,6 +104,8 @@ void asyncReadPropertyInternal(
 				return demarshallVariant(reply.value().variant(), type, slot);
 			}
 		});
+
+		delete call;
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, &interface, responseCallback);
@@ -231,7 +233,6 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 		}
 
 		delete call;
-
 		emit this->getAllFinished();
 	};
 
