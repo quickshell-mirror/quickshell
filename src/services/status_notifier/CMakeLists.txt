@@ -27,7 +27,6 @@ qt_add_dbus_interface(DBUS_INTERFACES
 
 qt_add_library(quickshell-service-statusnotifier STATIC
 	qml.cpp
-	trayimageprovider.cpp
 
 	watcher.cpp
 	host.cpp
@@ -35,8 +34,6 @@ qt_add_library(quickshell-service-statusnotifier STATIC
 	dbus_item_types.cpp
 	${DBUS_INTERFACES}
 )
-
-add_library(quickshell-service-statusnotifier-init OBJECT init.cpp)
 
 # dbus headers
 target_include_directories(quickshell-service-statusnotifier PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -47,9 +44,7 @@ qt_add_qml_module(quickshell-service-statusnotifier
 )
 
 target_link_libraries(quickshell-service-statusnotifier PRIVATE ${QT_DEPS} quickshell-dbus)
-target_link_libraries(quickshell-service-statusnotifier-init PRIVATE ${QT_DEPS})
-target_link_libraries(quickshell PRIVATE quickshell-service-statusnotifierplugin quickshell-service-statusnotifier-init)
+target_link_libraries(quickshell PRIVATE quickshell-service-statusnotifierplugin)
 
 qs_pch(quickshell-service-statusnotifier)
 qs_pch(quickshell-service-statusnotifierplugin)
-qs_pch(quickshell-service-statusnotifier-init)

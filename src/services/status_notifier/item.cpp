@@ -11,12 +11,15 @@
 #include <qobject.h>
 #include <qpainter.h>
 #include <qpixmap.h>
+#include <qqmlengine.h>
 #include <qrect.h>
 #include <qsize.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/imageprovider.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
@@ -94,7 +97,7 @@ QString StatusNotifierItem::iconId() const {
 			return IconImageProvider::requestString(name, this->iconThemePath.get());
 	}
 
-	return QString("image://service.sni/") + this->watcherId + "/" + QString::number(this->iconIndex);
+	return this->imageHandle.url() + "/" + QString::number(this->iconIndex);
 }
 
 QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
@@ -228,6 +231,24 @@ void StatusNotifierItem::onGetAllFinished() {
 	if (this->mReady) return;
 	this->mReady = true;
 	emit this->ready();
+}
+
+TrayImageHandle::TrayImageHandle(StatusNotifierItem* item)
+    : QsImageHandle(QQmlImageProviderBase::Pixmap, item)
+    , item(item) {}
+
+QPixmap
+TrayImageHandle::requestPixmap(const QString& /*unused*/, QSize* size, const QSize& requestedSize) {
+	auto targetSize = requestedSize.isValid() ? requestedSize : QSize(100, 100);
+	if (targetSize.width() == 0 || targetSize.height() == 0) targetSize = QSize(2, 2);
+
+	auto pixmap = this->item->createPixmap(targetSize);
+	if (pixmap.isNull()) {
+		pixmap = IconImageProvider::missingPixmap(targetSize);
+	}
+
+	if (size != nullptr) *size = pixmap.size();
+	return pixmap;
 }
 
 } // namespace qs::service::sni

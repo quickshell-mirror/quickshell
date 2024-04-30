@@ -16,6 +16,7 @@
 #include <qtmetamacros.h>
 
 #include "iconimageprovider.hpp"
+#include "imageprovider.hpp"
 #include "incubator.hpp"
 #include "plugin.hpp"
 #include "qsintercept.hpp"
@@ -35,6 +36,8 @@ EngineGeneration::EngineGeneration(QmlScanner scanner)
 	this->engine->setIncubationController(&this->delayedIncubationController);
 
 	this->engine->addImageProvider("icon", new IconImageProvider());
+	this->engine->addImageProvider("qsimage", new QsImageProvider());
+	this->engine->addImageProvider("qspixmap", new QsPixmapProvider());
 
 	QuickshellPlugin::runConstructGeneration(*this);
 }

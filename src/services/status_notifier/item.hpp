@@ -9,6 +9,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/imageprovider.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
@@ -16,6 +17,18 @@
 Q_DECLARE_LOGGING_CATEGORY(logStatusNotifierItem);
 
 namespace qs::service::sni {
+
+class StatusNotifierItem;
+
+class TrayImageHandle: public QsImageHandle {
+public:
+	explicit TrayImageHandle(StatusNotifierItem* item);
+
+	QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override;
+
+public:
+	StatusNotifierItem* item;
+};
 
 class StatusNotifierItem: public QObject {
 	Q_OBJECT;
@@ -62,6 +75,7 @@ private slots:
 
 private:
 	DBusStatusNotifierItem* item = nullptr;
+	TrayImageHandle imageHandle {this};
 	bool mReady = false;
 
 	// bumped to inhibit caching
