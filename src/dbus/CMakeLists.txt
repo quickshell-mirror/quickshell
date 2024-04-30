@@ -18,4 +18,5 @@ target_include_directories(quickshell-dbus PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(quickshell-dbus PRIVATE ${QT_DEPS})
 
 qs_pch(quickshell-dbus)
-#qs_pch(quickshell-dbusplugin)
+
+add_subdirectory(dbusmenu)

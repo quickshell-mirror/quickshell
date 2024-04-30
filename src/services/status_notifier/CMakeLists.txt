@@ -43,7 +43,7 @@ qt_add_qml_module(quickshell-service-statusnotifier
   VERSION 0.1
 )
 
-target_link_libraries(quickshell-service-statusnotifier PRIVATE ${QT_DEPS} quickshell-dbus)
+target_link_libraries(quickshell-service-statusnotifier PRIVATE ${QT_DEPS} quickshell-dbus quickshell-dbusmenuplugin)
 target_link_libraries(quickshell PRIVATE quickshell-service-statusnotifierplugin)
 
 qs_pch(quickshell-service-statusnotifier)

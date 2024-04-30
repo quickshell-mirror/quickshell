@@ -10,6 +10,7 @@
 #include <qtypes.h>
 
 #include "../../core/imageprovider.hpp"
+#include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
@@ -40,6 +41,7 @@ public:
 	[[nodiscard]] bool isReady() const;
 	[[nodiscard]] QString iconId() const;
 	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
+	[[nodiscard]] qs::dbus::dbusmenu::DBusMenu* createMenu() const;
 
 	void activate();
 	void secondaryActivate();
@@ -77,6 +79,7 @@ private:
 	DBusStatusNotifierItem* item = nullptr;
 	TrayImageHandle imageHandle {this};
 	bool mReady = false;
+	dbus::dbusmenu::DBusMenu* mMenu = nullptr;
 
 	// bumped to inhibit caching
 	quint32 iconIndex = 0;

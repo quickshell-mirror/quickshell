@@ -9,11 +9,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "host.hpp"
 #include "item.hpp"
 
 using namespace qs::dbus;
+using namespace qs::dbus::dbusmenu;
 using namespace qs::service::sni;
 
 SystemTrayItem::SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObject* parent)
@@ -27,8 +29,11 @@ SystemTrayItem::SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObje
 	QObject::connect(this->item, &StatusNotifierItem::iconChanged, this, &SystemTrayItem::iconChanged);
 	QObject::connect(&this->item->tooltip, &AbstractDBusProperty::changed, this, &SystemTrayItem::tooltipTitleChanged);
 	QObject::connect(&this->item->tooltip, &AbstractDBusProperty::changed, this, &SystemTrayItem::tooltipDescriptionChanged);
+	QObject::connect(&this->item->menuPath, &AbstractDBusProperty::changed, this, &SystemTrayItem::onMenuPathChanged);
 	QObject::connect(&this->item->isMenu, &AbstractDBusProperty::changed, this, &SystemTrayItem::onlyMenuChanged);
 	// clang-format on
+
+	if (!this->item->menuPath.get().path().isEmpty()) this->onMenuPathChanged();
 }
 
 QString SystemTrayItem::id() const {
@@ -84,9 +89,23 @@ QString SystemTrayItem::tooltipDescription() const {
 	return this->item->tooltip.get().description;
 }
 
+DBusMenuItem* SystemTrayItem::menu() const {
+	if (this->mMenu == nullptr) return nullptr;
+	return &this->mMenu->rootItem;
+}
+
 bool SystemTrayItem::onlyMenu() const {
 	if (this->item == nullptr) return false;
 	return this->item->isMenu.get();
+}
+
+void SystemTrayItem::onMenuPathChanged() {
+	if (this->mMenu != nullptr) {
+		this->mMenu->deleteLater();
+	}
+
+	this->mMenu = this->item->createMenu();
+	emit this->menuChanged();
 }
 
 void SystemTrayItem::activate() { this->item->activate(); }

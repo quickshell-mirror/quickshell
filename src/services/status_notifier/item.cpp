@@ -1,6 +1,7 @@
 #include "item.hpp"
 #include <utility>
 
+#include <qdbusextratypes.h>
 #include <qdbusmetatype.h>
 #include <qdbuspendingcall.h>
 #include <qdbuspendingreply.h>
@@ -20,12 +21,14 @@
 
 #include "../../core/iconimageprovider.hpp"
 #include "../../core/imageprovider.hpp"
+#include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
 #include "host.hpp"
 
 using namespace qs::dbus;
+using namespace qs::dbus::dbusmenu;
 
 Q_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
 
@@ -34,6 +37,10 @@ namespace qs::service::sni {
 StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
     : QObject(parent)
     , watcherId(address) {
+	qDBusRegisterMetaType<DBusSniIconPixmap>();
+	qDBusRegisterMetaType<DBusSniIconPixmapList>();
+	qDBusRegisterMetaType<DBusSniTooltip>();
+
 	// spec is unclear about what exactly an item address is, so account for both combinations
 	auto splitIdx = address.indexOf('/');
 	auto conn = splitIdx == -1 ? address : address.sliced(0, splitIdx);
@@ -45,10 +52,6 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 		qCWarning(logStatusNotifierHost).noquote() << "Cannot create StatusNotifierItem for" << conn;
 		return;
 	}
-
-	qDBusRegisterMetaType<DBusSniIconPixmap>();
-	qDBusRegisterMetaType<DBusSniIconPixmapList>();
-	qDBusRegisterMetaType<DBusSniTooltip>();
 
 	// clang-format off
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewTitle, &this->title, &AbstractDBusProperty::update);
@@ -225,6 +228,15 @@ void StatusNotifierItem::scroll(qint32 delta, bool horizontal) {
 void StatusNotifierItem::updateIcon() {
 	this->iconIndex++;
 	emit this->iconChanged();
+}
+
+DBusMenu* StatusNotifierItem::createMenu() const {
+	auto path = this->menuPath.get().path();
+	if (!path.isEmpty()) {
+		return new DBusMenu(this->item->service(), this->menuPath.get().path());
+	}
+
+	return nullptr;
 }
 
 void StatusNotifierItem::onGetAllFinished() {

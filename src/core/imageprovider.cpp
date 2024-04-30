@@ -8,7 +8,7 @@
 #include <qpixmap.h>
 #include <qqmlengine.h>
 
-static QMap<QString, QsImageHandle*> liveImages;
+static QMap<QString, QsImageHandle*> liveImages; // NOLINT
 
 QsImageHandle::QsImageHandle(QQmlImageProviderBase::ImageType type, QObject* parent)
     : QObject(parent)

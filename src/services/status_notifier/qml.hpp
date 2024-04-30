@@ -58,15 +58,14 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
+	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenuItem* menu READ menu NOTIFY menuChanged);
 	// If this tray item only offers a menu and no activation action.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
 	QML_ELEMENT;
+	QML_UNCREATABLE("SystemTrayItems can only be acquired from SystemTray");
 
 public:
-	explicit SystemTrayItem(
-	    qs::service::sni::StatusNotifierItem* item = nullptr,
-	    QObject* parent = nullptr
-	);
+	explicit SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObject* parent = nullptr);
 
 	// Primary activation action, generally triggered via a left click.
 	Q_INVOKABLE void activate();
@@ -84,6 +83,7 @@ public:
 	[[nodiscard]] QString icon() const;
 	[[nodiscard]] QString tooltipTitle() const;
 	[[nodiscard]] QString tooltipDescription() const;
+	[[nodiscard]] qs::dbus::dbusmenu::DBusMenuItem* menu() const;
 	[[nodiscard]] bool onlyMenu() const;
 
 signals:
@@ -94,10 +94,15 @@ signals:
 	void iconChanged();
 	void tooltipTitleChanged();
 	void tooltipDescriptionChanged();
+	void menuChanged();
 	void onlyMenuChanged();
+
+private slots:
+	void onMenuPathChanged();
 
 private:
 	qs::service::sni::StatusNotifierItem* item = nullptr;
+	qs::dbus::dbusmenu::DBusMenu* mMenu = nullptr;
 
 	friend class SystemTray;
 };
