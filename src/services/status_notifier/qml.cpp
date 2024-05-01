@@ -29,11 +29,8 @@ SystemTrayItem::SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObje
 	QObject::connect(this->item, &StatusNotifierItem::iconChanged, this, &SystemTrayItem::iconChanged);
 	QObject::connect(&this->item->tooltip, &AbstractDBusProperty::changed, this, &SystemTrayItem::tooltipTitleChanged);
 	QObject::connect(&this->item->tooltip, &AbstractDBusProperty::changed, this, &SystemTrayItem::tooltipDescriptionChanged);
-	QObject::connect(&this->item->menuPath, &AbstractDBusProperty::changed, this, &SystemTrayItem::onMenuPathChanged);
 	QObject::connect(&this->item->isMenu, &AbstractDBusProperty::changed, this, &SystemTrayItem::onlyMenuChanged);
 	// clang-format on
-
-	if (!this->item->menuPath.get().path().isEmpty()) this->onMenuPathChanged();
 }
 
 QString SystemTrayItem::id() const {
@@ -89,30 +86,14 @@ QString SystemTrayItem::tooltipDescription() const {
 	return this->item->tooltip.get().description;
 }
 
-DBusMenuItem* SystemTrayItem::menu() const {
-	if (this->mMenu == nullptr) return nullptr;
-	return &this->mMenu->rootItem;
-}
-
 bool SystemTrayItem::onlyMenu() const {
 	if (this->item == nullptr) return false;
 	return this->item->isMenu.get();
 }
 
-void SystemTrayItem::onMenuPathChanged() {
-	if (this->mMenu != nullptr) {
-		this->mMenu->deleteLater();
-	}
-
-	this->mMenu = this->item->createMenu();
-	emit this->menuChanged();
-}
-
-void SystemTrayItem::activate() { this->item->activate(); }
-
-void SystemTrayItem::secondaryActivate() { this->item->secondaryActivate(); }
-
-void SystemTrayItem::scroll(qint32 delta, bool horizontal) {
+void SystemTrayItem::activate() const { this->item->activate(); }
+void SystemTrayItem::secondaryActivate() const { this->item->secondaryActivate(); }
+void SystemTrayItem::scroll(qint32 delta, bool horizontal) const {
 	this->item->scroll(delta, horizontal);
 }
 
@@ -164,4 +145,50 @@ qsizetype SystemTray::itemsCount(QQmlListProperty<SystemTrayItem>* property) {
 
 SystemTrayItem* SystemTray::itemAt(QQmlListProperty<SystemTrayItem>* property, qsizetype index) {
 	return reinterpret_cast<SystemTray*>(property->object)->mItems.at(index); // NOLINT
+}
+
+SystemTrayItem* SystemTrayMenuWatcher::trayItem() const { return this->item; }
+
+void SystemTrayMenuWatcher::setTrayItem(SystemTrayItem* item) {
+	if (item == this->item) return;
+
+	if (this->item != nullptr) {
+		QObject::disconnect(this->item, nullptr, this, nullptr);
+	}
+
+	this->item = item;
+
+	if (item != nullptr) {
+		QObject::connect(item, &QObject::destroyed, this, &SystemTrayMenuWatcher::onItemDestroyed);
+
+		QObject::connect(
+		    &item->item->menuPath,
+		    &AbstractDBusProperty::changed,
+		    this,
+		    &SystemTrayMenuWatcher::onMenuPathChanged
+		);
+	}
+
+	this->onMenuPathChanged();
+	emit this->trayItemChanged();
+}
+
+DBusMenuItem* SystemTrayMenuWatcher::menu() const {
+	if (this->mMenu == nullptr) return nullptr;
+	return &this->mMenu->rootItem;
+}
+
+void SystemTrayMenuWatcher::onItemDestroyed() {
+	this->item = nullptr;
+	this->onMenuPathChanged();
+	emit this->trayItemChanged();
+}
+
+void SystemTrayMenuWatcher::onMenuPathChanged() {
+	if (this->mMenu != nullptr) {
+		this->mMenu->deleteLater();
+	}
+
+	this->mMenu = this->item == nullptr ? nullptr : this->item->item->createMenu();
+	emit this->menuChanged();
 }

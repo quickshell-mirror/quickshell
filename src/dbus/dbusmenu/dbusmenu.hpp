@@ -104,7 +104,7 @@ class DBusMenuItem: public QObject {
 	/// > instead of checking if `children` is empty.
 	Q_PROPERTY(QQmlListProperty<DBusMenuItem> children READ children NOTIFY childrenChanged);
 	// clang-format on
-	QML_NAMED_ELEMENT(DBusMenu);
+	QML_ELEMENT;
 	QML_UNCREATABLE("DBusMenus can only be acquired from a DBusMenuHandle");
 
 public:

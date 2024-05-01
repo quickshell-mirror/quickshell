@@ -45,6 +45,8 @@ Q_ENUM_NS(Enum);
 /// A system tray item, roughly conforming to the [kde/freedesktop spec]
 /// (there is no real spec, we just implemented whatever seemed to actually be used).
 ///
+/// The associated context menu can be retrieved using a [SystemTrayMenuWatcher](../systemtraymenuwatcher).
+///
 /// [kde/freedesktop spec]: https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierItem/
 class SystemTrayItem: public QObject {
 	using DBusMenuItem = qs::dbus::dbusmenu::DBusMenuItem;
@@ -60,8 +62,6 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
-	// The context menu provided by the application, generally displayed via a right click.
-	Q_PROPERTY(DBusMenuItem* menu READ menu NOTIFY menuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
 	QML_ELEMENT;
@@ -71,13 +71,13 @@ public:
 	explicit SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObject* parent = nullptr);
 
 	/// Primary activation action, generally triggered via a left click.
-	Q_INVOKABLE void activate();
+	Q_INVOKABLE void activate() const;
 
 	/// Secondary activation action, generally triggered via a middle click.
-	Q_INVOKABLE void secondaryActivate();
+	Q_INVOKABLE void secondaryActivate() const;
 
 	/// Scroll action, such as changing volume on a mixer.
-	Q_INVOKABLE void scroll(qint32 delta, bool horizontal);
+	Q_INVOKABLE void scroll(qint32 delta, bool horizontal) const;
 
 	[[nodiscard]] QString id() const;
 	[[nodiscard]] QString title() const;
@@ -86,8 +86,9 @@ public:
 	[[nodiscard]] QString icon() const;
 	[[nodiscard]] QString tooltipTitle() const;
 	[[nodiscard]] QString tooltipDescription() const;
-	[[nodiscard]] DBusMenuItem* menu() const;
 	[[nodiscard]] bool onlyMenu() const;
+
+	qs::service::sni::StatusNotifierItem* item = nullptr;
 
 signals:
 	void idChanged();
@@ -97,17 +98,7 @@ signals:
 	void iconChanged();
 	void tooltipTitleChanged();
 	void tooltipDescriptionChanged();
-	void menuChanged();
 	void onlyMenuChanged();
-
-private slots:
-	void onMenuPathChanged();
-
-private:
-	qs::service::sni::StatusNotifierItem* item = nullptr;
-	qs::dbus::dbusmenu::DBusMenu* mMenu = nullptr;
-
-	friend class SystemTray;
 };
 
 ///! System tray
@@ -138,4 +129,40 @@ private:
 	static SystemTrayItem* itemAt(QQmlListProperty<SystemTrayItem>* property, qsizetype index);
 
 	QList<SystemTrayItem*> mItems;
+};
+
+///! Accessor for SystemTrayItem menus.
+/// SystemTrayMenuWatcher provides access to the associated
+/// [DBusMenuItem](../../quickshell.dbusmenu/dbusmenuitem) for a tray item.
+class SystemTrayMenuWatcher: public QObject {
+	using DBusMenu = qs::dbus::dbusmenu::DBusMenu;
+	using DBusMenuItem = qs::dbus::dbusmenu::DBusMenuItem;
+
+	Q_OBJECT;
+	/// The tray item to watch.
+	Q_PROPERTY(SystemTrayItem* trayItem READ trayItem WRITE setTrayItem NOTIFY trayItemChanged);
+	/// The menu associated with the tray item. Will be null if `trayItem` is null
+	/// or has no associated menu.
+	Q_PROPERTY(DBusMenuItem* menu READ menu NOTIFY menuChanged);
+	QML_ELEMENT;
+
+public:
+	explicit SystemTrayMenuWatcher(QObject* parent = nullptr): QObject(parent) {}
+
+	[[nodiscard]] SystemTrayItem* trayItem() const;
+	void setTrayItem(SystemTrayItem* item);
+
+	[[nodiscard]] DBusMenuItem* menu() const;
+
+signals:
+	void menuChanged();
+	void trayItemChanged();
+
+private slots:
+	void onItemDestroyed();
+	void onMenuPathChanged();
+
+private:
+	SystemTrayItem* item = nullptr;
+	DBusMenu* mMenu = nullptr;
 };
