@@ -17,5 +17,6 @@ headers = [
 	"lazyloader.hpp",
 	"easingcurve.hpp",
 	"transformwatcher.hpp",
+	"boundcomponent.hpp",
 ]
 -----

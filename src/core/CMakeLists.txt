@@ -25,6 +25,7 @@ qt_add_library(quickshell-core STATIC
 	iconimageprovider.cpp
 	imageprovider.cpp
 	transformwatcher.cpp
+	boundcomponent.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
