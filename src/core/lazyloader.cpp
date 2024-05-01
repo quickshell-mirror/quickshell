@@ -88,6 +88,12 @@ void LazyLoader::setActive(bool active) {
 	}
 }
 
+void LazyLoader::setActiveAsync(bool active) {
+	if (active == (this->targetActive || this->targetLoading)) return;
+	if (active) this->setLoading(true);
+	else this->setActive(false);
+}
+
 QQmlComponent* LazyLoader::component() const {
 	return this->cleanupComponent ? nullptr : this->mComponent;
 }

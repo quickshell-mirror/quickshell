@@ -104,13 +104,23 @@ class LazyLoader: public Reloadable {
 	/// If the component is not loaded, setting this property to true will start
 	/// loading it asynchronously. If the component is already loaded, setting
 	/// this property has no effect.
+	///
+	/// See also: [activeAsync](#prop.activeAsync).
 	Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged);
 	/// If the component is fully loaded.
 	///
 	/// Setting this property to `true` will force the component to load to completion,
 	/// blocking the UI, and setting it to `false` will destroy the component, requiring
 	/// it to be loaded again.
+	///
+	/// See also: [activeAsync](#prop.activeAsync).
 	Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged);
+	/// If the component is fully loaded.
+	///
+	/// Setting this property to true will asynchronously load the component similarly to
+	/// [loading](#prop.loading). Reading it or setting it to false will behanve
+	/// the same as [active](#prop.active).
+	Q_PROPERTY(bool activeAsync READ isActive WRITE setActiveAsync NOTIFY activeChanged);
 	/// The component to load. Mutually exclusive to `source`.
 	Q_PROPERTY(QQmlComponent* component READ component WRITE setComponent NOTIFY componentChanged);
 	/// The URI to load the component from. Mutually exclusive to `component`.
@@ -123,6 +133,7 @@ public:
 
 	[[nodiscard]] bool isActive() const;
 	void setActive(bool active);
+	void setActiveAsync(bool active);
 
 	[[nodiscard]] bool isLoading() const;
 	void setLoading(bool loading);
