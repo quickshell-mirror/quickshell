@@ -20,6 +20,11 @@ QUrl QsUrlInterceptor::intercept(const QUrl& url, QQmlAbstractUrlInterceptor::Da
 	// Some types such as Image take into account where they are loading from, and force
 	// asynchronous loading over a network. qsintercept is considered to be over a network.
 	if (type == QQmlAbstractUrlInterceptor::DataType::UrlString && url.scheme() == "qsintercept") {
+		// Qt.resolvedUrl and context->resolvedUrl can use this on qml files, in which
+		// case we want to keep the intercept, otherwise objects created from those paths
+		// will not be able to use singletons.
+		if (url.path().endsWith(".qml")) return url;
+
 		auto newUrl = url;
 		newUrl.setScheme("file");
 		qCDebug(logQsIntercept) << "Rewrote intercept" << url << "to" << newUrl;
