@@ -102,6 +102,7 @@ public:
 
 signals:
 	void windowConnected();
+	void windowDestroyed();
 	void visibleChanged();
 	void backerVisibilityChanged();
 	void xChanged();

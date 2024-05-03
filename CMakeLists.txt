@@ -14,6 +14,7 @@ option(SOCKETS "Enable unix socket support" ON)
 option(WAYLAND "Enable wayland support" ON)
 option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol" ON)
 option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
+option(HYPRLAND "Support hyprland specific features" ON)
 option(SERVICE_STATUS_NOTIFIER "StatusNotifierItem service" ON)
 
 message(STATUS "Quickshell configuration")
@@ -27,6 +28,7 @@ if (WAYLAND)
 endif ()
 message(STATUS "  Services")
 message(STATUS "    StatusNotifier: ${SERVICE_STATUS_NOTIFIER}")
+message(STATUS "  Hyprland: ${HYPRLAND}")
 
 if (NOT DEFINED GIT_REVISION)
 	execute_process(

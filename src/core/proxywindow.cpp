@@ -88,6 +88,7 @@ void ProxyWindowBase::createWindow() {
 }
 
 void ProxyWindowBase::deleteWindow() {
+	if (this->window != nullptr) emit this->windowDestroyed();
 	if (auto* window = this->disownWindow()) {
 		if (auto* generation = EngineGeneration::findObjectGeneration(this)) {
 			generation->deregisterIncubationController(window->incubationController());

@@ -68,6 +68,10 @@ if (WAYLAND_SESSION_LOCK)
 	add_subdirectory(session_lock)
 endif()
 
+if (HYPRLAND)
+	add_subdirectory(hyprland)
+endif()
+
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
 target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
 
