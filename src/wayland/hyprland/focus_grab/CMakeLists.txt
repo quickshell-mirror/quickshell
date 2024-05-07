@@ -4,11 +4,18 @@ qt_add_library(quickshell-hyprland-focus-grab STATIC
 	qml.cpp
 )
 
-qt_add_qml_module(quickshell-hyprland-focus-grab URI Quickshell.Hyprland._FocusGrab VERSION 0.1)
+qt_add_qml_module(quickshell-hyprland-focus-grab
+	URI Quickshell.Hyprland._FocusGrab
+	VERSION 0.1
+)
 
 add_library(quickshell-hyprland-focus-grab-init OBJECT init.cpp)
 
-wl_proto(quickshell-hyprland-focus-grab hyprland-focus-grab-v1 "${CMAKE_CURRENT_SOURCE_DIR}/hyprland-focus-grab-v1.xml")
+wl_proto(quickshell-hyprland-focus-grab
+	hyprland-focus-grab-v1
+	"${CMAKE_CURRENT_SOURCE_DIR}/hyprland-focus-grab-v1.xml"
+)
+
 target_link_libraries(quickshell-hyprland-focus-grab PRIVATE ${QT_DEPS} wayland-client)
 target_link_libraries(quickshell-hyprland-focus-grab-init PRIVATE ${QT_DEPS})
 
@@ -16,4 +23,7 @@ qs_pch(quickshell-hyprland-focus-grab)
 qs_pch(quickshell-hyprland-focus-grabplugin)
 qs_pch(quickshell-hyprland-focus-grab-init)
 
-target_link_libraries(quickshell PRIVATE quickshell-hyprland-focus-grabplugin quickshell-hyprland-focus-grab-init)
+target_link_libraries(quickshell PRIVATE
+	quickshell-hyprland-focus-grabplugin
+	quickshell-hyprland-focus-grab-init
+)
