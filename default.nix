@@ -24,6 +24,7 @@
 
   debug ? false,
   enableWayland ? true,
+  enablePipewire ? true,
   nvidiaCompat ? false,
   svgSupport ? true, # you almost always want this
 }: buildStdenv.mkDerivation {
@@ -46,7 +47,8 @@
     qt6.qtdeclarative
   ]
   ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ])
-  ++ (lib.optionals svgSupport [ qt6.qtsvg ]);
+  ++ (lib.optionals svgSupport [ qt6.qtsvg ])
+  ++ (lib.optionals enablePipewire [ pipewire ]);
 
   QTWAYLANDSCANNER = lib.optionalString enableWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
@@ -62,7 +64,8 @@
   cmakeFlags = [
     "-DGIT_REVISION=${gitRev}"
   ] ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
-  ++ lib.optional nvidiaCompat "-DNVIDIA_COMPAT=ON";
+  ++ lib.optional nvidiaCompat "-DNVIDIA_COMPAT=ON"
+  ++ lib.optional (!enablePipewire) "-DSERVICE_PIPEWIRE=OFF";
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;

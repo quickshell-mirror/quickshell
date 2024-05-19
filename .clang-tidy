@@ -36,6 +36,7 @@ Checks: >
   -readability-braces-around-statements,
   -readability-redundant-access-specifiers,
   -readability-else-after-return,
+  -readability-container-data-pointer,
   tidyfox-*,
 CheckOptions:
   performance-for-range-copy.WarnOnAllAutoCopies: true
