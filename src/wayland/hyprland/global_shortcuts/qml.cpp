@@ -25,7 +25,7 @@ void GlobalShortcut::onPostReload() {
 	}
 
 	auto* manager = GlobalShortcutManager::instance();
-	if (manager == nullptr) {
+	if (!manager->isActive()) {
 		qWarning() << "The active compositor does not support hyprland_global_shortcuts_v1.";
 		qWarning() << "GlobalShortcut will not work.";
 		return;
