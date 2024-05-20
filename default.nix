@@ -10,6 +10,8 @@
   qt6,
   wayland,
   wayland-protocols,
+  xorg,
+  pipewire,
 
   gitRev ? (let
     headExists = builtins.pathExists ./.git/HEAD;
@@ -24,6 +26,7 @@
 
   debug ? false,
   enableWayland ? true,
+  enableX11 ? true,
   enablePipewire ? true,
   nvidiaCompat ? false,
   svgSupport ? true, # you almost always want this
@@ -42,11 +45,12 @@
     wayland-scanner
   ]);
 
-  buildInputs = with pkgs; [
+  buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
   ]
   ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ])
+  ++ (lib.optionals enableX11 [ xorg.libxcb ])
   ++ (lib.optionals svgSupport [ qt6.qtsvg ])
   ++ (lib.optionals enablePipewire [ pipewire ]);
 

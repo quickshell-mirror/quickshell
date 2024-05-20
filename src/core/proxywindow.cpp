@@ -46,7 +46,7 @@ ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(); }
 void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->window = this->retrieveWindow(oldInstance);
 	auto wasVisible = this->window != nullptr && this->window->isVisible();
-	if (this->window == nullptr) this->window = new QQuickWindow();
+	if (this->window == nullptr) this->window = this->createQQuickWindow();
 
 	// The qml engine will leave the WindowInterface as owner of everything
 	// nested in an item, so we have to make sure the interface's children

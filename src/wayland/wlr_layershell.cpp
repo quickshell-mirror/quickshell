@@ -114,6 +114,18 @@ void WlrLayershell::setAnchors(Anchors anchors) {
 	if (!anchors.verticalConstraint()) this->ProxyWindowBase::setHeight(this->mHeight);
 }
 
+bool WlrLayershell::aboveWindows() const { return this->layer() > WlrLayer::Bottom; }
+
+void WlrLayershell::setAboveWindows(bool aboveWindows) {
+	this->setLayer(aboveWindows ? WlrLayer::Top : WlrLayer::Bottom);
+}
+
+bool WlrLayershell::focusable() const { return this->keyboardFocus() != WlrKeyboardFocus::None; }
+
+void WlrLayershell::setFocusable(bool focusable) {
+	this->setKeyboardFocus(focusable ? WlrKeyboardFocus::OnDemand : WlrKeyboardFocus::None);
+}
+
 QString WlrLayershell::ns() const { return this->ext->ns(); }
 
 void WlrLayershell::setNamespace(QString ns) {
@@ -190,6 +202,8 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &WlrLayershell::marginsChanged, this, &WaylandPanelInterface::marginsChanged);
 	QObject::connect(this->layer, &WlrLayershell::exclusiveZoneChanged, this, &WaylandPanelInterface::exclusiveZoneChanged);
 	QObject::connect(this->layer, &WlrLayershell::exclusionModeChanged, this, &WaylandPanelInterface::exclusionModeChanged);
+	QObject::connect(this->layer, &WlrLayershell::layerChanged, this, &WaylandPanelInterface::aboveWindowsChanged);
+	QObject::connect(this->layer, &WlrLayershell::keyboardFocusChanged, this, &WaylandPanelInterface::focusableChanged);
 	// clang-format on
 }
 
@@ -224,6 +238,8 @@ proxyPair(Anchors, anchors, setAnchors);
 proxyPair(Margins, margins, setMargins);
 proxyPair(qint32, exclusiveZone, setExclusiveZone);
 proxyPair(ExclusionMode::Enum, exclusionMode, setExclusionMode);
+proxyPair(bool, focusable, setFocusable);
+proxyPair(bool, aboveWindows, setAboveWindows);
 
 #undef proxyPair
 // NOLINTEND

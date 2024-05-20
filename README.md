@@ -62,15 +62,21 @@ To build quickshell at all, you will need the following packages (names may vary
 
 - just
 - cmake
-- pkg-config
 - ninja
 - Qt6 [ QtBase, QtDeclarative ]
 
 To build with wayland support you will additionally need:
+- pkg-config
 - wayland
 - wayland-scanner (may be part of wayland on some distros)
 - wayland-protocols
 - Qt6 [ QtWayland ]
+
+To build with x11 support you will additionally need:
+- libxcb
+
+To build with pipewire support you will additionally need:
+- libpipewire
 
 ### Building
 

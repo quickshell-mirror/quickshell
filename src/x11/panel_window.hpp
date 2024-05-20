@@ -2,86 +2,52 @@
 
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qquickitem.h>
 #include <qquickwindow.h>
+#include <qscreen.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 
 #include "../core/doc.hpp"
 #include "../core/panelinterface.hpp"
 #include "../core/proxywindow.hpp"
-#include "wlr_layershell/window.hpp"
 
-///! Wlroots layershell window
-/// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
-///
-/// #### Attached property
-/// `WlrLayershell` works as an attached property of [PanelWindow] which you should use instead if you can,
-/// as it is platform independent.
-/// ```qml
-/// PanelWindow {
-///   // When PanelWindow is backed with WlrLayershell this will work
-///   WlrLayershell.layer: WlrLayer.Bottom
-/// }
-/// ```
-///
-/// To maintain platform compatibility you can dynamically set layershell specific properties.
-/// ```qml
-/// PanelWindow {
-///   Component.onCompleted: {
-///     if (this.WlrLayershell != null) {
-///       this.WlrLayershell.layer = WlrLayer.Bottom;
-///     }
-///   }
-/// }
-/// ```
-///
-/// [zwlr_layer_shell_v1]: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
-/// [PanelWindow]: ../../quickshell/panelwindow
-class WlrLayershell: public ProxyWindowBase {
-	QSDOC_BASECLASS(PanelWindowInterface);
-	// clang-format off
+class XPanelStack;
+
+class XPanelEventFilter: public QObject {
 	Q_OBJECT;
-	/// The shell layer the window sits in. Defaults to `WlrLayer.Top`.
-	Q_PROPERTY(WlrLayer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
-	/// Similar to the class property of windows. Can be used to identify the window to external tools.
-	///
-	/// Cannot be set after windowConnected.
-	Q_PROPERTY(QString namespace READ ns WRITE setNamespace NOTIFY namespaceChanged);
-	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
-	Q_PROPERTY(WlrKeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 
+public:
+	explicit XPanelEventFilter(QObject* parent = nullptr): QObject(parent) {}
+
+signals:
+	void surfaceCreated();
+
+protected:
+	bool eventFilter(QObject* watched, QEvent* event) override;
+};
+
+class XPanelWindow: public ProxyWindowBase {
+	QSDOC_BASECLASS(PanelWindowInterface);
+	Q_OBJECT;
+	// clang-format off
 	QSDOC_HIDE Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
 	QSDOC_HIDE Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
 	QSDOC_HIDE Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	QSDOC_HIDE Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
-	QSDOC_HIDE Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY layerChanged);
-	QSDOC_HIDE Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY keyboardFocusChanged);
-	QML_ATTACHED(WlrLayershell);
-	QML_ELEMENT;
+	QSDOC_HIDE Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
+	QSDOC_HIDE Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
+	QML_ELEMENT;
 
 public:
-	explicit WlrLayershell(QObject* parent = nullptr);
+	explicit XPanelWindow(QObject* parent = nullptr);
+	~XPanelWindow() override;
+	Q_DISABLE_COPY_MOVE(XPanelWindow);
 
-	QQuickWindow* retrieveWindow(QObject* oldInstance) override;
-	QQuickWindow* createQQuickWindow() override;
 	void connectWindow() override;
-	[[nodiscard]] bool deleteOnInvisible() const override;
 
 	void setWidth(qint32 width) override;
 	void setHeight(qint32 height) override;
-
-	void setScreen(QuickshellScreenInfo* screen) override;
-
-	[[nodiscard]] WlrLayer::Enum layer() const;
-	void setLayer(WlrLayer::Enum layer); // NOLINT
-
-	[[nodiscard]] QString ns() const;
-	void setNamespace(QString ns);
-
-	[[nodiscard]] WlrKeyboardFocus::Enum keyboardFocus() const;
-	void setKeyboardFocus(WlrKeyboardFocus::Enum focus); // NOLINT
 
 	[[nodiscard]] Anchors anchors() const;
 	void setAnchors(Anchors anchors);
@@ -93,7 +59,7 @@ public:
 	void setExclusionMode(ExclusionMode::Enum exclusionMode);
 
 	[[nodiscard]] Margins margins() const;
-	void setMargins(Margins margins); // NOLINT
+	void setMargins(Margins margins);
 
 	[[nodiscard]] bool aboveWindows() const;
 	void setAboveWindows(bool aboveWindows);
@@ -101,34 +67,43 @@ public:
 	[[nodiscard]] bool focusable() const;
 	void setFocusable(bool focusable);
 
-	static WlrLayershell* qmlAttachedProperties(QObject* object);
-
 signals:
-	void layerChanged();
-	void namespaceChanged();
-	void keyboardFocusChanged();
 	QSDOC_HIDE void anchorsChanged();
 	QSDOC_HIDE void exclusiveZoneChanged();
 	QSDOC_HIDE void exclusionModeChanged();
 	QSDOC_HIDE void marginsChanged();
+	QSDOC_HIDE void aboveWindowsChanged();
+	QSDOC_HIDE void focusableChanged();
 
 private slots:
-	void updateAutoExclusion();
+	void xInit();
+	void connectScreen();
+	void updateDimensions();
+	void updatePanelStack();
 
 private:
-	void setAutoExclusion();
+	void getExclusion(int& side, quint32& exclusiveZone);
+	void updateStrut();
+	void updateAboveWindows();
+	void updateFocusable();
 
-	LayershellWindowExtension* ext;
-
-	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
+	QPointer<QScreen> mTrackedScreen = nullptr;
+	bool mAboveWindows = true;
+	bool mFocusable = false;
+	Anchors mAnchors;
+	Margins mMargins;
 	qint32 mExclusiveZone = 0;
+	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
+	XPanelEventFilter eventFilter;
+
+	friend class XPanelStack;
 };
 
-class WaylandPanelInterface: public PanelWindowInterface {
+class XPanelInterface: public PanelWindowInterface {
 	Q_OBJECT;
 
 public:
-	explicit WaylandPanelInterface(QObject* parent = nullptr);
+	explicit XPanelInterface(QObject* parent = nullptr);
 
 	void onReload(QObject* oldInstance) override;
 
@@ -179,7 +154,7 @@ public:
 	// NOLINTEND
 
 private:
-	WlrLayershell* layer;
+	XPanelWindow* panel;
 
 	friend class WlrLayershell;
 };

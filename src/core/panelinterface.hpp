@@ -117,6 +117,10 @@ class PanelWindowInterface: public WindowInterface {
 	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
 	/// Defaults to `ExclusionMode.Auto`.
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
+	/// If the panel should render above standard windows. Defaults to true.
+	QSDOC_HIDE Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
+	/// Defaults to false.
+	QSDOC_HIDE Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
 	QSDOC_NAMED_ELEMENT(PanelWindow);
 
@@ -135,9 +139,17 @@ public:
 	[[nodiscard]] virtual ExclusionMode::Enum exclusionMode() const = 0;
 	virtual void setExclusionMode(ExclusionMode::Enum exclusionMode) = 0;
 
+	[[nodiscard]] virtual bool aboveWindows() const = 0;
+	virtual void setAboveWindows(bool aboveWindows) = 0;
+
+	[[nodiscard]] virtual bool focusable() const = 0;
+	virtual void setFocusable(bool focusable) = 0;
+
 signals:
 	void anchorsChanged();
 	void marginsChanged();
 	void exclusiveZoneChanged();
 	void exclusionModeChanged();
+	void aboveWindowsChanged();
+	void focusableChanged();
 };

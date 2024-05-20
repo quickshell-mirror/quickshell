@@ -11,6 +11,10 @@ endif()
 
 if (WAYLAND)
 	add_subdirectory(wayland)
-endif ()
+endif()
+
+if (X11)
+	add_subdirectory(x11)
+endif()
 
 add_subdirectory(services)
