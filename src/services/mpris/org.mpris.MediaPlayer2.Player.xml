@@ -1,0 +1,24 @@
+<node>
+	<interface name="org.mpris.MediaPlayer2.Player">
+		<method name="OpenUri">
+			<arg direction="in" type="s" name="Uri"/>
+		</method>
+		<method name="SetPosition">
+			<arg direction="in" type="o" name="TrackId"/>
+			<arg direction="in" type="x" name="Position"/>
+		</method>
+		<method name="Seek">
+			<arg direction="in" type="x" name="Offset"/> 
+		</method>
+		<method name="PlayPause"/>
+		<method name="Next"/>
+		<method name="Previous"/>
+		<method name="Stop"/>
+		<method name="Play"/>
+		<method name="Pause"/>
+
+		<signal name="Seeked">
+			<arg type="x" name="Position"/>
+		</signal>
+  </interface>
+</node>

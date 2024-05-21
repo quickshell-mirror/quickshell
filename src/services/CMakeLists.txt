@@ -5,3 +5,7 @@ endif()
 if (SERVICE_PIPEWIRE)
 	add_subdirectory(pipewire)
 endif()
+
+if (SERVICE_MPRIS)
+	add_subdirectory(mpris)
+endif()

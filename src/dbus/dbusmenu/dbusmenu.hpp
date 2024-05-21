@@ -188,9 +188,9 @@ public:
 
 	dbus::DBusPropertyGroup properties;
 	dbus::DBusProperty<quint32> version {this->properties, "Version"};
-	dbus::DBusProperty<QString> textDirection {this->properties, "TextDirection"};
+	dbus::DBusProperty<QString> textDirection {this->properties, "TextDirection", "", false};
 	dbus::DBusProperty<QString> status {this->properties, "Status"};
-	dbus::DBusProperty<QStringList> iconThemePath {this->properties, "IconThemePath"};
+	dbus::DBusProperty<QStringList> iconThemePath {this->properties, "IconThemePath", {}, false};
 
 	void prepareToShow(qint32 item, bool sendOpened);
 	void updateLayout(qint32 parent, qint32 depth);

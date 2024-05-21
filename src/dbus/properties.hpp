@@ -79,22 +79,31 @@ class AbstractDBusProperty: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit AbstractDBusProperty(QString name, const QMetaType& type, QObject* parent = nullptr)
+	explicit AbstractDBusProperty(
+	    QString name,
+	    const QMetaType& type,
+	    bool required,
+	    QObject* parent = nullptr
+	)
 	    : QObject(parent)
 	    , name(std::move(name))
-	    , type(type) {}
+	    , type(type)
+	    , required(required) {}
 
+	[[nodiscard]] bool exists() const;
 	[[nodiscard]] QString toString() const;
 	[[nodiscard]] virtual QString valueString() = 0;
 
 public slots:
 	void update();
+	void write();
 
 signals:
 	void changed();
 
 protected:
 	virtual QDBusError read(const QVariant& variant) = 0;
+	virtual QVariant serialize() = 0;
 
 private:
 	void tryUpdate(const QVariant& variant);
@@ -103,6 +112,8 @@ private:
 
 	QString name;
 	QMetaType type;
+	bool required;
+	bool mExists = false;
 
 	friend class DBusPropertyGroup;
 };
@@ -133,7 +144,7 @@ private slots:
 	);
 
 private:
-	void updatePropertySet(const QVariantMap& properties);
+	void updatePropertySet(const QVariantMap& properties, bool complainMissing);
 
 	DBusPropertiesInterface* propertyInterface = nullptr;
 	QDBusAbstractInterface* interface = nullptr;
@@ -145,17 +156,23 @@ private:
 template <typename T>
 class DBusProperty: public AbstractDBusProperty {
 public:
-	explicit DBusProperty(QString name, QObject* parent = nullptr, T value = T())
-	    : AbstractDBusProperty(std::move(name), QMetaType::fromType<T>(), parent)
+	explicit DBusProperty(
+	    QString name,
+	    T value = T(),
+	    bool required = true,
+	    QObject* parent = nullptr
+	)
+	    : AbstractDBusProperty(std::move(name), QMetaType::fromType<T>(), required, parent)
 	    , value(std::move(value)) {}
 
 	explicit DBusProperty(
 	    DBusPropertyGroup& group,
 	    QString name,
-	    QObject* parent = nullptr,
-	    T value = T()
+	    T value = T(),
+	    bool required = true,
+	    QObject* parent = nullptr
 	)
-	    : DBusProperty(std::move(name), parent, std::move(value)) {
+	    : DBusProperty(std::move(name), std::move(value), required, parent) {
 		group.attachProperty(this);
 	}
 
@@ -165,7 +182,7 @@ public:
 		return str;
 	}
 
-	[[nodiscard]] T get() const { return this->value; }
+	[[nodiscard]] const T& get() const { return this->value; }
 
 	void set(T value) {
 		this->value = std::move(value);
@@ -182,6 +199,8 @@ protected:
 
 		return result.error;
 	}
+
+	QVariant serialize() override { return QVariant::fromValue(this->value); }
 
 private:
 	T value;
