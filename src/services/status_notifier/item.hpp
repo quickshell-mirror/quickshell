@@ -54,14 +54,14 @@ public:
 	dbus::DBusProperty<QString> status {this->properties, "Status"};
 	dbus::DBusProperty<QString> category {this->properties, "Category"};
 	dbus::DBusProperty<quint32> windowId {this->properties, "WindowId"};
-	dbus::DBusProperty<QString> iconThemePath {this->properties, "IconThemePath"};
-	dbus::DBusProperty<QString> iconName {this->properties, "IconName"};
-	dbus::DBusProperty<DBusSniIconPixmapList> iconPixmaps {this->properties, "IconPixmap"};
+	dbus::DBusProperty<QString> iconThemePath {this->properties, "IconThemePath", "", false};
+	dbus::DBusProperty<QString> iconName {this->properties, "IconName", "", false}; // IconPixmap may be set
+	dbus::DBusProperty<DBusSniIconPixmapList> iconPixmaps {this->properties, "IconPixmap", {}, false}; // IconName may be set
 	dbus::DBusProperty<QString> overlayIconName {this->properties, "OverlayIconName"};
 	dbus::DBusProperty<DBusSniIconPixmapList> overlayIconPixmaps {this->properties, "OverlayIconPixmap"};
 	dbus::DBusProperty<QString> attentionIconName {this->properties, "AttentionIconName"};
 	dbus::DBusProperty<DBusSniIconPixmapList> attentionIconPixmaps {this->properties, "AttentionIconPixmap"};
-	dbus::DBusProperty<QString> attentionMovieName {this->properties, "AttentionMovieName"};
+	dbus::DBusProperty<QString> attentionMovieName {this->properties, "AttentionMovieName", "", false};
 	dbus::DBusProperty<DBusSniTooltip> tooltip {this->properties, "ToolTip"};
 	dbus::DBusProperty<bool> isMenu {this->properties, "ItemIsMenu"};
 	dbus::DBusProperty<QDBusObjectPath> menuPath {this->properties, "Menu"};

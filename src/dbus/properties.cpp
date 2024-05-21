@@ -112,6 +112,8 @@ void asyncReadPropertyInternal(
 }
 
 void AbstractDBusProperty::tryUpdate(const QVariant& variant) {
+	this->mExists = true;
+
 	auto error = this->read(variant);
 	if (error.isValid()) {
 		qCWarning(logDbusProperties).noquote()
@@ -158,6 +160,44 @@ void AbstractDBusProperty::update() {
 		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 	}
 }
+
+void AbstractDBusProperty::write() {
+	if (this->group == nullptr) {
+		qFatal(logDbusProperties) << "Tried to write dbus property" << this->name
+		                          << "which is not attached to a group";
+	} else {
+		const QString propStr = this->toString();
+
+		if (this->group->interface == nullptr) {
+			qFatal(logDbusProperties).noquote()
+			    << "Tried to write property" << propStr << "of a disconnected interface";
+		}
+
+		qCDebug(logDbusProperties).noquote() << "Writing property" << propStr;
+
+		auto pendingCall = this->group->propertyInterface->Set(
+		    this->group->interface->interface(),
+		    this->name,
+		    QDBusVariant(this->serialize())
+		);
+
+		auto* call = new QDBusPendingCallWatcher(pendingCall, this);
+
+		auto responseCallback = [propStr](QDBusPendingCallWatcher* call) {
+			const QDBusPendingReply<> reply = *call;
+
+			if (reply.isError()) {
+				qCWarning(logDbusProperties).noquote() << "Error writing property" << propStr;
+				qCWarning(logDbusProperties) << reply.error();
+			}
+			delete call;
+		};
+
+		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+	}
+}
+
+bool AbstractDBusProperty::exists() const { return this->mExists; }
 
 QString AbstractDBusProperty::toString() const {
 	const QString group = this->group == nullptr ? "{ NO GROUP }" : this->group->toString();
@@ -232,7 +272,7 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 		} else {
 			qCDebug(logDbusProperties).noquote()
 			    << "Received GetAll property set for" << this->toString();
-			this->updatePropertySet(reply.value());
+			this->updatePropertySet(reply.value(), true);
 		}
 
 		delete call;
@@ -242,7 +282,7 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties) {
+void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties, bool complainMissing) {
 	for (const auto [name, value]: properties.asKeyValueRange()) {
 		auto prop = std::find_if(
 		    this->properties.begin(),
@@ -251,9 +291,19 @@ void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties) {
 		);
 
 		if (prop == this->properties.end()) {
-			qCDebug(logDbusProperties) << "Ignoring untracked property update" << name << "for" << this;
+			qCDebug(logDbusProperties) << "Ignoring untracked property update" << name << "for"
+			                           << this->toString();
 		} else {
 			(*prop)->tryUpdate(value);
+		}
+	}
+
+	if (complainMissing) {
+		for (const auto* prop: this->properties) {
+			if (prop->required && !properties.contains(prop->name)) {
+				qCWarning(logDbusProperties)
+				    << prop->name << "missing from property set for" << this->toString();
+			}
 		}
 	}
 }
@@ -291,7 +341,7 @@ void DBusPropertyGroup::onPropertiesChanged(
 		}
 	}
 
-	this->updatePropertySet(changedProperties);
+	this->updatePropertySet(changedProperties, false);
 }
 
 } // namespace qs::dbus

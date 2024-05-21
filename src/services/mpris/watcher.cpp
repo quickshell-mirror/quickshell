@@ -1,22 +1,24 @@
 #include "watcher.hpp"
 
-#include <dbus_watcher.h>
+#include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qdbusconnectioninterface.h>
 #include <qdbusservicewatcher.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qnamespace.h>
 #include <qobject.h>
+#include <qqmllist.h>
+#include <qtmetamacros.h>
+#include <qtypes.h>
 
-Q_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mp.watcher", QtWarningMsg);
+#include "player.hpp"
 
-namespace qs::service::mp {
+namespace qs::service::mpris {
+
+Q_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mpris.watcher", QtWarningMsg);
 
 MprisWatcher::MprisWatcher(QObject* parent): QObject(parent) {
-	new MprisWatcherAdaptor(this);
-
 	qCDebug(logMprisWatcher) << "Starting MprisWatcher";
 
 	auto bus = QDBusConnection::sessionBus();
@@ -26,121 +28,99 @@ MprisWatcher::MprisWatcher(QObject* parent): QObject(parent) {
 		return;
 	}
 
-	if (!bus.registerObject("/MprisWatcher", this)) {
-		qCWarning(logMprisWatcher) << "Could not register MprisWatcher object with "
-		                              "DBus. Mpris service will not work.";
-		return;
-	}
-
 	// clang-format off
 	QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceRegistered, this, &MprisWatcher::onServiceRegistered);
 	QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this, &MprisWatcher::onServiceUnregistered);
-
-	this->serviceWatcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration | QDBusServiceWatcher::WatchForRegistration);
 	// clang-format on
 
+	this->serviceWatcher.setWatchMode(
+	    QDBusServiceWatcher::WatchForUnregistration | QDBusServiceWatcher::WatchForRegistration
+	);
+
 	this->serviceWatcher.addWatchedService("org.mpris.MediaPlayer2*");
-	this->serviceWatcher.addWatchedService("org.mpris.MprisWatcher");
 	this->serviceWatcher.setConnection(bus);
 
-	this->tryRegister();
+	this->registerExisting();
 }
 
-void MprisWatcher::tryRegister() { // NOLINT
-	auto bus = QDBusConnection::sessionBus();
-	auto success = bus.registerService("org.mpris.MprisWatcher");
-
-	if (success) {
-		qCDebug(logMprisWatcher) << "Registered watcher at org.mpris.MprisWatcher";
-		emit this->MprisWatcherRegistered();
-		registerExisting(bus); // Register services that already existed before creation.
-	} else {
-		qCDebug(logMprisWatcher) << "Could not register watcher at "
-		                            "org.mpris.MprisWatcher, presumably because one is "
-		                            "already registered.";
-		qCDebug(logMprisWatcher
-		) << "Registration will be attempted again if the active service is unregistered.";
-	}
-}
-
-void MprisWatcher::registerExisting(const QDBusConnection& connection) {
-	QStringList list = connection.interface()->registeredServiceNames();
+void MprisWatcher::registerExisting() {
+	const QStringList& list = QDBusConnection::sessionBus().interface()->registeredServiceNames();
 	for (const QString& service: list) {
-		if (service.contains("org.mpris.MediaPlayer2")) {
+		if (service.startsWith("org.mpris.MediaPlayer2")) {
 			qCDebug(logMprisWatcher).noquote() << "Found Mpris service" << service;
-			RegisterMprisPlayer(service);
+			this->registerPlayer(service);
 		}
 	}
 }
 
 void MprisWatcher::onServiceRegistered(const QString& service) {
-	if (service == "org.mpris.MprisWatcher") {
-		qCDebug(logMprisWatcher) << "MprisWatcher";
-		return;
-	} else if (service.contains("org.mpris.MediaPlayer2")) {
+	if (service.startsWith("org.mpris.MediaPlayer2")) {
 		qCDebug(logMprisWatcher).noquote() << "Mpris service " << service << " registered.";
-		RegisterMprisPlayer(service);
+		this->registerPlayer(service);
 	} else {
-		qCWarning(logMprisWatcher) << "Got a registration event for a untracked service";
+		qCWarning(logMprisWatcher) << "Got a registration event for untracked service" << service;
 	}
 }
 
-// TODO: This is getting triggered twice on unregistration, investigate.
 void MprisWatcher::onServiceUnregistered(const QString& service) {
-	if (service == "org.mpris.MprisWatcher") {
-		qCDebug(logMprisWatcher) << "Active MprisWatcher unregistered, attempting registration";
-		this->tryRegister();
-		return;
+	if (auto* player = this->mPlayers.value(service)) {
+		player->deleteLater();
+		this->mPlayers.remove(service);
+		qCDebug(logMprisWatcher) << "Unregistered MprisPlayer" << service;
 	} else {
-		QString qualifiedPlayer;
-		this->players.removeIf([&](const QString& player) {
-			if (QString::compare(player, service) == 0) {
-				qualifiedPlayer = player;
-				return true;
-			} else return false;
-		});
-
-		if (!qualifiedPlayer.isEmpty()) {
-			qCDebug(logMprisWatcher).noquote()
-			    << "Unregistered MprisPlayer" << qualifiedPlayer << "from watcher";
-
-			emit this->MprisPlayerUnregistered(qualifiedPlayer);
-		} else {
-			qCWarning(logMprisWatcher).noquote()
-			    << "Got service unregister event for untracked service" << service;
-		}
+		qCWarning(logMprisWatcher) << "Got service unregister event for untracked service" << service;
 	}
-
-	this->serviceWatcher.removeWatchedService(service);
 }
 
-QList<QString> MprisWatcher::registeredPlayers() const { return this->players; }
+void MprisWatcher::onPlayerReady() {
+	auto* player = qobject_cast<MprisPlayer*>(this->sender());
+	this->readyPlayers.push_back(player);
+	emit this->playersChanged();
+}
 
-void MprisWatcher::RegisterMprisPlayer(const QString& player) {
-	if (this->players.contains(player)) {
-		qCDebug(logMprisWatcher).noquote()
-		    << "Skipping duplicate registration of MprisPlayer" << player << "to watcher";
+void MprisWatcher::onPlayerDestroyed(QObject* object) {
+	auto* player = static_cast<MprisPlayer*>(object); // NOLINT
+
+	if (this->readyPlayers.removeOne(player)) {
+		emit this->playersChanged();
+	}
+}
+
+QQmlListProperty<MprisPlayer> MprisWatcher::players() {
+	return QQmlListProperty<MprisPlayer>(
+	    this,
+	    nullptr,
+	    &MprisWatcher::playersCount,
+	    &MprisWatcher::playerAt
+	);
+}
+
+qsizetype MprisWatcher::playersCount(QQmlListProperty<MprisPlayer>* property) {
+	return static_cast<MprisWatcher*>(property->object)->readyPlayers.count(); // NOLINT
+}
+
+MprisPlayer* MprisWatcher::playerAt(QQmlListProperty<MprisPlayer>* property, qsizetype index) {
+	return static_cast<MprisWatcher*>(property->object)->readyPlayers.at(index); // NOLINT
+}
+
+void MprisWatcher::registerPlayer(const QString& address) {
+	if (this->mPlayers.contains(address)) {
+		qCDebug(logMprisWatcher) << "Skipping duplicate registration of MprisPlayer" << address;
 		return;
 	}
 
-	if (!QDBusConnection::sessionBus().interface()->serviceOwner(player).isValid()) {
-		qCWarning(logMprisWatcher).noquote()
-		    << "Ignoring invalid MprisPlayer registration of" << player << "to watcher";
+	auto* player = new MprisPlayer(address, this);
+	if (!player->isValid()) {
+		qCWarning(logMprisWatcher) << "Ignoring invalid MprisPlayer registration of" << address;
+		delete player;
 		return;
 	}
 
-	this->serviceWatcher.addWatchedService(player);
-	this->players.push_back(player);
+	this->mPlayers.insert(address, player);
+	QObject::connect(player, &MprisPlayer::ready, this, &MprisWatcher::onPlayerReady);
+	QObject::connect(player, &QObject::destroyed, this, &MprisWatcher::onPlayerDestroyed);
 
-	qCDebug(logMprisWatcher).noquote() << "Registered MprisPlayer" << player << "to watcher";
-
-	emit this->MprisPlayerRegistered(player);
+	qCDebug(logMprisWatcher) << "Registered MprisPlayer" << address;
 }
 
-MprisWatcher* MprisWatcher::instance() {
-	static MprisWatcher* instance = nullptr; // NOLINT
-	if (instance == nullptr) instance = new MprisWatcher();
-	return instance;
-}
-
-} // namespace qs::service::mp
+} // namespace qs::service::mpris

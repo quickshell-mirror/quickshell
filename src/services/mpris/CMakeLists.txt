@@ -1,13 +1,6 @@
-qt_add_dbus_adaptor(DBUS_INTERFACES
-	org.mpris.MprisWatcher.xml
-	watcher.hpp
-	qs::service::mp::MprisWatcher
-	dbus_watcher
-	MprisWatcherAdaptor
-)
-
 set_source_files_properties(org.mpris.MediaPlayer2.Player.xml PROPERTIES
-	CLASSNAME DBusMprisPlayer	
+	CLASSNAME DBusMprisPlayer
+	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(DBUS_INTERFACES
@@ -15,20 +8,19 @@ qt_add_dbus_interface(DBUS_INTERFACES
 	dbus_player
 )
 
-set_source_files_properties(org.mpris.MprisWatcher.xml PROPERTIES
-	CLASSNAME DBusMprisWatcher
+set_source_files_properties(org.mpris.MediaPlayer2.xml PROPERTIES
+	CLASSNAME DBusMprisPlayerApp
+	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(DBUS_INTERFACES
-	org.mpris.MprisWatcher.xml
-	dbus_watcher_interface
+	org.mpris.MediaPlayer2.xml
+	dbus_player_app
 )
 
 qt_add_library(quickshell-service-mpris STATIC
-	qml.cpp
-
-	watcher.cpp
 	player.cpp
+	watcher.cpp
 	${DBUS_INTERFACES}
 )
 

@@ -3,51 +3,51 @@
 #include <qdbuscontext.h>
 #include <qdbusinterface.h>
 #include <qdbusservicewatcher.h>
+#include <qhash.h>
 #include <qlist.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qqmlintegration.h>
+#include <qqmllist.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logMprisWatcher);
+#include "player.hpp"
 
-namespace qs::service::mp {
+namespace qs::service::mpris {
 
-class MprisWatcher
-    : public QObject
-    , protected QDBusContext {
+///! Provides access to MprisPlayers.
+class MprisWatcher: public QObject {
 	Q_OBJECT;
-	Q_PROPERTY(qint32 ProtocolVersion READ protocolVersion);
-	Q_PROPERTY(QList<QString> RegisteredMprisPlayers READ registeredPlayers);
+	QML_NAMED_ELEMENT(Mpris);
+	QML_SINGLETON;
+	/// All connected MPRIS players.
+	Q_PROPERTY(QQmlListProperty<MprisPlayer> players READ players NOTIFY playersChanged);
 
 public:
 	explicit MprisWatcher(QObject* parent = nullptr);
 
-	void tryRegister();
-	void registerExisting(const QDBusConnection &connection); 
-
-	[[nodiscard]] qint32 protocolVersion() const { return 0; } // NOLINT
-	[[nodiscard]] QList<QString> registeredPlayers() const;
-
-	// NOLINTBEGIN
-	void RegisterMprisPlayer(const QString& player);
-	// NOLINTEND
-
-	static MprisWatcher* instance();
-	QList<QString> players;
+	[[nodiscard]] QQmlListProperty<MprisPlayer> players();
 
 signals:
-	// NOLINTBEGIN
-	void MprisWatcherRegistered();
-	void MprisPlayerRegistered(const QString& service);
-	void MprisPlayerUnregistered(const QString& service);	
-	// NOLINTEND
+	void playersChanged();
 
 private slots:
-	void onServiceRegistered(const QString& service); 
+	void onServiceRegistered(const QString& service);
 	void onServiceUnregistered(const QString& service);
+	void onPlayerReady();
+	void onPlayerDestroyed(QObject* object);
 
-private:	
+private:
+	static qsizetype playersCount(QQmlListProperty<MprisPlayer>* property);
+	static MprisPlayer* playerAt(QQmlListProperty<MprisPlayer>* property, qsizetype index);
+
+	void registerExisting();
+	void registerPlayer(const QString& address);
+
 	QDBusServiceWatcher serviceWatcher;
+	QHash<QString, MprisPlayer*> mPlayers;
+	QList<MprisPlayer*> readyPlayers;
 };
 
-} // namespace qs::service::mp
+} // namespace qs::service::mpris
