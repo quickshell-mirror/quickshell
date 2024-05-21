@@ -242,6 +242,8 @@ public:
 	[[nodiscard]] QList<QString> supportedMimeTypes() const;
 
 signals:
+	void trackChanged();
+
 	QSDOC_HIDE void ready();
 	void canControlChanged();
 	void canPlayChanged();

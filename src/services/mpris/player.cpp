@@ -258,7 +258,13 @@ void MprisPlayer::onMetadataChanged() {
 
 	auto trackidVariant = this->pMetadata.get().value("mpris:trackid");
 	if (trackidVariant.isValid() && trackidVariant.canConvert<QString>()) {
-		this->mTrackId = trackidVariant.value<QString>();
+		auto trackId = trackidVariant.value<QString>();
+
+		if (trackId != this->mTrackId) {
+			this->mTrackId = trackId;
+			emit this->trackChanged();
+		}
+
 		this->onSeek(0);
 	}
 
