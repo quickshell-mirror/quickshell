@@ -312,8 +312,11 @@ void MprisPlayer::onPlaybackStatusChanged() {
 	const auto& status = this->pPlaybackStatus.get();
 
 	if (status == "Playing") {
+		// update the timestamp
+		this->onSeek(this->positionMs() * 1000);
 		this->mPlaybackState = MprisPlaybackState::Playing;
 	} else if (status == "Paused") {
+		this->pausedTime = QDateTime::currentDateTimeUtc();
 		this->mPlaybackState = MprisPlaybackState::Paused;
 	} else if (status == "Stopped") {
 		this->mPlaybackState = MprisPlaybackState::Stopped;
