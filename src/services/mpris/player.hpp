@@ -68,6 +68,8 @@ class MprisPlayer: public QObject {
 	Q_PROPERTY(bool canSetFullscreen READ canSetFullscreen NOTIFY canSetFullscreenChanged);
 	/// The human readable name of the media player.
 	Q_PROPERTY(QString identity READ identity NOTIFY identityChanged);
+	/// The name of the desktop entry for the media player, or an empty string if not provided.
+	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged);
 	/// The current position in the playing track, as seconds, with millisecond precision,
 	/// or `0` if `positionSupported` is false.
 	///
@@ -204,6 +206,7 @@ public:
 	[[nodiscard]] bool canSetFullscreen() const;
 
 	[[nodiscard]] QString identity() const;
+	[[nodiscard]] QString desktopEntry() const;
 
 	[[nodiscard]] qlonglong positionMs() const;
 	[[nodiscard]] qreal position() const;
@@ -255,6 +258,7 @@ signals:
 	void canRaiseChanged();
 	void canSetFullscreenChanged();
 	void identityChanged();
+	void desktopEntryChanged();
 	void positionChanged();
 	void positionSupportedChanged();
 	void lengthChanged();
@@ -287,6 +291,7 @@ private:
 	// clang-format off
 	dbus::DBusPropertyGroup appProperties;
 	dbus::DBusProperty<QString> pIdentity {this->appProperties, "Identity"};
+	dbus::DBusProperty<QString> pDesktopEntry {this->appProperties, "DesktopEntry", "", false};
 	dbus::DBusProperty<bool> pCanQuit {this->appProperties, "CanQuit"};
 	dbus::DBusProperty<bool> pCanRaise {this->appProperties, "CanRaise"};
 	dbus::DBusProperty<bool> pFullscreen {this->appProperties, "Fullscreen", false, false};

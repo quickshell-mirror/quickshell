@@ -60,6 +60,7 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 	QObject::connect(&this->pCanRaise, &AbstractDBusProperty::changed, this, &MprisPlayer::canRaiseChanged);
 	QObject::connect(&this->pCanSetFullscreen, &AbstractDBusProperty::changed, this, &MprisPlayer::canSetFullscreenChanged);
 	QObject::connect(&this->pIdentity, &AbstractDBusProperty::changed, this, &MprisPlayer::identityChanged);
+	QObject::connect(&this->pDesktopEntry, &AbstractDBusProperty::changed, this, &MprisPlayer::desktopEntryChanged);
 	QObject::connect(&this->pFullscreen, &AbstractDBusProperty::changed, this, &MprisPlayer::fullscreenChanged);
 	QObject::connect(&this->pSupportedUriSchemes, &AbstractDBusProperty::changed, this, &MprisPlayer::supportedUriSchemesChanged);
 	QObject::connect(&this->pSupportedMimeTypes, &AbstractDBusProperty::changed, this, &MprisPlayer::supportedMimeTypesChanged);
@@ -155,6 +156,7 @@ bool MprisPlayer::canRaise() const { return this->pCanRaise.get(); }
 bool MprisPlayer::canSetFullscreen() const { return this->pCanSetFullscreen.get(); }
 
 QString MprisPlayer::identity() const { return this->pIdentity.get(); }
+QString MprisPlayer::desktopEntry() const { return this->pDesktopEntry.get(); }
 
 qlonglong MprisPlayer::positionMs() const {
 	if (!this->positionSupported()) return 0; // unsupported
