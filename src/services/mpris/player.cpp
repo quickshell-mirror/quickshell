@@ -267,7 +267,8 @@ void MprisPlayer::onMetadataChanged() {
 			emit this->trackChanged();
 		}
 
-		this->onSeek(0);
+		// Some players don't seem to send position updats or seeks on track change.
+		this->pPosition.update();
 	}
 
 	emit this->metadataChanged();
@@ -313,21 +314,25 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 void MprisPlayer::onPlaybackStatusChanged() {
 	const auto& status = this->pPlaybackStatus.get();
 
+	auto state = MprisPlaybackState::Stopped;
 	if (status == "Playing") {
-		// update the timestamp
-		this->onSeek(this->positionMs() * 1000);
-		this->mPlaybackState = MprisPlaybackState::Playing;
+		state = MprisPlaybackState::Playing;
 	} else if (status == "Paused") {
 		this->pausedTime = QDateTime::currentDateTimeUtc();
-		this->mPlaybackState = MprisPlaybackState::Paused;
+		state = MprisPlaybackState::Paused;
 	} else if (status == "Stopped") {
-		this->mPlaybackState = MprisPlaybackState::Stopped;
+		state = MprisPlaybackState::Stopped;
 	} else {
-		this->mPlaybackState = MprisPlaybackState::Stopped;
+		state = MprisPlaybackState::Stopped;
 		qWarning() << "Received unexpected PlaybackStatus for" << this << status;
 	}
 
-	emit this->playbackStateChanged();
+	if (state != this->mPlaybackState) {
+		// make sure we're in sync at least on play/pause. Some players don't automatically send this.
+		this->pPosition.update();
+		this->mPlaybackState = state;
+		emit this->playbackStateChanged();
+	}
 }
 
 MprisLoopState::Enum MprisPlayer::loopState() const { return this->mLoopState; }
