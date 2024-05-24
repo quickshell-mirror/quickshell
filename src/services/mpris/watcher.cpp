@@ -4,14 +4,12 @@
 #include <qdbusconnection.h>
 #include <qdbusconnectioninterface.h>
 #include <qdbusservicewatcher.h>
-#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmllist.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
 
+#include "../../core/model.hpp"
 #include "player.hpp"
 
 namespace qs::service::mpris {
@@ -74,34 +72,15 @@ void MprisWatcher::onServiceUnregistered(const QString& service) {
 
 void MprisWatcher::onPlayerReady() {
 	auto* player = qobject_cast<MprisPlayer*>(this->sender());
-	this->readyPlayers.push_back(player);
-	emit this->playersChanged();
+	this->readyPlayers.insertObject(player);
 }
 
 void MprisWatcher::onPlayerDestroyed(QObject* object) {
 	auto* player = static_cast<MprisPlayer*>(object); // NOLINT
-
-	if (this->readyPlayers.removeOne(player)) {
-		emit this->playersChanged();
-	}
+	this->readyPlayers.removeObject(player);
 }
 
-QQmlListProperty<MprisPlayer> MprisWatcher::players() {
-	return QQmlListProperty<MprisPlayer>(
-	    this,
-	    nullptr,
-	    &MprisWatcher::playersCount,
-	    &MprisWatcher::playerAt
-	);
-}
-
-qsizetype MprisWatcher::playersCount(QQmlListProperty<MprisPlayer>* property) {
-	return static_cast<MprisWatcher*>(property->object)->readyPlayers.count(); // NOLINT
-}
-
-MprisPlayer* MprisWatcher::playerAt(QQmlListProperty<MprisPlayer>* property, qsizetype index) {
-	return static_cast<MprisWatcher*>(property->object)->readyPlayers.at(index); // NOLINT
-}
+ObjectModel<MprisPlayer>* MprisWatcher::players() { return &this->readyPlayers; }
 
 void MprisWatcher::registerPlayer(const QString& address) {
 	if (this->mPlayers.contains(address)) {

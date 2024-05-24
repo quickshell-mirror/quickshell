@@ -8,6 +8,7 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../../core/model.hpp"
 #include "connection.hpp"
 #include "link.hpp"
 #include "metadata.hpp"
@@ -65,88 +66,43 @@ Pipewire::Pipewire(QObject* parent): QObject(parent) {
 	// clang-format on
 }
 
-QQmlListProperty<PwNodeIface> Pipewire::nodes() {
-	return QQmlListProperty<PwNodeIface>(this, nullptr, &Pipewire::nodesCount, &Pipewire::nodeAt);
-}
-
-qsizetype Pipewire::nodesCount(QQmlListProperty<PwNodeIface>* property) {
-	return static_cast<Pipewire*>(property->object)->mNodes.count(); // NOLINT
-}
-
-PwNodeIface* Pipewire::nodeAt(QQmlListProperty<PwNodeIface>* property, qsizetype index) {
-	return static_cast<Pipewire*>(property->object)->mNodes.at(index); // NOLINT
-}
+ObjectModel<PwNodeIface>* Pipewire::nodes() { return &this->mNodes; }
 
 void Pipewire::onNodeAdded(PwNode* node) {
 	auto* iface = PwNodeIface::instance(node);
 	QObject::connect(iface, &QObject::destroyed, this, &Pipewire::onNodeRemoved);
-
-	this->mNodes.push_back(iface);
-	emit this->nodesChanged();
+	this->mNodes.insertObject(iface);
 }
 
 void Pipewire::onNodeRemoved(QObject* object) {
 	auto* iface = static_cast<PwNodeIface*>(object); // NOLINT
-	this->mNodes.removeOne(iface);
-	emit this->nodesChanged();
+	this->mNodes.removeObject(iface);
 }
 
-QQmlListProperty<PwLinkIface> Pipewire::links() {
-	return QQmlListProperty<PwLinkIface>(this, nullptr, &Pipewire::linksCount, &Pipewire::linkAt);
-}
-
-qsizetype Pipewire::linksCount(QQmlListProperty<PwLinkIface>* property) {
-	return static_cast<Pipewire*>(property->object)->mLinks.count(); // NOLINT
-}
-
-PwLinkIface* Pipewire::linkAt(QQmlListProperty<PwLinkIface>* property, qsizetype index) {
-	return static_cast<Pipewire*>(property->object)->mLinks.at(index); // NOLINT
-}
+ObjectModel<PwLinkIface>* Pipewire::links() { return &this->mLinks; }
 
 void Pipewire::onLinkAdded(PwLink* link) {
 	auto* iface = PwLinkIface::instance(link);
 	QObject::connect(iface, &QObject::destroyed, this, &Pipewire::onLinkRemoved);
-
-	this->mLinks.push_back(iface);
-	emit this->linksChanged();
+	this->mLinks.insertObject(iface);
 }
 
 void Pipewire::onLinkRemoved(QObject* object) {
 	auto* iface = static_cast<PwLinkIface*>(object); // NOLINT
-	this->mLinks.removeOne(iface);
-	emit this->linksChanged();
+	this->mLinks.removeObject(iface);
 }
 
-QQmlListProperty<PwLinkGroupIface> Pipewire::linkGroups() {
-	return QQmlListProperty<PwLinkGroupIface>(
-	    this,
-	    nullptr,
-	    &Pipewire::linkGroupsCount,
-	    &Pipewire::linkGroupAt
-	);
-}
-
-qsizetype Pipewire::linkGroupsCount(QQmlListProperty<PwLinkGroupIface>* property) {
-	return static_cast<Pipewire*>(property->object)->mLinkGroups.count(); // NOLINT
-}
-
-PwLinkGroupIface*
-Pipewire::linkGroupAt(QQmlListProperty<PwLinkGroupIface>* property, qsizetype index) {
-	return static_cast<Pipewire*>(property->object)->mLinkGroups.at(index); // NOLINT
-}
+ObjectModel<PwLinkGroupIface>* Pipewire::linkGroups() { return &this->mLinkGroups; }
 
 void Pipewire::onLinkGroupAdded(PwLinkGroup* linkGroup) {
 	auto* iface = PwLinkGroupIface::instance(linkGroup);
 	QObject::connect(iface, &QObject::destroyed, this, &Pipewire::onLinkGroupRemoved);
-
-	this->mLinkGroups.push_back(iface);
-	emit this->linkGroupsChanged();
+	this->mLinkGroups.insertObject(iface);
 }
 
 void Pipewire::onLinkGroupRemoved(QObject* object) {
 	auto* iface = static_cast<PwLinkGroupIface*>(object); // NOLINT
-	this->mLinkGroups.removeOne(iface);
-	emit this->linkGroupsChanged();
+	this->mLinkGroups.removeObject(iface);
 }
 
 PwNodeIface* Pipewire::defaultAudioSink() const { // NOLINT

@@ -2,10 +2,9 @@
 
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 
+#include "../../core/model.hpp"
 #include "item.hpp"
 
 namespace SystemTrayStatus { // NOLINT
@@ -108,27 +107,21 @@ signals:
 class SystemTray: public QObject {
 	Q_OBJECT;
 	/// List of all system tray icons.
-	Q_PROPERTY(QQmlListProperty<SystemTrayItem> items READ items NOTIFY itemsChanged);
+	Q_PROPERTY(ObjectModel<SystemTrayItem>* items READ items CONSTANT);
 	QML_ELEMENT;
 	QML_SINGLETON;
 
 public:
 	explicit SystemTray(QObject* parent = nullptr);
 
-	[[nodiscard]] QQmlListProperty<SystemTrayItem> items();
-
-signals:
-	void itemsChanged();
+	[[nodiscard]] ObjectModel<SystemTrayItem>* items();
 
 private slots:
 	void onItemRegistered(qs::service::sni::StatusNotifierItem* item);
 	void onItemUnregistered(qs::service::sni::StatusNotifierItem* item);
 
 private:
-	static qsizetype itemsCount(QQmlListProperty<SystemTrayItem>* property);
-	static SystemTrayItem* itemAt(QQmlListProperty<SystemTrayItem>* property, qsizetype index);
-
-	QList<SystemTrayItem*> mItems;
+	ObjectModel<SystemTrayItem> mItems {this};
 };
 
 ///! Accessor for SystemTrayItem menus.

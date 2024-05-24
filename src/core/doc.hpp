@@ -10,5 +10,8 @@
 #define QSDOC_ELEMENT
 #define QSDOC_NAMED_ELEMENT(name)
 
+// change the cname used for this type
+#define QSDOC_CNAME(name)
+
 // overridden properties
 #define QSDOC_PROPERTY_OVERRIDE(...)

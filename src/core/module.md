@@ -18,5 +18,6 @@ headers = [
 	"easingcurve.hpp",
 	"transformwatcher.hpp",
 	"boundcomponent.hpp",
+	"model.hpp",
 ]
 -----

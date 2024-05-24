@@ -8,6 +8,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/model.hpp"
 #include "link.hpp"
 #include "node.hpp"
 #include "registry.hpp"
@@ -52,11 +53,11 @@ class Pipewire: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// All pipewire nodes.
-	Q_PROPERTY(QQmlListProperty<PwNodeIface> nodes READ nodes NOTIFY nodesChanged);
+	Q_PROPERTY(ObjectModel<PwNodeIface>* nodes READ nodes CONSTANT);
 	/// All pipewire links.
-	Q_PROPERTY(QQmlListProperty<PwLinkIface> links READ links NOTIFY linksChanged);
+	Q_PROPERTY(ObjectModel<PwLinkIface>* links READ links CONSTANT);
 	/// All pipewire link groups.
-	Q_PROPERTY(QQmlListProperty<PwLinkGroupIface> linkGroups READ linkGroups NOTIFY linkGroupsChanged);
+	Q_PROPERTY(ObjectModel<PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
 	/// The default audio sink or `null`.
 	Q_PROPERTY(PwNodeIface* defaultAudioSink READ defaultAudioSink NOTIFY defaultAudioSinkChanged);
 	/// The default audio source or `null`.
@@ -68,16 +69,13 @@ class Pipewire: public QObject {
 public:
 	explicit Pipewire(QObject* parent = nullptr);
 
-	[[nodiscard]] QQmlListProperty<PwNodeIface> nodes();
-	[[nodiscard]] QQmlListProperty<PwLinkIface> links();
-	[[nodiscard]] QQmlListProperty<PwLinkGroupIface> linkGroups();
+	[[nodiscard]] ObjectModel<PwNodeIface>* nodes();
+	[[nodiscard]] ObjectModel<PwLinkIface>* links();
+	[[nodiscard]] ObjectModel<PwLinkGroupIface>* linkGroups();
 	[[nodiscard]] PwNodeIface* defaultAudioSink() const;
 	[[nodiscard]] PwNodeIface* defaultAudioSource() const;
 
 signals:
-	void nodesChanged();
-	void linksChanged();
-	void linkGroupsChanged();
 	void defaultAudioSinkChanged();
 	void defaultAudioSourceChanged();
 
@@ -90,17 +88,9 @@ private slots:
 	void onLinkGroupRemoved(QObject* object);
 
 private:
-	static qsizetype nodesCount(QQmlListProperty<PwNodeIface>* property);
-	static PwNodeIface* nodeAt(QQmlListProperty<PwNodeIface>* property, qsizetype index);
-	static qsizetype linksCount(QQmlListProperty<PwLinkIface>* property);
-	static PwLinkIface* linkAt(QQmlListProperty<PwLinkIface>* property, qsizetype index);
-	static qsizetype linkGroupsCount(QQmlListProperty<PwLinkGroupIface>* property);
-	static PwLinkGroupIface*
-	linkGroupAt(QQmlListProperty<PwLinkGroupIface>* property, qsizetype index);
-
-	QVector<PwNodeIface*> mNodes;
-	QVector<PwLinkIface*> mLinks;
-	QVector<PwLinkGroupIface*> mLinkGroups;
+	ObjectModel<PwNodeIface> mNodes {this};
+	ObjectModel<PwLinkIface> mLinks {this};
+	ObjectModel<PwLinkGroupIface> mLinkGroups {this};
 };
 
 ///! Tracks all link connections to a given node.

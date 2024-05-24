@@ -9,6 +9,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/model.hpp"
 #include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "host.hpp"
@@ -106,46 +107,25 @@ SystemTray::SystemTray(QObject* parent): QObject(parent) {
 	// clang-format on
 
 	for (auto* item: host->items()) {
-		this->mItems.push_back(new SystemTrayItem(item, this));
+		this->mItems.insertObject(new SystemTrayItem(item, this));
 	}
 }
 
 void SystemTray::onItemRegistered(StatusNotifierItem* item) {
-	this->mItems.push_back(new SystemTrayItem(item, this));
-	emit this->itemsChanged();
+	this->mItems.insertObject(new SystemTrayItem(item, this));
 }
 
 void SystemTray::onItemUnregistered(StatusNotifierItem* item) {
-	SystemTrayItem* trayItem = nullptr;
-
-	this->mItems.removeIf([item, &trayItem](SystemTrayItem* testItem) {
-		if (testItem->item == item) {
-			trayItem = testItem;
-			return true;
-		} else return false;
-	});
-
-	emit this->itemsChanged();
-
-	delete trayItem;
+	for (const auto* storedItem: this->mItems.valueList()) {
+		if (storedItem->item == item) {
+			this->mItems.removeObject(storedItem);
+			delete storedItem;
+			break;
+		}
+	}
 }
 
-QQmlListProperty<SystemTrayItem> SystemTray::items() {
-	return QQmlListProperty<SystemTrayItem>(
-	    this,
-	    nullptr,
-	    &SystemTray::itemsCount,
-	    &SystemTray::itemAt
-	);
-}
-
-qsizetype SystemTray::itemsCount(QQmlListProperty<SystemTrayItem>* property) {
-	return reinterpret_cast<SystemTray*>(property->object)->mItems.count(); // NOLINT
-}
-
-SystemTrayItem* SystemTray::itemAt(QQmlListProperty<SystemTrayItem>* property, qsizetype index) {
-	return reinterpret_cast<SystemTray*>(property->object)->mItems.at(index); // NOLINT
-}
+ObjectModel<SystemTrayItem>* SystemTray::items() { return &this->mItems; }
 
 SystemTrayItem* SystemTrayMenuWatcher::trayItem() const { return this->item; }
 
