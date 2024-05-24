@@ -326,6 +326,7 @@ private:
 	DBusMprisPlayerApp* app = nullptr;
 	DBusMprisPlayer* player = nullptr;
 	QString mTrackId;
+	QString mUrl;
 };
 
 } // namespace qs::service::mpris

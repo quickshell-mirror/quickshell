@@ -192,15 +192,15 @@ void MprisPlayer::setPosition(qreal position) {
 	}
 
 	auto target = static_cast<qlonglong>(position * 1000) * 1000;
-	this->pPosition.set(target);
 
 	if (!this->mTrackId.isEmpty()) {
 		this->player->SetPosition(QDBusObjectPath(this->mTrackId), target);
-		return;
 	} else {
 		auto pos = this->positionMs() * 1000;
 		this->player->Seek(target - pos);
 	}
+
+	this->pPosition.set(target);
 }
 
 void MprisPlayer::onPositionChanged() {
@@ -247,6 +247,8 @@ void MprisPlayer::setVolume(qreal volume) {
 QVariantMap MprisPlayer::metadata() const { return this->pMetadata.get(); }
 
 void MprisPlayer::onMetadataChanged() {
+	emit this->metadataChanged();
+
 	auto lengthVariant = this->pMetadata.get().value("mpris:length");
 	qlonglong length = -1;
 	if (lengthVariant.isValid() && lengthVariant.canConvert<qlonglong>()) {
@@ -258,20 +260,34 @@ void MprisPlayer::onMetadataChanged() {
 		emit this->lengthChanged();
 	}
 
+	auto trackChanged = false;
+
 	auto trackidVariant = this->pMetadata.get().value("mpris:trackid");
 	if (trackidVariant.isValid() && trackidVariant.canConvert<QString>()) {
 		auto trackId = trackidVariant.value<QString>();
 
 		if (trackId != this->mTrackId) {
 			this->mTrackId = trackId;
-			emit this->trackChanged();
+			trackChanged = true;
 		}
-
-		// Some players don't seem to send position updats or seeks on track change.
-		this->pPosition.update();
 	}
 
-	emit this->metadataChanged();
+	// Helps to catch players without trackid.
+	auto urlVariant = this->pMetadata.get().value("xesam:url");
+	if (urlVariant.isValid() && urlVariant.canConvert<QString>()) {
+		auto url = urlVariant.value<QString>();
+
+		if (url != this->mUrl) {
+			this->mUrl = url;
+			trackChanged = true;
+		}
+	}
+
+	if (trackChanged) {
+		// Some players don't seem to send position updates or seeks on track change.
+		this->pPosition.update();
+		emit this->trackChanged();
+	}
 }
 
 MprisPlaybackState::Enum MprisPlayer::playbackState() const { return this->mPlaybackState; }
