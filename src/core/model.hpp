@@ -57,6 +57,14 @@ public:
 
 signals:
 	void valuesChanged();
+	/// Sent immediately before an object is inserted into the list.
+	void objectInsertedPre(QObject* object, qsizetype index);
+	/// Sent immediately after an object is inserted into the list.
+	void objectInsertedPost(QObject* object, qsizetype index);
+	/// Sent immediately before an object is removed from the list.
+	void objectRemovedPre(QObject* object, qsizetype index);
+	/// Sent immediately after an object is removed from the list.
+	void objectRemovedPost(QObject* object, qsizetype index);
 
 protected:
 	void insertObject(QObject* object, qsizetype index = -1);
