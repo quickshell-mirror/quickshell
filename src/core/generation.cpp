@@ -4,6 +4,8 @@
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qdebug.h>
+#include <qdir.h>
+#include <qfileinfo.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qlogging.h>
@@ -117,19 +119,45 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 
 			for (auto& file: this->scanner.scannedFiles) {
 				this->watcher->addPath(file);
+				this->watcher->addPath(QFileInfo(file).dir().absolutePath());
 			}
 
 			QObject::connect(
 			    this->watcher,
 			    &QFileSystemWatcher::fileChanged,
 			    this,
-			    &EngineGeneration::filesChanged
+			    &EngineGeneration::onFileChanged
+			);
+
+			QObject::connect(
+			    this->watcher,
+			    &QFileSystemWatcher::directoryChanged,
+			    this,
+			    &EngineGeneration::onDirectoryChanged
 			);
 		}
 	} else {
 		if (this->watcher != nullptr) {
 			delete this->watcher;
 			this->watcher = nullptr;
+		}
+	}
+}
+
+void EngineGeneration::onFileChanged(const QString& name) {
+	if (!this->watcher->files().contains(name)) {
+		this->deletedWatchedFiles.push_back(name);
+	} else {
+		emit this->filesChanged();
+	}
+}
+
+void EngineGeneration::onDirectoryChanged() {
+	// try to find any files that were just deleted from a replace operation
+	for (auto& file: this->deletedWatchedFiles) {
+		if (QFileInfo(file).exists()) {
+			emit this->filesChanged();
+			break;
 		}
 	}
 }

@@ -40,6 +40,7 @@ public:
 	ShellRoot* root = nullptr;
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
+	QVector<QString> deletedWatchedFiles;
 	DelayedQmlIncubationController delayedIncubationController;
 	bool reloadComplete = false;
 
@@ -50,6 +51,8 @@ signals:
 	void reloadFinished();
 
 private slots:
+	void onFileChanged(const QString& name);
+	void onDirectoryChanged();
 	void incubationControllerDestroyed();
 
 private:
