@@ -10,6 +10,7 @@
 #include <qguiapplication.h>
 #include <qhash.h>
 #include <qlogging.h>
+#include <qqmldebug.h>
 #include <qquickwindow.h>
 #include <qstandardpaths.h>
 #include <qstring.h>
@@ -29,6 +30,9 @@ int qs_main(int argc, char** argv) {
 	auto desktopSettingsAware = true;
 	QHash<QString, QString> envOverrides;
 
+	int debugPort = -1;
+	bool waitForDebug = false;
+
 	{
 		const auto app = QCoreApplication(argc, argv);
 		QCoreApplication::setApplicationName("quickshell");
@@ -44,6 +48,8 @@ int qs_main(int argc, char** argv) {
 		auto configOption = QCommandLineOption({"c", "config"}, "Name of a configuration in the manifest.", "name");
 		auto pathOption = QCommandLineOption({"p", "path"}, "Path to a configuration file.", "path");
 		auto workdirOption = QCommandLineOption({"d", "workdir"}, "Initial working directory.", "path");
+		auto debugPortOption = QCommandLineOption("debugport", "Enable the QML debugger.", "port");
+		auto debugWaitOption = QCommandLineOption("waitfordebug", "Wait for debugger connection before launching.");
 		// clang-format on
 
 		parser.addOption(currentOption);
@@ -51,7 +57,29 @@ int qs_main(int argc, char** argv) {
 		parser.addOption(configOption);
 		parser.addOption(pathOption);
 		parser.addOption(workdirOption);
+		parser.addOption(debugPortOption);
+		parser.addOption(debugWaitOption);
 		parser.process(app);
+
+		auto debugPortStr = parser.value(debugPortOption);
+		if (!debugPortStr.isEmpty()) {
+			auto ok = false;
+			debugPort = debugPortStr.toInt(&ok);
+
+			if (!ok) {
+				qCritical() << "Debug port must be a valid port number.";
+				return -1;
+			}
+		}
+
+		if (parser.isSet(debugWaitOption)) {
+			if (debugPort == -1) {
+				qCritical() << "Cannot wait for debugger without a debug port set.";
+				return -1;
+			}
+
+			waitForDebug = true;
+		}
 
 		{
 			auto printCurrent = parser.isSet(currentOption);
@@ -306,6 +334,13 @@ int qs_main(int argc, char** argv) {
 		app = new QApplication(argc, argv);
 	} else {
 		app = new QGuiApplication(argc, argv);
+	}
+
+	if (debugPort != -1) {
+		QQmlDebuggingEnabler::enableDebugging(true);
+		auto wait = waitForDebug ? QQmlDebuggingEnabler::WaitForClient
+		                         : QQmlDebuggingEnabler::DoNotWaitForClient;
+		QQmlDebuggingEnabler::startTcpDebugServer(debugPort, wait);
 	}
 
 	if (!workingDirectory.isEmpty()) {
