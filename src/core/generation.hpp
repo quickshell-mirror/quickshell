@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qdir.h>
 #include <qfilesystemwatcher.h>
 #include <qobject.h>
 #include <qpair.h>
@@ -19,7 +20,7 @@ class EngineGeneration: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit EngineGeneration(QmlScanner scanner);
+	explicit EngineGeneration(const QDir& rootPath, QmlScanner scanner);
 	~EngineGeneration() override;
 	Q_DISABLE_COPY_MOVE(EngineGeneration);
 
@@ -33,6 +34,7 @@ public:
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
 	RootWrapper* wrapper = nullptr;
+	QDir rootPath;
 	QmlScanner scanner;
 	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;

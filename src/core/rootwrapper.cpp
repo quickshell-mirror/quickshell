@@ -42,10 +42,11 @@ RootWrapper::~RootWrapper() {
 }
 
 void RootWrapper::reloadGraph(bool hard) {
-	auto scanner = QmlScanner();
+	auto rootPath = QFileInfo(this->rootPath).dir();
+	auto scanner = QmlScanner(rootPath);
 	scanner.scanQmlFile(this->rootPath);
 
-	auto* generation = new EngineGeneration(std::move(scanner));
+	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
 	generation->wrapper = this;
 
 	// todo: move into EngineGeneration

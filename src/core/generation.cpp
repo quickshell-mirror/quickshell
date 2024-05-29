@@ -27,8 +27,10 @@
 
 static QHash<QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
-EngineGeneration::EngineGeneration(QmlScanner scanner)
-    : scanner(std::move(scanner))
+EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
+    : rootPath(rootPath)
+    , scanner(std::move(scanner))
+    , urlInterceptor(this->rootPath)
     , interceptNetFactory(this->scanner.qmldirIntercepts)
     , engine(new QQmlEngine()) {
 	g_generations.insert(this->engine, this);

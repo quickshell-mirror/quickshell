@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qdir.h>
 #include <qhash.h>
 #include <qloggingcategory.h>
 #include <qnetworkaccessmanager.h>
@@ -13,7 +14,12 @@ Q_DECLARE_LOGGING_CATEGORY(logQsIntercept);
 
 class QsUrlInterceptor: public QQmlAbstractUrlInterceptor {
 public:
-	QUrl intercept(const QUrl& url, QQmlAbstractUrlInterceptor::DataType type) override;
+	explicit QsUrlInterceptor(const QDir& configRoot): configRoot(configRoot) {}
+
+	QUrl intercept(const QUrl& originalUrl, QQmlAbstractUrlInterceptor::DataType type) override;
+
+private:
+	QDir configRoot;
 };
 
 class QsInterceptDataReply: public QNetworkReply {

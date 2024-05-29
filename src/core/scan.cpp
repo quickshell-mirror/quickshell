@@ -103,7 +103,15 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 	this->scanDir(currentdir.path());
 
 	for (auto& import: imports) {
-		auto ipath = currentdir.filePath(import);
+		QString ipath;
+		if (import.startsWith("root:")) {
+			auto path = import.sliced(5);
+			if (path.startsWith('/')) path = path.sliced(1);
+			ipath = this->rootPath.filePath(path);
+		} else {
+			ipath = currentdir.filePath(import);
+		}
+
 		auto cpath = QFileInfo(ipath).canonicalFilePath();
 
 		if (cpath.isEmpty()) {

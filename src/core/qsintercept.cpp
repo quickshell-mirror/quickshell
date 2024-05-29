@@ -16,7 +16,22 @@
 
 Q_LOGGING_CATEGORY(logQsIntercept, "quickshell.interceptor", QtWarningMsg);
 
-QUrl QsUrlInterceptor::intercept(const QUrl& url, QQmlAbstractUrlInterceptor::DataType type) {
+QUrl QsUrlInterceptor::intercept(
+    const QUrl& originalUrl,
+    QQmlAbstractUrlInterceptor::DataType type
+) {
+	auto url = originalUrl;
+
+	if (url.scheme() == "root") {
+		url.setScheme("qsintercept");
+
+		auto path = url.path();
+		if (path.startsWith('/')) path = path.sliced(1);
+		url.setPath(this->configRoot.filePath(path));
+
+		qCDebug(logQsIntercept) << "Rewrote root intercept" << originalUrl << "to" << url;
+	}
+
 	// Some types such as Image take into account where they are loading from, and force
 	// asynchronous loading over a network. qsintercept is considered to be over a network.
 	if (type == QQmlAbstractUrlInterceptor::DataType::UrlString && url.scheme() == "qsintercept") {
