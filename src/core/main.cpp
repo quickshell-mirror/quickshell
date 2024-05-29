@@ -326,6 +326,13 @@ int qs_main(int argc, char** argv) {
 		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
+	// The simple animation driver seems to work far better than the default one
+	// when more than one window is in use, and even with a single window appears
+	// to improve animation quality.
+	if (!qEnvironmentVariableIsSet("QSG_USE_SIMPLE_ANIMATION_DRIVER")) {
+		qputenv("QSG_USE_SIMPLE_ANIMATION_DRIVER", "1");
+	}
+
 	QGuiApplication::setDesktopSettingsAware(desktopSettingsAware);
 
 	QGuiApplication* app = nullptr;
