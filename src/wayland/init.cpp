@@ -35,13 +35,6 @@ class WaylandPlugin: public QuickshellPlugin {
 		// the QML_ELMENT module import the old register-type style module.
 
 		qmlRegisterModuleImport(
-		    "Quickshell.Wayland",
-		    QQmlModuleImportModuleAny,
-		    "Quickshell.Wayland._WlrLayerShell",
-		    QQmlModuleImportLatest
-		);
-
-		qmlRegisterModuleImport(
 		    "Quickshell",
 		    QQmlModuleImportModuleAny,
 		    "Quickshell._WaylandOverlay",

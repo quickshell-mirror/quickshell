@@ -51,16 +51,19 @@ endfunction()
 # -----
 
 qt_add_library(quickshell-wayland STATIC)
-qt_add_qml_module(quickshell-wayland URI Quickshell.Wayland VERSION 0.1)
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)
+
+set(WAYLAND_MODULES)
 
 if (WAYLAND_WLR_LAYERSHELL)
 	target_sources(quickshell-wayland PRIVATE wlr_layershell.cpp)
 	add_subdirectory(wlr_layershell)
 	target_compile_definitions(quickshell-wayland PRIVATE QS_WAYLAND_WLR_LAYERSHELL)
 	target_compile_definitions(quickshell-wayland-init PRIVATE QS_WAYLAND_WLR_LAYERSHELL)
+
+	list(APPEND WAYLAND_MODULES Quickshell.Wayland._WlrLayerShell)
 endif()
 
 if (WAYLAND_SESSION_LOCK)
@@ -74,6 +77,12 @@ endif()
 
 target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
 target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
+
+qt_add_qml_module(quickshell-wayland
+	URI Quickshell.Wayland
+	VERSION 0.1
+	IMPORTS ${WAYLAND_MODULES}
+)
 
 qs_pch(quickshell-wayland)
 qs_pch(quickshell-waylandplugin)
