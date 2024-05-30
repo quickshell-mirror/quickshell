@@ -187,3 +187,14 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 
 	return qEnvironmentVariable(vstr.data());
 }
+
+QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {
+	auto* qsg = new QuickshellGlobal();
+	auto* generation = EngineGeneration::findEngineGeneration(engine);
+
+	if (generation->qsgInstance == nullptr) {
+		generation->qsgInstance = qsg;
+	}
+
+	return qsg;
+}

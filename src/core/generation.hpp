@@ -5,6 +5,7 @@
 #include <qfilesystemwatcher.h>
 #include <qobject.h>
 #include <qpair.h>
+#include <qqmlengine.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
 
@@ -15,6 +16,7 @@
 #include "singleton.hpp"
 
 class RootWrapper;
+class QuickshellGlobal;
 
 class EngineGeneration: public QObject {
 	Q_OBJECT;
@@ -31,6 +33,7 @@ public:
 	void registerIncubationController(QQmlIncubationController* controller);
 	void deregisterIncubationController(QQmlIncubationController* controller);
 
+	static EngineGeneration* findEngineGeneration(QQmlEngine* engine);
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
 	RootWrapper* wrapper = nullptr;
@@ -45,6 +48,7 @@ public:
 	QVector<QString> deletedWatchedFiles;
 	DelayedQmlIncubationController delayedIncubationController;
 	bool reloadComplete = false;
+	QuickshellGlobal* qsgInstance = nullptr;
 
 	void destroy();
 

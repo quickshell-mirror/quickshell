@@ -265,12 +265,16 @@ void EngineGeneration::assignIncubationController() {
 	this->engine->setIncubationController(controller);
 }
 
+EngineGeneration* EngineGeneration::findEngineGeneration(QQmlEngine* engine) {
+	return g_generations.value(engine);
+}
+
 EngineGeneration* EngineGeneration::findObjectGeneration(QObject* object) {
 	while (object != nullptr) {
 		auto* context = QQmlEngine::contextForObject(object);
 
 		if (context != nullptr) {
-			if (auto* generation = g_generations.value(context->engine())) {
+			if (auto* generation = EngineGeneration::findEngineGeneration(context->engine())) {
 				return generation;
 			}
 		}

@@ -8,6 +8,7 @@
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
+#include <qtmetamacros.h>
 #include <qurl.h>
 
 #include "generation.hpp"
@@ -64,17 +65,28 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto* obj = component.beginCreate(generation->engine->rootContext());
 
 	if (obj == nullptr) {
-		qWarning() << component.errorString().toStdString().c_str();
-		qWarning() << "failed to create root component";
+		QString error = "failed to create root component\n" + component.errorString();
+		qWarning().noquote() << error;
 		delete generation;
+
+		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
+			emit this->generation->qsgInstance->reloadFailed(error);
+		}
+
 		return;
 	}
 
 	auto* newRoot = qobject_cast<ShellRoot*>(obj);
 	if (newRoot == nullptr) {
-		qWarning() << "root component was not a Quickshell.ShellRoot";
+		QString error = "root component was not a Quickshell.ShellRoot";
+		qWarning().noquote() << error;
 		delete obj;
 		delete generation;
+
+		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
+			emit this->generation->qsgInstance->reloadFailed(error);
+		}
+
 		return;
 	}
 
@@ -82,6 +94,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	component.completeCreate();
 
+	auto isReload = this->generation != nullptr;
 	generation->onReload(hard ? nullptr : this->generation);
 	if (hard) delete this->generation;
 	this->generation = generation;
@@ -96,6 +109,10 @@ void RootWrapper::reloadGraph(bool hard) {
 	);
 
 	this->onWatchFilesChanged();
+
+	if (isReload && this->generation->qsgInstance != nullptr) {
+		emit this->generation->qsgInstance->reloadCompleted();
+	}
 }
 
 void RootWrapper::onWatchFilesChanged() {

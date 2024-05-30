@@ -110,8 +110,6 @@ class QuickshellGlobal: public QObject {
 public:
 	[[nodiscard]] qint32 processId() const;
 
-	QuickshellGlobal(QObject* parent = nullptr);
-
 	QQmlListProperty<QuickshellScreenInfo> screens();
 
 	/// Reload the shell from the [ShellRoot].
@@ -133,17 +131,25 @@ public:
 	[[nodiscard]] bool watchFiles() const;
 	void setWatchFiles(bool watchFiles);
 
+	static QuickshellGlobal* create(QQmlEngine* engine, QJSEngine* /*unused*/);
+
 signals:
 	/// Sent when the last window is closed.
 	///
 	/// To make the application exit when the last window is closed run `Qt.quit()`.
 	void lastWindowClosed();
+	/// The reload sequence has completed successfully.
+	void reloadCompleted();
+	/// The reload sequence has failed.
+	void reloadFailed(QString errorString);
 
 	void screensChanged();
 	void workingDirectoryChanged();
 	void watchFilesChanged();
 
 private:
+	QuickshellGlobal(QObject* parent = nullptr);
+
 	static qsizetype screensCount(QQmlListProperty<QuickshellScreenInfo>* prop);
 	static QuickshellScreenInfo* screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i);
 };
