@@ -65,7 +65,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto* obj = component.beginCreate(generation->engine->rootContext());
 
 	if (obj == nullptr) {
-		QString error = "failed to create root component\n" + component.errorString();
+		const QString error = "failed to create root component\n" + component.errorString();
 		qWarning().noquote() << error;
 		delete generation;
 
@@ -78,7 +78,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	auto* newRoot = qobject_cast<ShellRoot*>(obj);
 	if (newRoot == nullptr) {
-		QString error = "root component was not a Quickshell.ShellRoot";
+		const QString error = "root component was not a Quickshell.ShellRoot";
 		qWarning().noquote() << error;
 		delete obj;
 		delete generation;
@@ -96,7 +96,11 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	auto isReload = this->generation != nullptr;
 	generation->onReload(hard ? nullptr : this->generation);
-	if (hard) delete this->generation;
+
+	if (hard && this->generation != nullptr) {
+		this->generation->destroy();
+	}
+
 	this->generation = generation;
 
 	qInfo() << "Configuration Loaded";
