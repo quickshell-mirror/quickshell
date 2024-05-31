@@ -7,7 +7,6 @@
 #include <private/qwaylandsurface_p.h>
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
-#include <qpoint.h>
 #include <qrect.h>
 #include <qsize.h>
 #include <qtversionchecks.h>
@@ -17,6 +16,10 @@
 #include "../../core/panelinterface.hpp"
 #include "shell_integration.hpp"
 #include "window.hpp"
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+#include <qpoint.h>
+#endif
 
 // clang-format off
 [[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept;
@@ -72,7 +75,10 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 }
 
 QSWaylandLayerSurface::~QSWaylandLayerSurface() {
-	this->ext->surface = nullptr;
+	if (this->ext != nullptr) {
+		this->ext->surface = nullptr;
+	}
+
 	this->destroy();
 }
 
@@ -106,6 +112,7 @@ void QSWaylandLayerSurface::applyConfigure() {
 }
 
 void QSWaylandLayerSurface::setWindowGeometry(const QRect& geometry) {
+	if (this->ext == nullptr) return;
 	auto size = constrainedSize(this->ext->mAnchors, geometry.size());
 	this->set_size(size.width(), size.height());
 }

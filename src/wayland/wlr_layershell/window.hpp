@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qscreen.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
@@ -56,6 +57,8 @@ class LayershellWindowExtension: public QObject {
 
 public:
 	LayershellWindowExtension(QObject* parent = nullptr): QObject(parent) {}
+	~LayershellWindowExtension() override;
+	Q_DISABLE_COPY_MOVE(LayershellWindowExtension);
 
 	// returns the layershell extension if attached, otherwise nullptr
 	static LayershellWindowExtension* get(QWindow* window);

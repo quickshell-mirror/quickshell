@@ -13,6 +13,12 @@
 #include "shell_integration.hpp"
 #include "surface.hpp"
 
+LayershellWindowExtension::~LayershellWindowExtension() {
+	if (this->surface != nullptr) {
+		this->surface->ext = nullptr;
+	}
+}
+
 LayershellWindowExtension* LayershellWindowExtension::get(QWindow* window) {
 	auto v = window->property("layershell_ext");
 
