@@ -9,6 +9,7 @@ option(BUILD_TESTING "Build tests" OFF)
 option(ASAN "Enable ASAN" OFF)
 option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
 
+option(USE_JEMALLOC "Use jemalloc over the system malloc implementation" ON)
 option(NVIDIA_COMPAT "Workarounds for nvidia gpus" OFF)
 option(SOCKETS "Enable unix socket support" ON)
 option(WAYLAND "Enable wayland support" ON)
@@ -23,6 +24,7 @@ option(SERVICE_PIPEWIRE "PipeWire service" ON)
 option(SERVICE_MPRIS "Mpris service" ON)
 
 message(STATUS "Quickshell configuration")
+message(STATUS "  Jemalloc: ${USE_JEMALLOC}")
 message(STATUS "  NVIDIA workarounds: ${NVIDIA_COMPAT}")
 message(STATUS "  Build tests: ${BUILD_TESTING}")
 message(STATUS "  Sockets: ${SOCKETS}")
@@ -137,3 +139,10 @@ if (NVIDIA_COMPAT)
 endif()
 
 add_subdirectory(src)
+
+if (USE_JEMALLOC)
+	find_package(PkgConfig REQUIRED)
+	# IMPORTED_TARGET not working for some reason
+	pkg_check_modules(JEMALLOC REQUIRED jemalloc)
+	target_link_libraries(quickshell PRIVATE ${JEMALLOC_LIBRARIES})
+endif()

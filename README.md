@@ -63,10 +63,13 @@ To build quickshell at all, you will need the following packages (names may vary
 - just
 - cmake
 - ninja
+- pkg-config
 - Qt6 [ QtBase, QtDeclarative ]
 
+Jemalloc is recommended, in which case you will need:
+- jemalloc
+
 To build with wayland support you will additionally need:
-- pkg-config
 - wayland
 - wayland-scanner (may be part of wayland on some distros)
 - wayland-protocols

@@ -8,6 +8,7 @@
   cmake,
   ninja,
   qt6,
+  jemalloc,
   wayland,
   wayland-protocols,
   xorg,
@@ -29,7 +30,8 @@
   enableX11 ? true,
   enablePipewire ? true,
   nvidiaCompat ? false,
-  svgSupport ? true, # you almost always want this
+  withQtSvg ? true, # svg support
+  withJemalloc ? true, # masks heap fragmentation
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -39,8 +41,8 @@
     cmake
     ninja
     qt6.wrapQtAppsHook
-  ] ++ (lib.optionals enableWayland [
     pkg-config
+  ] ++ (lib.optionals enableWayland [
     wayland-protocols
     wayland-scanner
   ]);
@@ -49,10 +51,11 @@
     qt6.qtbase
     qt6.qtdeclarative
   ]
+  ++ (lib.optional withJemalloc jemalloc)
+  ++ (lib.optional withQtSvg qt6.qtsvg)
   ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ])
-  ++ (lib.optionals enableX11 [ xorg.libxcb ])
-  ++ (lib.optionals svgSupport [ qt6.qtsvg ])
-  ++ (lib.optionals enablePipewire [ pipewire ]);
+  ++ (lib.optional enableX11 xorg.libxcb)
+  ++ (lib.optional enablePipewire pipewire);
 
   QTWAYLANDSCANNER = lib.optionalString enableWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
@@ -67,7 +70,9 @@
 
   cmakeFlags = [
     "-DGIT_REVISION=${gitRev}"
-  ] ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
+  ]
+  ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
+  ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
   ++ lib.optional nvidiaCompat "-DNVIDIA_COMPAT=ON"
   ++ lib.optional (!enablePipewire) "-DSERVICE_PIPEWIRE=OFF";
 
