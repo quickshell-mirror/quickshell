@@ -52,12 +52,14 @@ EngineGeneration::~EngineGeneration() {
 }
 
 void EngineGeneration::destroy() {
-	// Multiple generations can detect a reload at the same time.
-	QObject::disconnect(this->watcher, nullptr, this, nullptr);
-	this->watcher->deleteLater();
-	this->watcher = nullptr;
+	if (this->watcher != nullptr) {
+		// Multiple generations can detect a reload at the same time.
+		QObject::disconnect(this->watcher, nullptr, this, nullptr);
+		this->watcher->deleteLater();
+		this->watcher = nullptr;
+	}
 
-	if (this->engine != nullptr && this->root != nullptr) {
+	if (this->root != nullptr) {
 		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
 			// prevent further js execution between garbage collection and engine destruction.
 			this->engine->setInterrupted(true);
@@ -74,6 +76,11 @@ void EngineGeneration::destroy() {
 
 		this->root->deleteLater();
 		this->root = nullptr;
+	} else {
+		// the engine has never been used, no need to clean up
+		delete this->engine;
+		this->engine = nullptr;
+		delete this;
 	}
 }
 
