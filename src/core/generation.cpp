@@ -14,7 +14,6 @@
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlincubator.h>
-#include <qtimer.h>
 #include <qtmetamacros.h>
 
 #include "iconimageprovider.hpp"
@@ -47,32 +46,30 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 }
 
 EngineGeneration::~EngineGeneration() {
-	g_generations.remove(this->engine);
-	delete this->engine;
+	if (this->engine != nullptr) {
+		qFatal() << this << "destroyed without calling destroy()";
+	}
 }
 
 void EngineGeneration::destroy() {
 	// Multiple generations can detect a reload at the same time.
-	delete this->watcher;
+	QObject::disconnect(this->watcher, nullptr, this, nullptr);
+	this->watcher->deleteLater();
 	this->watcher = nullptr;
 
-	// Yes all of this is actually necessary.
 	if (this->engine != nullptr && this->root != nullptr) {
 		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
-			// The timer seems to fix *one* of the possible qml item destructor crashes.
-			QTimer::singleShot(0, [this]() {
-				// Garbage is not collected during engine destruction.
-				this->engine->collectGarbage();
+			// prevent further js execution between garbage collection and engine destruction.
+			this->engine->setInterrupted(true);
 
-				QObject::connect(this->engine, &QObject::destroyed, this, [this]() { delete this; });
+			g_generations.remove(this->engine);
 
-				// Even after all of that there's still multiple failing assertions and segfaults.
-				// Pray you don't hit one.
-				// Note: it appeats *some* of the crashes are related to values owned by the generation.
-				// Test by commenting the connect() above.
-				this->engine->deleteLater();
-				this->engine = nullptr;
-			});
+			// Garbage is not collected during engine destruction.
+			this->engine->collectGarbage();
+
+			delete this->engine;
+			this->engine = nullptr;
+			delete this;
 		});
 
 		this->root->deleteLater();
