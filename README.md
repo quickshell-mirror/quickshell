@@ -14,19 +14,6 @@ can be built from the [quickshell-docs](https://git.outfoxxed.me/outfoxxed/quick
 Some fully working examples can be found in the [quickshell-examples](https://git.outfoxxed.me/outfoxxed/quickshell-examples)
 repo.
 
-Both the documentation and examples are included as submodules with revisions that work with the current
-version of quickshell.
-
-You can clone everything with
-```
-$ git clone --recursive https://git.outfoxxed.me/outfoxxed/quickshell.git
-```
-
-Or clone missing submodules later with
-```
-$ git submodule update --init --recursive
-```
-
 # Installation
 
 ## Nix

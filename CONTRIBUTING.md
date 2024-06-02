@@ -60,7 +60,7 @@ cannot handle random line breaks and will usually require you to disable clang-f
 lines are too long.
 
 Before submitting an MR, if adding new features please make sure the documentation is generated
-reasonably using the `quickshell-docs` repo.
+reasonably using the `quickshell-docs` repo. We recommend checking it out at `/docs` in this repo.
 
 Doc comments take the form `///` or `///!` (summary) and work with markdown.
 Look at existing code for how it works.
