@@ -40,11 +40,12 @@ or disabled with overrides:
 
 ```nix
 quickshell.packages.<system>.default.override {
-  enableWayland = true;
-  enableX11 = true;
-  enablePipewire = true;
-  withQtSvg = true;
   withJemalloc = true;
+  withQtSvg = true;
+  withWayland = true;
+  withX11 = true;
+  withPipewire = true;
+  withHyprland = true;
 }
 ```
 

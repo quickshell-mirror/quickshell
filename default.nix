@@ -26,11 +26,12 @@
      else "unknown"),
 
   debug ? false,
-  enableWayland ? true,
-  enableX11 ? true,
-  enablePipewire ? true,
-  withQtSvg ? true, # svg support
   withJemalloc ? true, # masks heap fragmentation
+  withQtSvg ? true,
+  withWayland ? true,
+  withX11 ? true,
+  withPipewire ? true,
+  withHyprland ? true,
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -41,7 +42,7 @@
     ninja
     qt6.wrapQtAppsHook
     pkg-config
-  ] ++ (lib.optionals enableWayland [
+  ] ++ (lib.optionals withWayland [
     wayland-protocols
     wayland-scanner
   ]);
@@ -52,11 +53,11 @@
   ]
   ++ (lib.optional withJemalloc jemalloc)
   ++ (lib.optional withQtSvg qt6.qtsvg)
-  ++ (lib.optionals enableWayland [ qt6.qtwayland wayland ])
-  ++ (lib.optional enableX11 xorg.libxcb)
-  ++ (lib.optional enablePipewire pipewire);
+  ++ (lib.optionals withWayland [ qt6.qtwayland wayland ])
+  ++ (lib.optional withX11 xorg.libxcb)
+  ++ (lib.optional withPipewire pipewire);
 
-  QTWAYLANDSCANNER = lib.optionalString enableWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
+  QTWAYLANDSCANNER = lib.optionalString withWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
   configurePhase = let
     cmakeBuildType = if debug
@@ -71,8 +72,9 @@
     "-DGIT_REVISION=${gitRev}"
   ]
   ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
-  ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
-  ++ lib.optional (!enablePipewire) "-DSERVICE_PIPEWIRE=OFF";
+  ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
+  ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"
+  ++ lib.optional (!withHyprland) "-DHYPRLAND=OFF";
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;
