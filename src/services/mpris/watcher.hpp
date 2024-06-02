@@ -18,15 +18,11 @@ namespace qs::service::mpris {
 ///! Provides access to MprisPlayers.
 class MprisWatcher: public QObject {
 	Q_OBJECT;
-	QML_NAMED_ELEMENT(Mpris);
-	QML_SINGLETON;
-	/// All connected MPRIS players.
-	Q_PROPERTY(ObjectModel<MprisPlayer>* players READ players CONSTANT);
 
 public:
-	explicit MprisWatcher(QObject* parent = nullptr);
-
 	[[nodiscard]] ObjectModel<MprisPlayer>* players();
+
+	static MprisWatcher* instance();
 
 private slots:
 	void onServiceRegistered(const QString& service);
@@ -35,12 +31,27 @@ private slots:
 	void onPlayerDestroyed(QObject* object);
 
 private:
+	explicit MprisWatcher();
+
 	void registerExisting();
 	void registerPlayer(const QString& address);
 
 	QDBusServiceWatcher serviceWatcher;
 	QHash<QString, MprisPlayer*> mPlayers;
 	ObjectModel<MprisPlayer> readyPlayers {this};
+};
+
+class MprisQml: public QObject {
+	Q_OBJECT;
+	QML_NAMED_ELEMENT(Mpris);
+	QML_SINGLETON;
+	/// All connected MPRIS players.
+	Q_PROPERTY(ObjectModel<MprisPlayer>* players READ players CONSTANT);
+
+public:
+	explicit MprisQml(QObject* parent = nullptr): QObject(parent) {};
+
+	[[nodiscard]] ObjectModel<MprisPlayer>* players();
 };
 
 } // namespace qs::service::mpris

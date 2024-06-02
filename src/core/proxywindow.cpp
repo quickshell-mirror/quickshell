@@ -156,9 +156,7 @@ void ProxyWindowBase::completeWindow() {
 	emit this->screenChanged();
 }
 
-bool ProxyWindowBase::deleteOnInvisible() const {
-	return false;
-}
+bool ProxyWindowBase::deleteOnInvisible() const { return false; }
 
 QQuickWindow* ProxyWindowBase::backingWindow() const { return this->window; }
 QQuickItem* ProxyWindowBase::contentItem() const { return this->mContentItem; }

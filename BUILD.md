@@ -43,7 +43,7 @@ To disable: `-DSOCKETS=OFF`
 ### Wayland
 This feature enables wayland support. Subfeatures exist for each particular wayland integration.
 
-WARNING: Wayland integration relies on featurs that are not part of the public Qt API and which
+WARNING: Wayland integration relies on features that are not part of the public Qt API and which
 may break in minor releases. Updating quickshell's dependencies without ensuring without ensuring
 that the current Qt version is supported WILL result in quickshell failing to build or misbehaving
 at runtime.

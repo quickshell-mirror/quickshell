@@ -16,7 +16,7 @@ namespace qs::service::mpris {
 
 Q_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mpris.watcher", QtWarningMsg);
 
-MprisWatcher::MprisWatcher(QObject* parent): QObject(parent) {
+MprisWatcher::MprisWatcher() {
 	qCDebug(logMprisWatcher) << "Starting MprisWatcher";
 
 	auto bus = QDBusConnection::sessionBus();
@@ -100,6 +100,15 @@ void MprisWatcher::registerPlayer(const QString& address) {
 	QObject::connect(player, &QObject::destroyed, this, &MprisWatcher::onPlayerDestroyed);
 
 	qCDebug(logMprisWatcher) << "Registered MprisPlayer" << address;
+}
+
+MprisWatcher* MprisWatcher::instance() {
+	static MprisWatcher* instance = new MprisWatcher(); // NOLINT
+	return instance;
+}
+
+ObjectModel<MprisPlayer>* MprisQml::players() { // NOLINT
+	return MprisWatcher::instance()->players();
 }
 
 } // namespace qs::service::mpris
