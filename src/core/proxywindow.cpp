@@ -157,14 +157,7 @@ void ProxyWindowBase::completeWindow() {
 }
 
 bool ProxyWindowBase::deleteOnInvisible() const {
-#ifdef NVIDIA_COMPAT
-	// Nvidia drivers and Qt do not play nice when hiding and showing a window
-	// so for nvidia compatibility we can never reuse windows if they have been
-	// hidden.
-	return true;
-#else
 	return false;
-#endif
 }
 
 QQuickWindow* ProxyWindowBase::backingWindow() const { return this->window; }

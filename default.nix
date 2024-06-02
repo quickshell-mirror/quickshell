@@ -29,7 +29,6 @@
   enableWayland ? true,
   enableX11 ? true,
   enablePipewire ? true,
-  nvidiaCompat ? false,
   withQtSvg ? true, # svg support
   withJemalloc ? true, # masks heap fragmentation
 }: buildStdenv.mkDerivation {
@@ -73,7 +72,6 @@
   ]
   ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
   ++ lib.optional (!enableWayland) "-DWAYLAND=OFF"
-  ++ lib.optional nvidiaCompat "-DNVIDIA_COMPAT=ON"
   ++ lib.optional (!enablePipewire) "-DSERVICE_PIPEWIRE=OFF";
 
   buildPhase = "ninjaBuildPhase";

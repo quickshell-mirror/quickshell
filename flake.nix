@@ -12,10 +12,8 @@
       quickshell = pkgs.callPackage ./default.nix {
         gitRev = self.rev or self.dirtyRev;
       };
-      quickshell-nvidia = quickshell.override { nvidiaCompat = true; };
 
       default = quickshell;
-      nvidia = quickshell-nvidia;
     });
 
     devShells = forEachSystem (system: pkgs: rec {
