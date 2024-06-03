@@ -4,6 +4,7 @@ Instructions for development setup and upstreaming patches.
 If you just want to build or package quickshell see [BUILD.md](BUILD.md).
 
 ## Development
+
 Install the dependencies listed in [BUILD.md](BUILD.md).
 You probably want all of them even if you don't use all of them
 to ensure tests work correctly and avoid passing a bunch of configure
@@ -67,3 +68,32 @@ Look at existing code for how it works.
 
 Quickshell modules additionally have a `module.md` file which contains a summary, description,
 and list of headers to scan for documentation.
+
+## Contributing
+
+### Commits
+Please structure your commit messages as `scope[!]: commit` where
+the scope is something like `core` or `service/mpris`. (pick what has been
+used historically or what makes sense if new.) Add `!` for changes that break
+existing APIs or functionality.
+
+Commit descriptions should contain a summary of the changes if they are not
+sufficiently addressed in the commit message.
+
+Please squash/rebase additions or edits to previous changes and follow the
+commit style to keep the history easily searchable at a glance.
+Depending on the change, it is often reasonable to squash it into just
+a single commit. (If you do not follow this we will squash your changes
+for you.)
+
+### Sending patches
+You may contribute by submitting a pull request on github, asking for
+an account on our git server, or emailing patches / git bundles
+directly to `outfoxxed@outfoxxed.me`.
+
+### Getting help
+If you're getting stuck, you can come talk to us in the
+[quickshell-development matrix room](https://matrix.to/#/#quickshell-development:outfoxxed.me)
+for help on implementation, conventions, etc.
+Feel free to ask for advice early in your implementation if you are
+unsure.
