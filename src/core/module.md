@@ -19,5 +19,6 @@ headers = [
 	"transformwatcher.hpp",
 	"boundcomponent.hpp",
 	"model.hpp",
+	"elapsedtimer.hpp",
 ]
 -----
