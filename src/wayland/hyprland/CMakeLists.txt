@@ -4,6 +4,11 @@ target_link_libraries(quickshell-hyprland PRIVATE ${QT_DEPS})
 
 set(HYPRLAND_MODULES)
 
+if (HYPRLAND_IPC)
+	add_subdirectory(ipc)
+	list(APPEND HYPRLAND_MODULES Quickshell.Hyprland._Ipc)
+endif()
+
 if (HYPRLAND_FOCUS_GRAB)
 	add_subdirectory(focus_grab)
 	list(APPEND HYPRLAND_MODULES Quickshell.Hyprland._FocusGrab)

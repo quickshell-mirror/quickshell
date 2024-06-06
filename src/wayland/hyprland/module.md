@@ -1,6 +1,10 @@
 name = "Quickshell.Hyprland"
 description = "Hyprland specific Quickshell types"
 headers = [
+	"ipc/connection.hpp",
+	"ipc/monitor.hpp",
+	"ipc/workspace.hpp",
+	"ipc/qml.hpp",
 	"focus_grab/qml.hpp",
 	"global_shortcuts/qml.hpp",
 ]
