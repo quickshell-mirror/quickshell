@@ -111,6 +111,7 @@ private:
 	bool valid = false;
 	bool requestingMonitors = false;
 	bool requestingWorkspaces = false;
+	bool monitorsRequested = false;
 
 	ObjectModel<HyprlandMonitor> mMonitors {this};
 	ObjectModel<HyprlandWorkspace> mWorkspaces {this};

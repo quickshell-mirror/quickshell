@@ -465,10 +465,12 @@ HyprlandMonitor* HyprlandIpc::focusedMonitor() const { return this->mFocusedMoni
 
 HyprlandMonitor* HyprlandIpc::monitorFor(QuickshellScreenInfo* screen) {
 	// Wayland monitors appear after hyprland ones are created and disappear after destruction
-	// so simply not doing any preemptive creation is enough.
+	// so simply not doing any preemptive creation is enough, however if this call creates
+	// the HyprlandIpc singleton then monitors won't be initialized, in which case we
+	// preemptively create one.
 
 	if (screen == nullptr) return nullptr;
-	return this->findMonitorByName(screen->name(), false);
+	return this->findMonitorByName(screen->name(), !this->monitorsRequested);
 }
 
 void HyprlandIpc::setFocusedMonitor(HyprlandMonitor* monitor) {
@@ -504,6 +506,8 @@ void HyprlandIpc::refreshMonitors(bool canCreate, bool tryAgain) {
 			    if (tryAgain) this->refreshMonitors(canCreate, false);
 			    return;
 		    }
+
+		    this->monitorsRequested = true;
 
 		    qCDebug(logHyprlandIpc) << "parsing monitors response";
 		    auto json = QJsonDocument::fromJson(resp).array();
