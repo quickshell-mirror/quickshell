@@ -509,15 +509,15 @@ void HyprlandIpc::refreshMonitors(bool canCreate, bool tryAgain) {
 		    auto json = QJsonDocument::fromJson(resp).array();
 
 		    const auto& mList = this->mMonitors.valueList();
-		    auto ids = QVector<qint32>();
+		    auto names = QVector<QString>();
 
 		    for (auto entry: json) {
 			    auto object = entry.toObject().toVariantMap();
-			    auto id = object.value("id").toInt();
+			    auto name = object.value("name").toString();
 
 			    auto monitorIter =
-			        std::find_if(mList.begin(), mList.end(), [id](const HyprlandMonitor* m) {
-				        return m->id() == id;
+			        std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
+				        return m->name() == name;
 			        });
 
 			    auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
@@ -534,13 +534,13 @@ void HyprlandIpc::refreshMonitors(bool canCreate, bool tryAgain) {
 				    this->mMonitors.insertObject(monitor);
 			    }
 
-			    ids.push_back(id);
+			    names.push_back(name);
 		    }
 
 		    auto removedMonitors = QVector<HyprlandMonitor*>();
 
 		    for (auto* monitor: mList) {
-			    if (!ids.contains(monitor->id())) {
+			    if (!names.contains(monitor->name())) {
 				    removedMonitors.push_back(monitor);
 			    }
 		    }
