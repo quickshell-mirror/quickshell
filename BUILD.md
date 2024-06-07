@@ -59,19 +59,30 @@ Dependencies:
  - `wayland-protocols`
 
 #### Wlroots Layershell
-Enables wlroots layershell integration through the [wlr-layer-shell-unstable-v1] protocol,
+Enables wlroots layershell integration through the [zwlr-layer-shell-v1] protocol,
 enabling use cases such as bars overlays and backgrounds.
 This feature has no extra dependencies.
 
 To disable: `-DWAYLAND_WLR_LAYERSHELL=OFF`
 
-[wlr-layer-shell-unstable-v1]: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
+[zwlr-layer-shell-v1]: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
 
 #### Session Lock
 Enables session lock support through the [ext-session-lock-v1] protocol,
 which allows quickshell to be used as a session lock under compatible wayland compositors.
 
+To disable: `-DWAYLAND_SESSION_LOCK=OFF`
+
 [ext-session-lock-v1]: https://wayland.app/protocols/ext-session-lock-v1
+
+
+#### Foreign Toplevel Management
+Enables management of windows of other clients through the [zwlr-foreign-toplevel-management-v1] protocol,
+which allows quickshell to be used as a session lock under compatible wayland compositors.
+
+[zwlr-foreign-toplevel-management-v1]: https://wayland.app/protocols/wlr-foreign-toplevel-management-unstable-v1
+
+To disable: `-DWAYLAND_TOPLEVEL_MANAGEMENT=OFF`
 
 ### X11
 This feature enables x11 support. Currently this implements panel windows for X11 similarly

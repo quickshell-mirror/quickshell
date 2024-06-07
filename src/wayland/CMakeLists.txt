@@ -71,6 +71,11 @@ if (WAYLAND_SESSION_LOCK)
 	add_subdirectory(session_lock)
 endif()
 
+if (WAYLAND_TOPLEVEL_MANAGEMENT)
+	add_subdirectory(toplevel_management)
+	list(APPEND WAYLAND_MODULES Quickshell.Wayland._ToplevelManagement)
+endif()
+
 if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()

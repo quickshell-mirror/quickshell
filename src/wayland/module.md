@@ -4,5 +4,6 @@ headers = [
 	"wlr_layershell/window.hpp",
 	"wlr_layershell.hpp",
 	"session_lock.hpp",
+	"toplevel_management/qml.hpp",
 ]
 -----
