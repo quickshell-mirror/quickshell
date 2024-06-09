@@ -60,6 +60,9 @@ signals:
 
 private slots:
 	void recalcChains();
+	void itemDestroyed();
+	void aDestroyed();
+	void bDestroyed();
 
 private:
 	void resolveChains(QQuickItem* a, QQuickItem* b, QQuickItem* commonParent);

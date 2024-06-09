@@ -82,7 +82,10 @@ void TransformWatcher::linkItem(QQuickItem* item) const {
 
 	QObject::connect(item, &QQuickItem::parentChanged, this, &TransformWatcher::recalcChains);
 	QObject::connect(item, &QQuickItem::windowChanged, this, &TransformWatcher::recalcChains);
-	QObject::connect(item, &QObject::destroyed, this, &TransformWatcher::recalcChains);
+
+	if (item != this->mA && item != this->mB) {
+		QObject::connect(item, &QObject::destroyed, this, &TransformWatcher::itemDestroyed);
+	}
 }
 
 void TransformWatcher::linkChains() {
@@ -103,6 +106,18 @@ void TransformWatcher::unlinkChains() {
 	for (auto* item: this->childChain) {
 		QObject::disconnect(item, nullptr, this, nullptr);
 	}
+
+	// relink a and b destruction notifications
+	if (this->mA != nullptr) {
+		QObject::connect(this->mA, &QObject::destroyed, this, &TransformWatcher::aDestroyed);
+	}
+
+	if (this->mB != nullptr) {
+		QObject::connect(this->mB, &QObject::destroyed, this, &TransformWatcher::bDestroyed);
+	}
+
+	this->parentChain.clear();
+	this->childChain.clear();
 }
 
 void TransformWatcher::recalcChains() {
@@ -111,20 +126,51 @@ void TransformWatcher::recalcChains() {
 	this->linkChains();
 }
 
+void TransformWatcher::itemDestroyed() {
+	auto destroyed =
+	    this->parentChain.removeOne(this->sender()) || this->childChain.removeOne(this->sender());
+
+	if (destroyed) this->recalcChains();
+}
+
 QQuickItem* TransformWatcher::a() const { return this->mA; }
 
 void TransformWatcher::setA(QQuickItem* a) {
 	if (this->mA == a) return;
+	if (this->mA != nullptr) QObject::disconnect(this->mA, nullptr, this, nullptr);
 	this->mA = a;
+
+	if (this->mA != nullptr) {
+		QObject::connect(this->mA, &QObject::destroyed, this, &TransformWatcher::aDestroyed);
+	}
+
 	this->recalcChains();
+}
+
+void TransformWatcher::aDestroyed() {
+	this->mA = nullptr;
+	this->unlinkChains();
+	emit this->aChanged();
 }
 
 QQuickItem* TransformWatcher::b() const { return this->mB; }
 
 void TransformWatcher::setB(QQuickItem* b) {
 	if (this->mB == b) return;
+	if (this->mB != nullptr) QObject::disconnect(this->mB, nullptr, this, nullptr);
 	this->mB = b;
+
+	if (this->mB != nullptr) {
+		QObject::connect(this->mB, &QObject::destroyed, this, &TransformWatcher::bDestroyed);
+	}
+
 	this->recalcChains();
+}
+
+void TransformWatcher::bDestroyed() {
+	this->mB = nullptr;
+	this->unlinkChains();
+	emit this->bChanged();
 }
 
 QQuickItem* TransformWatcher::commonParent() const { return this->mCommonParent; }
@@ -132,5 +178,5 @@ QQuickItem* TransformWatcher::commonParent() const { return this->mCommonParent;
 void TransformWatcher::setCommonParent(QQuickItem* commonParent) {
 	if (this->mCommonParent == commonParent) return;
 	this->mCommonParent = commonParent;
-	this->resolveChains();
+	this->recalcChains();
 }
