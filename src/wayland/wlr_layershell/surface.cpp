@@ -119,24 +119,31 @@ void QSWaylandLayerSurface::setWindowGeometry(const QRect& geometry) {
 
 QWindow* QSWaylandLayerSurface::qwindow() { return this->window()->window(); }
 
-void QSWaylandLayerSurface::updateLayer() { this->set_layer(toWaylandLayer(this->ext->mLayer)); }
+void QSWaylandLayerSurface::updateLayer() {
+	this->set_layer(toWaylandLayer(this->ext->mLayer));
+	this->window()->waylandSurface()->commit();
+}
 
 void QSWaylandLayerSurface::updateAnchors() {
 	this->set_anchor(toWaylandAnchors(this->ext->mAnchors));
 	this->setWindowGeometry(this->window()->windowContentGeometry());
+	this->window()->waylandSurface()->commit();
 }
 
 void QSWaylandLayerSurface::updateMargins() {
 	auto& margins = this->ext->mMargins;
 	this->set_margin(margins.mTop, margins.mRight, margins.mBottom, margins.mLeft);
+	this->window()->waylandSurface()->commit();
 }
 
 void QSWaylandLayerSurface::updateExclusiveZone() {
 	this->set_exclusive_zone(this->ext->mExclusiveZone);
+	this->window()->waylandSurface()->commit();
 }
 
 void QSWaylandLayerSurface::updateKeyboardFocus() {
 	this->set_keyboard_interactivity(toWaylandKeyboardFocus(this->ext->mKeyboardFocus));
+	this->window()->waylandSurface()->commit();
 }
 
 QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
