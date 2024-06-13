@@ -257,10 +257,10 @@ void WlSessionLockSurface::setScreen(QScreen* qscreen) {
 		QObject::connect(qscreen, &QObject::destroyed, this, &WlSessionLockSurface::onScreenDestroyed);
 	}
 
-	if (this->window == nullptr) {
-		this->mScreen = qscreen;
-		emit this->screenChanged();
-	} else this->window->setScreen(qscreen);
+	if (this->window == nullptr) this->mScreen = qscreen;
+	else this->window->setScreen(qscreen);
+
+	emit this->screenChanged();
 }
 
 void WlSessionLockSurface::onScreenDestroyed() { this->mScreen = nullptr; }
