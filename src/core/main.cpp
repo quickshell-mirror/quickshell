@@ -9,6 +9,7 @@
 #include <qfileinfo.h>
 #include <qguiapplication.h>
 #include <qhash.h>
+#include <qicon.h>
 #include <qlogging.h>
 #include <qqmldebug.h>
 #include <qquickwindow.h>
@@ -331,6 +332,32 @@ int qs_main(int argc, char** argv) {
 	// to improve animation quality.
 	if (!qEnvironmentVariableIsSet("QSG_USE_SIMPLE_ANIMATION_DRIVER")) {
 		qputenv("QSG_USE_SIMPLE_ANIMATION_DRIVER", "1");
+	}
+
+	// Some programs place icons in the pixmaps folder instead of the icons folder.
+	// This seems to be controlled by the QPA and qt6ct does not provide it.
+	{
+		QList<QString> dataPaths;
+
+		if (qEnvironmentVariableIsSet("XDG_DATA_DIRS")) {
+			auto var = qEnvironmentVariable("XDG_DATA_DIRS");
+			dataPaths = var.split(u':', Qt::SkipEmptyParts);
+		} else {
+			dataPaths.push_back("/usr/local/share");
+			dataPaths.push_back("/usr/share");
+		}
+
+		auto fallbackPaths = QIcon::fallbackSearchPaths();
+
+		for (auto& path: dataPaths) {
+			auto newPath = QDir(path).filePath("pixmaps");
+
+			if (!fallbackPaths.contains(newPath)) {
+				fallbackPaths.push_back(newPath);
+			}
+		}
+
+		QIcon::setFallbackSearchPaths(fallbackPaths);
 	}
 
 	QGuiApplication::setDesktopSettingsAware(desktopSettingsAware);
