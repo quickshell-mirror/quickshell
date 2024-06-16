@@ -20,5 +20,6 @@ headers = [
 	"boundcomponent.hpp",
 	"model.hpp",
 	"elapsedtimer.hpp",
+	"desktopentry.hpp",
 ]
 -----
