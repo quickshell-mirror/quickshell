@@ -1,21 +1,22 @@
 #include "conversation.hpp"
-#include <utility>
 
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qmutex.h>
 #include <qobject.h>
+#include <qsocketnotifier.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
-#include <security/_pam_types.h>
-#include <security/pam_appl.h>
+#include <sys/wait.h>
+
+#include "ipc.hpp"
 
 Q_LOGGING_CATEGORY(logPam, "quickshell.service.pam", QtWarningMsg);
 
 QString PamError::toString(PamError::Enum value) {
 	switch (value) {
-	case ConnectionFailed: return "Failed to connect to pam";
+	case StartFailed: return "Failed to start the PAM session";
 	case TryAuthFailed: return "Failed to try authenticating";
+	case InternalError: return "Internal error occurred";
 	default: return "Invalid error";
 	}
 }
@@ -26,160 +27,116 @@ QString PamResult::toString(PamResult::Enum value) {
 	case Failed: return "Failed";
 	case Error: return "Error occurred while authenticating";
 	case MaxTries: return "The authentication method has no more attempts available";
-	// case Expired: return "The account has expired";
-	// case PermissionDenied: return "Permission denied";
 	default: return "Invalid result";
 	}
 }
 
-void PamConversation::run() {
-	auto conv = pam_conv {
-	    .conv = &PamConversation::conversation,
-	    .appdata_ptr = this,
-	};
+PamConversation::~PamConversation() { this->abort(); }
 
-	pam_handle_t* handle = nullptr;
-
-	qCInfo(logPam) << this << "Starting pam session for user" << this->user << "with config"
-	               << this->config << "in configdir" << this->configDir;
-
-	auto result = pam_start_confdir(
-	    this->config.toStdString().c_str(),
-	    this->user.toStdString().c_str(),
-	    &conv,
-	    this->configDir.toStdString().c_str(),
-	    &handle
-	);
-
-	if (result != PAM_SUCCESS) {
-		qCCritical(logPam) << this << "Unable to start pam conversation with error"
-		                   << QString(pam_strerror(handle, result));
-		emit this->error(PamError::ConnectionFailed);
-		this->deleteLater();
+void PamConversation::start(const QString& configDir, const QString& config, const QString& user) {
+	this->childPid = PamConversation::createSubprocess(&this->pipes, configDir, config, user);
+	if (this->childPid == 0) {
+		qCCritical(logPam) << "Failed to create pam subprocess.";
+		emit this->error(PamError::InternalError);
 		return;
 	}
 
-	result = pam_authenticate(handle, 0);
-
-	// Seems to require root and quickshell should not run as root.
-	// if (result == PAM_SUCCESS) {
-	//   result = pam_acct_mgmt(handle, 0);
-	// }
-
-	switch (result) {
-	case PAM_SUCCESS:
-		qCInfo(logPam) << this << "ended with successful authentication.";
-		emit this->completed(PamResult::Success);
-		break;
-	case PAM_AUTH_ERR:
-		qCInfo(logPam) << this << "ended with failed authentication.";
-		emit this->completed(PamResult::Failed);
-		break;
-	case PAM_MAXTRIES:
-		qCInfo(logPam) << this << "ended with failure: max tries.";
-		emit this->completed(PamResult::MaxTries);
-		break;
-	/*case PAM_ACCT_EXPIRED:
-		qCInfo(logPam) << this << "ended with failure: account expiration.";
-		emit this->completed(PamResult::Expired);
-		break;
-	case PAM_PERM_DENIED:
-		qCInfo(logPam) << this << "ended with failure: permission denied.";
-		emit this->completed(PamResult::PermissionDenied);
-		break;*/
-	default:
-		qCCritical(logPam) << this << "ended with error:" << QString(pam_strerror(handle, result));
-		emit this->error(PamError::TryAuthFailed);
-		break;
-	}
-
-	result = pam_end(handle, result);
-	if (result != PAM_SUCCESS) {
-		qCCritical(logPam) << this << "Failed to end pam conversation with error code"
-		                   << QString(pam_strerror(handle, result));
-	}
-
-	this->deleteLater();
+	QObject::connect(&this->notifier, &QSocketNotifier::activated, this, &PamConversation::onMessage);
+	this->notifier.setSocket(this->pipes.fdIn);
+	this->notifier.setEnabled(true);
 }
 
 void PamConversation::abort() {
-	qCDebug(logPam) << "Abort requested for" << this;
-	auto locker = QMutexLocker(&this->wakeMutex);
-	this->mAbort = true;
-	this->waker.wakeOne();
+	if (this->childPid != 0) {
+		qCDebug(logPam) << "Killing subprocess for" << this;
+		kill(this->childPid, SIGKILL); // NOLINT (include)
+		waitpid(this->childPid, nullptr, 0);
+		this->childPid = 0;
+	}
 }
 
-void PamConversation::respond(QString response) {
-	qCDebug(logPam) << "Set response for" << this;
-	auto locker = QMutexLocker(&this->wakeMutex);
-	this->response = std::move(response);
-	this->hasResponse = true;
-	this->waker.wakeOne();
+void PamConversation::internalError() {
+	if (this->childPid != 0) {
+		qCDebug(logPam) << "Killing subprocess for" << this;
+		kill(this->childPid, SIGKILL); // NOLINT (include)
+		waitpid(this->childPid, nullptr, 0);
+		this->childPid = 0;
+		emit this->error(PamError::InternalError);
+	}
 }
 
-int PamConversation::conversation(
-    int msgCount,
-    const pam_message** msgArray,
-    pam_response** responseArray,
-    void* appdata
-) {
-	auto* delegate = static_cast<PamConversation*>(appdata);
+void PamConversation::respond(const QString& response) {
+	qCDebug(logPam) << "Sending response for" << this;
+	if (!this->pipes.writeString(response.toStdString())) {
+		qCCritical(logPam) << "Failed to write response to subprocess.";
+		this->internalError();
+	}
+}
 
+void PamConversation::onMessage() {
 	{
-		auto locker = QMutexLocker(&delegate->wakeMutex);
-		if (delegate->mAbort) {
-			return PAM_ERROR_MSG;
-		}
-	}
+		qCDebug(logPam) << "Got message from subprocess.";
 
-	// freed by libc so must be alloc'd by it.
-	auto* responses = static_cast<pam_response*>(calloc(msgCount, sizeof(pam_response))); // NOLINT
+		auto type = PamIpcEvent::Exit;
 
-	for (auto i = 0; i < msgCount; i++) {
-		const auto* message = msgArray[i]; // NOLINT
-		auto& response = responses[i];     // NOLINT
+		auto ok = this->pipes.readBytes(
+		    reinterpret_cast<char*>(&type), // NOLINT
+		    sizeof(PamIpcEvent)
+		);
 
-		auto msgString = QString(message->msg);
-		auto messageChanged = true; // message->msg_style != PAM_PROMPT_ECHO_OFF;
-		auto isError = message->msg_style == PAM_ERROR_MSG;
-		auto responseRequired =
-		    message->msg_style == PAM_PROMPT_ECHO_OFF || message->msg_style == PAM_PROMPT_ECHO_ON;
+		if (!ok) goto fail;
 
-		qCDebug(logPam) << delegate << "got new message message:" << msgString
-		                << "messageChanged:" << messageChanged << "isError:" << isError
-		                << "responseRequired" << responseRequired;
+		if (type == PamIpcEvent::Exit) {
+			auto code = PamIpcExitCode::OtherError;
 
-		delegate->hasResponse = false;
-		emit delegate->message(msgString, messageChanged, isError, responseRequired);
+			ok = this->pipes.readBytes(
+			    reinterpret_cast<char*>(&code), // NOLINT
+			    sizeof(PamIpcExitCode)
+			);
 
-		{
-			auto locker = QMutexLocker(&delegate->wakeMutex);
+			if (!ok) goto fail;
 
-			if (delegate->mAbort) {
-				free(responses); // NOLINT
-				return PAM_ERROR_MSG;
+			qCDebug(logPam) << "Subprocess exited with code" << static_cast<int>(code);
+
+			switch (code) {
+			case PamIpcExitCode::Success: emit this->completed(PamResult::Success); break;
+			case PamIpcExitCode::AuthFailed: emit this->completed(PamResult::Failed); break;
+			case PamIpcExitCode::StartFailed: emit this->error(PamError::StartFailed); break;
+			case PamIpcExitCode::MaxTries: emit this->completed(PamResult::MaxTries); break;
+			case PamIpcExitCode::PamError: emit this->error(PamError::TryAuthFailed); break;
+			case PamIpcExitCode::OtherError: emit this->error(PamError::InternalError); break;
 			}
 
-			if (responseRequired) {
-				if (!delegate->hasResponse) {
-					delegate->waker.wait(locker.mutex());
+			waitpid(this->childPid, nullptr, 0);
+			this->childPid = 0;
+		} else if (type == PamIpcEvent::Request) {
+			PamIpcRequestFlags flags {};
 
-					if (delegate->mAbort) {
-						free(responses); // NOLINT
-						return PAM_ERROR_MSG;
-					}
-				}
+			ok = this->pipes.readBytes(
+			    reinterpret_cast<char*>(&flags), // NOLINT
+			    sizeof(PamIpcRequestFlags)
+			);
 
-				if (!delegate->hasResponse) {
-					qCCritical(logPam
-					) << "Pam conversation requires response and does not have one. This should not happen.";
-				}
+			if (!ok) goto fail;
 
-				response.resp = strdup(delegate->response.toStdString().c_str()); // NOLINT (include error)
-			}
+			auto message = this->pipes.readString(&ok);
+
+			if (!ok) goto fail;
+
+			this->message(
+			    QString::fromUtf8(message),
+			    /*flags.echo*/ true,
+			    flags.error,
+			    flags.responseRequired
+			);
+		} else {
+			qCCritical(logPam) << "Unexpected message from subprocess.";
+			goto fail;
 		}
 	}
+	return;
 
-	*responseArray = responses;
-	return PAM_SUCCESS;
+fail:
+	qCCritical(logPam) << "Failed to read subprocess request.";
+	this->internalError();
 }

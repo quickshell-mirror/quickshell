@@ -13,12 +13,6 @@
 
 #include "conversation.hpp"
 
-PamContext::~PamContext() {
-	if (this->conversation != nullptr && this->conversation->isRunning()) {
-		this->conversation->abort();
-	}
-}
-
 void PamContext::componentComplete() {
 	this->postInit = true;
 
@@ -91,12 +85,12 @@ void PamContext::startConversation() {
 		}
 	}
 
-	this->conversation = new PamConversation(this->mConfig, this->mConfigDirectory, user);
+	this->conversation = new PamConversation(this);
 	QObject::connect(this->conversation, &PamConversation::completed, this, &PamContext::onCompleted);
 	QObject::connect(this->conversation, &PamConversation::error, this, &PamContext::onError);
 	QObject::connect(this->conversation, &PamConversation::message, this, &PamContext::onMessage);
 	emit this->activeChanged();
-	this->conversation->start();
+	this->conversation->start(this->mConfigDirectory, this->mConfig, user);
 }
 
 void PamContext::abortConversation() {
@@ -104,7 +98,7 @@ void PamContext::abortConversation() {
 	this->mTargetActive = false;
 
 	QObject::disconnect(this->conversation, nullptr, this, nullptr);
-	if (this->conversation->isRunning()) this->conversation->abort();
+	this->conversation->deleteLater();
 	this->conversation = nullptr;
 	emit this->activeChanged();
 
@@ -124,9 +118,9 @@ void PamContext::abortConversation() {
 	}
 }
 
-void PamContext::respond(QString response) {
+void PamContext::respond(const QString& response) {
 	if (this->isActive() && this->mIsResponseRequired) {
-		this->conversation->respond(std::move(response));
+		this->conversation->respond(response);
 	} else {
 		qWarning() << "PamContext response was ignored as this context does not require one.";
 	}

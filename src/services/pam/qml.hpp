@@ -51,8 +51,6 @@ class PamContext
 
 public:
 	explicit PamContext(QObject* parent = nullptr): QObject(parent) {}
-	~PamContext() override;
-	Q_DISABLE_COPY_MOVE(PamContext);
 
 	void classBegin() override {}
 	void componentComplete() override;
@@ -69,7 +67,7 @@ public:
 	/// Respond to pam.
 	///
 	/// May not be called unless `responseRequired` is true.
-	Q_INVOKABLE void respond(QString response);
+	Q_INVOKABLE void respond(const QString& response);
 
 	[[nodiscard]] bool isActive() const;
 	void setActive(bool active);

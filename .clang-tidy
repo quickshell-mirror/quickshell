@@ -28,6 +28,7 @@ Checks: >
   -modernize-return-braced-init-list,
   -modernize-use-trailing-return-type,
   performance-*,
+  -performance-avoid-endl,
   portability-std-allocator-const,
   readability-*,
   -readability-function-cognitive-complexity,

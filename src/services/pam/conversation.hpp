@@ -2,13 +2,16 @@
 
 #include <utility>
 
-#include <qmutex.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qthread.h>
+#include <qsocketnotifier.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
-#include <qwaitcondition.h>
-#include <security/pam_appl.h>
+
+#include "ipc.hpp"
+
+Q_DECLARE_LOGGING_CATEGORY(logPam);
 
 /// The result of an authentication.
 class PamResult: public QObject {
@@ -26,10 +29,6 @@ public:
 		Error = 2,
 		/// The authentication method ran out of tries and should not be used again.
 		MaxTries = 3,
-		// The account has expired.
-		// Expired  4,
-		// Permission denied.
-		// PermissionDenied  5,
 	};
 	Q_ENUM(Enum);
 
@@ -44,52 +43,56 @@ class PamError: public QObject {
 
 public:
 	enum Enum {
-		/// Failed to initiate the pam connection.
-		ConnectionFailed = 1,
+		/// Failed to start the pam session.
+		StartFailed = 1,
 		/// Failed to try to authenticate the user.
 		/// This is not the same as the user failing to authenticate.
 		TryAuthFailed = 2,
+		/// An error occurred inside quickshell's pam interface.
+		InternalError = 3,
 	};
 	Q_ENUM(Enum);
 
 	Q_INVOKABLE static QString toString(PamError::Enum value);
 };
 
-class PamConversation: public QThread {
+// PAM has no way to abort a running module except when it sends a message,
+// meaning aborts for things like fingerprint scanners
+// and hardware keys don't actually work without aborting the process...
+// so we have a subprocess.
+class PamConversation: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit PamConversation(QString config, QString configDir, QString user)
-	    : config(std::move(config))
-	    , configDir(std::move(configDir))
-	    , user(std::move(user)) {}
+	explicit PamConversation(QObject* parent): QObject(parent) {}
+	~PamConversation() override;
+	Q_DISABLE_COPY_MOVE(PamConversation);
 
 public:
-	void run() override;
+	void start(const QString& configDir, const QString& config, const QString& user);
 
 	void abort();
-	void respond(QString response);
+	void respond(const QString& response);
 
 signals:
 	void completed(PamResult::Enum result);
 	void error(PamError::Enum error);
 	void message(QString message, bool messageChanged, bool isError, bool responseRequired);
 
+private slots:
+	void onMessage();
+
 private:
-	static int conversation(
-	    int msgCount,
-	    const pam_message** msgArray,
-	    pam_response** responseArray,
-	    void* appdata
+	static pid_t createSubprocess(
+	    PamIpcPipes* pipes,
+	    const QString& configDir,
+	    const QString& config,
+	    const QString& user
 	);
 
-	QString config;
-	QString configDir;
-	QString user;
+	void internalError();
 
-	QMutex wakeMutex;
-	QWaitCondition waker;
-	bool mAbort = false;
-	bool hasResponse = false;
-	QString response;
+	pid_t childPid = 0;
+	PamIpcPipes pipes;
+	QSocketNotifier notifier {QSocketNotifier::Read};
 };
