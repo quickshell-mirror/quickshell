@@ -15,7 +15,6 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtenvironmentvariables.h>
-#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -58,13 +57,9 @@ HyprlandIpc::HyprlandIpc() {
 	QObject::connect(&this->eventSocket, &QLocalSocket::readyRead, this, &HyprlandIpc::eventSocketReady);
 	// clang-format on
 
-	// Sockets don't appear to be able to send data in the first event loop
-	// cycle of the program, so delay it by one. No idea why this is the case.
-	QTimer::singleShot(0, [this]() {
-		this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
-		this->refreshMonitors(true);
-		this->refreshWorkspaces(true);
-	});
+	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
+	this->refreshMonitors(true);
+	this->refreshWorkspaces(true);
 }
 
 QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath; }
@@ -128,6 +123,7 @@ void HyprlandIpc::makeRequest(
 		QObject::connect(requestSocket, &QLocalSocket::readyRead, this, responseCallback);
 
 		requestSocket->write(request);
+		requestSocket->flush();
 	};
 
 	auto errorCallback = [=](QLocalSocket::LocalSocketError error) {
@@ -377,19 +373,15 @@ HyprlandIpc::findWorkspaceByName(const QString& name, bool createIfMissing, qint
 	}
 }
 
-void HyprlandIpc::refreshWorkspaces(bool canCreate, bool tryAgain) {
+void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 	if (this->requestingWorkspaces) return;
 	this->requestingWorkspaces = true;
 
 	this->makeRequest(
 	    "j/workspaces",
-	    [this, canCreate, tryAgain](bool success, const QByteArray& resp) {
+	    [this, canCreate](bool success, const QByteArray& resp) {
 		    this->requestingWorkspaces = false;
-		    if (!success) {
-			    // sometimes fails randomly, so we give it another shot.
-			    if (tryAgain) this->refreshWorkspaces(canCreate, false);
-			    return;
-		    }
+		    if (!success) return;
 
 		    qCDebug(logHyprlandIpc) << "parsing workspaces response";
 		    auto json = QJsonDocument::fromJson(resp).array();
@@ -493,19 +485,15 @@ void HyprlandIpc::onFocusedMonitorDestroyed() {
 	emit this->focusedMonitorChanged();
 }
 
-void HyprlandIpc::refreshMonitors(bool canCreate, bool tryAgain) {
+void HyprlandIpc::refreshMonitors(bool canCreate) {
 	if (this->requestingMonitors) return;
 	this->requestingMonitors = true;
 
 	this->makeRequest(
 	    "j/monitors",
-	    [this, canCreate, tryAgain](bool success, const QByteArray& resp) {
+	    [this, canCreate](bool success, const QByteArray& resp) {
 		    this->requestingMonitors = false;
-		    if (!success) {
-			    // sometimes fails randomly, so we give it another shot.
-			    if (tryAgain) this->refreshMonitors(canCreate, false);
-			    return;
-		    }
+		    if (!success) return;
 
 		    this->monitorsRequested = true;
 

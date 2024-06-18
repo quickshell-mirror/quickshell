@@ -81,8 +81,8 @@ public:
 	HyprlandMonitor* findMonitorByName(const QString& name, bool createIfMissing, qint32 id = -1);
 
 	// canCreate avoids making ghost workspaces when the connection races
-	void refreshWorkspaces(bool canCreate, bool tryAgain = true);
-	void refreshMonitors(bool canCreate, bool tryAgain = true);
+	void refreshWorkspaces(bool canCreate);
+	void refreshMonitors(bool canCreate);
 
 	// The last argument may contain commas, so the count is required.
 	[[nodiscard]] static QVector<QByteArrayView> parseEventArgs(QByteArrayView event, quint16 count);
