@@ -113,6 +113,13 @@ To disable: `-DSERVICE_MPRIS=OFF`
 
 Dependencies: `qt6dbus` (usually part of qt6base)
 
+### PAM
+This feature enables PAM integration for user authentication.
+
+To disable: `-DSERVICE_PAM=OFF`
+
+Dependencies: `pam`
+
 ### Hyprland
 This feature enables hyprland specific integrations. It requires wayland support
 but has no extra dependencies.
