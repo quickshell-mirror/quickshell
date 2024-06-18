@@ -13,6 +13,7 @@
   wayland-protocols,
   xorg,
   pipewire,
+  pam,
 
   gitRev ? (let
     headExists = builtins.pathExists ./.git/HEAD;
@@ -31,6 +32,7 @@
   withWayland ? true,
   withX11 ? true,
   withPipewire ? true,
+  withPam ? true,
   withHyprland ? true,
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
@@ -55,6 +57,7 @@
   ++ (lib.optional withQtSvg qt6.qtsvg)
   ++ (lib.optionals withWayland [ qt6.qtwayland wayland ])
   ++ (lib.optional withX11 xorg.libxcb)
+  ++ (lib.optional withPam pam)
   ++ (lib.optional withPipewire pipewire);
 
   QTWAYLANDSCANNER = lib.optionalString withWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
@@ -74,6 +77,7 @@
   ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
   ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
   ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"
+  ++ lib.optional (!withPam) "-DSERVICE_PAM=OFF"
   ++ lib.optional (!withHyprland) "-DHYPRLAND=OFF";
 
   buildPhase = "ninjaBuildPhase";

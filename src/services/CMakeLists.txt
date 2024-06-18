@@ -9,3 +9,7 @@ endif()
 if (SERVICE_MPRIS)
 	add_subdirectory(mpris)
 endif()
+
+if (SERVICE_PAM)
+	add_subdirectory(pam)
+endif()

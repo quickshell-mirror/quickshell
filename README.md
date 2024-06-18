@@ -45,6 +45,7 @@ quickshell.packages.<system>.default.override {
   withWayland = true;
   withX11 = true;
   withPipewire = true;
+  withPam = true;
   withHyprland = true;
 }
 ```
