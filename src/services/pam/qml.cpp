@@ -201,14 +201,14 @@ bool PamContext::messageIsError() const { return this->mMessageIsError; }
 bool PamContext::isResponseRequired() const { return this->mIsResponseRequired; }
 
 void PamContext::onCompleted(PamResult::Enum result) {
-	emit this->completed(result);
 	this->abortConversation();
+	emit this->completed(result);
 }
 
 void PamContext::onError(PamError::Enum error) {
+	this->abortConversation();
 	emit this->error(error);
 	emit this->completed(PamResult::Error);
-	this->abortConversation();
 }
 
 void PamContext::onMessage(
