@@ -61,9 +61,15 @@ private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void incubationControllerDestroyed();
+	void quit();
+	void exit(int code);
 
 private:
 	void postReload();
 	void assignIncubationController();
 	QVector<QPair<QQmlIncubationController*, QObject*>> incubationControllers;
+
+	bool destroying = false;
+	bool shouldTerminate = false;
+	int exitCode = 0;
 };

@@ -52,6 +52,9 @@ EngineGeneration::~EngineGeneration() {
 }
 
 void EngineGeneration::destroy() {
+	if (this->destroying) return;
+	this->destroying = true;
+
 	if (this->watcher != nullptr) {
 		// Multiple generations can detect a reload at the same time.
 		QObject::disconnect(this->watcher, nullptr, this, nullptr);
@@ -71,7 +74,12 @@ void EngineGeneration::destroy() {
 
 			delete this->engine;
 			this->engine = nullptr;
+
+			auto terminate = this->shouldTerminate;
+			auto code = this->exitCode;
 			delete this;
+
+			if (terminate) QCoreApplication::exit(code);
 		});
 
 		this->root->deleteLater();
@@ -80,11 +88,18 @@ void EngineGeneration::destroy() {
 		// the engine has never been used, no need to clean up
 		delete this->engine;
 		this->engine = nullptr;
+
+		auto terminate = this->shouldTerminate;
+		auto code = this->exitCode;
 		delete this;
+
+		if (terminate) QCoreApplication::exit(code);
 	}
 }
 
 void EngineGeneration::shutdown() {
+	if (this->destroying) return;
+
 	delete this->root;
 	this->root = nullptr;
 	delete this->engine;
@@ -100,9 +115,8 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 		old->assignIncubationController();
 	}
 
-	auto* app = QCoreApplication::instance();
-	QObject::connect(this->engine, &QQmlEngine::quit, app, &QCoreApplication::quit);
-	QObject::connect(this->engine, &QQmlEngine::exit, app, &QCoreApplication::exit);
+	QObject::connect(this->engine, &QQmlEngine::quit, this, &EngineGeneration::quit);
+	QObject::connect(this->engine, &QQmlEngine::exit, this, &EngineGeneration::exit);
 
 	this->root->reload(old == nullptr ? nullptr : old->root);
 	this->singletonRegistry.onReload(old == nullptr ? nullptr : &old->singletonRegistry);
@@ -264,6 +278,17 @@ void EngineGeneration::incubationControllerDestroyed() {
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
 	}
+}
+
+void EngineGeneration::quit() {
+	this->shouldTerminate = true;
+	this->destroy();
+}
+
+void EngineGeneration::exit(int code) {
+	this->shouldTerminate = true;
+	this->exitCode = code;
+	this->destroy();
 }
 
 void EngineGeneration::assignIncubationController() {
