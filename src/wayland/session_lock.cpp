@@ -130,7 +130,11 @@ void WlSessionLock::unlock() {
 	}
 }
 
-void WlSessionLock::onScreensChanged() { this->updateSurfaces(true); }
+void WlSessionLock::onScreensChanged() {
+	if (this->manager != nullptr && this->manager->isLocked()) {
+		this->updateSurfaces(true);
+	}
+}
 
 bool WlSessionLock::isLocked() const {
 	return this->manager == nullptr ? this->lockTarget : this->manager->isLocked();
