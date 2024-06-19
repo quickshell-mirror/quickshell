@@ -63,6 +63,8 @@ LockWindowExtension* LockWindowExtension::get(QWindow* window) {
 	}
 }
 
+bool LockWindowExtension::isAttached() const { return this->surface != nullptr; }
+
 bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 	if (this->surface != nullptr)
 		qFatal() << "Cannot change the attached window of a LockWindowExtension";

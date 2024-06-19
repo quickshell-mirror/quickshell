@@ -61,6 +61,8 @@ public:
 	~LockWindowExtension() override;
 	Q_DISABLE_COPY_MOVE(LockWindowExtension);
 
+	[[nodiscard]] bool isAttached() const;
+
 	// Attach this lock extension to the given window.
 	// The extension is reparented to the window and replaces any existing lock extension.
 	// Returns false if the window cannot be used.
@@ -69,8 +71,6 @@ public:
 	// This must be called in place of QWindow::setVisible. Calling QWindow::setVisible will result in a crash.
 	// To make a window invisible, destroy it as it cannot be recovered.
 	void setVisible();
-
-	[[nodiscard]] bool isLocked() const;
 
 	static LockWindowExtension* get(QWindow* window);
 

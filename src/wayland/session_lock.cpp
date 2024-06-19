@@ -46,60 +46,72 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 	}
 	// clang-format on
 
-	if (this->lockTarget) {
-		if (!this->manager->lock()) this->lockTarget = false;
-		this->updateSurfaces(old);
-	} else {
-		this->setLocked(false);
+	this->realizeLockTarget(old);
+}
+
+void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
+	auto screens = QGuiApplication::screens();
+
+	auto map = this->surfaces.toStdMap();
+	for (auto& [screen, surface]: map) {
+		if (!screens.contains(screen)) {
+			this->surfaces.remove(screen);
+			surface->deleteLater();
+		}
+	}
+
+	for (auto* screen: screens) {
+		if (!this->surfaces.contains(screen)) {
+			auto* instanceObj =
+			    this->mSurfaceComponent->create(QQmlEngine::contextForObject(this->mSurfaceComponent));
+			auto* instance = qobject_cast<WlSessionLockSurface*>(instanceObj);
+
+			if (instance == nullptr) {
+				qWarning(
+				) << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
+				if (instanceObj != nullptr) instanceObj->deleteLater();
+				this->unlock();
+				return;
+			}
+
+			instance->setParent(this);
+			instance->setScreen(screen);
+
+			auto* oldInstance = old == nullptr ? nullptr : old->surfaces.value(screen, nullptr);
+			instance->reload(oldInstance);
+
+			this->surfaces[screen] = instance;
+		}
+	}
+
+	if (show) {
+		if (!this->manager->isLocked()) {
+			qFatal() << "Tried to show lockscreen surfaces without active lock";
+		}
+
+		for (auto* surface: this->surfaces.values()) {
+			surface->show();
+		}
 	}
 }
 
-void WlSessionLock::updateSurfaces(WlSessionLock* old) {
-	if (this->manager->isLocked()) {
-		auto screens = QGuiApplication::screens();
-
-		auto map = this->surfaces.toStdMap();
-		for (auto& [screen, surface]: map) {
-			if (!screens.contains(screen)) {
-				this->surfaces.remove(screen);
-				surface->deleteLater();
-			}
-		}
-
+void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
+	if (this->lockTarget) {
 		if (this->mSurfaceComponent == nullptr) {
 			qWarning() << "WlSessionLock.surface is null. Aborting lock.";
 			this->unlock();
 			return;
 		}
 
-		for (auto* screen: screens) {
-			if (!this->surfaces.contains(screen)) {
-				auto* instanceObj =
-				    this->mSurfaceComponent->create(QQmlEngine::contextForObject(this->mSurfaceComponent));
-				auto* instance = qobject_cast<WlSessionLockSurface*>(instanceObj);
+		// preload initial surfaces to make the chance of the compositor displaying a blank
+		// frame before the lock surfaces are shown as low as possible.
+		this->updateSurfaces(false);
 
-				if (instance == nullptr) {
-					qWarning(
-					) << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
-					if (instanceObj != nullptr) instanceObj->deleteLater();
-					this->unlock();
-					return;
-				}
+		if (!this->manager->lock()) this->lockTarget = false;
 
-				instance->setParent(this);
-				instance->setScreen(screen);
-
-				auto* oldInstance = old == nullptr ? nullptr : old->surfaces.value(screen, nullptr);
-				instance->reload(oldInstance);
-				instance->attach();
-
-				this->surfaces[screen] = instance;
-			}
-
-			for (auto* surface: this->surfaces.values()) {
-				surface->show();
-			}
-		}
+		this->updateSurfaces(true, old);
+	} else {
+		this->unlock(); // emits lockStateChanged
 	}
 }
 
@@ -118,7 +130,7 @@ void WlSessionLock::unlock() {
 	}
 }
 
-void WlSessionLock::onScreensChanged() { this->updateSurfaces(); }
+void WlSessionLock::onScreensChanged() { this->updateSurfaces(true); }
 
 bool WlSessionLock::isLocked() const {
 	return this->manager == nullptr ? this->lockTarget : this->manager->isLocked();
@@ -137,18 +149,17 @@ void WlSessionLock::setLocked(bool locked) {
 		return;
 	}
 
-	if (locked) {
-		if (!this->manager->lock()) this->lockTarget = false;
-		this->updateSurfaces();
-		if (this->lockTarget) emit this->lockStateChanged();
-	} else {
-		this->unlock(); // emits lockStateChanged
-	}
+	this->realizeLockTarget();
 }
 
 QQmlComponent* WlSessionLock::surfaceComponent() const { return this->mSurfaceComponent; }
 
 void WlSessionLock::setSurfaceComponent(QQmlComponent* surfaceComponent) {
+	if (this->manager != nullptr && this->manager->isLocked()) {
+		qCritical() << "WlSessionLock.surfaceComponent cannot be changed while the lock is active.";
+		return;
+	}
+
 	if (this->mSurfaceComponent != nullptr) this->mSurfaceComponent->deleteLater();
 	if (surfaceComponent != nullptr) surfaceComponent->setParent(this);
 
@@ -202,6 +213,8 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 }
 
 void WlSessionLockSurface::attach() {
+	if (this->ext->isAttached()) return;
+
 	if (auto* parent = qobject_cast<WlSessionLock*>(this->parent())) {
 		if (!this->ext->attach(this->window, parent->manager)) {
 			qFatal() << "Failed to attach WlSessionLockSurface";
@@ -220,7 +233,10 @@ QQuickWindow* WlSessionLockSurface::disownWindow() {
 	return window;
 }
 
-void WlSessionLockSurface::show() { this->ext->setVisible(); }
+void WlSessionLockSurface::show() {
+	this->attach();
+	this->ext->setVisible();
+}
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
 
@@ -257,8 +273,11 @@ void WlSessionLockSurface::setScreen(QScreen* qscreen) {
 		QObject::connect(qscreen, &QObject::destroyed, this, &WlSessionLockSurface::onScreenDestroyed);
 	}
 
-	if (this->window == nullptr) this->mScreen = qscreen;
-	else this->window->setScreen(qscreen);
+	if (this->window == nullptr) {
+		this->mScreen = qscreen;
+	} else {
+		this->window->setScreen(qscreen);
+	}
 
 	emit this->screenChanged();
 }

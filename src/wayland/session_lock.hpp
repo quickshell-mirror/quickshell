@@ -97,7 +97,8 @@ private slots:
 	void onScreensChanged();
 
 private:
-	void updateSurfaces(WlSessionLock* old = nullptr);
+	void updateSurfaces(bool show, WlSessionLock* old = nullptr);
+	void realizeLockTarget(WlSessionLock* old = nullptr);
 
 	SessionLockManager* manager = nullptr;
 	QQmlComponent* mSurfaceComponent = nullptr;
