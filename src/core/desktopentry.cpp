@@ -4,10 +4,8 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
-#include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qlist.h>
-#include <qlocale.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qnamespace.h>
@@ -94,7 +92,7 @@ void DesktopEntry::parseEntry(const QString& text) {
 	auto groupName = QString();
 	auto entries = QHash<QString, QPair<Locale, QString>>();
 
-	auto finishCategory = [&]() {
+	auto finishCategory = [this, &groupName, &entries]() {
 		if (groupName == "Desktop Entry") {
 			if (entries["Type"].second != "Application") return;
 			if (entries.contains("Hidden") && entries["Hidden"].second == "true") return;
@@ -334,13 +332,13 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 
 			qCDebug(logDesktopEntry) << "Found desktop entry" << id << "at" << path;
 
-			if (desktopEntries.contains(id)) {
+			if (this->desktopEntries.contains(id)) {
 				qCDebug(logDesktopEntry) << "Replacing old entry for" << id;
-				delete desktopEntries.value(id);
-				desktopEntries.remove(id);
+				delete this->desktopEntries.value(id);
+				this->desktopEntries.remove(id);
 			}
 
-			desktopEntries.insert(id, dentry);
+			this->desktopEntries.insert(id, dentry);
 		}
 	}
 }

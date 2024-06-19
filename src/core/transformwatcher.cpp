@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
+#include <qtmetamacros.h>
 
 void TransformWatcher::resolveChains(QQuickItem* a, QQuickItem* b, QQuickItem* commonParent) {
 	if (a == nullptr || b == nullptr) return;

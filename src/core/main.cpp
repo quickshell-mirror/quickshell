@@ -10,7 +10,9 @@
 #include <qguiapplication.h>
 #include <qhash.h>
 #include <qicon.h>
+#include <qlist.h>
 #include <qlogging.h>
+#include <qnamespace.h>
 #include <qqmldebug.h>
 #include <qquickwindow.h>
 #include <qstandardpaths.h>

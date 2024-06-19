@@ -377,58 +377,55 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 	if (this->requestingWorkspaces) return;
 	this->requestingWorkspaces = true;
 
-	this->makeRequest(
-	    "j/workspaces",
-	    [this, canCreate](bool success, const QByteArray& resp) {
-		    this->requestingWorkspaces = false;
-		    if (!success) return;
+	this->makeRequest("j/workspaces", [this, canCreate](bool success, const QByteArray& resp) {
+		this->requestingWorkspaces = false;
+		if (!success) return;
 
-		    qCDebug(logHyprlandIpc) << "parsing workspaces response";
-		    auto json = QJsonDocument::fromJson(resp).array();
+		qCDebug(logHyprlandIpc) << "parsing workspaces response";
+		auto json = QJsonDocument::fromJson(resp).array();
 
-		    const auto& mList = this->mWorkspaces.valueList();
-		    auto names = QVector<QString>();
+		const auto& mList = this->mWorkspaces.valueList();
+		auto names = QVector<QString>();
 
-		    for (auto entry: json) {
-			    auto object = entry.toObject().toVariantMap();
-			    auto name = object.value("name").toString();
+		for (auto entry: json) {
+			auto object = entry.toObject().toVariantMap();
+			auto name = object.value("name").toString();
 
-			    auto workspaceIter =
-			        std::find_if(mList.begin(), mList.end(), [name](const HyprlandWorkspace* m) {
-				        return m->name() == name;
-			        });
+			auto workspaceIter =
+			    std::find_if(mList.begin(), mList.end(), [name](const HyprlandWorkspace* m) {
+				    return m->name() == name;
+			    });
 
-			    auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
-			    auto existed = workspace != nullptr;
+			auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
+			auto existed = workspace != nullptr;
 
-			    if (workspace == nullptr) {
-				    if (!canCreate) continue;
-				    workspace = new HyprlandWorkspace(this);
-			    }
+			if (workspace == nullptr) {
+				if (!canCreate) continue;
+				workspace = new HyprlandWorkspace(this);
+			}
 
-			    workspace->updateFromObject(object);
+			workspace->updateFromObject(object);
 
-			    if (!existed) {
-				    this->mWorkspaces.insertObject(workspace);
-			    }
+			if (!existed) {
+				this->mWorkspaces.insertObject(workspace);
+			}
 
-			    names.push_back(name);
-		    }
+			names.push_back(name);
+		}
 
-		    auto removedWorkspaces = QVector<HyprlandWorkspace*>();
+		auto removedWorkspaces = QVector<HyprlandWorkspace*>();
 
-		    for (auto* workspace: mList) {
-			    if (!names.contains(workspace->name())) {
-				    removedWorkspaces.push_back(workspace);
-			    }
-		    }
+		for (auto* workspace: mList) {
+			if (!names.contains(workspace->name())) {
+				removedWorkspaces.push_back(workspace);
+			}
+		}
 
-		    for (auto* workspace: removedWorkspaces) {
-			    this->mWorkspaces.removeObject(workspace);
-			    delete workspace;
-		    }
-	    }
-	);
+		for (auto* workspace: removedWorkspaces) {
+			this->mWorkspaces.removeObject(workspace);
+			delete workspace;
+		}
+	});
 }
 
 HyprlandMonitor*
@@ -489,61 +486,57 @@ void HyprlandIpc::refreshMonitors(bool canCreate) {
 	if (this->requestingMonitors) return;
 	this->requestingMonitors = true;
 
-	this->makeRequest(
-	    "j/monitors",
-	    [this, canCreate](bool success, const QByteArray& resp) {
-		    this->requestingMonitors = false;
-		    if (!success) return;
+	this->makeRequest("j/monitors", [this, canCreate](bool success, const QByteArray& resp) {
+		this->requestingMonitors = false;
+		if (!success) return;
 
-		    this->monitorsRequested = true;
+		this->monitorsRequested = true;
 
-		    qCDebug(logHyprlandIpc) << "parsing monitors response";
-		    auto json = QJsonDocument::fromJson(resp).array();
+		qCDebug(logHyprlandIpc) << "parsing monitors response";
+		auto json = QJsonDocument::fromJson(resp).array();
 
-		    const auto& mList = this->mMonitors.valueList();
-		    auto names = QVector<QString>();
+		const auto& mList = this->mMonitors.valueList();
+		auto names = QVector<QString>();
 
-		    for (auto entry: json) {
-			    auto object = entry.toObject().toVariantMap();
-			    auto name = object.value("name").toString();
+		for (auto entry: json) {
+			auto object = entry.toObject().toVariantMap();
+			auto name = object.value("name").toString();
 
-			    auto monitorIter =
-			        std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
-				        return m->name() == name;
-			        });
+			auto monitorIter = std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
+				return m->name() == name;
+			});
 
-			    auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
-			    auto existed = monitor != nullptr;
+			auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
+			auto existed = monitor != nullptr;
 
-			    if (monitor == nullptr) {
-				    if (!canCreate) continue;
-				    monitor = new HyprlandMonitor(this);
-			    }
+			if (monitor == nullptr) {
+				if (!canCreate) continue;
+				monitor = new HyprlandMonitor(this);
+			}
 
-			    monitor->updateFromObject(object);
+			monitor->updateFromObject(object);
 
-			    if (!existed) {
-				    this->mMonitors.insertObject(monitor);
-			    }
+			if (!existed) {
+				this->mMonitors.insertObject(monitor);
+			}
 
-			    names.push_back(name);
-		    }
+			names.push_back(name);
+		}
 
-		    auto removedMonitors = QVector<HyprlandMonitor*>();
+		auto removedMonitors = QVector<HyprlandMonitor*>();
 
-		    for (auto* monitor: mList) {
-			    if (!names.contains(monitor->name())) {
-				    removedMonitors.push_back(monitor);
-			    }
-		    }
+		for (auto* monitor: mList) {
+			if (!names.contains(monitor->name())) {
+				removedMonitors.push_back(monitor);
+			}
+		}
 
-		    for (auto* monitor: removedMonitors) {
-			    this->mMonitors.removeObject(monitor);
-			    // see comment in onEvent
-			    monitor->deleteLater();
-		    }
-	    }
-	);
+		for (auto* monitor: removedMonitors) {
+			this->mMonitors.removeObject(monitor);
+			// see comment in onEvent
+			monitor->deleteLater();
+		}
+	});
 }
 
 } // namespace qs::hyprland::ipc
