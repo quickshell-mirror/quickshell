@@ -46,6 +46,8 @@ class PamContext
 	///
 	/// Responses can be returned with the `respond()` function.
 	Q_PROPERTY(bool responseRequired READ isResponseRequired NOTIFY responseRequiredChanged);
+	/// If the user's response should be visible. Only valid when `responseRequired` is true.
+	Q_PROPERTY(bool responseVisible READ isResponseVisible NOTIFY responseVisibleChanged);
 	// clang-format on
 	QML_ELEMENT;
 
@@ -84,6 +86,7 @@ public:
 	[[nodiscard]] QString message() const;
 	[[nodiscard]] bool messageIsError() const;
 	[[nodiscard]] bool isResponseRequired() const;
+	[[nodiscard]] bool isResponseVisible() const;
 
 signals:
 	/// Emitted whenever authentication completes.
@@ -104,11 +107,12 @@ signals:
 	void messageChanged();
 	void messageIsErrorChanged();
 	void responseRequiredChanged();
+	void responseVisibleChanged();
 
 private slots:
 	void onCompleted(PamResult::Enum result);
 	void onError(PamError::Enum error);
-	void onMessage(QString message, bool messageChanged, bool isError, bool responseRequired);
+	void onMessage(QString message, bool isError, bool responseRequired, bool responseVisible);
 
 private:
 	PamConversation* conversation = nullptr;
@@ -121,4 +125,5 @@ private:
 	QString mMessage;
 	bool mMessageIsError = false;
 	bool mIsResponseRequired = false;
+	bool mIsResponseVisible = false;
 };

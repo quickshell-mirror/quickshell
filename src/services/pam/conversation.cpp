@@ -123,12 +123,7 @@ void PamConversation::onMessage() {
 
 			if (!ok) goto fail;
 
-			this->message(
-			    QString::fromUtf8(message),
-			    /*flags.echo*/ true,
-			    flags.error,
-			    flags.responseRequired
-			);
+			this->message(QString::fromUtf8(message), flags.error, flags.responseRequired, flags.echo);
 		} else {
 			qCCritical(logPam) << "Unexpected message from subprocess.";
 			goto fail;

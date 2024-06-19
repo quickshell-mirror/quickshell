@@ -193,6 +193,7 @@ void PamContext::setUser(QString user) {
 QString PamContext::message() const { return this->mMessage; }
 bool PamContext::messageIsError() const { return this->mMessageIsError; }
 bool PamContext::isResponseRequired() const { return this->mIsResponseRequired; }
+bool PamContext::isResponseVisible() const { return this->mIsResponseVisible; }
 
 void PamContext::onCompleted(PamResult::Enum result) {
 	this->abortConversation();
@@ -207,20 +208,23 @@ void PamContext::onError(PamError::Enum error) {
 
 void PamContext::onMessage(
     QString message,
-    bool messageChanged,
     bool isError,
-    bool responseRequired
+    bool responseRequired,
+    bool responseVisible
 ) {
-	if (messageChanged) {
-		if (message != this->mMessage) {
-			this->mMessage = std::move(message);
-			emit this->messageChanged();
-		}
+	if (message != this->mMessage) {
+		this->mMessage = std::move(message);
+		emit this->messageChanged();
+	}
 
-		if (isError != this->mMessageIsError) {
-			this->mMessageIsError = isError;
-			emit this->messageIsErrorChanged();
-		}
+	if (isError != this->mMessageIsError) {
+		this->mMessageIsError = isError;
+		emit this->messageIsErrorChanged();
+	}
+
+	if (responseVisible != this->mIsResponseVisible) {
+		this->mIsResponseVisible = responseVisible;
+		emit this->responseVisibleChanged();
 	}
 
 	if (responseRequired != this->mIsResponseRequired) {
