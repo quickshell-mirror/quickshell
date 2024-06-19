@@ -54,9 +54,15 @@ Note: by default this package is built with clang as it is significantly faster.
 
 ## Arch (AUR)
 Quickshell has a third party [AUR package] available under the same name.
-As is usual with the AUR it is not maintained by us and should be looked over before use.
+It is not managed by us and should be looked over before use.
 
 [AUR package]: https://aur.archlinux.org/packages/quickshell
+
+## Fedora (COPR)
+Quickshell has a third party [Fedora COPR package] available under the same name.
+It is not managed by us and should be looked over before use.
+
+[Fedora COPR package]: https://copr.fedorainfracloud.org/coprs/errornointernet/quickshell
 
 ## Anything else
 See [BUILD.md](BUILD.md) for instructions on building and packaging quickshell.
