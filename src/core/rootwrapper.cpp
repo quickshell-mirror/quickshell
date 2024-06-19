@@ -35,11 +35,8 @@ RootWrapper::RootWrapper(QString rootPath)
 RootWrapper::~RootWrapper() {
 	// event loop may no longer be running so deleteLater is not an option
 	if (this->generation != nullptr) {
-		delete this->generation->root;
-		this->generation->root = nullptr;
+		this->generation->shutdown();
 	}
-
-	delete this->generation;
 }
 
 void RootWrapper::reloadGraph(bool hard) {

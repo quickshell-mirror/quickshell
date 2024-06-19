@@ -51,6 +51,7 @@ public:
 	QuickshellGlobal* qsgInstance = nullptr;
 
 	void destroy();
+	void shutdown();
 
 signals:
 	void filesChanged();

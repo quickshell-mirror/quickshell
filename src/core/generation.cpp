@@ -84,6 +84,14 @@ void EngineGeneration::destroy() {
 	}
 }
 
+void EngineGeneration::shutdown() {
+	delete this->root;
+	this->root = nullptr;
+	delete this->engine;
+	this->engine = nullptr;
+	delete this;
+}
+
 void EngineGeneration::onReload(EngineGeneration* old) {
 	if (old != nullptr) {
 		// if the old generation holds the window incubation controller as the
