@@ -302,6 +302,12 @@ void EngineGeneration::assignIncubationController() {
 	this->engine->setIncubationController(controller);
 }
 
+EngineGeneration* EngineGeneration::currentGeneration() {
+	if (g_generations.size() == 1) {
+		return *g_generations.begin();
+	} else return nullptr;
+}
+
 EngineGeneration* EngineGeneration::findEngineGeneration(QQmlEngine* engine) {
 	return g_generations.value(engine);
 }

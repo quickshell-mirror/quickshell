@@ -36,6 +36,10 @@ public:
 	static EngineGeneration* findEngineGeneration(QQmlEngine* engine);
 	static EngineGeneration* findObjectGeneration(QObject* object);
 
+	// Returns the current generation if there is only one generation,
+	// otherwise null.
+	static EngineGeneration* currentGeneration();
+
 	RootWrapper* wrapper = nullptr;
 	QDir rootPath;
 	QmlScanner scanner;
@@ -57,12 +61,14 @@ signals:
 	void filesChanged();
 	void reloadFinished();
 
+public slots:
+	void quit();
+	void exit(int code);
+
 private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void incubationControllerDestroyed();
-	void quit();
-	void exit(int code);
 
 private:
 	void postReload();

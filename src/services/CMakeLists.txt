@@ -13,3 +13,7 @@ endif()
 if (SERVICE_PAM)
 	add_subdirectory(pam)
 endif()
+
+if (SERVICE_GREETD)
+	add_subdirectory(greetd)
+endif()

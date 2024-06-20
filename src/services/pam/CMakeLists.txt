@@ -1,11 +1,10 @@
-#find_package(PAM REQUIRED)
-
 qt_add_library(quickshell-service-pam STATIC
 	qml.cpp
 	conversation.cpp
 	ipc.cpp
 	subprocess.cpp
 )
+
 qt_add_qml_module(quickshell-service-pam
 	URI Quickshell.Services.Pam
 	VERSION 0.1
