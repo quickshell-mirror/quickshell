@@ -118,9 +118,9 @@ class PanelWindowInterface: public WindowInterface {
 	/// Defaults to `ExclusionMode.Auto`.
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// If the panel should render above standard windows. Defaults to true.
-	QSDOC_HIDE Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
+	Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
 	/// Defaults to false.
-	QSDOC_HIDE Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
+	Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
 	QSDOC_NAMED_ELEMENT(PanelWindow);
 
