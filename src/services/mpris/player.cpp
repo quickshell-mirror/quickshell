@@ -71,6 +71,10 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 	QObject::connect(&this->pCanGoPrevious, &AbstractDBusProperty::changed, this, &MprisPlayer::canGoPreviousChanged);
 	QObject::connect(&this->pCanPlay, &AbstractDBusProperty::changed, this, &MprisPlayer::canPlayChanged);
 	QObject::connect(&this->pCanPause, &AbstractDBusProperty::changed, this, &MprisPlayer::canPauseChanged);
+
+	QObject::connect(&this->pCanPlay, &AbstractDBusProperty::changed, this, &MprisPlayer::canTogglePlayingChanged);
+	QObject::connect(&this->pCanPause, &AbstractDBusProperty::changed, this, &MprisPlayer::canTogglePlayingChanged);
+
 	QObject::connect(&this->pPosition, &AbstractDBusProperty::changed, this, &MprisPlayer::onPositionChanged);
 	QObject::connect(this->player, &DBusMprisPlayer::Seeked, this, &MprisPlayer::onSeek);
 	QObject::connect(&this->pVolume, &AbstractDBusProperty::changed, this, &MprisPlayer::volumeChanged);
@@ -148,6 +152,12 @@ QString MprisPlayer::address() const { return this->player->service(); }
 bool MprisPlayer::canControl() const { return this->pCanControl.get(); }
 bool MprisPlayer::canPlay() const { return this->canControl() && this->pCanPlay.get(); }
 bool MprisPlayer::canPause() const { return this->canControl() && this->pCanPause.get(); }
+
+bool MprisPlayer::canTogglePlaying() const {
+	if (this->mPlaybackState == MprisPlaybackState::Playing) return this->canPlay();
+	else return this->canPause();
+}
+
 bool MprisPlayer::canSeek() const { return this->canControl() && this->pCanSeek.get(); }
 bool MprisPlayer::canGoNext() const { return this->canControl() && this->pCanGoNext.get(); }
 bool MprisPlayer::canGoPrevious() const { return this->canControl() && this->pCanGoPrevious.get(); }
@@ -324,6 +334,20 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 	default:
 		qWarning() << "Cannot set playbackState of" << this << "to unknown value" << playbackState;
 		return;
+	}
+}
+
+void MprisPlayer::play() { this->setPlaybackState(MprisPlaybackState::Playing); }
+
+void MprisPlayer::pause() { this->setPlaybackState(MprisPlaybackState::Paused); }
+
+void MprisPlayer::stop() { this->setPlaybackState(MprisPlaybackState::Stopped); }
+
+void MprisPlayer::togglePlaying() {
+	if (this->mPlaybackState == MprisPlaybackState::Playing) {
+		this->pause();
+	} else {
+		this->play();
 	}
 }
 

@@ -60,6 +60,7 @@ class MprisPlayer: public QObject {
 	Q_PROPERTY(bool canControl READ canControl NOTIFY canControlChanged);
 	Q_PROPERTY(bool canPlay READ canPlay NOTIFY canPlayChanged);
 	Q_PROPERTY(bool canPause READ canPause NOTIFY canPauseChanged);
+	Q_PROPERTY(bool canTogglePlaying READ canTogglePlaying NOTIFY canTogglePlayingChanged);
 	Q_PROPERTY(bool canSeek READ canSeek NOTIFY canSeekChanged);
 	Q_PROPERTY(bool canGoNext READ canGoNext NOTIFY canGoNextChanged);
 	Q_PROPERTY(bool canGoPrevious READ canGoPrevious NOTIFY canGoPreviousChanged);
@@ -191,6 +192,17 @@ public:
 	///
 	/// May only be called if `canSeek` is true.
 	Q_INVOKABLE void seek(qreal offset);
+	/// Equivalent to setting `playbackState` to `Playing`.
+	Q_INVOKABLE void play();
+	/// Equivalent to setting `playbackState` to `Paused`.
+	Q_INVOKABLE void pause();
+	/// Equivalent to setting `playbackState` to `Stopped`.
+	Q_INVOKABLE void stop();
+	/// Equivalent to calling `play()` if not playing or `pause()` if playing.
+	///
+	/// May only be called if `canTogglePlaying` is true, which is equivalent to
+	/// `canPlay` or `canPause` depending on the current playback state.
+	Q_INVOKABLE void togglePlaying();
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString address() const;
@@ -201,6 +213,7 @@ public:
 	[[nodiscard]] bool canGoPrevious() const;
 	[[nodiscard]] bool canPlay() const;
 	[[nodiscard]] bool canPause() const;
+	[[nodiscard]] bool canTogglePlaying() const;
 	[[nodiscard]] bool canQuit() const;
 	[[nodiscard]] bool canRaise() const;
 	[[nodiscard]] bool canSetFullscreen() const;
@@ -251,6 +264,7 @@ signals:
 	void canControlChanged();
 	void canPlayChanged();
 	void canPauseChanged();
+	void canTogglePlayingChanged();
 	void canSeekChanged();
 	void canGoNextChanged();
 	void canGoPreviousChanged();
