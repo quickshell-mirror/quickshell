@@ -122,7 +122,21 @@ class MprisPlayer: public QObject {
 	///
 	/// A map of common properties is available [here](https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata).
 	/// Do not count on any of them actually being present.
+	///
+	/// Note that the `trackTitle`, `trackAlbum`, `trackAlbumArtist`, `trackArtists` and `trackArtUrl`
+	/// properties have extra logic to guard against bad players sending weird metadata, and should
+	/// be used over grabbing the properties directly from the metadata.
 	Q_PROPERTY(QVariantMap metadata READ metadata NOTIFY metadataChanged);
+	/// The title of the current track, or "Unknown Track" if none was provided.
+	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged);
+	/// The current track's album, or "Unknown Album" if none was provided.
+	Q_PROPERTY(QString trackAlbum READ trackAlbum NOTIFY trackAlbumChanged);
+	/// The current track's album artist, or "Unknown Artist" if none was provided.
+	Q_PROPERTY(QString trackAlbumArtist READ trackAlbumArtist NOTIFY trackAlbumArtistChanged);
+	/// The current track's artists, or an empty list if none were provided.
+	Q_PROPERTY(QVector<QString> trackArtists READ trackArtists NOTIFY trackArtistsChanged);
+	/// The current track's art url, or `""` if none was provided.
+	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged);
 	/// The playback state of the media player.
 	///
 	/// - If `canPlay` is false, you cannot assign the `Playing` state.
@@ -234,6 +248,11 @@ public:
 	void setVolume(qreal volume);
 
 	[[nodiscard]] QVariantMap metadata() const;
+	[[nodiscard]] QString trackTitle() const;
+	[[nodiscard]] QString trackAlbum() const;
+	[[nodiscard]] QString trackAlbumArtist() const;
+	[[nodiscard]] QVector<QString> trackArtists() const;
+	[[nodiscard]] QString trackArtUrl() const;
 
 	[[nodiscard]] MprisPlaybackState::Enum playbackState() const;
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
@@ -280,6 +299,11 @@ signals:
 	void volumeChanged();
 	void volumeSupportedChanged();
 	void metadataChanged();
+	void trackTitleChanged();
+	void trackAlbumChanged();
+	void trackAlbumArtistChanged();
+	void trackArtistsChanged();
+	void trackArtUrlChanged();
 	void playbackStateChanged();
 	void loopStateChanged();
 	void loopSupportedChanged();
@@ -302,6 +326,12 @@ private slots:
 	void onLoopStatusChanged();
 
 private:
+	void setTrackTitle(QString title);
+	void setTrackAlbum(QString album);
+	void setTrackAlbumArtist(QString albumArtist);
+	void setTrackArtists(QVector<QString> artists);
+	void setTrackArtUrl(QString artUrl);
+
 	// clang-format off
 	dbus::DBusPropertyGroup appProperties;
 	dbus::DBusProperty<QString> pIdentity {this->appProperties, "Identity"};
@@ -340,7 +370,12 @@ private:
 	DBusMprisPlayerApp* app = nullptr;
 	DBusMprisPlayer* player = nullptr;
 	QString mTrackId;
-	QString mUrl;
+	QString mTrackUrl;
+	QString mTrackTitle;
+	QString mTrackAlbum;
+	QString mTrackAlbumArtist;
+	QVector<QString> mTrackArtists;
+	QString mTrackArtUrl;
 };
 
 } // namespace qs::service::mpris

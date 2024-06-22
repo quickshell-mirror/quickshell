@@ -1,4 +1,5 @@
 #include "player.hpp"
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
@@ -255,6 +256,11 @@ void MprisPlayer::setVolume(qreal volume) {
 }
 
 QVariantMap MprisPlayer::metadata() const { return this->pMetadata.get(); }
+QString MprisPlayer::trackTitle() const { return this->mTrackTitle; }
+QString MprisPlayer::trackAlbum() const { return this->mTrackAlbum; }
+QString MprisPlayer::trackAlbumArtist() const { return this->mTrackAlbumArtist; }
+QVector<QString> MprisPlayer::trackArtists() const { return this->mTrackArtists; }
+QString MprisPlayer::trackArtUrl() const { return this->mTrackArtUrl; }
 
 void MprisPlayer::onMetadataChanged() {
 	emit this->metadataChanged();
@@ -274,7 +280,7 @@ void MprisPlayer::onMetadataChanged() {
 
 	auto trackidVariant = this->pMetadata.get().value("mpris:trackid");
 	if (trackidVariant.isValid() && trackidVariant.canConvert<QString>()) {
-		auto trackId = trackidVariant.value<QString>();
+		auto trackId = trackidVariant.toString();
 
 		if (trackId != this->mTrackId) {
 			this->mTrackId = trackId;
@@ -285,12 +291,47 @@ void MprisPlayer::onMetadataChanged() {
 	// Helps to catch players without trackid.
 	auto urlVariant = this->pMetadata.get().value("xesam:url");
 	if (urlVariant.isValid() && urlVariant.canConvert<QString>()) {
-		auto url = urlVariant.value<QString>();
+		auto url = urlVariant.toString();
 
-		if (url != this->mUrl) {
-			this->mUrl = url;
+		if (url != this->mTrackUrl) {
+			this->mTrackUrl = url;
 			trackChanged = true;
 		}
+	}
+
+	auto trackTitle = this->pMetadata.get().value("xesam:title");
+	if (trackTitle.isValid() && trackTitle.canConvert<QString>()) {
+		this->setTrackTitle(trackTitle.toString());
+	} else if (trackChanged) {
+		this->setTrackTitle("Unknown Track");
+	}
+
+	auto trackAlbum = this->pMetadata.get().value("xesam:album");
+	if (trackAlbum.isValid() && trackAlbum.canConvert<QString>()) {
+		this->setTrackAlbum(trackAlbum.toString());
+	} else if (trackChanged) {
+		this->setTrackAlbum("Unknown Album");
+	}
+
+	auto trackAlbumArtist = this->pMetadata.get().value("xesam:albumArtist");
+	if (trackAlbumArtist.isValid() && trackAlbumArtist.canConvert<QString>()) {
+		this->setTrackAlbumArtist(trackAlbumArtist.toString());
+	} else if (trackChanged) {
+		this->setTrackAlbumArtist("Unknown Artist");
+	}
+
+	auto trackArtists = this->pMetadata.get().value("xesam:artist");
+	if (trackArtists.isValid() && trackArtists.canConvert<QVector<QString>>()) {
+		this->setTrackArtists(trackArtists.value<QVector<QString>>());
+	} else if (trackChanged) {
+		this->setTrackArtists({});
+	}
+
+	auto trackArtUrl = this->pMetadata.get().value("mpris:artUrl");
+	if (trackArtUrl.isValid() && trackArtUrl.canConvert<QString>()) {
+		this->setTrackArtUrl(trackArtUrl.toString());
+	} else if (trackChanged) {
+		this->setTrackArtUrl("");
 	}
 
 	if (trackChanged) {
@@ -298,6 +339,41 @@ void MprisPlayer::onMetadataChanged() {
 		this->pPosition.update();
 		emit this->trackChanged();
 	}
+}
+
+void MprisPlayer::setTrackTitle(QString title) {
+	if (title == this->mTrackTitle) return;
+
+	this->mTrackTitle = std::move(title);
+	emit this->trackTitleChanged();
+}
+
+void MprisPlayer::setTrackAlbum(QString album) {
+	if (album == this->mTrackAlbum) return;
+
+	this->mTrackAlbum = std::move(album);
+	emit this->trackAlbumChanged();
+}
+
+void MprisPlayer::setTrackAlbumArtist(QString albumArtist) {
+	if (albumArtist == this->mTrackAlbumArtist) return;
+
+	this->mTrackAlbumArtist = std::move(albumArtist);
+	emit this->trackAlbumArtistChanged();
+}
+
+void MprisPlayer::setTrackArtists(QVector<QString> artists) {
+	if (artists == this->mTrackArtists) return;
+
+	this->mTrackArtists = std::move(artists);
+	emit this->trackArtistsChanged();
+}
+
+void MprisPlayer::setTrackArtUrl(QString artUrl) {
+	if (artUrl == this->mTrackArtUrl) return;
+
+	this->mTrackArtUrl = std::move(artUrl);
+	emit this->trackArtUrlChanged();
 }
 
 MprisPlaybackState::Enum MprisPlayer::playbackState() const { return this->mPlaybackState; }
