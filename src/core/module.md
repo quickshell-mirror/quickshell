@@ -21,5 +21,6 @@ headers = [
 	"model.hpp",
 	"elapsedtimer.hpp",
 	"desktopentry.hpp",
+	"objectrepeater.hpp",
 ]
 -----
