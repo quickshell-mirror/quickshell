@@ -11,6 +11,8 @@
 #include "model.hpp"
 
 ///! A Repeater / for loop / map for non Item derived objects.
+/// > [!ERROR] Removed in favor of QtQml.Models.Instantiator
+///
 /// The ObjectRepeater creates instances of the provided delegate for every entry in the
 /// given model, similarly to a [Repeater] but for non visual types.
 ///
@@ -44,6 +46,7 @@ class ObjectRepeater: public ObjectModel<QObject> {
 	Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged);
 	Q_CLASSINFO("DefaultProperty", "delegate");
 	QML_ELEMENT;
+	QML_UNCREATABLE("ObjectRepeater has been removed in favor of QtQml.Models.Instantiator.");
 
 public:
 	explicit ObjectRepeater(QObject* parent = nullptr): ObjectModel(parent) {}
