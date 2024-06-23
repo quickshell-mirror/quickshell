@@ -62,7 +62,7 @@ private slots:
 	void onDelegateDestroyed();
 	void onModelDestroyed();
 	void onModelRowsInserted(const QModelIndex& parent, int first, int last);
-	void onModelRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+	void onModelRowsRemoved(const QModelIndex& parent, int first, int last);
 
 	void onModelRowsMoved(
 	    const QModelIndex& sourceParent,

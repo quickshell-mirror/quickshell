@@ -81,7 +81,7 @@ void ObjectRepeater::reloadElements() {
 		// clang-format off
 		QObject::connect(model, &QObject::destroyed, this, &ObjectRepeater::onModelDestroyed);
 		QObject::connect(model, &QAbstractItemModel::rowsInserted, this, &ObjectRepeater::onModelRowsInserted);
-		QObject::connect(model, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ObjectRepeater::onModelRowsAboutToBeRemoved);
+		QObject::connect(model, &QAbstractItemModel::rowsRemoved, this, &ObjectRepeater::onModelRowsRemoved);
 		QObject::connect(model, &QAbstractItemModel::rowsMoved, this, &ObjectRepeater::onModelRowsMoved);
 		QObject::connect(model, &QAbstractItemModel::modelAboutToBeReset, this, &ObjectRepeater::onModelAboutToBeReset);
 		// clang-format on
@@ -134,7 +134,7 @@ void ObjectRepeater::onModelRowsInserted(const QModelIndex& parent, int first, i
 	this->insertModelElements(this->itemModel, first, last);
 }
 
-void ObjectRepeater::onModelRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) {
+void ObjectRepeater::onModelRowsRemoved(const QModelIndex& parent, int first, int last) {
 	if (parent != QModelIndex()) return;
 
 	for (auto i = last; i != first - 1; i--) {
@@ -155,7 +155,7 @@ void ObjectRepeater::onModelRowsMoved(
 	if (!hasSource && !hasDest) return;
 
 	if (hasSource) {
-		this->onModelRowsAboutToBeRemoved(sourceParent, sourceStart, sourceEnd);
+		this->onModelRowsRemoved(sourceParent, sourceStart, sourceEnd);
 	}
 
 	if (hasDest) {
@@ -165,7 +165,7 @@ void ObjectRepeater::onModelRowsMoved(
 
 void ObjectRepeater::onModelAboutToBeReset() {
 	auto last = static_cast<int>(this->valuesList.length() - 1);
-	this->onModelRowsAboutToBeRemoved(QModelIndex(), 0, last); // -1 is fine
+	this->onModelRowsRemoved(QModelIndex(), 0, last); // -1 is fine
 }
 
 void ObjectRepeater::insertComponent(qsizetype index, const QVariantMap& properties) {
@@ -185,7 +185,6 @@ void ObjectRepeater::insertComponent(qsizetype index, const QVariantMap& propert
 
 void ObjectRepeater::removeComponent(qsizetype index) {
 	auto* instance = this->valuesList.at(index);
-	delete instance;
-
 	this->removeAt(index);
+	delete instance;
 }
