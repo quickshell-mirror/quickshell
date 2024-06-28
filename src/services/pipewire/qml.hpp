@@ -140,22 +140,22 @@ class PwNodeAudioIface: public QObject {
 	Q_OBJECT;
 	/// If the node is currently muted. Setting this property changes the mute state.
 	///
-	/// **This property is invalid unless the node is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY mutedChanged);
 	/// The average volume over all channels of the node.
 	/// Setting this property modifies the volume of all channels proportionately.
 	///
-	/// **This property is invalid unless the node is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(float volume READ averageVolume WRITE setAverageVolume NOTIFY volumesChanged);
 	/// The audio channels present on the node.
 	///
-	/// **This property is invalid unless the node is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVector<PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
 	/// The volumes of each audio channel individually. Each entry corrosponds to
 	/// the channel at the same index in `channels`. `volumes` and `channels` will always be
 	/// the same length.
 	///
-	/// **This property is invalid unless the node is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVector<float> volumes READ volumes WRITE setVolumes NOTIFY volumesChanged);
 	QML_NAMED_ELEMENT(PwNodeAudio);
 	QML_UNCREATABLE("PwNodeAudio cannot be created directly");
@@ -217,7 +217,7 @@ class PwNodeIface: public PwObjectIface {
 	/// - `media.title` - The title of the currently playing media.
 	/// - `media.artist` - The artist of the currently playing media.
 	///
-	/// **This property is invalid unless the node is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVariantMap properties READ properties NOTIFY propertiesChanged);
 	/// Extra information present only if the node sends or receives audio.
 	Q_PROPERTY(PwNodeAudioIface* audio READ audio CONSTANT);
@@ -263,7 +263,7 @@ class PwLinkIface: public PwObjectIface {
 	Q_PROPERTY(PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link.
 	///
-	/// **This property is invalid unless the link is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLink);
 	QML_UNCREATABLE("PwLinks cannot be created directly");
@@ -298,7 +298,7 @@ class PwLinkGroupIface
 	Q_PROPERTY(PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link group.
 	///
-	/// **This property is invalid unless the link is [bound](../pwobjecttracker).**
+	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLinkGroup);
 	QML_UNCREATABLE("PwLinkGroups cannot be created directly");

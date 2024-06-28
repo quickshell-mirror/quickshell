@@ -1,4 +1,4 @@
-name = "Quickshell.Services.PipeWire"
+name = "Quickshell.Services.Pipewire"
 description = "Pipewire API"
 headers = [
 	"qml.hpp",
