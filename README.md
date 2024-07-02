@@ -1,7 +1,7 @@
 # quickshell
 <a href="https://matrix.to/#/#quickshell:outfoxxed.me"><img src="https://img.shields.io/badge/Join%20the%20matrix%20room-%23quickshell:outfoxxed.me-0dbd8b?logo=matrix&style=flat-square"></a>
 
-Simple and flexbile QtQuick based desktop shell toolkit.
+Flexbile QtQuick based desktop shell toolkit.
 
 Hosted on: [outfoxxed's gitea], [github]
 
@@ -13,6 +13,12 @@ can be built from the [quickshell-docs](https://git.outfoxxed.me/outfoxxed/quick
 
 Some fully working examples can be found in the [quickshell-examples](https://git.outfoxxed.me/outfoxxed/quickshell-examples)
 repo.
+
+# Breaking Changes
+Quickshell is still in alpha and there will be breaking changes.
+
+Commits with breaking qml api changes will contain a `!` at the end of the scope
+(`thing!: foo`) and the commit description will contain details about the broken api.
 
 # Installation
 
