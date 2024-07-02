@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
 #include "../../core/model.hpp"
@@ -44,8 +45,6 @@ Q_ENUM_NS(Enum);
 /// A system tray item, roughly conforming to the [kde/freedesktop spec]
 /// (there is no real spec, we just implemented whatever seemed to actually be used).
 ///
-/// The associated context menu can be retrieved using a [SystemTrayMenuWatcher](../systemtraymenuwatcher).
-///
 /// [kde/freedesktop spec]: https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierItem/
 class SystemTrayItem: public QObject {
 	using DBusMenuItem = qs::dbus::dbusmenu::DBusMenuItem;
@@ -61,6 +60,9 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
+	/// If this tray item has an associated menu accessible via `display`
+	/// or a	[SystemTrayMenuWatcher](../systemtraymenuwatcher).
+	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
 	QML_ELEMENT;
@@ -78,6 +80,9 @@ public:
 	/// Scroll action, such as changing volume on a mixer.
 	Q_INVOKABLE void scroll(qint32 delta, bool horizontal) const;
 
+	/// Display a platform menu at the given location relative to the parent window.
+	Q_INVOKABLE void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
+
 	[[nodiscard]] QString id() const;
 	[[nodiscard]] QString title() const;
 	[[nodiscard]] SystemTrayStatus::Enum status() const;
@@ -85,6 +90,7 @@ public:
 	[[nodiscard]] QString icon() const;
 	[[nodiscard]] QString tooltipTitle() const;
 	[[nodiscard]] QString tooltipDescription() const;
+	[[nodiscard]] bool hasMenu() const;
 	[[nodiscard]] bool onlyMenu() const;
 
 	qs::service::sni::StatusNotifierItem* item = nullptr;
@@ -97,6 +103,7 @@ signals:
 	void iconChanged();
 	void tooltipTitleChanged();
 	void tooltipDescriptionChanged();
+	void hasMenuChanged();
 	void onlyMenuChanged();
 };
 
@@ -141,6 +148,8 @@ class SystemTrayMenuWatcher: public QObject {
 
 public:
 	explicit SystemTrayMenuWatcher(QObject* parent = nullptr): QObject(parent) {}
+	~SystemTrayMenuWatcher() override;
+	Q_DISABLE_COPY_MOVE(SystemTrayMenuWatcher);
 
 	[[nodiscard]] SystemTrayItem* trayItem() const;
 	void setTrayItem(SystemTrayItem* item);
@@ -148,14 +157,12 @@ public:
 	[[nodiscard]] DBusMenuItem* menu() const;
 
 signals:
-	void menuChanged();
 	void trayItemChanged();
+	void menuChanged();
 
 private slots:
 	void onItemDestroyed();
-	void onMenuPathChanged();
 
 private:
 	SystemTrayItem* item = nullptr;
-	DBusMenu* mMenu = nullptr;
 };

@@ -3,11 +3,13 @@
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qfilesystemwatcher.h>
+#include <qicon.h>
 #include <qobject.h>
 #include <qpair.h>
 #include <qqmlengine.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
+#include <qurl.h>
 
 #include "incubator.hpp"
 #include "qsintercept.hpp"
@@ -39,6 +41,8 @@ public:
 	// Returns the current generation if there is only one generation,
 	// otherwise null.
 	static EngineGeneration* currentGeneration();
+
+	[[nodiscard]] QIcon iconByUrl(const QUrl& url) const;
 
 	RootWrapper* wrapper = nullptr;
 	QDir rootPath;

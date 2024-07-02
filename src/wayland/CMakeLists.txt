@@ -50,7 +50,9 @@ endfunction()
 
 # -----
 
-qt_add_library(quickshell-wayland STATIC)
+qt_add_library(quickshell-wayland STATIC
+	platformmenu.cpp
+)
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)

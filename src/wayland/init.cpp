@@ -4,6 +4,7 @@
 #include <qtenvironmentvariables.h>
 
 #include "../core/plugin.hpp"
+#include "platformmenu.hpp"
 
 #ifdef QS_WAYLAND_WLR_LAYERSHELL
 #include "wlr_layershell.hpp"
@@ -25,6 +26,8 @@ class WaylandPlugin: public QuickshellPlugin {
 
 		return isWayland;
 	}
+
+	void init() override { installPlatformMenuHook(); }
 
 	void registerTypes() override {
 #ifdef QS_WAYLAND_WLR_LAYERSHELL

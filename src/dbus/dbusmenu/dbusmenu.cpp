@@ -21,19 +21,26 @@
 #include <qvariant.h>
 
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/qsmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_menu.h"
 #include "dbus_menu_types.hpp"
 
 Q_LOGGING_CATEGORY(logDbusMenu, "quickshell.dbus.dbusmenu", QtWarningMsg);
 
+using namespace qs::menu;
+
 namespace qs::dbus::dbusmenu {
 
 DBusMenuItem::DBusMenuItem(qint32 id, DBusMenu* menu, DBusMenuItem* parentMenu)
-    : QObject(menu)
+    : QsMenuEntry(menu)
     , id(id)
     , menu(menu)
     , parentMenu(parentMenu) {
+	QObject::connect(this, &QsMenuEntry::opened, this, &DBusMenuItem::sendOpened);
+	QObject::connect(this, &QsMenuEntry::closed, this, &DBusMenuItem::sendClosed);
+	QObject::connect(this, &QsMenuEntry::triggered, this, &DBusMenuItem::sendTriggered);
+
 	QObject::connect(
 	    &this->menu->iconThemePath,
 	    &AbstractDBusProperty::changed,
@@ -42,20 +49,13 @@ DBusMenuItem::DBusMenuItem(qint32 id, DBusMenu* menu, DBusMenuItem* parentMenu)
 	);
 }
 
-void DBusMenuItem::click() {
-	if (this->displayChildren) {
-		this->setShowChildren(!this->mShowChildren);
-	} else {
-		this->menu->sendEvent(this->id, "clicked");
-	}
-}
-
-void DBusMenuItem::hover() const { this->menu->sendEvent(this->id, "hovered"); }
+void DBusMenuItem::sendOpened() const { this->menu->sendEvent(this->id, "opened"); }
+void DBusMenuItem::sendClosed() const { this->menu->sendEvent(this->id, "closed"); }
+void DBusMenuItem::sendTriggered() const { this->menu->sendEvent(this->id, "clicked"); }
 
 DBusMenu* DBusMenuItem::menuHandle() const { return this->menu; }
-QString DBusMenuItem::label() const { return this->mLabel; }
-QString DBusMenuItem::cleanLabel() const { return this->mCleanLabel; }
 bool DBusMenuItem::enabled() const { return this->mEnabled; }
+QString DBusMenuItem::text() const { return this->mCleanLabel; }
 
 QString DBusMenuItem::icon() const {
 	if (!this->iconName.isEmpty()) {
@@ -68,23 +68,20 @@ QString DBusMenuItem::icon() const {
 	} else return nullptr;
 }
 
-ToggleButtonType::Enum DBusMenuItem::toggleType() const { return this->mToggleType; };
+QsMenuButtonType::Enum DBusMenuItem::buttonType() const { return this->mButtonType; };
 Qt::CheckState DBusMenuItem::checkState() const { return this->mCheckState; }
 bool DBusMenuItem::isSeparator() const { return this->mSeparator; }
 
 bool DBusMenuItem::isShowingChildren() const { return this->mShowChildren && this->childrenLoaded; }
 
-void DBusMenuItem::setShowChildren(bool showChildren) {
+void DBusMenuItem::setShowChildrenRecursive(bool showChildren) {
 	if (showChildren == this->mShowChildren) return;
 	this->mShowChildren = showChildren;
 	this->childrenLoaded = false;
 
 	if (showChildren) {
-		this->menu->prepareToShow(this->id, true);
+		this->menu->prepareToShow(this->id, -1);
 	} else {
-		this->menu->sendEvent(this->id, "closed");
-		emit this->showingChildrenChanged();
-
 		if (!this->mChildren.isEmpty()) {
 			for (auto child: this->mChildren) {
 				this->menu->removeRecursive(child);
@@ -96,10 +93,15 @@ void DBusMenuItem::setShowChildren(bool showChildren) {
 	}
 }
 
+void DBusMenuItem::updateLayout() const {
+	if (!this->isShowingChildren()) return;
+	this->menu->updateLayout(this->id, -1);
+}
+
 bool DBusMenuItem::hasChildren() const { return this->displayChildren; }
 
-QQmlListProperty<DBusMenuItem> DBusMenuItem::children() {
-	return QQmlListProperty<DBusMenuItem>(
+QQmlListProperty<QsMenuEntry> DBusMenuItem::children() {
+	return QQmlListProperty<QsMenuEntry>(
 	    this,
 	    nullptr,
 	    &DBusMenuItem::childrenCount,
@@ -107,11 +109,11 @@ QQmlListProperty<DBusMenuItem> DBusMenuItem::children() {
 	);
 }
 
-qsizetype DBusMenuItem::childrenCount(QQmlListProperty<DBusMenuItem>* property) {
+qsizetype DBusMenuItem::childrenCount(QQmlListProperty<QsMenuEntry>* property) {
 	return reinterpret_cast<DBusMenuItem*>(property->object)->enabledChildren.count(); // NOLINT
 }
 
-DBusMenuItem* DBusMenuItem::childAt(QQmlListProperty<DBusMenuItem>* property, qsizetype index) {
+QsMenuEntry* DBusMenuItem::childAt(QQmlListProperty<QsMenuEntry>* property, qsizetype index) {
 	auto* item = reinterpret_cast<DBusMenuItem*>(property->object); // NOLINT
 	return item->menu->items.value(item->enabledChildren.at(index));
 }
@@ -124,30 +126,30 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 		return;
 	}
 
-	auto originalLabel = this->mLabel;
+	auto originalText = this->mText;
 	//auto originalMnemonic = this->mnemonic;
 	auto originalEnabled = this->mEnabled;
 	auto originalVisible = this->visible;
 	auto originalIconName = this->iconName;
 	auto* originalImage = this->image;
 	auto originalIsSeparator = this->mSeparator;
-	auto originalToggleType = this->mToggleType;
+	auto originalButtonType = this->mButtonType;
 	auto originalToggleState = this->mCheckState;
 	auto originalDisplayChildren = this->displayChildren;
 
 	auto label = properties.value("label");
 	if (label.canConvert<QString>()) {
 		auto text = label.value<QString>();
-		this->mLabel = text;
+		this->mText = text;
 		this->mCleanLabel = text;
 		//this->mnemonic = QChar();
 
-		for (auto i = 0; i < this->mLabel.length() - 1;) {
-			if (this->mLabel.at(i) == '_') {
+		for (auto i = 0; i < this->mText.length() - 1;) {
+			if (this->mText.at(i) == '_') {
 				//if (this->mnemonic == QChar()) this->mnemonic = this->mLabel.at(i + 1);
-				this->mLabel.remove(i, 1);
-				this->mLabel.insert(i + 1, "</u>");
-				this->mLabel.insert(i, "<u>");
+				this->mText.remove(i, 1);
+				this->mText.insert(i + 1, "</u>");
+				this->mText.insert(i, "<u>");
 				i += 8;
 			} else {
 				i++;
@@ -160,7 +162,7 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 			}
 		}
 	} else if (removed.isEmpty() || removed.contains("label")) {
-		this->mLabel = "";
+		this->mText = "";
 		//this->mnemonic = QChar();
 	}
 
@@ -208,15 +210,15 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 	if (toggleType.canConvert<QString>()) {
 		auto toggleTypeStr = toggleType.value<QString>();
 
-		if (toggleTypeStr == "") this->mToggleType = ToggleButtonType::None;
-		else if (toggleTypeStr == "checkmark") this->mToggleType = ToggleButtonType::CheckBox;
-		else if (toggleTypeStr == "radio") this->mToggleType = ToggleButtonType::RadioButton;
+		if (toggleTypeStr == "") this->mButtonType = QsMenuButtonType::None;
+		else if (toggleTypeStr == "checkmark") this->mButtonType = QsMenuButtonType::CheckBox;
+		else if (toggleTypeStr == "radio") this->mButtonType = QsMenuButtonType::RadioButton;
 		else {
 			qCWarning(logDbusMenu) << "Unrecognized toggle type" << toggleTypeStr << "for" << this;
-			this->mToggleType = ToggleButtonType::None;
+			this->mButtonType = QsMenuButtonType::None;
 		}
 	} else if (removed.isEmpty() || removed.contains("toggle-type")) {
-		this->mToggleType = ToggleButtonType::None;
+		this->mButtonType = QsMenuButtonType::None;
 	}
 
 	auto toggleState = properties.value("toggle-state");
@@ -227,7 +229,7 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 		else if (toggleStateInt == 1) this->mCheckState = Qt::Checked;
 		else this->mCheckState = Qt::PartiallyChecked;
 	} else if (removed.isEmpty() || removed.contains("toggle-state")) {
-		this->mCheckState = Qt::PartiallyChecked;
+		this->mCheckState = Qt::Unchecked;
 	}
 
 	auto childrenDisplay = properties.value("children-display");
@@ -245,14 +247,14 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 		this->displayChildren = false;
 	}
 
-	if (this->mLabel != originalLabel) emit this->labelChanged();
+	if (this->mText != originalText) emit this->textChanged();
 	//if (this->mnemonic != originalMnemonic) emit this->labelChanged();
 	if (this->mEnabled != originalEnabled) emit this->enabledChanged();
 	if (this->visible != originalVisible && this->parentMenu != nullptr)
 		this->parentMenu->onChildrenUpdated();
-	if (this->mToggleType != originalToggleType) emit this->toggleTypeChanged();
+	if (this->mButtonType != originalButtonType) emit this->buttonTypeChanged();
 	if (this->mCheckState != originalToggleState) emit this->checkStateChanged();
-	if (this->mSeparator != originalIsSeparator) emit this->separatorChanged();
+	if (this->mSeparator != originalIsSeparator) emit this->isSeparatorChanged();
 	if (this->displayChildren != originalDisplayChildren) emit this->hasChildrenChanged();
 
 	if (this->iconName != originalIconName || this->image != originalImage) {
@@ -263,11 +265,11 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 		emit this->iconChanged();
 	}
 
-	qCDebug(logDbusMenu).nospace() << "Updated properties of " << this << " { label=" << this->mLabel
+	qCDebug(logDbusMenu).nospace() << "Updated properties of " << this << " { label=" << this->mText
 	                               << ", enabled=" << this->mEnabled << ", visible=" << this->visible
 	                               << ", iconName=" << this->iconName << ", iconData=" << this->image
 	                               << ", separator=" << this->mSeparator
-	                               << ", toggleType=" << this->mToggleType
+	                               << ", toggleType=" << this->mButtonType
 	                               << ", toggleState=" << this->mCheckState
 	                               << ", displayChildren=" << this->displayChildren << " }";
 }
@@ -291,20 +293,7 @@ QDebug operator<<(QDebug debug, DBusMenuItem* item) {
 
 	auto saver = QDebugStateSaver(debug);
 	debug.nospace() << "DBusMenuItem(" << static_cast<void*>(item) << ", id=" << item->id
-	                << ", label=" << item->mLabel << ", menu=" << item->menu << ")";
-	return debug;
-}
-
-QDebug operator<<(QDebug debug, const ToggleButtonType::Enum& toggleType) {
-	auto saver = QDebugStateSaver(debug);
-	debug.nospace() << "ToggleType::";
-
-	switch (toggleType) {
-	case ToggleButtonType::None: debug << "None"; break;
-	case ToggleButtonType::CheckBox: debug << "Checkbox"; break;
-	case ToggleButtonType::RadioButton: debug << "Radiobutton"; break;
-	}
-
+	                << ", label=" << item->mText << ", menu=" << item->menu << ")";
 	return debug;
 }
 
@@ -334,19 +323,18 @@ DBusMenu::DBusMenu(const QString& service, const QString& path, QObject* parent)
 	this->properties.updateAllViaGetAll();
 }
 
-void DBusMenu::prepareToShow(qint32 item, bool sendOpened) {
+void DBusMenu::prepareToShow(qint32 item, qint32 depth) {
 	auto pending = this->interface->AboutToShow(item);
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
-	auto responseCallback = [this, item, sendOpened](QDBusPendingCallWatcher* call) {
+	auto responseCallback = [this, item, depth](QDBusPendingCallWatcher* call) {
 		const QDBusPendingReply<bool> reply = *call;
 		if (reply.isError()) {
 			qCWarning(logDbusMenu) << "Error in AboutToShow, but showing anyway for menu" << item << "of"
 			                       << this << reply.error();
 		}
 
-		this->updateLayout(item, 1);
-		if (sendOpened) this->sendEvent(item, "opened");
+		this->updateLayout(item, depth);
 
 		delete call;
 	};
@@ -385,6 +373,7 @@ void DBusMenu::updateLayoutRecursive(
 		// there is an actual nullptr in the map and not no entry
 		if (this->items.contains(layout.id)) {
 			item = new DBusMenuItem(layout.id, this, parent);
+			item->mShowChildren = parent != nullptr && parent->mShowChildren;
 			this->items.insert(layout.id, item);
 		}
 	}
@@ -431,8 +420,9 @@ void DBusMenu::updateLayoutRecursive(
 
 	if (item->mShowChildren && !item->childrenLoaded) {
 		item->childrenLoaded = true;
-		emit item->showingChildrenChanged();
 	}
+
+	emit item->layoutUpdated();
 }
 
 void DBusMenu::removeRecursive(qint32 id) {

@@ -30,6 +30,8 @@ qt_add_library(quickshell-core STATIC
 	elapsedtimer.cpp
 	desktopentry.cpp
 	objectrepeater.cpp
+	platformmenu.cpp
+	qsmenu.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")

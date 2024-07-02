@@ -75,6 +75,7 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 	QObject::connect(&this->overlayIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 
 	QObject::connect(&this->properties, &DBusPropertyGroup::getAllFinished, this, &StatusNotifierItem::onGetAllFinished);
+	QObject::connect(&this->menuPath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::onMenuPathChanged);
 	// clang-format on
 
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewStatus, this, [this](QString value) {
@@ -230,13 +231,41 @@ void StatusNotifierItem::updateIcon() {
 	emit this->iconChanged();
 }
 
-DBusMenu* StatusNotifierItem::createMenu() const {
-	auto path = this->menuPath.get().path();
-	if (!path.isEmpty()) {
-		return new DBusMenu(this->item->service(), this->menuPath.get().path());
+DBusMenu* StatusNotifierItem::menu() const { return this->mMenu; }
+
+void StatusNotifierItem::refMenu() {
+	this->menuRefcount++;
+
+	if (this->menuRefcount == 1) {
+		this->onMenuPathChanged();
+	} else {
+		// Refresh the layout when opening a menu in case a bad client isn't updating it
+		// and another ref is open somewhere.
+		this->mMenu->rootItem.updateLayout();
+	}
+}
+
+void StatusNotifierItem::unrefMenu() {
+	this->menuRefcount--;
+
+	if (this->menuRefcount == 0) {
+		this->onMenuPathChanged();
+	}
+}
+
+void StatusNotifierItem::onMenuPathChanged() {
+	if (this->mMenu) {
+		this->mMenu->deleteLater();
+		this->mMenu = nullptr;
 	}
 
-	return nullptr;
+	if (this->menuRefcount > 0 && !this->menuPath.get().path().isEmpty()) {
+		this->mMenu = new DBusMenu(this->item->service(), this->menuPath.get().path());
+		this->mMenu->setParent(this);
+		this->mMenu->rootItem.setShowChildrenRecursive(true);
+	}
+
+	emit this->menuChanged();
 }
 
 void StatusNotifierItem::onGetAllFinished() {
