@@ -109,6 +109,12 @@ void SystemTrayItem::scroll(qint32 delta, bool horizontal) const {
 
 void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 relativeY) {
 	this->item->refMenu();
+	if (!this->item->menu()) {
+		this->item->unrefMenu();
+		qCritical() << "No menu present for" << this;
+		return;
+	}
+
 	auto* platform = new PlatformMenuEntry(&this->item->menu()->rootItem);
 
 	QObject::connect(&this->item->menu()->rootItem, &DBusMenuItem::layoutUpdated, platform, [=]() {
