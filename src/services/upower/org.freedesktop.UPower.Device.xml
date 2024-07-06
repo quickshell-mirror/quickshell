@@ -1,0 +1,16 @@
+<node>
+	<interface name="org.freedesktop.UPower.Device">
+		<property name="Type" type="u" access="read"/>
+		<property name="PowerSupply" type="b" access="read"/>
+		<property name="Energy" type="d" access="read"/>
+		<property name="EnergyFull" type="d" access="read"/>
+		<property name="EnergyRate" type="d" access="read"/>
+		<property name="TimeToEmpty" type="x" access="read"/>
+		<property name="TimeToFull" type="x" access="read"/>
+		<property name="Percentage" type="d" access="read"/>
+		<property name="IsPresent" type="b" access="read"/>
+		<property name="State" type="u" access="read"/>
+		<property name="Capacity" type = "d" access="read"/>
+		<property name="IconName" type="s" access="read"/>
+	</interface>
+</node>

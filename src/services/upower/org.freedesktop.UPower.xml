@@ -1,0 +1,7 @@
+<node>
+	<interface name="org.freedesktop.UPower">
+		<method name="EnumerateDevices">
+			<arg direction="out" type="ao" name="devices"/>
+		</method>
+	</interface>
+</node>

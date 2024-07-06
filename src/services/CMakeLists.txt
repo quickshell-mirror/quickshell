@@ -17,3 +17,7 @@ endif()
 if (SERVICE_GREETD)
 	add_subdirectory(greetd)
 endif()
+
+if (SERVICE_UPOWER)
+	add_subdirectory(upower)
+endif()
