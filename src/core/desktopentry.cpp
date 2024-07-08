@@ -319,6 +319,7 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 			}
 
 			auto id = prefix + entry.fileName().sliced(0, entry.fileName().length() - 8);
+			auto lowerId = id.toLower();
 
 			auto text = QString::fromUtf8(file->readAll());
 			auto* dentry = new DesktopEntry(id, this);
@@ -332,13 +333,28 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 
 			qCDebug(logDesktopEntry) << "Found desktop entry" << id << "at" << path;
 
-			if (this->desktopEntries.contains(id)) {
+			auto conflictingId = this->desktopEntries.contains(id);
+
+			if (conflictingId) {
 				qCDebug(logDesktopEntry) << "Replacing old entry for" << id;
 				delete this->desktopEntries.value(id);
 				this->desktopEntries.remove(id);
+				this->lowercaseDesktopEntries.remove(lowerId);
 			}
 
 			this->desktopEntries.insert(id, dentry);
+
+
+			if (this->lowercaseDesktopEntries.contains(lowerId)) {
+				qCInfo(logDesktopEntry).nospace()
+						<< "Multiple desktop entries have the same lowercased id " << lowerId
+						<< ". This can cause ambiguity when byId requests are not made with the correct case "
+							 "already.";
+
+				this->lowercaseDesktopEntries.remove(lowerId);
+			}
+
+			this->lowercaseDesktopEntries.insert(lowerId, dentry);
 		}
 	}
 }
@@ -349,7 +365,13 @@ DesktopEntryManager* DesktopEntryManager::instance() {
 }
 
 DesktopEntry* DesktopEntryManager::byId(const QString& id) {
-	return this->desktopEntries.value(id);
+	if (auto* entry = this->desktopEntries.value(id)) {
+		return entry;
+	} else if (auto* entry = this->lowercaseDesktopEntries.value(id.toLower())) {
+		return entry;
+	} else {
+		return nullptr;
+	}
 }
 
 ObjectModel<DesktopEntry>* DesktopEntryManager::applications() { return &this->mApplications; }

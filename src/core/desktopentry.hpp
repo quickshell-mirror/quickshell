@@ -55,10 +55,8 @@ public:
 	static QVector<QString> parseExecString(const QString& execString);
 	static void doExec(const QString& execString, const QString& workingDirectory);
 
-private:
-	QHash<QString, QString> mEntries;
-	QHash<QString, DesktopAction*> mActions;
 
+public:
 	QString mId;
 	QString mName;
 	QString mGenericName;
@@ -70,6 +68,10 @@ private:
 	bool mTerminal = false;
 	QVector<QString> mCategories;
 	QVector<QString> mKeywords;
+
+private:
+	QHash<QString, QString> mEntries;
+	QHash<QString, DesktopAction*> mActions;
 
 	friend class DesktopAction;
 };
@@ -124,6 +126,7 @@ private:
 	void scanPath(const QDir& dir, const QString& prefix = QString());
 
 	QHash<QString, DesktopEntry*> desktopEntries;
+	QHash<QString, DesktopEntry*> lowercaseDesktopEntries;
 	ObjectModel<DesktopEntry> mApplications {this};
 };
 
