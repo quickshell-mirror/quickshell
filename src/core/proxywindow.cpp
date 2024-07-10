@@ -11,6 +11,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
+#include <private/qquickwindow_p.h>
 
 #include "generation.hpp"
 #include "qmlglobal.hpp"
@@ -182,6 +183,7 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 
 		if (visible) {
 			this->createWindow();
+			this->polishItems();
 			this->window->setVisible(true);
 			emit this->backerVisibilityChanged();
 		} else {
@@ -192,9 +194,20 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 			}
 		}
 	} else if (this->window != nullptr) {
+		if (visible) this->polishItems();
 		this->window->setVisible(visible);
 		emit this->backerVisibilityChanged();
 	}
+}
+
+void ProxyWindowBase::polishItems() {
+	// Due to QTBUG-126704, layouts in invisible windows don't update their dimensions.
+	// Usually this isn't an issue, but it is when the size of a window is based on the size
+	// of its content, and that content is in a layout.
+	//
+	// This hack manually polishes the item tree right before showing the window so it will
+	// always be created with the correct size.
+	QQuickWindowPrivate::get(this->window)->polishItems();
 }
 
 qint32 ProxyWindowBase::x() const {

@@ -133,5 +133,6 @@ protected:
 	bool reloadComplete = false;
 
 private:
+	void polishItems();
 	void updateMask();
 };
