@@ -72,3 +72,8 @@ bool UntypedObjectModel::removeObject(const QObject* object) {
 }
 
 qsizetype UntypedObjectModel::indexOf(QObject* object) { return this->valuesList.indexOf(object); }
+
+UntypedObjectModel* UntypedObjectModel::emptyInstance() {
+	static auto* instance = new UntypedObjectModel(nullptr); // NOLINT
+	return instance;
+}

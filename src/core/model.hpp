@@ -55,6 +55,8 @@ public:
 
 	Q_INVOKABLE qsizetype indexOf(QObject* object);
 
+	static UntypedObjectModel* emptyInstance();
+
 signals:
 	void valuesChanged();
 	/// Sent immediately before an object is inserted into the list.
@@ -82,6 +84,10 @@ class ObjectModel: public UntypedObjectModel {
 public:
 	explicit ObjectModel(QObject* parent): UntypedObjectModel(parent) {}
 
+	[[nodiscard]] QVector<T*>& valueList() {
+		return *reinterpret_cast<QVector<T*>*>(&this->valuesList); // NOLINT
+	}
+
 	[[nodiscard]] const QVector<T*>& valueList() const {
 		return *reinterpret_cast<const QVector<T*>*>(&this->valuesList); // NOLINT
 	}
@@ -91,4 +97,8 @@ public:
 	}
 
 	void removeObject(const T* object) { this->UntypedObjectModel::removeObject(object); }
+
+	static ObjectModel<T>* emptyInstance() {
+		return static_cast<ObjectModel<T>*>(UntypedObjectModel::emptyInstance());
+	}
 };

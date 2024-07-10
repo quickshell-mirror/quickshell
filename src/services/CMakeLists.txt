@@ -21,3 +21,7 @@ endif()
 if (SERVICE_UPOWER)
 	add_subdirectory(upower)
 endif()
+
+if (SERVICE_NOTIFICATIONS)
+	add_subdirectory(notifications)
+endif()
