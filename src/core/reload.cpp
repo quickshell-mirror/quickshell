@@ -86,7 +86,7 @@ void Reloadable::reloadRecursive(QObject* newObj, QObject* oldRoot) {
 
 		// pass handling to the child's onReload, which should call back into reloadRecursive,
 		// with its oldInstance becoming the new oldRoot.
-		reloadable->onReload(oldInstance);
+		reloadable->reload(oldInstance);
 	} else if (newObj != nullptr) {
 		Reloadable::reloadChildrenRecursive(newObj, oldRoot);
 	}
