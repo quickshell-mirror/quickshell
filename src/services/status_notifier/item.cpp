@@ -236,7 +236,8 @@ DBusMenu* StatusNotifierItem::menu() const { return this->mMenu; }
 
 void StatusNotifierItem::refMenu() {
 	this->menuRefcount++;
-	qCDebug(logSniMenu) << "Menu of" << this << "gained a reference. Refcount is now" << this->menuRefcount;
+	qCDebug(logSniMenu) << "Menu of" << this << "gained a reference. Refcount is now"
+	                    << this->menuRefcount;
 
 	if (this->menuRefcount == 1) {
 		this->onMenuPathChanged();
@@ -249,7 +250,8 @@ void StatusNotifierItem::refMenu() {
 
 void StatusNotifierItem::unrefMenu() {
 	this->menuRefcount--;
-	qCDebug(logSniMenu) << "Menu of" << this << "lost a reference. Refcount is now" << this->menuRefcount;
+	qCDebug(logSniMenu) << "Menu of" << this << "lost a reference. Refcount is now"
+	                    << this->menuRefcount;
 
 	if (this->menuRefcount == 0) {
 		this->onMenuPathChanged();
@@ -258,7 +260,7 @@ void StatusNotifierItem::unrefMenu() {
 
 void StatusNotifierItem::onMenuPathChanged() {
 	qCDebug(logSniMenu) << "Updating menu of" << this << "with refcount" << this->menuRefcount
-											<< "path" << this->menuPath.get().path();
+	                    << "path" << this->menuPath.get().path();
 
 	if (this->mMenu) {
 		this->mMenu->deleteLater();

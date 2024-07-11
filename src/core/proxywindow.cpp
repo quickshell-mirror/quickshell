@@ -1,5 +1,6 @@
 #include "proxywindow.hpp"
 
+#include <private/qquickwindow_p.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
@@ -11,7 +12,6 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
-#include <private/qquickwindow_p.h>
 
 #include "generation.hpp"
 #include "qmlglobal.hpp"

@@ -55,7 +55,6 @@ public:
 	static QVector<QString> parseExecString(const QString& execString);
 	static void doExec(const QString& execString, const QString& workingDirectory);
 
-
 public:
 	QString mId;
 	QString mName;

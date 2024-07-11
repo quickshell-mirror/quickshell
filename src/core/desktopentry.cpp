@@ -344,12 +344,11 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 
 			this->desktopEntries.insert(id, dentry);
 
-
 			if (this->lowercaseDesktopEntries.contains(lowerId)) {
 				qCInfo(logDesktopEntry).nospace()
-						<< "Multiple desktop entries have the same lowercased id " << lowerId
-						<< ". This can cause ambiguity when byId requests are not made with the correct case "
-							 "already.";
+				    << "Multiple desktop entries have the same lowercased id " << lowerId
+				    << ". This can cause ambiguity when byId requests are not made with the correct case "
+				       "already.";
 
 				this->lowercaseDesktopEntries.remove(lowerId);
 			}
