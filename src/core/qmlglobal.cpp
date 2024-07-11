@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "generation.hpp"
+#include "iconimageprovider.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
@@ -186,6 +187,10 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
+}
+
+QString QuickshellGlobal::iconPath(const QString& icon) {
+	return IconImageProvider::requestString(icon, "");
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {

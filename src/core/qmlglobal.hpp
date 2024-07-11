@@ -125,6 +125,11 @@ public:
 	/// Returns the string value of an environment variable or null if it is not set.
 	Q_INVOKABLE QVariant env(const QString& variable);
 
+	/// Returns a source string usable in an [Image] for a given system icon.
+	///
+	/// [Image]: https://doc.qt.io/qt-6/qml-qtquick-image.html
+	Q_INVOKABLE static QString iconPath(const QString& icon);
+
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(QString workingDirectory);
 
