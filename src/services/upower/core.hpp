@@ -35,6 +35,7 @@ private slots:
 private:
 	explicit UPower();
 
+	void init();
 	void registerExisting();
 	void registerDevice(const QString& path);
 

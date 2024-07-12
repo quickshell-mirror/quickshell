@@ -14,6 +14,7 @@
 #include <qtmetamacros.h>
 
 #include "../../core/model.hpp"
+#include "../../dbus/bus.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_service.h"
 #include "device.hpp"
@@ -23,7 +24,7 @@ namespace qs::service::upower {
 Q_LOGGING_CATEGORY(logUPower, "quickshell.service.upower", QtWarningMsg);
 
 UPower::UPower() {
-	qCDebug(logUPower) << "Starting UPower";
+	qCDebug(logUPower) << "Starting UPower Service";
 
 	auto bus = QDBusConnection::systemBus();
 
@@ -36,10 +37,22 @@ UPower::UPower() {
 	    new DBusUPowerService("org.freedesktop.UPower", "/org/freedesktop/UPower", bus, this);
 
 	if (!this->service->isValid()) {
-		qCWarning(logUPower) << "Cannot connect to the UPower service.";
-		return;
-	}
+		qCDebug(logUPower) << "UPower service is not currently running, attempting to start it.";
 
+		dbus::tryLaunchService(this, bus, "org.freedesktop.UPower", [this](bool success) {
+			if (success) {
+				qCDebug(logUPower) << "Successfully launched UPower service.";
+				this->init();
+			} else {
+				qCWarning(logUPower) << "Could not start UPower. The UPower service will not work.";
+			}
+		});
+	} else {
+		this->init();
+	}
+}
+
+void UPower::init() {
 	QObject::connect(
 	    &this->pOnBattery,
 	    &dbus::AbstractDBusProperty::changed,
