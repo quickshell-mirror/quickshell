@@ -38,6 +38,10 @@ enum Enum {
 	/// No keyboard input will be accepted.
 	None = 0,
 	/// Exclusive access to the keyboard, locking out all other windows.
+	///
+	/// > [!WARNING] You **CANNOT** use this to make a secure lock screen.
+	/// >
+	/// > If you want to make a lock screen, use [WlSessionLock](../wlsessionlock).
 	Exclusive = 1,
 	/// Access to the keyboard as determined by the operating system.
 	///
