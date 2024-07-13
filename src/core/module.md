@@ -22,6 +22,7 @@ headers = [
 	"elapsedtimer.hpp",
 	"desktopentry.hpp",
 	"objectrepeater.hpp",
-	"qsmenu.hpp"
+	"qsmenu.hpp",
+	"retainable.hpp",
 ]
 -----

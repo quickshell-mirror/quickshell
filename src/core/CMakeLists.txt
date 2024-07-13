@@ -32,6 +32,7 @@ qt_add_library(quickshell-core STATIC
 	objectrepeater.cpp
 	platformmenu.cpp
 	qsmenu.cpp
+	retainable.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
