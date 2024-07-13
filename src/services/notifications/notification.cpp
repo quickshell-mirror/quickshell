@@ -39,6 +39,11 @@ QString NotificationAction::identifier() const { return this->mIdentifier; }
 QString NotificationAction::text() const { return this->mText; }
 
 void NotificationAction::invoke() {
+	if (this->notification->isRetained()) {
+		qCritical() << "Cannot invoke destroyed notification" << this;
+		return;
+	}
+
 	NotificationServer::instance()->ActionInvoked(this->notification->id(), this->mIdentifier);
 
 	if (!this->notification->isResident()) {
@@ -57,6 +62,11 @@ void Notification::expire() { this->close(NotificationCloseReason::Expired); }
 void Notification::dismiss() { this->close(NotificationCloseReason::Dismissed); }
 
 void Notification::close(NotificationCloseReason::Enum reason) {
+	if (this->isRetained()) {
+		qCritical() << "Cannot close destroyed notification" << this;
+		return;
+	}
+
 	this->mCloseReason = reason;
 
 	if (reason != 0) {

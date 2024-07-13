@@ -8,6 +8,8 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+#include "../../core/retainable.hpp"
+
 namespace qs::service::notifications {
 
 class NotificationImage;
@@ -50,7 +52,12 @@ public:
 class NotificationAction;
 
 ///! A notification emitted by a NotificationServer.
-class Notification: public QObject {
+/// A notification emitted by a NotificationServer.
+/// > [!INFO] This type is [Retainable](/docs/types/quickshell/retainable). It
+/// > can be retained after destruction if necessary.
+class Notification
+    : public QObject
+    , public Retainable {
 	Q_OBJECT;
 	/// Id of the notification as given to the client.
 	Q_PROPERTY(quint32 id READ id CONSTANT);

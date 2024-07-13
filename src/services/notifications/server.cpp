@@ -105,7 +105,7 @@ void NotificationServer::deleteNotification(
 	this->idMap.remove(notification->id());
 
 	emit this->NotificationClosed(notification->id(), reason);
-	delete notification;
+	notification->retainedDestroy();
 }
 
 void NotificationServer::tryRegister() {
