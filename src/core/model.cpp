@@ -39,7 +39,7 @@ QObject* UntypedObjectModel::valueAt(QQmlListProperty<QObject>* property, qsizet
 
 void UntypedObjectModel::insertObject(QObject* object, qsizetype index) {
 	auto iindex = index == -1 ? this->valuesList.length() : index;
-	emit this->objectInsertedPre(object, index);
+	emit this->objectInsertedPre(object, iindex);
 
 	auto intIndex = static_cast<qint32>(iindex);
 	this->beginInsertRows(QModelIndex(), intIndex, intIndex);
@@ -47,7 +47,7 @@ void UntypedObjectModel::insertObject(QObject* object, qsizetype index) {
 	this->endInsertRows();
 
 	emit this->valuesChanged();
-	emit this->objectInsertedPost(object, index);
+	emit this->objectInsertedPost(object, iindex);
 }
 
 void UntypedObjectModel::removeAt(qsizetype index) {
