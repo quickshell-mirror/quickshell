@@ -64,7 +64,9 @@ Before submitting an MR, if adding new features please make sure the documentati
 reasonably using the `quickshell-docs` repo. We recommend checking it out at `/docs` in this repo.
 
 Doc comments take the form `///` or `///!` (summary) and work with markdown.
-Look at existing code for how it works.
+You can reference other types using the `@@[Module].<Type>.[property]` shorthand
+where module and property are optional. If module is not specified it will
+be inferred as the current module. Look at existing code for how it works.
 
 Quickshell modules additionally have a `module.md` file which contains a summary, description,
 and list of headers to scan for documentation.
