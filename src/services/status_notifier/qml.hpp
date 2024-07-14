@@ -61,7 +61,7 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
 	/// If this tray item has an associated menu accessible via `display`
-	/// or a	[SystemTrayMenuWatcher](../systemtraymenuwatcher).
+	/// or a	@@SystemTrayMenuWatcher$.
 	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
@@ -133,7 +133,7 @@ private:
 
 ///! Accessor for SystemTrayItem menus.
 /// SystemTrayMenuWatcher provides access to the associated
-/// [DBusMenuItem](../../quickshell.dbusmenu/dbusmenuitem) for a tray item.
+/// @@Quickshell.DBusMenu.DBusMenuItem for a tray item.
 class SystemTrayMenuWatcher: public QObject {
 	using DBusMenu = qs::dbus::dbusmenu::DBusMenu;
 	using DBusMenuItem = qs::dbus::dbusmenu::DBusMenuItem;

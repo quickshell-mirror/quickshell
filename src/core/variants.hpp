@@ -28,20 +28,17 @@ public:
 ///! Creates instances of a component based on a given model.
 /// Creates and destroys instances of the given component when the given property changes.
 ///
-/// `Variants` is similar to [Repeater] except it is for *non Item* objects, and acts as
+/// `Variants` is similar to @@QtQuick.Repeater except it is for *non Item* objects, and acts as
 /// a reload scope.
 ///
 /// Each non duplicate value passed to [model](#prop.model) will create a new instance of
 /// [delegate](#prop.delegate) with its `modelData` property set to that value.
 ///
-/// See [Quickshell.screens] for an example of using `Variants` to create copies of a window per
+/// See @@Quickshell.screens for an example of using `Variants` to create copies of a window per
 /// screen.
 ///
 /// > [!WARNING] BUG: Variants currently fails to reload children if the variant set is changed as
 /// > it is instantiated. (usually due to a mutation during variant creation)
-///
-/// [Repeater]: https://doc.qt.io/qt-6/qml-qtquick-repeater.html
-/// [Quickshell.screens]: ../quickshell#prop.screens
 class Variants: public Reloadable {
 	Q_OBJECT;
 	/// The component to create instances of.

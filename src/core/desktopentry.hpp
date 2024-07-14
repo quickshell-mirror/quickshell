@@ -13,7 +13,7 @@
 
 class DesktopAction;
 
-/// A desktop entry. See [DesktopEntries](../desktopentries) for details.
+/// A desktop entry. See @@DesktopEntries for details.
 class DesktopEntry: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
@@ -75,7 +75,7 @@ private:
 	friend class DesktopAction;
 };
 
-/// An action of a [DesktopEntry](../desktopentry).
+/// An action of a @@DesktopEntry$.
 class DesktopAction: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);

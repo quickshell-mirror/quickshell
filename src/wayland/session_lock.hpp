@@ -25,7 +25,7 @@ class WlSessionLockSurface;
 /// Wayland session lock implemented using the [ext_session_lock_v1] protocol.
 ///
 /// WlSessionLock will create an instance of its `surface` component for every screen when
-/// `locked` is set to true. The `surface` component must create a [WlSessionLockSurface]
+/// `locked` is set to true. The `surface` component must create a @@WlSessionLockSurface
 /// which will be displayed on each screen.
 ///
 /// The below example will create a session lock that disappears when the button is clicked.
@@ -53,7 +53,6 @@ class WlSessionLockSurface;
 /// > but it will render it inoperable.
 ///
 /// [ext_session_lock_v1]: https://wayland.app/protocols/ext-session-lock-v1
-/// [WlSessionLockSurface]: ../wlsessionlocksurface
 class WlSessionLock: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
@@ -66,9 +65,7 @@ class WlSessionLock: public Reloadable {
 	///
 	/// This is set to true once the compositor has confirmed all screens are covered with locks.
 	Q_PROPERTY(bool secure READ isSecure NOTIFY secureStateChanged);
-	/// The surface that will be created for each screen. Must create a [WlSessionLockSurface].
-	///
-	/// [WlSessionLockSurface]: ../wlsessionlocksurface
+	/// The surface that will be created for each screen. Must create a @@WlSessionLockSurface$.
 	Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
 	// clang-format on
 	QML_ELEMENT;
@@ -109,9 +106,7 @@ private:
 };
 
 ///! Surface to display with a `WlSessionLock`.
-/// Surface displayed by a [WlSessionLock] when it is locked.
-///
-/// [WlSessionLock]: ../wlsessionlock
+/// Surface displayed by a @@WlSessionLock when it is locked.
 class WlSessionLockSurface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off

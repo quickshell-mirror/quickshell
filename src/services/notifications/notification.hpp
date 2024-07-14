@@ -53,7 +53,7 @@ class NotificationAction;
 
 ///! A notification emitted by a NotificationServer.
 /// A notification emitted by a NotificationServer.
-/// > [!INFO] This type is [Retainable](/docs/types/quickshell/retainable). It
+/// > [!INFO] This type is @@Quickshell.Retainable$. It
 /// > can be retained after destruction if necessary.
 class Notification
     : public QObject
@@ -68,8 +68,8 @@ class Notification
 	/// If this notification was carried over from the last generation
 	/// when quickshell reloaded.
 	///
-	/// Notifications from the last generation will only be emitted if
-	/// [NotificationServer.keepOnReload](../notificationserver#prop.keepOnReload) is true.
+	/// Notifications from the last generation will only be emitted
+	/// if @@NotificationServer.keepOnReloadis true.
 	Q_PROPERTY(bool lastGeneration READ isLastGeneration CONSTANT);
 	/// Time in seconds the notification should be valid for
 	Q_PROPERTY(qreal expireTimeout READ expireTimeout NOTIFY expireTimeoutChanged);
@@ -86,7 +86,7 @@ class Notification
 	Q_PROPERTY(QVector<NotificationAction*> actions READ actions NOTIFY actionsChanged);
 	/// If actions associated with this notification have icons available.
 	///
-	/// See [NotificationAction.identifier](../notificationaction#prop.identifier) for details.
+	/// See @@NotificationAction.identifier for details.
 	Q_PROPERTY(bool hasActionIcons READ hasActionIcons NOTIFY hasActionIconsChanged);
 	/// If true, the notification will not be destroyed after an action is invoked.
 	Q_PROPERTY(bool resident READ isResident NOTIFY isResidentChanged);
@@ -194,10 +194,8 @@ class NotificationAction: public QObject {
 	Q_OBJECT;
 	/// The identifier of the action.
 	///
-	/// When [Notification.hasActionIcons] is true, this property will be an icon name.
+	/// When @@Notification.hasActionIcons is true, this property will be an icon name.
 	/// When it is false, this property is irrelevant.
-	///
-	/// [Notification.hasActionIcons]: ../notification#prop.hasActionIcons
 	Q_PROPERTY(QString identifier READ identifier CONSTANT);
 	/// The localized text that should be displayed on a button.
 	Q_PROPERTY(QString text READ text NOTIFY textChanged);
@@ -211,9 +209,7 @@ public:
 	    , mIdentifier(std::move(identifier))
 	    , mText(std::move(text)) {}
 
-	/// Invoke the action. If [Notification.resident] is false it will be dismissed.
-	///
-	/// [Notification.resident]: ../notification#prop.resident
+	/// Invoke the action. If @@Notification.resident is false it will be dismissed.
 	Q_INVOKABLE void invoke();
 
 	[[nodiscard]] QString identifier() const;

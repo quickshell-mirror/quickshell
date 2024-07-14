@@ -79,7 +79,7 @@
 /// > [!WARNING] Components that internally load other components must explicitly
 /// > support asynchronous loading to avoid blocking.
 /// >
-/// > Notably, [Variants](../variants) does not corrently support asynchronous
+/// > Notably, @@Variants does not corrently support asynchronous
 /// > loading, meaning using it inside a LazyLoader will block similarly to not
 /// > having a loader to start with.
 ///

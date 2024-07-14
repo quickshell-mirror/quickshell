@@ -27,7 +27,7 @@ class NotificationServerQml
 	// clang-format off
 	/// If notifications should be re-emitted when quickshell reloads. Defaults to true.
 	///
-	/// The [lastGeneration](../notification#prop.lastGeneration) flag will be
+	/// The @@Notification.lastGeneration flag will be
 	/// set on notifications from the prior generation for further filtering/handling.
 	Q_PROPERTY(bool keepOnReload READ keepOnReload WRITE setKeepOnReload NOTIFY keepOnReloadChanged);
 	/// If the notification server should advertise that it can persist notifications in the background
@@ -42,11 +42,9 @@ class NotificationServerQml
 	/// If notification body text should be advertised as supporting markup as described in [the specification]
 	/// Defaults to false.
 	///
-	/// Note that returned notifications may still contain markup if this property is false, as it is only a hint.
-	/// By default Text objects will try to render markup. To avoid this if any is sent, change [Text.textFormat] to `PlainText`.
-	///
-	/// [the specification]: https://specifications.freedesktop.org/notification-spec/notification-spec-latest.html#markup
-	/// [Text.textFormat]: https://doc.qt.io/qt-6/qml-qtquick-text.html#textFormat-prop
+	/// Note that returned notifications may still contain markup if this property is false,
+	/// as it is only a hint. By default Text objects will try to render markup. To avoid this
+	/// if any is sent, change @@QtQuick.Text.textFormat to `PlainText`.
 	Q_PROPERTY(bool bodyMarkupSupported READ bodyMarkupSupported WRITE setBodyMarkupSupported NOTIFY bodyMarkupSupportedChanged);
 	/// If notification body text should be advertised as supporting hyperlinks as described in [the specification]
 	/// Defaults to false.

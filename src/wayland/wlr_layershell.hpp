@@ -16,7 +16,7 @@
 /// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
 ///
 /// #### Attached property
-/// `WlrLayershell` works as an attached property of [PanelWindow] which you should use instead if you can,
+/// `WlrLayershell` works as an attached property of @@Quickshell.PanelWindow which you should use instead if you can,
 /// as it is platform independent.
 /// ```qml
 /// PanelWindow {
@@ -37,7 +37,6 @@
 /// ```
 ///
 /// [zwlr_layer_shell_v1]: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
-/// [PanelWindow]: ../../quickshell/panelwindow
 class WlrLayershell: public ProxyWindowBase {
 	QSDOC_BASECLASS(PanelWindowInterface);
 	// clang-format off

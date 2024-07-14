@@ -60,7 +60,7 @@ class QsMenuEntry: public QObject {
 	/// The check state of the checkbox or radiobutton if applicable, as a
 	/// [Qt.CheckState](https://doc.qt.io/qt-6/qt.html#CheckState-enum).
 	Q_PROPERTY(Qt::CheckState checkState READ checkState NOTIFY checkStateChanged);
-	/// If this menu item has children that can be accessed through a [QsMenuOpener](../qsmenuopener).
+	/// If this menu item has children that can be accessed through a @@QsMenuOpener$.
 	Q_PROPERTY(bool hasChildren READ hasChildren NOTIFY hasChildrenChanged);
 	QML_ELEMENT;
 	QML_UNCREATABLE("QsMenuEntry cannot be directly created");

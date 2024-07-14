@@ -17,7 +17,7 @@ class Retainable;
 /// typeinfo pages.
 ///
 /// > [!INFO] Working directly with Retainable is often overly complicated and
-/// > error prone. For this reason [RetainableLock](../retainablelock) should
+/// > error prone. For this reason @@RetainableLock should
 /// > usually be used instead.
 class RetainableHook: public QObject {
 	Q_OBJECT;
@@ -43,7 +43,7 @@ public:
 	/// > [!WARNING] It is easy to forget to unlock a locked object.
 	/// > Doing so will create what is effectively a memory leak.
 	/// >
-	/// > Using [RetainableLock](../retainablelock) is recommended as it will help
+	/// > Using @@RetainableLock is recommended as it will help
 	/// > avoid this scenario and make misuse more obvious.
 	Q_INVOKABLE void lock();
 	/// Remove a lock on the object. See `lock()` for more information.
@@ -105,8 +105,8 @@ private:
 
 ///! A helper for easily using Retainable.
 /// A RetainableLock provides extra safety and ease of use for locking
-/// [Retainable](../retainable) objects. A retainable object can be locked
-/// by multiple locks at once, and each lock re-exposes relevant properties
+/// @@Retainable objects. A retainable object can be locked by multiple
+/// locks at once, and each lock re-exposes relevant properties
 /// of the retained objects.
 ///
 /// #### Example

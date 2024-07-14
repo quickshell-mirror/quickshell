@@ -17,7 +17,7 @@ class ToplevelHandle;
 
 ///! Window from another application.
 /// A window/toplevel from another application, retrievable from
-/// the [ToplevelManager](../toplevelmanager).
+/// the @@ToplevelManager$.
 class Toplevel: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString appId READ appId NOTIFY appIdChanged);
@@ -122,7 +122,7 @@ private:
 };
 
 ///! Exposes a list of Toplevels.
-/// Exposes a list of windows from other applications as [Toplevel](../toplevel)s via the
+/// Exposes a list of windows from other applications as @@Toplevel$s via the
 /// [zwlr-foreign-toplevel-management-v1](https://wayland.app/protocols/wlr-foreign-toplevel-management-unstable-v1)
 /// wayland protocol.
 class ToplevelManagerQml: public QObject {

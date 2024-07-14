@@ -249,7 +249,7 @@ private:
 
 ///! A connection between pipewire nodes.
 /// Note that there is one link per *channel* of a connection between nodes.
-/// You usually want [PwLinkGroup](../pwlinkgroup).
+/// You usually want @@PwLinkGroup$.
 class PwLinkIface: public PwObjectIface {
 	Q_OBJECT;
 	/// The pipewire object id of the link.

@@ -11,10 +11,7 @@ class EngineGeneration;
 
 ///! The base class of all types that can be reloaded.
 /// Reloadables will attempt to take specific state from previous config revisions if possible.
-/// Some examples are [ProxyWindowBase] and [PersistentProperties]
-///
-/// [ProxyWindowBase]: ../proxywindowbase
-/// [PersistentProperties]: ../persistentproperties
+/// Some examples are @@ProxyWindowBase and @@PersistentProperties
 class Reloadable
     : public QObject
     , public QQmlParserStatus {

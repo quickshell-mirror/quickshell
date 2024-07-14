@@ -14,9 +14,7 @@
 /// > [!ERROR] Removed in favor of QtQml.Models.Instantiator
 ///
 /// The ObjectRepeater creates instances of the provided delegate for every entry in the
-/// given model, similarly to a [Repeater] but for non visual types.
-///
-/// [Repeater]: https://doc.qt.io/qt-6/qml-qtquick-repeater.html
+/// given model, similarly to a @@QtQuick.Repeater but for non visual types.
 class ObjectRepeater: public ObjectModel<QObject> {
 	Q_OBJECT;
 	/// The model providing data to the ObjectRepeater.
@@ -25,10 +23,9 @@ class ObjectRepeater: public ObjectModel<QObject> {
 	/// and [QAbstractListModel] derived models, though only one column will be repeated
 	/// from the latter.
 	///
-	/// Note: [ObjectModel] is a [QAbstractListModel] with a single column.
+	/// Note: @@ObjectModel is a [QAbstractListModel] with a single column.
 	///
 	/// [QAbstractListModel]: https://doc.qt.io/qt-6/qabstractlistmodel.html
-	/// [ObjectModel]: ../objectmodel
 	Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged);
 	/// The delegate component to repeat.
 	///
@@ -39,10 +36,9 @@ class ObjectRepeater: public ObjectModel<QObject> {
 	/// exposed containing the entry from the model. If the model is a [QAbstractListModel],
 	/// the roles from the model will be exposed.
 	///
-	/// Note: [ObjectModel] has a single role named `modelData` for compatibility with normal lists.
+	/// Note: @@ObjectModel has a single role named `modelData` for compatibility with normal lists.
 	///
 	/// [QAbstractListModel]: https://doc.qt.io/qt-6/qabstractlistmodel.html
-	/// [ObjectModel]: ../objectmodel
 	Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged);
 	Q_CLASSINFO("DefaultProperty", "delegate");
 	QML_ELEMENT;

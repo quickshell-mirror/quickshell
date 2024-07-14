@@ -10,7 +10,7 @@
 class DataStreamParser;
 
 ///! Data source that can be streamed into a parser.
-/// See also: [DataStreamParser](../datastreamparser)
+/// See also: @@DataStreamParser
 class DataStream: public QObject {
 	Q_OBJECT;
 	/// The parser to stream data from this source into.
@@ -43,7 +43,7 @@ protected:
 };
 
 ///! Parser for streamed input data.
-/// See also: [DataStream](../datastream), [SplitParser](../splitparser)
+/// See also: @@DataStream$, @@SplitParser
 class DataStreamParser: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
