@@ -26,6 +26,7 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
     , mContentItem(new QQuickItem()) {
 	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
+	this->mContentItem->setProperty("__qs_proxywindow", QVariant::fromValue(this));
 
 	// clang-format off
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
@@ -123,8 +124,6 @@ void ProxyWindowBase::connectWindow() {
 		// which window it belongs to. We do want to replace the delay one though.
 		generation->registerIncubationController(this->window->incubationController());
 	}
-
-	this->window->setProperty("__qs_proxywindow", QVariant::fromValue(this));
 
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);

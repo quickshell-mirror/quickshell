@@ -7,11 +7,16 @@
 #include "proxywindow.hpp"
 
 QsWindowAttached* WindowInterface::qmlAttachedProperties(QObject* object) {
-	auto* item = qobject_cast<QQuickItem*>(object);
-	if (!item) return nullptr;
-	auto* window = item->window();
-	if (!window) return nullptr;
-	auto* proxy = window->property("__qs_proxywindow").value<ProxyWindowBase*>();
+	auto* visualRoot = qobject_cast<QQuickItem*>(object);
+
+	ProxyWindowBase* proxy = nullptr;
+	while (visualRoot != nullptr) {
+		proxy = visualRoot->property("__qs_proxywindow").value<ProxyWindowBase*>();
+
+		if (proxy) break;
+		visualRoot = visualRoot->parentItem();
+	};
+
 	if (!proxy) return nullptr;
 
 	auto v = proxy->property("__qs_window_attached");
