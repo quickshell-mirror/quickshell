@@ -11,6 +11,7 @@
 #include <qregion.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 #include <qwindow.h>
 
 #include "generation.hpp"
@@ -122,6 +123,8 @@ void ProxyWindowBase::connectWindow() {
 		// which window it belongs to. We do want to replace the delay one though.
 		generation->registerIncubationController(this->window->incubationController());
 	}
+
+	this->window->setProperty("__qs_proxywindow", QVariant::fromValue(this));
 
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
@@ -344,3 +347,6 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 
 void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
 void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
+
+QObject* ProxyWindowAttached::window() const { return this->mWindow; }
+QQuickItem* ProxyWindowAttached::contentItem() const { return this->mWindow->contentItem(); }

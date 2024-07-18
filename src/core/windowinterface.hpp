@@ -13,7 +13,15 @@
 #include "reload.hpp"
 
 class ProxyWindowBase;
+class QsWindowAttached;
 
+///! Base class of Quickshell windows
+/// Base class of Quickshell windows
+/// ### Attached properties
+/// `QSWindow` can be used as an attached object of anything that subclasses @@QtQuick.Item$.
+/// It provides the following properties
+/// - `window` - the `QSWindow` object.
+/// - `contentItem` - the `contentItem` property of the window.
 class WindowInterface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
@@ -101,6 +109,7 @@ class WindowInterface: public Reloadable {
 	Q_CLASSINFO("DefaultProperty", "data");
 	QML_NAMED_ELEMENT(QSWindow);
 	QML_UNCREATABLE("uncreatable base class");
+	QML_ATTACHED(QsWindowAttached);
 
 public:
 	explicit WindowInterface(QObject* parent = nullptr): Reloadable(parent) {}
@@ -131,6 +140,8 @@ public:
 
 	[[nodiscard]] virtual QQmlListProperty<QObject> data() = 0;
 
+	static QsWindowAttached* qmlAttachedProperties(QObject* object);
+
 signals:
 	void windowConnected();
 	void visibleChanged();
@@ -141,4 +152,18 @@ signals:
 	void windowTransformChanged();
 	void colorChanged();
 	void maskChanged();
+};
+
+class QsWindowAttached: public QObject {
+	Q_OBJECT;
+	Q_PROPERTY(QObject* window READ window CONSTANT);
+	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
+	QML_ANONYMOUS;
+
+public:
+	[[nodiscard]] virtual QObject* window() const = 0;
+	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
+
+protected:
+	explicit QsWindowAttached(QObject* parent): QObject(parent) {}
 };

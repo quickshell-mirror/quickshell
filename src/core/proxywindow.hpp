@@ -136,3 +136,18 @@ private:
 	void polishItems();
 	void updateMask();
 };
+
+class ProxyWindowAttached: public QsWindowAttached {
+	Q_OBJECT;
+
+public:
+	explicit ProxyWindowAttached(ProxyWindowBase* window)
+	    : QsWindowAttached(window)
+	    , mWindow(window) {}
+
+	[[nodiscard]] QObject* window() const override;
+	[[nodiscard]] QQuickItem* contentItem() const override;
+
+private:
+	ProxyWindowBase* mWindow;
+};
