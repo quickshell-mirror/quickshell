@@ -26,6 +26,7 @@ public:
 	void setVisible(bool visible) override;
 
 	PlatformMenuQMenu* containingMenu = nullptr;
+	QPoint targetPosition;
 };
 
 class PlatformMenuEntry: public QObject {

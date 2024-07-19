@@ -104,6 +104,8 @@ bool PlatformMenuEntry::display(QObject* parentWindow, int relativeX, int relati
 	this->qmenu->createWinId();
 	this->qmenu->windowHandle()->setTransientParent(window);
 
+	// Skips screen edge repositioning so it can be left to the compositor on wayland.
+	this->qmenu->targetPosition = point;
 	this->qmenu->popup(point);
 
 	return true;
