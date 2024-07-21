@@ -107,7 +107,7 @@ class WindowInterface: public Reloadable {
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
-	QML_NAMED_ELEMENT(QSWindow);
+	QML_NAMED_ELEMENT(QsWindow);
 	QML_UNCREATABLE("uncreatable base class");
 	QML_ATTACHED(QsWindowAttached);
 
