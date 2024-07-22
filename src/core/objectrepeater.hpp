@@ -11,7 +11,7 @@
 #include "model.hpp"
 
 ///! A Repeater / for loop / map for non Item derived objects.
-/// > [!ERROR] Removed in favor of QtQml.Models.Instantiator
+/// > [!ERROR] Removed in favor of @@QtQml.Models.Instantiator
 ///
 /// The ObjectRepeater creates instances of the provided delegate for every entry in the
 /// given model, similarly to a @@QtQuick.Repeater but for non visual types.
@@ -19,7 +19,7 @@ class ObjectRepeater: public ObjectModel<QObject> {
 	Q_OBJECT;
 	/// The model providing data to the ObjectRepeater.
 	///
-	/// Currently accepted model types are QML `list<T>` lists, javascript arrays,
+	/// Currently accepted model types are `list<T>` lists, javascript arrays,
 	/// and [QAbstractListModel] derived models, though only one column will be repeated
 	/// from the latter.
 	///

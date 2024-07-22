@@ -12,6 +12,8 @@
 
 namespace qs::service::upower {
 
+///! Power state of a UPower device.
+/// See @@UPowerDevice.state.
 class UPowerDeviceState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -34,6 +36,8 @@ public:
 	Q_INVOKABLE static QString toString(UPowerDeviceState::Enum status);
 };
 
+///! Type of a UPower device.
+/// See @@UPowerDevice.type.
 class UPowerDeviceType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -100,7 +104,7 @@ class UPowerDevice: public QObject {
 	Q_PROPERTY(qreal timeToFull READ timeToFull NOTIFY timeToFullChanged);
 	/// Current charge level as a percentage.
 	///
-	/// This would be equivalent to `energy / energyCapacity`.
+	/// This would be equivalent to @@energy / @@energyCapacity.
 	Q_PROPERTY(qreal percentage READ percentage NOTIFY percentageChanged);
 	/// If the power source is present in the bay or slot, useful for hot-removable batteries.
 	///
@@ -115,7 +119,7 @@ class UPowerDevice: public QObject {
 	Q_PROPERTY(QString iconName READ iconName NOTIFY iconNameChanged);
 	/// If the device is a laptop battery or not. Use this to check if your device is a valid battery.
 	///
-	/// This will be equivalent to `type == Battery && powerSupply == true`.
+	/// This will be equivalent to @@type == Battery && @@powerSupply == true.
  	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged);
 	/// Native path of the device specific to your OS.
 	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged);

@@ -20,23 +20,23 @@ class PamContext
 	// clang-format off
 	/// If the pam context is actively performing an authentication.
 	///
-	/// Setting this value behaves exactly the same as calling `start()` and `abort()`.
+	/// Setting this value behaves exactly the same as calling @@start() and @@abort().
 	Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged);
 	/// The pam configuration to use. Defaults to "login".
 	///
-	/// The configuration should name a file inside `configDirectory`.
+	/// The configuration should name a file inside @@configDirectory.
 	///
-	/// This property may not be set while `active` is true.
+	/// This property may not be set while @@active is true.
 	Q_PROPERTY(QString config READ config WRITE setConfig NOTIFY configChanged);
 	/// The pam configuration directory to use. Defaults to "/etc/pam.d".
 	///
 	/// The configuration directory is resolved relative to the current file if not an absolute path.
 	///
-	/// This property may not be set while `active` is true.
+	/// This property may not be set while @@active is true.
 	Q_PROPERTY(QString configDirectory READ configDirectory WRITE setConfigDirectory NOTIFY configDirectoryChanged);
 	/// The user to authenticate as. If unset the current user will be used.
 	///
-	/// This property may not be set while `active` is true.
+	/// This property may not be set while @@active is true.
 	Q_PROPERTY(QString user READ user WRITE setUser NOTIFY userChanged);
 	/// The last message sent by pam.
 	Q_PROPERTY(QString message READ message NOTIFY messageChanged);
@@ -44,9 +44,9 @@ class PamContext
 	Q_PROPERTY(bool messageIsError READ messageIsError NOTIFY messageIsErrorChanged);
 	/// If pam currently wants a response.
 	///
-	/// Responses can be returned with the `respond()` function.
+	/// Responses can be returned with the @@respond() function.
 	Q_PROPERTY(bool responseRequired READ isResponseRequired NOTIFY responseRequiredChanged);
-	/// If the user's response should be visible. Only valid when `responseRequired` is true.
+	/// If the user's response should be visible. Only valid when @@responseRequired is true.
 	Q_PROPERTY(bool responseVisible READ isResponseVisible NOTIFY responseVisibleChanged);
 	// clang-format on
 	QML_ELEMENT;
@@ -68,7 +68,7 @@ public:
 
 	/// Respond to pam.
 	///
-	/// May not be called unless `responseRequired` is true.
+	/// May not be called unless @@responseRequired is true.
 	Q_INVOKABLE void respond(const QString& response);
 
 	[[nodiscard]] bool isActive() const;
@@ -93,7 +93,7 @@ signals:
 	void completed(PamResult::Enum result);
 	/// Emitted if pam fails to perform authentication normally.
 	///
-	/// A `completed(false)` will be emitted after this event.
+	/// A `completed(PamResult.Error)` will be emitted after this event.
 	void error(PamError::Enum error);
 
 	/// Emitted whenever pam sends a new message, after the change signals for

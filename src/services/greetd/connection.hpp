@@ -7,6 +7,8 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+///! State of the Greetd connection.
+/// See @@Greetd.state.
 class GreetdState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

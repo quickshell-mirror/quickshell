@@ -13,7 +13,7 @@ class TestTransformWatcher;
 
 ///! Monitor of all geometry changes between two objects.
 /// The TransformWatcher monitors all properties that affect the geometry
-/// of two `Item`s relative to eachother.
+/// of two @@QtQuick.Item$s relative to eachother.
 ///
 /// > [!INFO] The algorithm responsible for determining the relationship
 /// > between `a` and `b` is biased towards `a` being a parent of `b`,

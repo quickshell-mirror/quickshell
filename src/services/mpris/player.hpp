@@ -13,6 +13,8 @@
 
 namespace qs::service::mpris {
 
+///! Playback state of an MprisPlayer
+/// See @@MprisPlayer.playbackState.
 class MprisPlaybackState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -29,6 +31,8 @@ public:
 	Q_INVOKABLE static QString toString(MprisPlaybackState::Enum status);
 };
 
+///! Loop state of an MprisPlayer
+/// See @@MprisPlayer.loopState.
 class MprisLoopState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -72,17 +76,17 @@ class MprisPlayer: public QObject {
 	/// The name of the desktop entry for the media player, or an empty string if not provided.
 	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged);
 	/// The current position in the playing track, as seconds, with millisecond precision,
-	/// or `0` if `positionSupported` is false.
+	/// or `0` if @@positionSupported is false.
 	///
-	/// May only be written to if `canSeek` and `positionSupported` are true.
+	/// May only be written to if @@canSeek and @@positionSupported are true.
 	///
 	/// > [!WARNING] To avoid excessive property updates wasting CPU while `position` is not
 	/// > actively monitored, `position` usually will not update reactively, unless a nonlinear
 	/// > change in position occurs, however reading it will always return the current position.
 	/// >
-	/// > If you want to actively monitor the position, the simplest way it to emit the `positionChanged`
-	/// > signal manually for the duration you are monitoring it, Using a [FrameAnimation] if you need
-	/// > the value to update smoothly, such as on a slider, or a [Timer] if not, as shown below.
+	/// > If you want to actively monitor the position, the simplest way it to emit the @@positionChanged(s)
+	/// > signal manually for the duration you are monitoring it, Using a @@QtQuick.FrameAnimation if you need
+	/// > the value to update smoothly, such as on a slider, or a @@QtQuick.Timer if not, as shown below.
 	/// >
 	/// > ```qml {filename="Using a FrameAnimation"}
 	/// > FrameAnimation {
@@ -104,18 +108,15 @@ class MprisPlayer: public QObject {
 	/// >   onTriggered: player.positionChanged()
 	/// > }
 	/// > ```
-	///
-	/// [FrameAnimation]: https://doc.qt.io/qt-6/qml-qtquick-frameanimation.html
-	/// [Timer]: https://doc.qt.io/qt-6/qml-qtqml-timer.html
 	Q_PROPERTY(qreal position READ position WRITE setPosition NOTIFY positionChanged);
 	Q_PROPERTY(bool positionSupported READ positionSupported NOTIFY positionSupportedChanged);
 	/// The length of the playing track, as seconds, with millisecond precision,
-	/// or the value of `position` if `lengthSupported` is false.
+	/// or the value of @@position if @@lengthSupported is false.
 	Q_PROPERTY(qreal length READ length NOTIFY lengthChanged);
 	Q_PROPERTY(bool lengthSupported READ lengthSupported NOTIFY lengthSupportedChanged);
-	/// The volume of the playing track from 0.0 to 1.0, or 1.0 if `volumeSupported` is false.
+	/// The volume of the playing track from 0.0 to 1.0, or 1.0 if @@volumeSupported is false.
 	///
-	/// May only be written to if `canControl` and `volumeSupported` are true.
+	/// May only be written to if @@canControl and @@volumeSupported are true.
 	Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged);
 	Q_PROPERTY(bool volumeSupported READ volumeSupported NOTIFY volumeSupportedChanged);
 	/// Metadata of the current track.
@@ -123,7 +124,7 @@ class MprisPlayer: public QObject {
 	/// A map of common properties is available [here](https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata).
 	/// Do not count on any of them actually being present.
 	///
-	/// Note that the `trackTitle`, `trackAlbum`, `trackAlbumArtist`, `trackArtists` and `trackArtUrl`
+	/// Note that the @@trackTitle, @@trackAlbum, @@trackAlbumArtist, @@trackArtists and @@trackArtUrl
 	/// properties have extra logic to guard against bad players sending weird metadata, and should
 	/// be used over grabbing the properties directly from the metadata.
 	Q_PROPERTY(QVariantMap metadata READ metadata NOTIFY metadataChanged);
@@ -139,37 +140,37 @@ class MprisPlayer: public QObject {
 	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged);
 	/// The playback state of the media player.
 	///
-	/// - If `canPlay` is false, you cannot assign the `Playing` state.
-	/// - If `canPause` is false, you cannot assign the `Paused` state.
-	/// - If `canControl` is false, you cannot assign the `Stopped` state.
+	/// - If @@canPlay is false, you cannot assign the `Playing` state.
+	/// - If @@canPause is false, you cannot assign the `Paused` state.
+	/// - If @@canControl is false, you cannot assign the `Stopped` state.
 	/// (or any of the others, though their repsective properties will also be false)
 	Q_PROPERTY(MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged);
-	/// The loop state of the media player, or `None` if `loopSupported` is false.
+	/// The loop state of the media player, or `None` if @@loopSupported is false.
 	///
-	/// May only be written to if `canControl` and `loopSupported` are true.
+	/// May only be written to if @@canControl and @@loopSupported are true.
 	Q_PROPERTY(MprisLoopState::Enum loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged);
 	Q_PROPERTY(bool loopSupported READ loopSupported NOTIFY loopSupportedChanged);
 	/// The speed the song is playing at, as a multiplier.
 	///
-	/// Only values between `minRate` and `maxRate` (inclusive) may be written to the property.
+	/// Only values between @@minRate and @@maxRate (inclusive) may be written to the property.
 	/// Additionally, It is recommended that you only write common values such as `0.25`, `0.5`, `1.0`, `2.0`
 	/// to the property, as media players are free to ignore the value, and are more likely to
 	/// accept common ones.
 	Q_PROPERTY(qreal rate READ rate WRITE setRate NOTIFY rateChanged);
 	Q_PROPERTY(qreal minRate READ minRate NOTIFY minRateChanged);
 	Q_PROPERTY(qreal maxRate READ maxRate NOTIFY maxRateChanged);
-	/// If the play queue is currently being shuffled, or false if `shuffleSupported` is false.
+	/// If the play queue is currently being shuffled, or false if @@shuffleSupported is false.
 	///
-	/// May only be written if `canControl` and `shuffleSupported` are true.
+	/// May only be written if @@canControl and @@shuffleSupported are true.
 	Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY shuffleChanged);
 	Q_PROPERTY(bool shuffleSupported READ shuffleSupported NOTIFY shuffleSupportedChanged);
 	/// If the player is currently shown in fullscreen.
 	///
-	/// May only be written to if `canSetFullscreen` is true.
+	/// May only be written to if @@canSetFullscreen is true.
 	Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged);
-	/// Uri schemes supported by `openUri`.
+	/// Uri schemes supported by @@openUri().
 	Q_PROPERTY(QList<QString> supportedUriSchemes READ supportedUriSchemes NOTIFY supportedUriSchemesChanged);
-	/// Mime types supported by `openUri`.
+	/// Mime types supported by @@openUri().
 	Q_PROPERTY(QList<QString> supportedMimeTypes READ supportedMimeTypes NOTIFY supportedMimeTypesChanged);
 	// clang-format on
 	QML_ELEMENT;
@@ -180,42 +181,42 @@ public:
 
 	/// Bring the media player to the front of the window stack.
 	///
-	/// May only be called if `canRaise` is true.
+	/// May only be called if @@canRaise is true.
 	Q_INVOKABLE void raise();
 	/// Quit the media player.
 	///
-	/// May only be called if `canQuit` is true.
+	/// May only be called if @@canQuit is true.
 	Q_INVOKABLE void quit();
 	/// Open the given URI in the media player.
 	///
 	/// Many players will silently ignore this, especially if the uri
-	/// does not match `supportedUriSchemes` and `supportedMimeTypes`.
+	/// does not match @@supportedUriSchemes and @@supportedMimeTypes.
 	Q_INVOKABLE void openUri(const QString& uri);
 	/// Play the next song.
 	///
-	/// May only be called if `canGoNext` is true.
+	/// May only be called if @@canGoNext is true.
 	Q_INVOKABLE void next();
 	/// Play the previous song, or go back to the beginning of the current one.
 	///
-	/// May only be called if `canGoPrevious` is true.
+	/// May only be called if @@canGoPrevious is true.
 	Q_INVOKABLE void previous();
 	/// Change `position` by an offset.
 	///
-	/// Even if `positionSupported` is false and you cannot set `position`,
+	/// Even if @@positionSupported is false and you cannot set `position`,
 	/// this function may work.
 	///
-	/// May only be called if `canSeek` is true.
+	/// May only be called if @@canSeek is true.
 	Q_INVOKABLE void seek(qreal offset);
-	/// Equivalent to setting `playbackState` to `Playing`.
+	/// Equivalent to setting @@playbackState to `Playing`.
 	Q_INVOKABLE void play();
-	/// Equivalent to setting `playbackState` to `Paused`.
+	/// Equivalent to setting @@playbackState to `Paused`.
 	Q_INVOKABLE void pause();
-	/// Equivalent to setting `playbackState` to `Stopped`.
+	/// Equivalent to setting @@playbackState to `Stopped`.
 	Q_INVOKABLE void stop();
-	/// Equivalent to calling `play()` if not playing or `pause()` if playing.
+	/// Equivalent to calling @@play() if not playing or @@pause() if playing.
 	///
-	/// May only be called if `canTogglePlaying` is true, which is equivalent to
-	/// `canPlay` or `canPause` depending on the current playback state.
+	/// May only be called if @@canTogglePlaying is true, which is equivalent to
+	/// @@canPlay or @@canPause() depending on the current playback state.
 	Q_INVOKABLE void togglePlaying();
 
 	[[nodiscard]] bool isValid() const;

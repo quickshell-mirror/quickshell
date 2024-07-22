@@ -13,6 +13,8 @@
 
 namespace qs::service::pipewire {
 
+///! State of a pipewire link.
+/// See @@PwLink.state.
 class PwLinkState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

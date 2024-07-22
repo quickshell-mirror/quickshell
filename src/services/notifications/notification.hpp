@@ -14,6 +14,8 @@ namespace qs::service::notifications {
 
 class NotificationImage;
 
+///! The urgency level of a Notification.
+/// See @@Notification.urgency.
 class NotificationUrgency: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -30,6 +32,8 @@ public:
 	Q_INVOKABLE static QString toString(NotificationUrgency::Enum value);
 };
 
+///! The reason a Notification was closed.
+/// See @@Notification.closed(s).
 class NotificationCloseReason: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -53,7 +57,8 @@ class NotificationAction;
 
 ///! A notification emitted by a NotificationServer.
 /// A notification emitted by a NotificationServer.
-/// > [!INFO] This type is @@Quickshell.Retainable$. It
+///
+/// > [!INFO] This type is @@Quickshell.Retainable. It
 /// > can be retained after destruction if necessary.
 class Notification
     : public QObject
@@ -63,13 +68,13 @@ class Notification
 	Q_PROPERTY(quint32 id READ id CONSTANT);
 	/// If the notification is tracked by the notification server.
 	///
-	/// Setting this property to false is equivalent to calling `dismiss()`.
+	/// Setting this property to false is equivalent to calling @@dismiss().
 	Q_PROPERTY(bool tracked READ isTracked WRITE setTracked NOTIFY trackedChanged);
 	/// If this notification was carried over from the last generation
 	/// when quickshell reloaded.
 	///
 	/// Notifications from the last generation will only be emitted
-	/// if @@NotificationServer.keepOnReloadis true.
+	/// if @@NotificationServer.keepOnReload is true.
 	Q_PROPERTY(bool lastGeneration READ isLastGeneration CONSTANT);
 	/// Time in seconds the notification should be valid for
 	Q_PROPERTY(qreal expireTimeout READ expireTimeout NOTIFY expireTimeoutChanged);
@@ -190,6 +195,8 @@ private:
 	QVariantMap mHints;
 };
 
+///! An action associated with a Notification.
+/// See @@Notification.actions.
 class NotificationAction: public QObject {
 	Q_OBJECT;
 	/// The identifier of the action.

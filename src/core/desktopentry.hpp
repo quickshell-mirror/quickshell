@@ -27,7 +27,7 @@ class DesktopEntry: public QObject {
 	Q_PROPERTY(QString comment MEMBER mComment CONSTANT);
 	/// Name of the icon associated with this application. May be empty.
 	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
-	/// The raw `Exec` string from the desktop entry. You probably want `execute()`.
+	/// The raw `Exec` string from the desktop entry. You probably want @@execute().
 	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
 	/// The working directory to execute from.
 	Q_PROPERTY(QString workingDirectory MEMBER mWorkingDirectory CONSTANT);
@@ -44,7 +44,7 @@ public:
 
 	void parseEntry(const QString& text);
 
-	/// Run the application. Currently ignores `runInTerminal` and field codes.
+	/// Run the application. Currently ignores @@runInTerminal and field codes.
 	Q_INVOKABLE void execute() const;
 
 	[[nodiscard]] bool isValid() const;
@@ -81,7 +81,7 @@ class DesktopAction: public QObject {
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
 	Q_PROPERTY(QString name MEMBER mName CONSTANT);
 	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
-	/// The raw `Exec` string from the desktop entry. You probably want `execute()`.
+	/// The raw `Exec` string from the desktop entry. You probably want @@execute().
 	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopAction instances must be retrieved from a DesktopEntry");
@@ -92,7 +92,7 @@ public:
 	    , entry(entry)
 	    , mId(std::move(id)) {}
 
-	/// Run the application. Currently ignores `runInTerminal` and field codes.
+	/// Run the application. Currently ignores @@DesktopEntry.runInTerminal and field codes.
 	Q_INVOKABLE void execute() const;
 
 private:

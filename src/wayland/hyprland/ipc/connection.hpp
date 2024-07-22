@@ -29,9 +29,13 @@ namespace qs::hyprland::ipc {
 /// Live Hyprland IPC event. Holding this object after the
 /// signal handler exits is undefined as the event instance
 /// is reused.
+///
+/// Emitted by @@Hyprland.rawEvent(s).
 class HyprlandIpcEvent: public QObject {
 	Q_OBJECT;
 	/// The name of the event.
+	///
+	/// See [Hyprland Wiki: IPC](https://wiki.hyprland.org/IPC/) for a list of events.
 	Q_PROPERTY(QString name READ nameStr CONSTANT);
 	/// The unparsed data of the event.
 	Q_PROPERTY(QString data READ dataStr CONSTANT);

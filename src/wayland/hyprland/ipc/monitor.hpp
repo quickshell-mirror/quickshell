@@ -25,7 +25,7 @@ class HyprlandMonitor: public QObject {
 	///
 	/// > [!WARNING] This is *not* updated unless the monitor object is fetched again from
 	/// > Hyprland. If you need a value that is subject to change and does not have a dedicated
-	/// > property, run `HyprlandIpc.refreshMonitors()` and wait for this property to update.
+	/// > property, run @@Hyprland.refreshMonitors() and wait for this property to update.
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
 	/// The currently active workspace on this monitor. May be null.
 	Q_PROPERTY(HyprlandWorkspace* activeWorkspace READ activeWorkspace NOTIFY activeWorkspaceChanged);

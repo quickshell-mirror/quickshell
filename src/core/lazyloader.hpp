@@ -87,8 +87,8 @@
 /// > meaning if you create all windows inside of lazy loaders, none of them will ever load.
 class LazyLoader: public Reloadable {
 	Q_OBJECT;
-	/// The fully loaded item if the loader is `loading` or `active`, or `null`
-	/// if neither `loading` or `active`.
+	/// The fully loaded item if the loader is @@loading or @@active, or `null`
+	/// if neither @@loading nor @@active.
 	///
 	/// Note that the item is owned by the LazyLoader, and destroying the LazyLoader
 	/// will destroy the item.
@@ -96,7 +96,7 @@ class LazyLoader: public Reloadable {
 	/// > [!WARNING] If you access the `item` of a loader that is currently loading,
 	/// > it will block as if you had set `active` to true immediately beforehand.
 	/// >
-	/// > You can instead set `loading` and listen to the `activeChanged` signal to
+	/// > You can instead set @@loading and listen to @@activeChanged(s) signal to
 	/// > ensure loading happens asynchronously.
 	Q_PROPERTY(QObject* item READ item NOTIFY itemChanged);
 	/// If the loader is actively loading.
@@ -105,7 +105,7 @@ class LazyLoader: public Reloadable {
 	/// loading it asynchronously. If the component is already loaded, setting
 	/// this property has no effect.
 	///
-	/// See also: [activeAsync](#prop.activeAsync).
+	/// See also: @@activeAsync.
 	Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged);
 	/// If the component is fully loaded.
 	///
@@ -113,17 +113,17 @@ class LazyLoader: public Reloadable {
 	/// blocking the UI, and setting it to `false` will destroy the component, requiring
 	/// it to be loaded again.
 	///
-	/// See also: [activeAsync](#prop.activeAsync).
+	/// See also: @@activeAsync.
 	Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged);
 	/// If the component is fully loaded.
 	///
 	/// Setting this property to true will asynchronously load the component similarly to
-	/// [loading](#prop.loading). Reading it or setting it to false will behanve
-	/// the same as [active](#prop.active).
+	/// @@loading. Reading it or setting it to false will behanve
+	/// the same as @@active.
 	Q_PROPERTY(bool activeAsync READ isActive WRITE setActiveAsync NOTIFY activeChanged);
-	/// The component to load. Mutually exclusive to `source`.
+	/// The component to load. Mutually exclusive to @@source.
 	Q_PROPERTY(QQmlComponent* component READ component WRITE setComponent NOTIFY componentChanged);
-	/// The URI to load the component from. Mutually exclusive to `component`.
+	/// The URI to load the component from. Mutually exclusive to @@component.
 	Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged);
 	Q_CLASSINFO("DefaultProperty", "component");
 	QML_ELEMENT;

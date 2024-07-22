@@ -17,7 +17,7 @@ class ToplevelHandle;
 
 ///! Window from another application.
 /// A window/toplevel from another application, retrievable from
-/// the @@ToplevelManager$.
+/// the @@ToplevelManager.
 class Toplevel: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString appId READ appId NOTIFY appIdChanged);
@@ -26,7 +26,7 @@ class Toplevel: public QObject {
 	Q_PROPERTY(Toplevel* parent READ parent NOTIFY parentChanged);
 	/// If the window is currently activated or focused.
 	///
-	/// Activation can be requested with the `activate()` function.
+	/// Activation can be requested with the @@activate() function.
 	Q_PROPERTY(bool activated READ activated NOTIFY activatedChanged);
 	/// If the window is currently maximized.
 	///
@@ -42,7 +42,7 @@ class Toplevel: public QObject {
 	///
 	/// Fullscreen can be requested by setting this property, though it may
 	/// be ignored by the compositor.
-	/// Fullscreen can be requested on a specific screen with the `fullscreenOn()` function.
+	/// Fullscreen can be requested on a specific screen with the @@fullscreenOn() function.
 	Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged);
 	QML_ELEMENT;
 	QML_UNCREATABLE("Toplevels must be acquired from the ToplevelManager.");

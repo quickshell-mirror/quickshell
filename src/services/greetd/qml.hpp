@@ -33,29 +33,29 @@ public:
 	Q_INVOKABLE static void cancelSession();
 	/// Respond to an authentication message.
 	///
-	/// May only be called in response to an `authMessage` with responseRequired set to true.
+	/// May only be called in response to an @@authMessage(s) with `responseRequired` set to true.
 	Q_INVOKABLE static void respond(QString response);
 
 	// docgen currently can't handle default params
 
 	// clang-format off
 	/// Launch the session, exiting quickshell.
-	/// `readyToLaunch` must be true to call this function.
+	/// @@state must be `GreetdState.ReadyToLaunch` to call this function.
 	Q_INVOKABLE static void launch(const QList<QString>& command);
 	/// Launch the session, exiting quickshell.
-	/// `readyToLaunch` must be true to call this function.
+	/// @@state must be `GreetdState.ReadyToLaunch` to call this function.
 	Q_INVOKABLE static void launch(const QList<QString>& command, const QList<QString>& environment);
-	/// Launch the session, exiting quickshell if `quit` is true.
-	/// `readyToLaunch` must be true to call this function.
+	/// Launch the session, exiting quickshell if @@quit is true.
+	/// @@state must be `GreetdState.ReadyToLaunch` to call this function.
 	///
-	/// The `launched` signal can be used to perform an action after greetd has acknowledged
+	/// The @@launched signal can be used to perform an action after greetd has acknowledged
 	/// the desired session.
 	///
 	/// > [!WARNING] Note that greetd expects the greeter to terminate as soon as possible
 	/// > after setting a target session, and waiting too long may lead to unexpected behavior
 	/// > such as the greeter restarting.
 	/// >
-	/// > Performing animations and such should be done *before* calling `launch`.
+	/// > Performing animations and such should be done *before* calling @@launch.
 	Q_INVOKABLE static void launch(const QList<QString>& command, const QList<QString>& environment, bool quit);
 	// clang-format on
 

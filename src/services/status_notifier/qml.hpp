@@ -8,6 +8,8 @@
 #include "../../core/model.hpp"
 #include "item.hpp"
 
+///! Statis of a SystemTrayItem.
+/// See @@SystemTrayItem.status.
 namespace SystemTrayStatus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -24,6 +26,8 @@ Q_ENUM_NS(Enum);
 
 } // namespace SystemTrayStatus
 
+///! Category of a SystemTrayItem.
+/// See @@SystemTrayItem.category.
 namespace SystemTrayCategory { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -60,8 +64,8 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
-	/// If this tray item has an associated menu accessible via `display`
-	/// or a	@@SystemTrayMenuWatcher$.
+	/// If this tray item has an associated menu accessible via @@display()
+	/// or a	@@SystemTrayMenuWatcher.
 	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
@@ -110,7 +114,7 @@ signals:
 ///! System tray
 /// Referencing the SystemTray singleton will make quickshell start tracking
 /// system tray contents, which are updated as the tray changes, and can be
-/// accessed via the `items` property.
+/// accessed via the @@items property.
 class SystemTray: public QObject {
 	Q_OBJECT;
 	/// List of all system tray icons.
@@ -141,7 +145,7 @@ class SystemTrayMenuWatcher: public QObject {
 	Q_OBJECT;
 	/// The tray item to watch.
 	Q_PROPERTY(SystemTrayItem* trayItem READ trayItem WRITE setTrayItem NOTIFY trayItemChanged);
-	/// The menu associated with the tray item. Will be null if `trayItem` is null
+	/// The menu associated with the tray item. Will be null if @@trayItem is null
 	/// or has no associated menu.
 	Q_PROPERTY(DBusMenuItem* menu READ menu NOTIFY menuChanged);
 	QML_ELEMENT;

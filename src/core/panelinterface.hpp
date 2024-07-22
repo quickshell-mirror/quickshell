@@ -57,6 +57,8 @@ public:
 	qint32 mBottom = 0;
 };
 
+///! Panel exclusion mode
+/// See @@PanelWindow.exclusionMode.
 namespace ExclusionMode { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -111,15 +113,19 @@ class PanelWindowInterface: public WindowInterface {
 	/// > [!INFO] Only applies to edges with anchors
 	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
 	/// The amount of space reserved for the shell layer relative to its anchors.
-	/// Setting this property sets `exclusionMode` to `Normal`.
+	/// Setting this property sets @@exclusionMode to `ExclusionMode.Normal`.
 	///
 	/// > [!INFO] Either 1 or 3 anchors are required for the zone to take effect.
 	Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
 	/// Defaults to `ExclusionMode.Auto`.
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// If the panel should render above standard windows. Defaults to true.
+	///
+	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.layer.
 	Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
-	/// Defaults to false.
+	/// If the panel should accept keyboard focus. Defaults to false.
+	///
+	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
 	Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
 	QSDOC_NAMED_ELEMENT(PanelWindow);

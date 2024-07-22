@@ -43,7 +43,7 @@ protected:
 };
 
 ///! Parser for streamed input data.
-/// See also: @@DataStream$, @@SplitParser
+/// See also: @@DataStream, @@SplitParser.
 class DataStreamParser: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -61,9 +61,7 @@ signals:
 };
 
 ///! Parser for delimited data streams.
-/// Parser for delimited data streams. [read()] is emitted once per delimited chunk of the stream.
-///
-/// [read()]: ../datastreamparser#sig.read
+/// Parser for delimited data streams. @@read() is emitted once per delimited chunk of the stream.
 class SplitParser: public DataStreamParser {
 	Q_OBJECT;
 	/// The delimiter for parsed data. May be multiple characters. Defaults to `\n`.

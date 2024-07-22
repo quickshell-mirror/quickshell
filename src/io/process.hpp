@@ -30,7 +30,7 @@ class Process: public QObject {
 	/// Setting this property to true will start the process if command has at least
 	/// one element.
 	/// Setting it to false will send SIGTERM. To immediately kill the process,
-	/// use [signal](#func.signal) with SIGKILL. The process will be killed when
+	/// use @@signal() with SIGKILL. The process will be killed when
 	/// quickshell dies.
 	///
 	/// If you want to run the process in a loop, use the onRunningChanged signal handler
@@ -42,7 +42,7 @@ class Process: public QObject {
 	/// }
 	/// ```
 	Q_PROPERTY(bool running READ isRunning WRITE setRunning NOTIFY runningChanged);
-	/// The process ID of the running process or `null` if `running` is false.
+	/// The process ID of the running process or `null` if @@running is false.
 	Q_PROPERTY(QVariant processId READ processId NOTIFY processIdChanged);
 	/// The command to execute. Each argument is its own string, which means you don't have
 	/// to deal with quoting anything.
@@ -65,8 +65,8 @@ class Process: public QObject {
 	/// Environment of the executed process.
 	///
 	/// This is a javascript object (json). Environment variables can be added by setting
-	/// them to a string and removed by setting them to null (except when [clearEnvironment] is true,
-	/// in which case this behavior is inverted, see [clearEnvironment] for details).
+	/// them to a string and removed by setting them to null (except when @@clearEnvironment is true,
+	/// in which case this behavior is inverted, see @@clearEnvironment for details).
 	///
 	///
 	/// ```qml
@@ -82,13 +82,11 @@ class Process: public QObject {
 	/// If the process is already running changing this property will affect the next
 	/// started process. If the property has been changed after starting a process it will
 	/// return the new value, not the one for the currently running process.
-	///
-	/// [clearEnvironment]: #prop.clearEnvironment
 	Q_PROPERTY(QMap<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
-	/// If the process's environment should be cleared prior to applying [environment](#prop.environment).
+	/// If the process's environment should be cleared prior to applying @@environment.
 	/// Defaults to false.
 	///
-	/// If true, all environment variables will be removed before the [environment](#prop.environment)
+	/// If true, all environment variables will be removed before the @@environment
 	/// object is applied, meaning the variables listed will be the only ones visible to the process.
 	/// This changes the behavior of `null` to pass in the system value of the variable if present instead
 	/// of removing it.
@@ -112,7 +110,7 @@ class Process: public QObject {
 	/// and no further data will be read, even if a new parser is attached.
 	Q_PROPERTY(DataStreamParser* stderr READ stderrParser WRITE setStderrParser NOTIFY stderrParserChanged);
 	/// If stdin is enabled. Defaults to false. If this property is false the process's stdin channel
-	/// will be closed and [write](#func.write) will do nothing, even if set back to true.
+	/// will be closed and @@write() will do nothing, even if set back to true.
 	Q_PROPERTY(bool stdinEnabled READ stdinEnabled WRITE setStdinEnabled NOTIFY stdinEnabledChanged);
 	/// If the process should be killed when the Process object is destroyed or quickshell exits.
 	/// Defaults to true.
@@ -130,10 +128,10 @@ public:
 	~Process() override;
 	Q_DISABLE_COPY_MOVE(Process);
 
-	/// Sends a signal to the process if `running` is true, otherwise does nothing.
+	/// Sends a signal to the process if @@running is true, otherwise does nothing.
 	Q_INVOKABLE void signal(qint32 signal);
 
-	/// Writes to the process's stdin. Does nothing if `running` is false.
+	/// Writes to the process's stdin. Does nothing if @@running is false.
 	Q_INVOKABLE void write(const QString& data);
 
 	[[nodiscard]] bool isRunning() const;

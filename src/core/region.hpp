@@ -9,7 +9,8 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-/// Shape of a Region.
+///! Shape of a Region.
+/// See @@Region.shape.
 namespace RegionShape { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -23,6 +24,7 @@ Q_ENUM_NS(Enum);
 } // namespace RegionShape
 
 ///! Intersection strategy for Regions.
+/// See @@Region.intersection.
 namespace Intersection { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -44,6 +46,7 @@ Q_ENUM_NS(Enum);
 } // namespace Intersection
 
 ///! A composable region used as a mask.
+/// See @@QsWindow.mask.
 class PendingRegion: public QObject {
 	Q_OBJECT;
 	/// Defaults to `Rect`.
@@ -52,16 +55,16 @@ class PendingRegion: public QObject {
 	Q_PROPERTY(Intersection::Enum intersection MEMBER mIntersection NOTIFY intersectionChanged);
 
 	/// The item that determines the geometry of the region.
-	/// `item` overrides `x`, `y`, `width` and `height`.
+	/// `item` overrides @@x, @@y, @@width and @@height.
 	Q_PROPERTY(QQuickItem* item MEMBER mItem WRITE setItem NOTIFY itemChanged);
 
-	/// Defaults to 0. Does nothing if `item` is set.
+	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 x MEMBER mX NOTIFY xChanged);
-	/// Defaults to 0. Does nothing if `item` is set.
+	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 y MEMBER mY NOTIFY yChanged);
-	/// Defaults to 0. Does nothing if `item` is set.
+	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 width MEMBER mWidth NOTIFY widthChanged);
-	/// Defaults to 0. Does nothing if `item` is set.
+	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 height MEMBER mHeight NOTIFY heightChanged);
 
 	/// Regions to apply on top of this region.

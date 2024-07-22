@@ -48,7 +48,7 @@ public:
 	/// Usually you shouldn't need to call this manually but some applications providing
 	/// menus do not update them correctly. Call this if menus don't update their state.
 	///
-	/// The `layoutUpdated` signal will be sent when a response is received.
+	/// The @@layoutUpdated(s) signal will be sent when a response is received.
 	Q_INVOKABLE void updateLayout() const;
 
 	[[nodiscard]] DBusMenu* menuHandle() const;

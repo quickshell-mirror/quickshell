@@ -9,7 +9,8 @@
 
 #include "../../core/panelinterface.hpp"
 
-///! WlrLayershell layer
+///! WlrLayershell layer.
+/// See @@WlrLayershell.layer.
 namespace WlrLayer { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -30,6 +31,7 @@ Q_ENUM_NS(Enum);
 } // namespace WlrLayer
 
 ///! WlrLayershell keyboard focus mode
+/// See @@WlrLayershell.keyboardFocus.
 namespace WlrKeyboardFocus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
@@ -41,7 +43,7 @@ enum Enum {
 	///
 	/// > [!WARNING] You **CANNOT** use this to make a secure lock screen.
 	/// >
-	/// > If you want to make a lock screen, use @@WlSessionLock$.
+	/// > If you want to make a lock screen, use @@WlSessionLock.
 	Exclusive = 1,
 	/// Access to the keyboard as determined by the operating system.
 	///

@@ -18,6 +18,8 @@
 
 namespace qs::service::pipewire {
 
+///! Audio channel of a pipewire node.
+/// See @@PwNodeAudio.channels.
 class PwAudioChannel: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

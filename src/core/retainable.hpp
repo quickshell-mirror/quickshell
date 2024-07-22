@@ -12,11 +12,11 @@ class Retainable;
 /// kept around (retained) after they would normally be destroyed, which
 /// is especially useful for things like exit transitions.
 ///
-/// An object that is retainable will have `Retainable` as an attached property.
+/// An object that is retainable will have @@Retainable as an attached property.
 /// All retainable objects will say that they are retainable on their respective
 /// typeinfo pages.
 ///
-/// > [!INFO] Working directly with Retainable is often overly complicated and
+/// > [!INFO] Working directly with @@Retainable is often overly complicated and
 /// > error prone. For this reason @@RetainableLock should
 /// > usually be used instead.
 class RetainableHook: public QObject {
@@ -46,11 +46,11 @@ public:
 	/// > Using @@RetainableLock is recommended as it will help
 	/// > avoid this scenario and make misuse more obvious.
 	Q_INVOKABLE void lock();
-	/// Remove a lock on the object. See `lock()` for more information.
+	/// Remove a lock on the object. See @@lock() for more information.
 	Q_INVOKABLE void unlock();
 	/// Forcibly remove all locks, destroying the object.
 	///
-	/// `unlock()` should usually be preferred.
+	/// @@unlock() should usually be preferred.
 	Q_INVOKABLE void forceUnlock();
 
 	[[nodiscard]] bool isRetained() const;
@@ -121,7 +121,7 @@ private:
 /// ```
 class RetainableLock: public QObject {
 	Q_OBJECT;
-	/// The object to lock. Must be [Retainable](../retainable).
+	/// The object to lock. Must be @@Retainable.
 	Q_PROPERTY(QObject* object READ object WRITE setObject NOTIFY objectChanged);
 	/// If the object should be locked.
 	Q_PROPERTY(bool locked READ locked WRITE setLocked NOTIFY lockedChanged);
@@ -143,9 +143,9 @@ public:
 	[[nodiscard]] bool isRetained() const;
 
 signals:
-	/// Rebroadcast of the object's `dropped()` signal.
+	/// Rebroadcast of the object's @@Retainable.dropped(s).
 	void dropped();
-	/// Rebroadcast of the object's `aboutToDestroy()` signal.
+	/// Rebroadcast of the object's @@Retainable.aboutToDestroy(s).
 	void aboutToDestroy();
 	void retainedChanged();
 

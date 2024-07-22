@@ -15,9 +15,10 @@
 ///! Wlroots layershell window
 /// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
 ///
-/// #### Attached property
-/// `WlrLayershell` works as an attached property of @@Quickshell.PanelWindow which you should use instead if you can,
+/// #### Attached object
+/// `WlrLayershell` works as an attached object of @@Quickshell.PanelWindow which you should use instead if you can,
 /// as it is platform independent.
+///
 /// ```qml
 /// PanelWindow {
 ///   // When PanelWindow is backed with WlrLayershell this will work

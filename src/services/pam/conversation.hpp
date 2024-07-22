@@ -13,7 +13,8 @@
 
 Q_DECLARE_LOGGING_CATEGORY(logPam);
 
-/// The result of an authentication.
+///! The result of an authentication.
+/// See @@PamContext.completed(s).
 class PamResult: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -35,7 +36,8 @@ public:
 	Q_INVOKABLE static QString toString(PamResult::Enum value);
 };
 
-/// An error that occurred during an authentication.
+///! An error that occurred during an authentication.
+/// See @@PamContext.error(s).
 class PamError: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

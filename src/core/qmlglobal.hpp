@@ -112,22 +112,18 @@ public:
 
 	QQmlListProperty<QuickshellScreenInfo> screens();
 
-	/// Reload the shell from the [ShellRoot].
+	/// Reload the shell.
 	///
 	/// `hard` - perform a hard reload. If this is false, Quickshell will attempt to reuse windows
 	/// that already exist. If true windows will be recreated.
 	///
-	/// See [Reloadable] for more information on what can be reloaded and how.
-	///
-	/// [Reloadable]: ../reloadable
+	/// See @@Reloadable for more information on what can be reloaded and how.
 	Q_INVOKABLE void reload(bool hard);
 
 	/// Returns the string value of an environment variable or null if it is not set.
 	Q_INVOKABLE QVariant env(const QString& variable);
 
-	/// Returns a source string usable in an [Image] for a given system icon.
-	///
-	/// [Image]: https://doc.qt.io/qt-6/qml-qtquick-image.html
+	/// Returns a string usable for a @@QtQuick.Image.source for a given system icon.
 	Q_INVOKABLE static QString iconPath(const QString& icon);
 
 	[[nodiscard]] QString workingDirectory() const;

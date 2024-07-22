@@ -27,7 +27,7 @@
 /// property var foo: model[3]
 /// ```
 ///
-/// You can work around this limitation using the `values` property of the model to view it as a list.
+/// You can work around this limitation using the @@values property of the model to view it as a list.
 /// ```qml
 /// // will update reactively
 /// property var foo: model.values[3]

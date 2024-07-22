@@ -25,7 +25,7 @@ class Reloadable
 	/// this object in the current revision, and facilitate smoother reloading.
 	///
 	/// Note that identifiers are scoped, and will try to do the right thing in context.
-	/// For example if you have a `Variants` wrapping an object with an identified element inside,
+	/// For example if you have a @@Variants wrapping an object with an identified element inside,
 	/// a scope is created at the variant level.
 	///
 	/// ```qml
@@ -83,10 +83,9 @@ private:
 };
 
 ///! Scope that propagates reloads to child items in order.
-/// Convenience type equivalent to setting `reloadableId` on properties in a
-/// QtObject instance.
+/// Convenience type equivalent to setting @@Reloadable.reloadableId for all children.
 ///
-/// Note that this does not work for visible `Item`s (all widgets).
+/// Note that this does not work for visible @@QtQuick.Item$s (all widgets).
 ///
 /// ```qml
 /// ShellRoot {

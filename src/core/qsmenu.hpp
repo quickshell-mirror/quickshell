@@ -12,6 +12,8 @@
 
 namespace qs::menu {
 
+///! Button type associated with a QsMenuEntry.
+/// See @@QsMenuEntry.buttonType.
 class QsMenuButtonType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -35,7 +37,7 @@ class QsMenuEntry: public QObject {
 	Q_OBJECT;
 	/// If this menu item should be rendered as a separator between other items.
 	///
-	/// No other properties have a meaningful value when `isSeparator` is true.
+	/// No other properties have a meaningful value when @@isSeparator is true.
 	Q_PROPERTY(bool isSeparator READ isSeparator NOTIFY isSeparatorChanged);
 	Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged);
 	/// Text of the menu item.

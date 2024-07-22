@@ -55,7 +55,7 @@ class UPowerQml: public QObject {
 	QML_SINGLETON;
 	/// UPower's DisplayDevice for your system. Can be `null`.
 	///
-	/// This is an aggregate device and not a physical one, meaning you will not find it in `devices`.
+	/// This is an aggregate device and not a physical one, meaning you will not find it in @@devices.
 	/// It is typically the device that is used for displaying information in desktop environments.
 	Q_PROPERTY(UPowerDevice* displayDevice READ displayDevice NOTIFY displayDeviceChanged);
 	/// All connected UPower devices.

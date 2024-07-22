@@ -17,7 +17,7 @@ public:
 	void setHeight(qint32 height) override;
 };
 
-///! Standard floating window.
+///! Standard toplevel operating system window that looks like any other application.
 class FloatingWindowInterface: public WindowInterface {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(FloatingWindow);

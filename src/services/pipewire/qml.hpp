@@ -136,6 +136,9 @@ private:
 };
 
 ///! Audio specific properties of pipewire nodes.
+/// Extra properties of a @@PwNode if the node is an audio node.
+///
+/// See @@PwNode.audio.
 class PwNodeAudioIface: public QObject {
 	Q_OBJECT;
 	/// If the node is currently muted. Setting this property changes the mute state.
@@ -152,8 +155,8 @@ class PwNodeAudioIface: public QObject {
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVector<PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
 	/// The volumes of each audio channel individually. Each entry corrosponds to
-	/// the channel at the same index in `channels`. `volumes` and `channels` will always be
-	/// the same length.
+	/// the volume of the channel at the same index in @@channels. @@volumes and @@channels
+	/// will always be the same length.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVector<float> volumes READ volumes WRITE setVolumes NOTIFY volumesChanged);
@@ -195,11 +198,11 @@ class PwNodeIface: public PwObjectIface {
 	Q_PROPERTY(QString name READ name CONSTANT);
 	/// The node's description, corrosponding to the object's `node.description` property.
 	///
-	/// May be empty. Generally more human readable than `name`.
+	/// May be empty. Generally more human readable than @@name.
 	Q_PROPERTY(QString description READ description CONSTANT);
 	/// The node's nickname, corrosponding to the object's `node.nickname` property.
 	///
-	/// May be empty. Generally but not always more human readable than `description`.
+	/// May be empty. Generally but not always more human readable than @@description.
 	Q_PROPERTY(QString nickname READ nickname CONSTANT);
 	/// If `true`, then the node accepts audio input from other nodes,
 	/// if `false` the node outputs audio to other nodes.
@@ -249,7 +252,7 @@ private:
 
 ///! A connection between pipewire nodes.
 /// Note that there is one link per *channel* of a connection between nodes.
-/// You usually want @@PwLinkGroup$.
+/// You usually want @@PwLinkGroup.
 class PwLinkIface: public PwObjectIface {
 	Q_OBJECT;
 	/// The pipewire object id of the link.

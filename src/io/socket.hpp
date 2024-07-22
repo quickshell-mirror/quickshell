@@ -23,7 +23,7 @@ class Socket: public DataStream {
 	/// update the property immediately. Setting the property to false will begin disconnecting
 	/// the socket, and setting it to true will begin connecting the socket if path is not empty.
 	Q_PROPERTY(bool connected READ isConnected WRITE setConnected NOTIFY connectionStateChanged);
-	/// The path to connect this socket to when `connected` is set to true.
+	/// The path to connect this socket to when @@connected is set to true.
 	///
 	/// Changing this property will have no effect while the connection is active.
 	Q_PROPERTY(QString path READ path WRITE setPath NOTIFY pathChanged);
@@ -105,9 +105,9 @@ class SocketServer
 	///
 	/// Setting this property while the server is active will have no effect.
 	Q_PROPERTY(QString path READ path WRITE setPath NOTIFY pathChanged);
-	/// Connection handler component. Must creeate a `Socket`.
+	/// Connection handler component. Must creeate a @@Socket.
 	///
-	/// The created socket should not set `connected` or `path` or the incoming
+	/// The created socket should not set @@connected or @@path or the incoming
 	/// socket connection will be dropped (they will be set by the socket server.)
 	/// Setting `connected` to false on the created socket after connection will
 	/// close and delete it.
