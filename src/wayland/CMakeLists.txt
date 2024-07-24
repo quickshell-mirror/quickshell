@@ -52,6 +52,8 @@ endfunction()
 
 qt_add_library(quickshell-wayland STATIC
 	platformmenu.cpp
+	popupanchor.cpp
+	xdgshell.cpp
 )
 
 # required to make sure the constructor is linked

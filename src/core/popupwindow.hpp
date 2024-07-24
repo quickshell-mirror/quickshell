@@ -7,6 +7,7 @@
 #include <qtypes.h>
 
 #include "doc.hpp"
+#include "popupanchor.hpp"
 #include "proxywindow.hpp"
 #include "qmlscreen.hpp"
 #include "windowinterface.hpp"
@@ -42,15 +43,37 @@ class ProxyPopupWindow: public ProxyWindowBase {
 	QSDOC_BASECLASS(WindowInterface);
 	Q_OBJECT;
 	// clang-format off
+	/// > [!ERROR] Deprecated in favor of `anchor.window`.
+	///
 	/// The parent window of this popup.
 	///
 	/// Changing this property reparents the popup.
 	Q_PROPERTY(QObject* parentWindow READ parentWindow WRITE setParentWindow NOTIFY parentWindowChanged);
+	/// > [!ERROR] Deprecated in favor of `anchor.rect.x`.
+	///
 	/// The X position of the popup relative to the parent window.
 	Q_PROPERTY(qint32 relativeX READ relativeX WRITE setRelativeX NOTIFY relativeXChanged);
+	/// > [!ERROR] Deprecated in favor of `anchor.rect.y`.
+	///
 	/// The Y position of the popup relative to the parent window.
 	Q_PROPERTY(qint32 relativeY READ relativeY WRITE setRelativeY NOTIFY relativeYChanged);
+	/// The popup's anchor / positioner relative to another window. The popup will not be
+	/// shown until it has a valid anchor relative to a window and @@visible is true.
+	///
+	/// You can set properties of the anchor like so:
+	/// ```qml
+	/// PopupWindow {
+	///   anchor.window: parentwindow
+	///   // or
+	///   anchor {
+	///     window: parentwindow
+	///   }
+	/// }
+	/// ```
+	Q_PROPERTY(PopupAnchor* anchor READ anchor CONSTANT);
 	/// If the window is shown or hidden. Defaults to false.
+	///
+	/// The popup will not be shown until @@anchor is valid, regardless of this property.
 	QSDOC_PROPERTY_OVERRIDE(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	/// The screen that the window currently occupies.
 	///
@@ -64,12 +87,9 @@ public:
 
 	void completeWindow() override;
 	void postCompleteWindow() override;
-	[[nodiscard]] bool deleteOnInvisible() const override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 	void setVisible(bool visible) override;
-
-	[[nodiscard]] qint32 x() const override;
 
 	[[nodiscard]] QObject* parentWindow() const;
 	void setParentWindow(QObject* parent);
@@ -80,25 +100,23 @@ public:
 	[[nodiscard]] qint32 relativeY() const;
 	void setRelativeY(qint32 y);
 
+	[[nodiscard]] PopupAnchor* anchor();
+
 signals:
 	void parentWindowChanged();
 	void relativeXChanged();
 	void relativeYChanged();
 
 private slots:
+	void onVisibleChanged();
 	void onParentUpdated();
-	void onParentDestroyed();
-	void updateX();
-	void updateY();
+	void reposition();
 
 private:
 	QQuickWindow* parentBackingWindow();
 	void updateTransientParent();
 	void updateVisible();
 
-	QObject* mParentWindow = nullptr;
-	ProxyWindowBase* mParentProxyWindow = nullptr;
-	qint32 mRelativeX = 0;
-	qint32 mRelativeY = 0;
+	PopupAnchor mAnchor {this};
 	bool wantsVisible = false;
 };

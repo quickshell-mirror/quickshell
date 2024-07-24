@@ -1,0 +1,54 @@
+#pragma once
+
+#include <qdebug.h>
+#include <qnamespace.h>
+#include <qqmlintegration.h>
+#include <qtmetamacros.h>
+
+class Box {
+	Q_GADGET;
+	Q_PROPERTY(qint32 x MEMBER x);
+	Q_PROPERTY(qint32 y MEMBER y);
+	Q_PROPERTY(qint32 w MEMBER w);
+	Q_PROPERTY(qint32 h MEMBER h);
+	Q_PROPERTY(qint32 width MEMBER w);
+	Q_PROPERTY(qint32 height MEMBER h);
+	QML_VALUE_TYPE(box);
+
+public:
+	explicit Box() = default;
+	Box(qint32 x, qint32 y, qint32 w, qint32 h): x(x), y(y), w(w), h(h) {}
+	bool operator==(const Box& other) const;
+
+	qint32 x = 0;
+	qint32 y = 0;
+	qint32 w = 0;
+	qint32 h = 0;
+
+	[[nodiscard]] QRect qrect() const;
+};
+
+QDebug operator<<(QDebug debug, const Box& box);
+
+///! Top Left Right Bottom flags.
+/// Edge flags can be combined with the `|` operator.
+namespace Edges { // NOLINT
+Q_NAMESPACE;
+QML_NAMED_ELEMENT(Edges);
+
+enum Enum {
+	None = 0,
+	Top = Qt::TopEdge,
+	Left = Qt::LeftEdge,
+	Right = Qt::RightEdge,
+	Bottom = Qt::BottomEdge,
+};
+Q_ENUM_NS(Enum);
+Q_DECLARE_FLAGS(Flags, Enum);
+
+Qt::Edges toQt(Flags edges);
+bool isOpposing(Flags edges);
+
+}; // namespace Edges
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Edges::Flags);

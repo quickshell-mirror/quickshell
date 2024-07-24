@@ -4,11 +4,13 @@
 #include <qtenvironmentvariables.h>
 
 #include "../core/plugin.hpp"
-#include "platformmenu.hpp"
 
 #ifdef QS_WAYLAND_WLR_LAYERSHELL
 #include "wlr_layershell.hpp"
 #endif
+
+void installPlatformMenuHook();
+void installPopupPositioner();
 
 namespace {
 
@@ -27,7 +29,10 @@ class WaylandPlugin: public QuickshellPlugin {
 		return isWayland;
 	}
 
-	void init() override { installPlatformMenuHook(); }
+	void init() override {
+		installPlatformMenuHook();
+		installPopupPositioner();
+	}
 
 	void registerTypes() override {
 #ifdef QS_WAYLAND_WLR_LAYERSHELL

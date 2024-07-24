@@ -4,99 +4,72 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qquickwindow.h>
-#include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qwindow.h>
 
+#include "popupanchor.hpp"
 #include "proxywindow.hpp"
 #include "qmlscreen.hpp"
 #include "windowinterface.hpp"
 
 ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {
 	this->mVisible = false;
+	// clang-format off
+	QObject::connect(&this->mAnchor, &PopupAnchor::windowChanged, this, &ProxyPopupWindow::parentWindowChanged);
+	QObject::connect(&this->mAnchor, &PopupAnchor::rectChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::edgesChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::gravityChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::adjustmentChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::backingWindowVisibilityChanged, this, &ProxyPopupWindow::onParentUpdated);
+	// clang-format on
 }
 
 void ProxyPopupWindow::completeWindow() {
 	this->ProxyWindowBase::completeWindow();
+	QObject::connect(
+	    this->window,
+	    &QWindow::visibleChanged,
+	    this,
+	    &ProxyPopupWindow::onVisibleChanged
+	);
 
 	this->window->setFlag(Qt::ToolTip);
-	this->updateTransientParent();
 }
 
-void ProxyPopupWindow::postCompleteWindow() { this->ProxyWindowBase::setVisible(this->mVisible); }
-
-bool ProxyPopupWindow::deleteOnInvisible() const {
-	// Currently crashes in normal mode, do not have the time to debug it now.
-	return true;
-}
-
-qint32 ProxyPopupWindow::x() const {
-	// QTBUG-121550
-	auto basepos = this->mParentProxyWindow == nullptr ? 0 : this->mParentProxyWindow->x();
-	return basepos + this->mRelativeX;
-}
+void ProxyPopupWindow::postCompleteWindow() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::setParentWindow(QObject* parent) {
-	if (parent == this->mParentWindow) return;
-
-	if (this->mParentWindow != nullptr) {
-		QObject::disconnect(this->mParentWindow, nullptr, this, nullptr);
-		QObject::disconnect(this->mParentProxyWindow, nullptr, this, nullptr);
-	}
-
-	if (parent == nullptr) {
-		this->mParentWindow = nullptr;
-		this->mParentProxyWindow = nullptr;
-	} else {
-		if (auto* proxy = qobject_cast<ProxyWindowBase*>(parent)) {
-			this->mParentProxyWindow = proxy;
-		} else if (auto* interface = qobject_cast<WindowInterface*>(parent)) {
-			this->mParentProxyWindow = interface->proxyWindow();
-		} else {
-			qWarning() << "Tried to set popup parent window to something that is not a quickshell window:"
-			           << parent;
-			this->mParentWindow = nullptr;
-			this->mParentProxyWindow = nullptr;
-			this->updateTransientParent();
-			return;
-		}
-
-		this->mParentWindow = parent;
-
-		// clang-format off
-		QObject::connect(this->mParentWindow, &QObject::destroyed, this, &ProxyPopupWindow::onParentDestroyed);
-
-		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::xChanged, this, &ProxyPopupWindow::updateX);
-		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::yChanged, this, &ProxyPopupWindow::updateY);
-		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::backerVisibilityChanged, this, &ProxyPopupWindow::onParentUpdated);
-		// clang-format on
-	}
-
-	this->updateTransientParent();
+	qWarning() << "PopupWindow.parentWindow is deprecated. Use PopupWindow.anchor.window.";
+	this->mAnchor.setWindow(parent);
 }
 
-QObject* ProxyPopupWindow::parentWindow() const { return this->mParentWindow; }
+QObject* ProxyPopupWindow::parentWindow() const {
+	qWarning() << "PopupWindow.parentWindow is deprecated. Use PopupWindow.anchor.window.";
+	return this->mAnchor.window();
+}
 
 void ProxyPopupWindow::updateTransientParent() {
-	this->updateX();
-	this->updateY();
+	auto* bw = this->mAnchor.backingWindow();
 
-	if (this->window != nullptr) {
-		this->window->setTransientParent(
-		    this->mParentProxyWindow == nullptr ? nullptr : this->mParentProxyWindow->backingWindow()
-		);
+	if (this->window != nullptr && bw != this->window->transientParent()) {
+		if (this->window->transientParent()) {
+			QObject::disconnect(this->window->transientParent(), nullptr, this, nullptr);
+		}
+
+		if (bw && PopupPositioner::instance()->shouldRepositionOnMove()) {
+			QObject::connect(bw, &QWindow::xChanged, this, &ProxyPopupWindow::reposition);
+			QObject::connect(bw, &QWindow::yChanged, this, &ProxyPopupWindow::reposition);
+			QObject::connect(bw, &QWindow::widthChanged, this, &ProxyPopupWindow::reposition);
+			QObject::connect(bw, &QWindow::heightChanged, this, &ProxyPopupWindow::reposition);
+		}
+
+		this->window->setTransientParent(bw);
 	}
 
 	this->updateVisible();
 }
 
 void ProxyPopupWindow::onParentUpdated() { this->updateTransientParent(); }
-
-void ProxyPopupWindow::onParentDestroyed() {
-	this->mParentWindow = nullptr;
-	this->mParentProxyWindow = nullptr;
-	this->updateVisible();
-	emit this->parentWindowChanged();
-}
 
 void ProxyPopupWindow::setScreen(QuickshellScreenInfo* /*unused*/) {
 	qWarning() << "Cannot set screen of popup window, as that is controlled by the parent window";
@@ -109,53 +82,55 @@ void ProxyPopupWindow::setVisible(bool visible) {
 }
 
 void ProxyPopupWindow::updateVisible() {
-	auto target = this->wantsVisible && this->mParentWindow != nullptr
-	           && this->mParentProxyWindow->isVisibleDirect();
+	auto target = this->wantsVisible && this->mAnchor.window() != nullptr
+	           && this->mAnchor.proxyWindow()->isVisibleDirect();
 
 	if (target && this->window != nullptr && !this->window->isVisible()) {
-		this->updateX(); // QTBUG-121550
+		PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
 	}
 
 	this->ProxyWindowBase::setVisible(target);
 }
 
-void ProxyPopupWindow::setRelativeX(qint32 x) {
-	if (x == this->mRelativeX) return;
-	this->mRelativeX = x;
-	this->updateX();
+void ProxyPopupWindow::onVisibleChanged() {
+	// If the window was made invisible without its parent becoming invisible
+	// the compositor probably destroyed it. Without this the window won't ever
+	// be able to become visible again.
+	if (this->window->transientParent() && this->window->transientParent()->isVisible()) {
+		this->wantsVisible = this->window->isVisible();
+	}
 }
 
-qint32 ProxyPopupWindow::relativeX() const { return this->mRelativeX; }
+void ProxyPopupWindow::setRelativeX(qint32 x) {
+	qWarning() << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
+	auto rect = this->mAnchor.rect();
+	if (x == rect.x) return;
+	rect.x = x;
+	this->mAnchor.setRect(rect);
+}
+
+qint32 ProxyPopupWindow::relativeX() const {
+	qWarning() << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
+	return this->mAnchor.rect().x;
+}
 
 void ProxyPopupWindow::setRelativeY(qint32 y) {
-	if (y == this->mRelativeY) return;
-	this->mRelativeY = y;
-	this->updateY();
+	qWarning() << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
+	auto rect = this->mAnchor.rect();
+	if (y == rect.y) return;
+	rect.y = y;
+	this->mAnchor.setRect(rect);
 }
 
-qint32 ProxyPopupWindow::relativeY() const { return this->mRelativeY; }
-
-void ProxyPopupWindow::updateX() {
-	if (this->mParentWindow == nullptr || this->window == nullptr) return;
-
-	auto target = this->x() - 1; // QTBUG-121550
-
-	auto reshow = this->isVisibleDirect() && (this->window->x() != target && this->x() != target);
-	if (reshow) this->setVisibleDirect(false);
-	if (this->window != nullptr) this->window->setX(target);
-	if (reshow && this->wantsVisible) this->setVisibleDirect(true);
+qint32 ProxyPopupWindow::relativeY() const {
+	qWarning() << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
+	return this->mAnchor.rect().y;
 }
 
-void ProxyPopupWindow::updateY() {
-	if (this->mParentWindow == nullptr || this->window == nullptr) return;
+PopupAnchor* ProxyPopupWindow::anchor() { return &this->mAnchor; }
 
-	auto target = this->mParentProxyWindow->y() + this->relativeY();
-
-	auto reshow = this->isVisibleDirect() && this->window->y() != target;
-	if (reshow) {
-		this->setVisibleDirect(false);
-		this->updateX(); // QTBUG-121550
+void ProxyPopupWindow::reposition() {
+	if (this->window != nullptr) {
+		PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
 	}
-	if (this->window != nullptr) this->window->setY(target);
-	if (reshow && this->wantsVisible) this->setVisibleDirect(true);
 }

@@ -24,5 +24,7 @@ headers = [
 	"objectrepeater.hpp",
 	"qsmenu.hpp",
 	"retainable.hpp",
+	"popupanchor.hpp",
+	"types.hpp",
 ]
 -----

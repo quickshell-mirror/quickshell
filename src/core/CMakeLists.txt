@@ -33,6 +33,8 @@ qt_add_library(quickshell-core STATIC
 	platformmenu.cpp
 	qsmenu.cpp
 	retainable.cpp
+	popupanchor.cpp
+	types.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
