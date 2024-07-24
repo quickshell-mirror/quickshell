@@ -12,8 +12,8 @@
 
 bool PopupAnchorState::operator==(const PopupAnchorState& other) const {
 	return this->rect == other.rect && this->edges == other.edges && this->gravity == other.gravity
-			&& this->adjustment == other.adjustment && this->anchorpoint == other.anchorpoint
-			&& this->size == other.size;
+	    && this->adjustment == other.adjustment && this->anchorpoint == other.anchorpoint
+	    && this->size == other.size;
 }
 
 bool PopupAnchor::isDirty() const {
@@ -184,32 +184,34 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	auto effectiveY = calcEffectiveY();
 
 	if (adjustment.testFlag(PopupAdjustment::FlipX)) {
-		if (anchorGravity.testFlag(Edges::Left)) {
-			if (effectiveX < screenGeometry.left()) {
-				anchorGravity = anchorGravity ^ Edges::Left | Edges::Right;
-				anchorX = anchorRectGeometry.right();
-				effectiveX = calcEffectiveX();
-			}
-		} else if (anchorGravity.testFlag(Edges::Right)) {
-			if (effectiveX + windowGeometry.width() > screenGeometry.right()) {
-				anchorGravity = anchorGravity ^ Edges::Right | Edges::Left;
-				anchorX = anchorRectGeometry.left();
-				effectiveX = calcEffectiveX();
-			}
+		bool flip = (anchorGravity.testFlag(Edges::Left) && effectiveX < screenGeometry.left())
+		         || (anchorGravity.testFlag(Edges::Right)
+		             && effectiveX + windowGeometry.width() > screenGeometry.right());
+
+		if (flip) {
+			anchorGravity ^= Edges::Left | Edges::Right;
+
+			anchorX = anchorEdges.testFlags(Edges::Left)  ? anchorRectGeometry.right()
+			        : anchorEdges.testFlags(Edges::Right) ? anchorRectGeometry.left()
+			                                              : anchorX;
+
+			effectiveX = calcEffectiveX();
 		}
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::FlipY)) {
-		if (anchorGravity.testFlag(Edges::Top)) {
-			if (effectiveY < screenGeometry.top()) {
-				anchorGravity = anchorGravity ^ Edges::Top | Edges::Bottom;
-				effectiveY = calcEffectiveY();
-			}
-		} else if (anchorGravity.testFlag(Edges::Bottom)) {
-			if (effectiveY + windowGeometry.height() > screenGeometry.bottom()) {
-				anchorGravity = anchorGravity ^ Edges::Bottom | Edges::Top;
-				effectiveY = calcEffectiveY();
-			}
+		bool flip = (anchorGravity.testFlag(Edges::Top) && effectiveY < screenGeometry.top())
+		         || (anchorGravity.testFlag(Edges::Bottom)
+		             && effectiveY + windowGeometry.height() > screenGeometry.bottom());
+
+		if (flip) {
+			anchorGravity ^= Edges::Top | Edges::Bottom;
+
+			anchorY = anchorEdges.testFlags(Edges::Top)    ? anchorRectGeometry.bottom()
+			        : anchorEdges.testFlags(Edges::Bottom) ? anchorRectGeometry.top()
+			                                               : anchorY;
+
+			effectiveY = calcEffectiveY();
 		}
 	}
 
