@@ -26,12 +26,12 @@ ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {
 
 void ProxyPopupWindow::completeWindow() {
 	this->ProxyWindowBase::completeWindow();
-	QObject::connect(
-	    this->window,
-	    &QWindow::visibleChanged,
-	    this,
-	    &ProxyPopupWindow::onVisibleChanged
-	);
+
+	// clang-format off
+	QObject::connect(this->window, &QWindow::visibleChanged, this, &ProxyPopupWindow::onVisibleChanged);
+	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyPopupWindow::reposition);
+	// clang-format on
 
 	this->window->setFlag(Qt::ToolTip);
 }

@@ -2,6 +2,7 @@
 
 #include <qlogging.h>
 #include <qobject.h>
+#include <qsize.h>
 #include <qtmetamacros.h>
 #include <qwindow.h>
 
@@ -11,7 +12,8 @@
 
 bool PopupAnchorState::operator==(const PopupAnchorState& other) const {
 	return this->rect == other.rect && this->edges == other.edges && this->gravity == other.gravity
-	    && this->adjustment == other.adjustment && this->anchorpoint == other.anchorpoint;
+			&& this->adjustment == other.adjustment && this->anchorpoint == other.anchorpoint
+			&& this->size == other.size;
 }
 
 bool PopupAnchor::isDirty() const {
@@ -128,8 +130,9 @@ void PopupAnchor::setAdjustment(PopupAdjustment::Flags adjustment) {
 	emit this->adjustmentChanged();
 }
 
-void PopupAnchor::updateAnchorpoint(const QPoint& anchorpoint) {
+void PopupAnchor::updatePlacement(const QPoint& anchorpoint, const QSize& size) {
 	this->state.anchorpoint = anchorpoint;
+	this->state.size = size;
 }
 
 static PopupPositioner* POSITIONER = nullptr; // NOLINT
@@ -140,10 +143,15 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 		qFatal() << "Cannot reposition popup that does not have a transient parent.";
 	}
 
-	auto adjustment = anchor->adjustment();
-	auto screenGeometry = parentWindow->screen()->geometry();
 	auto parentGeometry = parentWindow->geometry();
 	auto windowGeometry = window->geometry();
+
+	anchor->updatePlacement(parentGeometry.topLeft(), windowGeometry.size());
+	if (onlyIfDirty && !anchor->isDirty()) return;
+	anchor->markClean();
+
+	auto adjustment = anchor->adjustment();
+	auto screenGeometry = parentWindow->screen()->geometry();
 	auto anchorRectGeometry = anchor->rect().qrect().translated(parentGeometry.topLeft());
 
 	auto anchorEdges = anchor->edges();
@@ -159,10 +167,6 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	auto anchorY = anchorEdges.testFlag(Edges::Top)    ? anchorRectGeometry.top()
 	             : anchorEdges.testFlag(Edges::Bottom) ? anchorRectGeometry.bottom()
 	                                                   : anchorRectGeometry.center().y();
-
-	anchor->updateAnchorpoint({anchorX, anchorY});
-	if (onlyIfDirty && !anchor->isDirty()) return;
-	anchor->markClean();
 
 	auto calcEffectiveX = [&]() {
 		return anchorGravity.testFlag(Edges::Left)  ? anchorX - windowGeometry.width() + 1

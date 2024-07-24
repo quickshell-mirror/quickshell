@@ -8,6 +8,7 @@
 #include <qobject.h>
 #include <qpoint.h>
 #include <qqmlintegration.h>
+#include <qsize.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qwindow.h>
@@ -64,6 +65,7 @@ struct PopupAnchorState {
 	Edges::Flags gravity = Edges::Bottom | Edges::Right;
 	PopupAdjustment::Flags adjustment = PopupAdjustment::Slide;
 	QPoint anchorpoint;
+	QSize size;
 };
 
 ///! Anchorpoint or positioner for popup windows.
@@ -123,7 +125,7 @@ public:
 	[[nodiscard]] PopupAdjustment::Flags adjustment() const;
 	void setAdjustment(PopupAdjustment::Flags adjustment);
 
-	void updateAnchorpoint(const QPoint& anchorpoint);
+	void updatePlacement(const QPoint& anchorpoint, const QSize& size);
 
 signals:
 	void windowChanged();
