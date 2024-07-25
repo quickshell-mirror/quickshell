@@ -519,7 +519,7 @@ void DBusMenuHandle::setAddress(const QString& service, const QString& path) {
 	this->onMenuPathChanged();
 }
 
-void DBusMenuHandle::ref() {
+void DBusMenuHandle::refHandle() {
 	this->refcount++;
 	qCDebug(logDbusMenu) << this << "gained a reference. Refcount is now" << this->refcount;
 
@@ -532,7 +532,7 @@ void DBusMenuHandle::ref() {
 	}
 }
 
-void DBusMenuHandle::unref() {
+void DBusMenuHandle::unrefHandle() {
 	this->refcount--;
 	qCDebug(logDbusMenu) << this << "lost a reference. Refcount is now" << this->refcount;
 
@@ -564,9 +564,7 @@ void DBusMenuHandle::onMenuPathChanged() {
 	}
 }
 
-QsMenuEntry* DBusMenuHandle::menu() const {
-	return this->loaded ? &this->mMenu->rootItem : nullptr;
-}
+QsMenuEntry* DBusMenuHandle::menu() { return this->loaded ? &this->mMenu->rootItem : nullptr; }
 
 QDebug operator<<(QDebug debug, const DBusMenuHandle* handle) {
 	if (handle) {

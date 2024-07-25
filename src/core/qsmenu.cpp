@@ -21,6 +21,8 @@ QString QsMenuButtonType::toString(QsMenuButtonType::Enum value) {
 	}
 }
 
+QsMenuEntry* QsMenuEntry::menu() { return this; }
+
 void QsMenuEntry::display(QObject* parentWindow, int relativeX, int relativeY) {
 	auto* platform = new PlatformMenuEntry(this);
 
@@ -53,22 +55,52 @@ void QsMenuEntry::unref() {
 
 QQmlListProperty<QsMenuEntry> QsMenuEntry::children() { return QsMenuEntry::emptyChildren(this); }
 
-QsMenuEntry* QsMenuOpener::menu() const { return this->mMenu; }
+QsMenuOpener::~QsMenuOpener() {
+	if (this->mMenu) {
+		if (this->mMenu->menu()) this->mMenu->menu()->unref();
+		this->mMenu->unrefHandle();
+	}
+}
 
-void QsMenuOpener::setMenu(QsMenuEntry* menu) {
+QsMenuHandle* QsMenuOpener::menu() const { return this->mMenu; }
+
+void QsMenuOpener::setMenu(QsMenuHandle* menu) {
 	if (menu == this->mMenu) return;
 
 	if (this->mMenu != nullptr) {
-		this->mMenu->unref();
 		QObject::disconnect(this->mMenu, nullptr, this, nullptr);
+
+		if (this->mMenu->menu()) {
+			this->mMenu->menu()->unref();
+			QObject::disconnect(this->mMenu->menu(), nullptr, this, nullptr);
+		}
+
+		this->mMenu->unrefHandle();
 	}
 
 	this->mMenu = menu;
 
 	if (menu != nullptr) {
+		auto onMenuChanged = [this, menu]() {
+			if (menu->menu()) {
+				QObject::connect(
+				    menu->menu(),
+				    &QsMenuEntry::childrenChanged,
+				    this,
+				    &QsMenuOpener::childrenChanged
+				);
+
+				menu->menu()->ref();
+			}
+
+			emit this->childrenChanged();
+		};
+
 		QObject::connect(menu, &QObject::destroyed, this, &QsMenuOpener::onMenuDestroyed);
-		QObject::connect(menu, &QsMenuEntry::childrenChanged, this, &QsMenuOpener::childrenChanged);
-		menu->ref();
+		QObject::connect(menu, &QsMenuHandle::menuChanged, this, onMenuChanged);
+
+		if (menu->menu()) onMenuChanged();
+		menu->refHandle();
 	}
 
 	emit this->menuChanged();
@@ -82,7 +114,11 @@ void QsMenuOpener::onMenuDestroyed() {
 }
 
 QQmlListProperty<QsMenuEntry> QsMenuOpener::children() {
-	return this->mMenu ? this->mMenu->children() : QsMenuEntry::emptyChildren(this);
+	if (this->mMenu && this->mMenu->menu()) {
+		return this->mMenu->menu()->children();
+	} else {
+		return QsMenuEntry::emptyChildren(this);
+	}
 }
 
 qsizetype QsMenuEntry::childCount(QQmlListProperty<QsMenuEntry>* /*property*/) { return 0; }

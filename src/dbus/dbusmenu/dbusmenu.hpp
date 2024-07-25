@@ -162,19 +162,15 @@ class DBusMenuHandle;
 QDebug operator<<(QDebug debug, const DBusMenuHandle* handle);
 
 class DBusMenuHandle: public menu::QsMenuHandle {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_UNCREATABLE("");
-
 public:
 	explicit DBusMenuHandle(QObject* parent): menu::QsMenuHandle(parent) {}
 
 	void setAddress(const QString& service, const QString& path);
 
-	void ref() override;
-	void unref() override;
+	void refHandle() override;
+	void unrefHandle() override;
 
-	[[nodiscard]] QsMenuEntry* menu() const override;
+	[[nodiscard]] QsMenuEntry* menu() override;
 
 private:
 	void onMenuPathChanged();

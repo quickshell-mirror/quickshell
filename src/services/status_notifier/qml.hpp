@@ -53,6 +53,9 @@ Q_ENUM_NS(Enum);
 class SystemTrayItem: public QObject {
 	using DBusMenuItem = qs::dbus::dbusmenu::DBusMenuItem;
 
+	// intentionally wrongly aliased to temporarily hack around a docgen issue
+	using QsMenuHandle = qs::dbus::dbusmenu::DBusMenuHandle;
+
 	Q_OBJECT;
 	/// A name unique to the application, such as its name.
 	Q_PROPERTY(QString id READ id NOTIFY idChanged);
@@ -64,9 +67,10 @@ class SystemTrayItem: public QObject {
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
-	/// If this tray item has an associated menu accessible via @@display()
-	/// or a	@@SystemTrayMenuWatcher.
+	/// If this tray item has an associated menu accessible via @@display() or @@menu.
 	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged);
+	/// A handle to the menu associated with this tray item, if any.
+	Q_PROPERTY(QsMenuHandle* menu READ menu NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
 	QML_ELEMENT;
@@ -95,6 +99,7 @@ public:
 	[[nodiscard]] QString tooltipTitle() const;
 	[[nodiscard]] QString tooltipDescription() const;
 	[[nodiscard]] bool hasMenu() const;
+	[[nodiscard]] QsMenuHandle* menu() const;
 	[[nodiscard]] bool onlyMenu() const;
 
 	qs::service::sni::StatusNotifierItem* item = nullptr;
@@ -136,6 +141,9 @@ private:
 };
 
 ///! Accessor for SystemTrayItem menus.
+/// > [!ERROR] Deprecated in favor of @@Quickshell.QsMenuOpener.menu,
+/// > which now supports directly accessing a tray menu via @@SystemTrayItem.menu.
+///
 /// SystemTrayMenuWatcher provides access to the associated
 /// @@Quickshell.DBusMenu.DBusMenuItem for a tray item.
 class SystemTrayMenuWatcher: public QObject {

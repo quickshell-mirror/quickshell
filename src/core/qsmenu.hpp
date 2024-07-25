@@ -33,7 +33,28 @@ public:
 	Q_INVOKABLE static QString toString(QsMenuButtonType::Enum value);
 };
 
-class QsMenuEntry: public QObject {
+class QsMenuEntry;
+
+///! Menu handle for QsMenuOpener
+/// See @@QsMenuOpener.
+class QsMenuHandle: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("");
+
+public:
+	explicit QsMenuHandle(QObject* parent): QObject(parent) {}
+
+	virtual void refHandle() {};
+	virtual void unrefHandle() {};
+
+	[[nodiscard]] virtual QsMenuEntry* menu() = 0;
+
+signals:
+	void menuChanged();
+};
+
+class QsMenuEntry: public QsMenuHandle {
 	Q_OBJECT;
 	/// If this menu item should be rendered as a separator between other items.
 	///
@@ -68,7 +89,9 @@ class QsMenuEntry: public QObject {
 	QML_UNCREATABLE("QsMenuEntry cannot be directly created");
 
 public:
-	explicit QsMenuEntry(QObject* parent = nullptr): QObject(parent) {}
+	explicit QsMenuEntry(QObject* parent): QsMenuHandle(parent) {}
+
+	[[nodiscard]] QsMenuEntry* menu() override;
 
 	/// Display a platform menu at the given location relative to the parent window.
 	Q_INVOKABLE void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
@@ -111,37 +134,22 @@ private:
 	qsizetype refcount = 0;
 };
 
-class QsMenuHandle: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_UNCREATABLE("");
-
-public:
-	explicit QsMenuHandle(QObject* parent): QObject(parent) {}
-
-	virtual void ref() {};
-	virtual void unref() {};
-
-	[[nodiscard]] virtual QsMenuEntry* menu() const = 0;
-
-signals:
-	void menuChanged();
-};
-
 ///! Provides access to children of a QsMenuEntry
 class QsMenuOpener: public QObject {
 	Q_OBJECT;
 	/// The menu to retrieve children from.
-	Q_PROPERTY(QsMenuEntry* menu READ menu WRITE setMenu NOTIFY menuChanged);
+	Q_PROPERTY(QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
 	/// The children of the given menu.
 	Q_PROPERTY(QQmlListProperty<QsMenuEntry> children READ children NOTIFY childrenChanged);
 	QML_ELEMENT;
 
 public:
 	explicit QsMenuOpener(QObject* parent = nullptr): QObject(parent) {}
+	~QsMenuOpener() override;
+	Q_DISABLE_COPY_MOVE(QsMenuOpener);
 
-	[[nodiscard]] QsMenuEntry* menu() const;
-	void setMenu(QsMenuEntry* menu);
+	[[nodiscard]] QsMenuHandle* menu() const;
+	void setMenu(QsMenuHandle* menu);
 
 	[[nodiscard]] QQmlListProperty<QsMenuEntry> children();
 
@@ -153,7 +161,7 @@ private slots:
 	void onMenuDestroyed();
 
 private:
-	QsMenuEntry* mMenu = nullptr;
+	QsMenuHandle* mMenu = nullptr;
 };
 
 } // namespace qs::menu

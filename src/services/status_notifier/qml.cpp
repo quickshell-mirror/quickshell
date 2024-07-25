@@ -20,7 +20,6 @@ using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
 using namespace qs::service::sni;
 using namespace qs::menu::platform;
-using qs::menu::QsMenuHandle;
 
 SystemTrayItem::SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObject* parent)
     : QObject(parent)
@@ -96,6 +95,11 @@ bool SystemTrayItem::hasMenu() const {
 	return !this->item->menuPath.get().path().isEmpty();
 }
 
+DBusMenuHandle* SystemTrayItem::menu() const {
+	if (this->item == nullptr) return nullptr;
+	return this->item->menuHandle();
+}
+
 bool SystemTrayItem::onlyMenu() const {
 	if (this->item == nullptr) return false;
 	return this->item->isMenu.get();
@@ -120,7 +124,7 @@ void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 rel
 		QObject::disconnect(handle, nullptr, this, nullptr);
 
 		if (!handle->menu()) {
-			handle->unref();
+			handle->unrefHandle();
 			return;
 		}
 
@@ -128,7 +132,7 @@ void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 rel
 
 		// clang-format off
 		QObject::connect(platform, &PlatformMenuEntry::closed, this, [=]() { platform->deleteLater(); });
-		QObject::connect(platform, &QObject::destroyed, this, [=]() { handle->unref(); });
+		QObject::connect(platform, &QObject::destroyed, this, [=]() { handle->unrefHandle(); });
 		// clang-format on
 
 		auto success = platform->display(parentWindow, relativeX, relativeY);
@@ -140,10 +144,10 @@ void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 rel
 	if (handle->menu()) {
 		onMenuChanged();
 	} else {
-		QObject::connect(handle, &QsMenuHandle::menuChanged, this, onMenuChanged);
+		QObject::connect(handle, &DBusMenuHandle::menuChanged, this, onMenuChanged);
 	}
 
-	handle->ref();
+	handle->refHandle();
 }
 
 SystemTray::SystemTray(QObject* parent): QObject(parent) {
@@ -179,7 +183,7 @@ SystemTrayItem* SystemTrayMenuWatcher::trayItem() const { return this->item; }
 
 SystemTrayMenuWatcher::~SystemTrayMenuWatcher() {
 	if (this->item != nullptr) {
-		this->item->item->menuHandle()->unref();
+		this->item->item->menuHandle()->unrefHandle();
 	}
 }
 
@@ -187,14 +191,14 @@ void SystemTrayMenuWatcher::setTrayItem(SystemTrayItem* item) {
 	if (item == this->item) return;
 
 	if (this->item != nullptr) {
-		this->item->item->menuHandle()->unref();
+		this->item->item->menuHandle()->unrefHandle();
 		QObject::disconnect(this->item, nullptr, this, nullptr);
 	}
 
 	this->item = item;
 
 	if (item != nullptr) {
-		this->item->item->menuHandle()->ref();
+		this->item->item->menuHandle()->refHandle();
 
 		QObject::connect(item, &QObject::destroyed, this, &SystemTrayMenuWatcher::onItemDestroyed);
 
