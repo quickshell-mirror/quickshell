@@ -20,6 +20,7 @@ using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
 using namespace qs::service::sni;
 using namespace qs::menu::platform;
+using qs::menu::QsMenuHandle;
 
 SystemTrayItem::SystemTrayItem(qs::service::sni::StatusNotifierItem* item, QObject* parent)
     : QObject(parent)
@@ -108,25 +109,41 @@ void SystemTrayItem::scroll(qint32 delta, bool horizontal) const {
 }
 
 void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 relativeY) {
-	this->item->refMenu();
-	if (!this->item->menu()) {
-		this->item->unrefMenu();
+	if (!this->item->menuHandle()) {
 		qCritical() << "No menu present for" << this;
 		return;
 	}
 
-	auto* platform = new PlatformMenuEntry(&this->item->menu()->rootItem);
+	auto* handle = this->item->menuHandle();
 
-	QObject::connect(&this->item->menu()->rootItem, &DBusMenuItem::layoutUpdated, platform, [=]() {
-		platform->relayout();
+	auto onMenuChanged = [this, parentWindow, relativeX, relativeY, handle]() {
+		QObject::disconnect(handle, nullptr, this, nullptr);
+
+		if (!handle->menu()) {
+			handle->unref();
+			return;
+		}
+
+		auto* platform = new PlatformMenuEntry(handle->menu());
+
+		// clang-format off
+		QObject::connect(platform, &PlatformMenuEntry::closed, this, [=]() { platform->deleteLater(); });
+		QObject::connect(platform, &QObject::destroyed, this, [=]() { handle->unref(); });
+		// clang-format on
+
 		auto success = platform->display(parentWindow, relativeX, relativeY);
 
 		// calls destroy which also unrefs
 		if (!success) delete platform;
-	});
+	};
 
-	QObject::connect(platform, &PlatformMenuEntry::closed, this, [=]() { platform->deleteLater(); });
-	QObject::connect(platform, &QObject::destroyed, this, [this]() { this->item->unrefMenu(); });
+	if (handle->menu()) {
+		onMenuChanged();
+	} else {
+		QObject::connect(handle, &QsMenuHandle::menuChanged, this, onMenuChanged);
+	}
+
+	handle->ref();
 }
 
 SystemTray::SystemTray(QObject* parent): QObject(parent) {
@@ -162,7 +179,7 @@ SystemTrayItem* SystemTrayMenuWatcher::trayItem() const { return this->item; }
 
 SystemTrayMenuWatcher::~SystemTrayMenuWatcher() {
 	if (this->item != nullptr) {
-		this->item->item->unrefMenu();
+		this->item->item->menuHandle()->unref();
 	}
 }
 
@@ -170,20 +187,20 @@ void SystemTrayMenuWatcher::setTrayItem(SystemTrayItem* item) {
 	if (item == this->item) return;
 
 	if (this->item != nullptr) {
-		this->item->item->unrefMenu();
+		this->item->item->menuHandle()->unref();
 		QObject::disconnect(this->item, nullptr, this, nullptr);
 	}
 
 	this->item = item;
 
 	if (item != nullptr) {
-		this->item->item->refMenu();
+		this->item->item->menuHandle()->ref();
 
 		QObject::connect(item, &QObject::destroyed, this, &SystemTrayMenuWatcher::onItemDestroyed);
 
 		QObject::connect(
-		    item->item,
-		    &StatusNotifierItem::menuChanged,
+		    item->item->menuHandle(),
+		    &DBusMenuHandle::menuChanged,
 		    this,
 		    &SystemTrayMenuWatcher::menuChanged
 		);
@@ -194,7 +211,11 @@ void SystemTrayMenuWatcher::setTrayItem(SystemTrayItem* item) {
 }
 
 DBusMenuItem* SystemTrayMenuWatcher::menu() const {
-	return this->item ? &this->item->item->menu()->rootItem : nullptr;
+	if (this->item) {
+		return static_cast<DBusMenuItem*>(this->item->item->menuHandle()->menu()); // NOLINT
+	} else {
+		return nullptr;
+	}
 }
 
 void SystemTrayMenuWatcher::onItemDestroyed() {

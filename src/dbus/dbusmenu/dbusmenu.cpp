@@ -512,4 +512,72 @@ DBusMenuPngImage::requestImage(const QString& /*unused*/, QSize* size, const QSi
 	return image;
 }
 
+void DBusMenuHandle::setAddress(const QString& service, const QString& path) {
+	if (service == this->service && path == this->path) return;
+	this->service = service;
+	this->path = path;
+	this->onMenuPathChanged();
+}
+
+void DBusMenuHandle::ref() {
+	this->refcount++;
+	qCDebug(logDbusMenu) << this << "gained a reference. Refcount is now" << this->refcount;
+
+	if (this->refcount == 1 || !this->mMenu) {
+		this->onMenuPathChanged();
+	} else {
+		// Refresh the layout when opening a menu in case a bad client isn't updating it
+		// and another ref is open somewhere.
+		this->mMenu->rootItem.updateLayout();
+	}
+}
+
+void DBusMenuHandle::unref() {
+	this->refcount--;
+	qCDebug(logDbusMenu) << this << "lost a reference. Refcount is now" << this->refcount;
+
+	if (this->refcount == 0) {
+		this->onMenuPathChanged();
+	}
+}
+
+void DBusMenuHandle::onMenuPathChanged() {
+	qCDebug(logDbusMenu) << "Updating" << this << "with refcount" << this->refcount;
+
+	if (this->mMenu) {
+		this->mMenu->deleteLater();
+		this->mMenu = nullptr;
+		this->loaded = false;
+		emit this->menuChanged();
+	}
+
+	if (this->refcount > 0 && !this->service.isEmpty() && !this->path.isEmpty()) {
+		this->mMenu = new DBusMenu(this->service, this->path);
+		this->mMenu->setParent(this);
+
+		QObject::connect(&this->mMenu->rootItem, &DBusMenuItem::layoutUpdated, this, [this]() {
+			this->loaded = true;
+			emit this->menuChanged();
+		});
+
+		this->mMenu->rootItem.setShowChildrenRecursive(true);
+	}
+}
+
+QsMenuEntry* DBusMenuHandle::menu() const {
+	return this->loaded ? &this->mMenu->rootItem : nullptr;
+}
+
+QDebug operator<<(QDebug debug, const DBusMenuHandle* handle) {
+	if (handle) {
+		auto saver = QDebugStateSaver(debug);
+		debug.nospace() << "DBusMenuHandle(" << static_cast<const void*>(handle)
+		                << ", service=" << handle->service << ", path=" << handle->path << ')';
+	} else {
+		debug << "DBusMenuHandle(nullptr)";
+	}
+
+	return debug;
+}
+
 } // namespace qs::dbus::dbusmenu

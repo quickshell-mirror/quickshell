@@ -157,4 +157,35 @@ public:
 	QByteArray data;
 };
 
+class DBusMenuHandle;
+
+QDebug operator<<(QDebug debug, const DBusMenuHandle* handle);
+
+class DBusMenuHandle: public menu::QsMenuHandle {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("");
+
+public:
+	explicit DBusMenuHandle(QObject* parent): menu::QsMenuHandle(parent) {}
+
+	void setAddress(const QString& service, const QString& path);
+
+	void ref() override;
+	void unref() override;
+
+	[[nodiscard]] QsMenuEntry* menu() const override;
+
+private:
+	void onMenuPathChanged();
+
+	QString service;
+	QString path;
+	DBusMenu* mMenu = nullptr;
+	bool loaded = false;
+	quint32 refcount = 0;
+
+	friend QDebug operator<<(QDebug debug, const DBusMenuHandle* handle);
+};
+
 } // namespace qs::dbus::dbusmenu

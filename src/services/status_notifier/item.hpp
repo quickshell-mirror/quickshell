@@ -42,9 +42,7 @@ public:
 	[[nodiscard]] QString iconId() const;
 	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
 
-	[[nodiscard]] qs::dbus::dbusmenu::DBusMenu* menu() const;
-	void refMenu();
-	void unrefMenu();
+	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
 
 	void activate();
 	void secondaryActivate();
@@ -73,7 +71,6 @@ public:
 signals:
 	void iconChanged();
 	void ready();
-	void menuChanged();
 
 private slots:
 	void updateIcon();
@@ -87,8 +84,7 @@ private:
 	TrayImageHandle imageHandle {this};
 	bool mReady = false;
 
-	dbus::dbusmenu::DBusMenu* mMenu = nullptr;
-	quint32 menuRefcount = 0;
+	dbus::dbusmenu::DBusMenuHandle mMenuHandle {this};
 
 	// bumped to inhibit caching
 	quint32 iconIndex = 0;

@@ -232,48 +232,12 @@ void StatusNotifierItem::updateIcon() {
 	emit this->iconChanged();
 }
 
-DBusMenu* StatusNotifierItem::menu() const { return this->mMenu; }
-
-void StatusNotifierItem::refMenu() {
-	this->menuRefcount++;
-	qCDebug(logSniMenu) << "Menu of" << this << "gained a reference. Refcount is now"
-	                    << this->menuRefcount;
-
-	if (this->menuRefcount == 1) {
-		this->onMenuPathChanged();
-	} else {
-		// Refresh the layout when opening a menu in case a bad client isn't updating it
-		// and another ref is open somewhere.
-		this->mMenu->rootItem.updateLayout();
-	}
-}
-
-void StatusNotifierItem::unrefMenu() {
-	this->menuRefcount--;
-	qCDebug(logSniMenu) << "Menu of" << this << "lost a reference. Refcount is now"
-	                    << this->menuRefcount;
-
-	if (this->menuRefcount == 0) {
-		this->onMenuPathChanged();
-	}
+DBusMenuHandle* StatusNotifierItem::menuHandle() {
+	return this->menuPath.get().path().isEmpty() ? nullptr : &this->mMenuHandle;
 }
 
 void StatusNotifierItem::onMenuPathChanged() {
-	qCDebug(logSniMenu) << "Updating menu of" << this << "with refcount" << this->menuRefcount
-	                    << "path" << this->menuPath.get().path();
-
-	if (this->mMenu) {
-		this->mMenu->deleteLater();
-		this->mMenu = nullptr;
-	}
-
-	if (this->menuRefcount > 0 && !this->menuPath.get().path().isEmpty()) {
-		this->mMenu = new DBusMenu(this->item->service(), this->menuPath.get().path());
-		this->mMenu->setParent(this);
-		this->mMenu->rootItem.setShowChildrenRecursive(true);
-	}
-
-	emit this->menuChanged();
+	this->mMenuHandle.setAddress(this->item->service(), this->menuPath.get().path());
 }
 
 void StatusNotifierItem::onGetAllFinished() {

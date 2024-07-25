@@ -111,6 +111,23 @@ private:
 	qsizetype refcount = 0;
 };
 
+class QsMenuHandle: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("");
+
+public:
+	explicit QsMenuHandle(QObject* parent): QObject(parent) {}
+
+	virtual void ref() {};
+	virtual void unref() {};
+
+	[[nodiscard]] virtual QsMenuEntry* menu() const = 0;
+
+signals:
+	void menuChanged();
+};
+
 ///! Provides access to children of a QsMenuEntry
 class QsMenuOpener: public QObject {
 	Q_OBJECT;
