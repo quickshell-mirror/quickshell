@@ -26,5 +26,6 @@ headers = [
 	"retainable.hpp",
 	"popupanchor.hpp",
 	"types.hpp",
+	"qsmenuanchor.hpp",
 ]
 -----

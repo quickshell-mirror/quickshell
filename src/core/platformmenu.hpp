@@ -13,6 +13,7 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
+#include "popupanchor.hpp"
 #include "qsmenu.hpp"
 
 namespace qs::menu::platform {
@@ -38,6 +39,7 @@ public:
 	Q_DISABLE_COPY_MOVE(PlatformMenuEntry);
 
 	bool display(QObject* parentWindow, int relativeX, int relativeY);
+	bool display(PopupAnchor* anchor);
 
 	static void registerCreationHook(std::function<void(PlatformMenuQMenu*)> hook);
 

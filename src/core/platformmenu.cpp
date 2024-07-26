@@ -16,6 +16,7 @@
 #include <qwindow.h>
 
 #include "generation.hpp"
+#include "popupanchor.hpp"
 #include "proxywindow.hpp"
 #include "qsmenu.hpp"
 #include "windowinterface.hpp"
@@ -107,6 +108,33 @@ bool PlatformMenuEntry::display(QObject* parentWindow, int relativeX, int relati
 	// Skips screen edge repositioning so it can be left to the compositor on wayland.
 	this->qmenu->targetPosition = point;
 	this->qmenu->popup(point);
+
+	return true;
+}
+
+bool PlatformMenuEntry::display(PopupAnchor* anchor) {
+	if (!anchor->backingWindow() || !anchor->backingWindow()->isVisible()) {
+		qCritical() << "Cannot display PlatformMenuEntry on anchor without visible window.";
+		return false;
+	}
+
+	if (ACTIVE_MENU && this->qmenu != ACTIVE_MENU) {
+		ACTIVE_MENU->close();
+	}
+
+	ACTIVE_MENU = this->qmenu;
+
+	this->qmenu->createWinId();
+	this->qmenu->windowHandle()->setTransientParent(anchor->backingWindow());
+
+	// Update the window geometry to the menu's actual dimensions so reposition
+	// can accurately adjust it if applicable for the current platform.
+	this->qmenu->windowHandle()->setGeometry({{0, 0}, this->qmenu->sizeHint()});
+
+	PopupPositioner::instance()->reposition(anchor, this->qmenu->windowHandle(), false);
+
+	// Open the menu at the position determined by the popup positioner.
+	this->qmenu->popup(this->qmenu->windowHandle()->position());
 
 	return true;
 }

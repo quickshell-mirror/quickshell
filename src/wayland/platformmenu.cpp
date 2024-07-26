@@ -15,15 +15,6 @@ using namespace qs::menu::platform;
 void platformMenuHook(PlatformMenuQMenu* menu) {
 	auto* window = menu->windowHandle();
 
-	auto constraintAdjustment = QtWayland::xdg_positioner::constraint_adjustment_flip_x
-	                          | QtWayland::xdg_positioner::constraint_adjustment_flip_y
-	                          | QtWayland::xdg_positioner::constraint_adjustment_slide_x
-	                          | QtWayland::xdg_positioner::constraint_adjustment_slide_y
-	                          | QtWayland::xdg_positioner::constraint_adjustment_resize_x
-	                          | QtWayland::xdg_positioner::constraint_adjustment_resize_y;
-
-	window->setProperty("_q_waylandPopupConstraintAdjustment", constraintAdjustment);
-
 	Qt::Edges anchor;
 	Qt::Edges gravity;
 
@@ -43,6 +34,9 @@ void platformMenuHook(PlatformMenuQMenu* menu) {
 		anchor = Qt::TopEdge | sideEdge;
 		gravity = Qt::BottomEdge | sideEdge;
 	} else if (auto* parent = window->transientParent()) {
+		// abort if already set by a PopupAnchor
+		if (window->property("_q_waylandPopupAnchorRect").isValid()) return;
+
 		// The menu geometry will be adjusted to flip internally by qt already, but it ends up off by
 		// one pixel which causes the compositor to also flip which results in the menu being placed
 		// left of the edge by its own width. To work around this the intended position is stored prior
@@ -56,6 +50,15 @@ void platformMenuHook(PlatformMenuQMenu* menu) {
 
 	window->setProperty("_q_waylandPopupAnchor", QVariant::fromValue(anchor));
 	window->setProperty("_q_waylandPopupGravity", QVariant::fromValue(gravity));
+
+	auto constraintAdjustment = QtWayland::xdg_positioner::constraint_adjustment_flip_x
+	                          | QtWayland::xdg_positioner::constraint_adjustment_flip_y
+	                          | QtWayland::xdg_positioner::constraint_adjustment_slide_x
+	                          | QtWayland::xdg_positioner::constraint_adjustment_slide_y
+	                          | QtWayland::xdg_positioner::constraint_adjustment_resize_x
+	                          | QtWayland::xdg_positioner::constraint_adjustment_resize_y;
+
+	window->setProperty("_q_waylandPopupConstraintAdjustment", constraintAdjustment);
 }
 
 void installPlatformMenuHook() { PlatformMenuEntry::registerCreationHook(&platformMenuHook); }

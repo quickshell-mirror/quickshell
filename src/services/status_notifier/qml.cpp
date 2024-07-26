@@ -141,12 +141,8 @@ void SystemTrayItem::display(QObject* parentWindow, qint32 relativeX, qint32 rel
 		if (!success) delete platform;
 	};
 
-	if (handle->menu()) {
-		onMenuChanged();
-	} else {
-		QObject::connect(handle, &DBusMenuHandle::menuChanged, this, onMenuChanged);
-	}
-
+	if (handle->menu()) onMenuChanged();
+	QObject::connect(handle, &DBusMenuHandle::menuChanged, this, onMenuChanged);
 	handle->refHandle();
 }
 

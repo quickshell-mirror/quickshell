@@ -184,9 +184,9 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	auto effectiveY = calcEffectiveY();
 
 	if (adjustment.testFlag(PopupAdjustment::FlipX)) {
-		bool flip = (anchorGravity.testFlag(Edges::Left) && effectiveX < screenGeometry.left())
-		         || (anchorGravity.testFlag(Edges::Right)
-		             && effectiveX + windowGeometry.width() > screenGeometry.right());
+		const bool flip = (anchorGravity.testFlag(Edges::Left) && effectiveX < screenGeometry.left())
+		               || (anchorGravity.testFlag(Edges::Right)
+		                   && effectiveX + windowGeometry.width() > screenGeometry.right());
 
 		if (flip) {
 			anchorGravity ^= Edges::Left | Edges::Right;
@@ -200,9 +200,9 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::FlipY)) {
-		bool flip = (anchorGravity.testFlag(Edges::Top) && effectiveY < screenGeometry.top())
-		         || (anchorGravity.testFlag(Edges::Bottom)
-		             && effectiveY + windowGeometry.height() > screenGeometry.bottom());
+		const bool flip = (anchorGravity.testFlag(Edges::Top) && effectiveY < screenGeometry.top())
+		               || (anchorGravity.testFlag(Edges::Bottom)
+		                   && effectiveY + windowGeometry.height() > screenGeometry.bottom());
 
 		if (flip) {
 			anchorGravity ^= Edges::Top | Edges::Bottom;
