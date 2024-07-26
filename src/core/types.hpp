@@ -2,6 +2,7 @@
 
 #include <qdebug.h>
 #include <qnamespace.h>
+#include <qpoint.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
@@ -21,12 +22,17 @@ public:
 	Box(qint32 x, qint32 y, qint32 w, qint32 h): x(x), y(y), w(w), h(h) {}
 
 	Q_INVOKABLE Box(const QRect& rect): x(rect.x()), y(rect.y()), w(rect.width()), h(rect.height()) {}
+	Q_INVOKABLE Box(const QPoint& rect): x(rect.x()), y(rect.y()) {}
 
 	Q_INVOKABLE Box(const QRectF& rect)
 	    : x(static_cast<qint32>(rect.x()))
 	    , y(static_cast<qint32>(rect.y()))
 	    , w(static_cast<qint32>(rect.width()))
 	    , h(static_cast<qint32>(rect.height())) {}
+
+	Q_INVOKABLE Box(const QPointF& rect)
+	    : x(static_cast<qint32>(rect.x()))
+	    , y(static_cast<qint32>(rect.y())) {}
 
 	bool operator==(const Box& other) const;
 
