@@ -3,6 +3,7 @@
 #include <qdebug.h>
 #include <qnamespace.h>
 #include <qpoint.h>
+#include <qrect.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
@@ -68,3 +69,28 @@ bool isOpposing(Flags edges);
 }; // namespace Edges
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Edges::Flags);
+
+// NOLINTBEGIN
+#define DROP_EMIT(object, func)                                                                    \
+	DropEmitter(object, static_cast<void (*)(typeof(object))>([](typeof(object) o) { o->func(); }))
+// NOLINTEND
+
+class DropEmitter {
+public:
+	template <class O>
+	DropEmitter(O* object, void (*signal)(O*))
+	    : object(object)
+	    , signal(*reinterpret_cast<void (*)(void*)>(signal)) {} // NOLINT
+
+	DropEmitter() = default;
+	DropEmitter(DropEmitter&& other) noexcept;
+	DropEmitter& operator=(DropEmitter&& other) noexcept;
+	~DropEmitter();
+	Q_DISABLE_COPY(DropEmitter);
+
+	void call();
+
+private:
+	void* object = nullptr;
+	void (*signal)(void*) = nullptr;
+};

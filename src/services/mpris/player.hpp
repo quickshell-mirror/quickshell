@@ -7,6 +7,7 @@
 #include <qtypes.h>
 
 #include "../../core/doc.hpp"
+#include "../../core/types.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_player.h"
 #include "dbus_player_app.h"
@@ -128,6 +129,11 @@ class MprisPlayer: public QObject {
 	/// properties have extra logic to guard against bad players sending weird metadata, and should
 	/// be used over grabbing the properties directly from the metadata.
 	Q_PROPERTY(QVariantMap metadata READ metadata NOTIFY metadataChanged);
+	/// An opaque identifier for the current track unique within the current player.
+	///
+	/// > [!WARNING] This is NOT `mpris:trackid` as that is sometimes missing or nonunique
+	/// > in some players.
+	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY trackChanged);
 	/// The title of the current track, or "Unknown Track" if none was provided.
 	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged);
 	/// The current track's album, or "Unknown Album" if none was provided.
@@ -248,6 +254,7 @@ public:
 	[[nodiscard]] bool volumeSupported() const;
 	void setVolume(qreal volume);
 
+	[[nodiscard]] quint32 uniqueId() const;
 	[[nodiscard]] QVariantMap metadata() const;
 	[[nodiscard]] QString trackTitle() const;
 	[[nodiscard]] QString trackAlbum() const;
@@ -278,6 +285,10 @@ public:
 	[[nodiscard]] QList<QString> supportedMimeTypes() const;
 
 signals:
+	/// The track has changed.
+	///
+	/// All track info change signalss will fire immediately after if applicable,
+	/// but their values will be updated before the signal fires.
 	void trackChanged();
 
 	QSDOC_HIDE void ready();
@@ -327,11 +338,12 @@ private slots:
 	void onLoopStatusChanged();
 
 private:
-	void setTrackTitle(QString title);
-	void setTrackAlbum(QString album);
-	void setTrackAlbumArtist(QString albumArtist);
-	void setTrackArtists(QVector<QString> artists);
-	void setTrackArtUrl(QString artUrl);
+	DropEmitter setLength(qlonglong length);
+	DropEmitter setTrackTitle(QString title);
+	DropEmitter setTrackAlbum(QString album);
+	DropEmitter setTrackAlbumArtist(QString albumArtist);
+	DropEmitter setTrackArtists(QVector<QString> artists);
+	DropEmitter setTrackArtUrl(QString artUrl);
 
 	// clang-format off
 	dbus::DBusPropertyGroup appProperties;
@@ -370,6 +382,7 @@ private:
 
 	DBusMprisPlayerApp* app = nullptr;
 	DBusMprisPlayer* player = nullptr;
+	quint32 mUniqueId = 0;
 	QString mTrackId;
 	QString mTrackUrl;
 	QString mTrackTitle;
