@@ -112,7 +112,7 @@ qreal UPowerDevice::energyCapacity() const { return this->pEnergyCapacity.get();
 qreal UPowerDevice::changeRate() const { return this->pChangeRate.get(); }
 qlonglong UPowerDevice::timeToEmpty() const { return this->pTimeToEmpty.get(); }
 qlonglong UPowerDevice::timeToFull() const { return this->pTimeToFull.get(); }
-qreal UPowerDevice::percentage() const { return this->pPercentage.get(); }
+qreal UPowerDevice::percentage() const { return this->pPercentage.get() / 100; }
 bool UPowerDevice::isPresent() const { return this->pIsPresent.get(); }
 
 UPowerDeviceState::Enum UPowerDevice::state() const {
