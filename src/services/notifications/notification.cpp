@@ -8,6 +8,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/util.hpp"
 #include "../../core/desktopentry.hpp"
 #include "../../core/iconimageprovider.hpp"
 #include "dbusimage.hpp"
@@ -130,29 +131,20 @@ void Notification::updateProperties(
 		}
 	}
 
-	auto appNameChanged = appName != this->mAppName;
-	auto appIconChanged = appIcon != this->mAppIcon;
-	auto summaryChanged = summary != this->mSummary;
-	auto bodyChanged = body != this->mBody;
-	auto expireTimeoutChanged = expireTimeout != this->mExpireTimeout;
-	auto urgencyChanged = urgency != this->mUrgency;
-	auto hasActionIconsChanged = hasActionIcons != this->mHasActionIcons;
-	auto isResidentChanged = isResident != this->mIsResident;
-	auto isTransientChanged = isTransient != this->mIsTransient;
-	auto desktopEntryChanged = desktopEntry != this->mDesktopEntry;
-	auto imageChanged = imagePixmap || imagePath != this->mImagePath;
-	auto hintsChanged = hints != this->mHints;
+	DROP_EMIT_SET(this, appName, mAppName, appNameChanged);
+	DROP_EMIT_SET(this, appIcon, mAppIcon, appIconChanged);
+	DROP_EMIT_SET(this, summary, mSummary, summaryChanged);
+	DROP_EMIT_SET(this, body, mBody, bodyChanged);
+	DROP_EMIT_SET(this, expireTimeout, mExpireTimeout, expireTimeoutChanged);
+	DEFINE_DROP_EMIT_IF(urgency != this->mUrgency, this, urgencyChanged);
+	DROP_EMIT_SET(this, hasActionIcons, mHasActionIcons, hasActionIconsChanged);
+	DROP_EMIT_SET(this, isResident, mIsResident, isResidentChanged);
+	DROP_EMIT_SET(this, isTransient, mIsTransient, isTransientChanged);
+	DROP_EMIT_SET(this, desktopEntry, mDesktopEntry, desktopEntryChanged);
+	DEFINE_DROP_EMIT_IF(imagePixmap || imagePath != this->mImagePath, this, imageChanged);
+	DROP_EMIT_SET(this, hints, mHints, hintsChanged);
 
-	if (appNameChanged) this->mAppName = appName;
-	if (appIconChanged) this->mAppIcon = appIcon;
-	if (summaryChanged) this->mSummary = summary;
-	if (bodyChanged) this->mBody = body;
-	if (expireTimeoutChanged) this->mExpireTimeout = expireTimeout;
 	if (urgencyChanged) this->mUrgency = static_cast<NotificationUrgency::Enum>(urgency);
-	if (hasActionIcons) this->mHasActionIcons = hasActionIcons;
-	if (isResidentChanged) this->mIsResident = isResident;
-	if (isTransientChanged) this->mIsTransient = isTransient;
-	if (desktopEntryChanged) this->mDesktopEntry = desktopEntry;
 
 	NotificationImage* oldImage = nullptr;
 
@@ -203,19 +195,7 @@ void Notification::updateProperties(
 		                            << "sent an action set of an invalid length.";
 	}
 
-	if (appNameChanged) emit this->appNameChanged();
-	if (appIconChanged) emit this->appIconChanged();
-	if (summaryChanged) emit this->summaryChanged();
-	if (bodyChanged) emit this->bodyChanged();
-	if (expireTimeoutChanged) emit this->expireTimeoutChanged();
-	if (urgencyChanged) emit this->urgencyChanged();
 	if (actionsChanged) emit this->actionsChanged();
-	if (hasActionIconsChanged) emit this->hasActionIconsChanged();
-	if (isResidentChanged) emit this->isResidentChanged();
-	if (isTransientChanged) emit this->isTransientChanged();
-	if (desktopEntryChanged) emit this->desktopEntryChanged();
-	if (imageChanged) emit this->imageChanged();
-	if (hintsChanged) emit this->hintsChanged();
 
 	for (auto* action: deletedActions) {
 		delete action;
