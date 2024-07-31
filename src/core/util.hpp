@@ -1,4 +1,5 @@
 #pragma once
+#include <type_traits>
 
 // NOLINTBEGIN
 #define DROP_EMIT(object, func)                                                                    \
@@ -14,34 +15,6 @@
 		object->member = local;                                                                        \
 		signal = DROP_EMIT(object, signal);                                                            \
 	}
-
-// generic accessor declarations
-
-#define GDECL_GETTER(type, name) [[nodiscard]] type name() const
-
-#define GDEF_GETTER(class, type, member, name)                                                     \
-	type class::name() const { return this->member; }
-
-#define GDECL_SETTER(type, name) DropEmitter name(type value)
-
-#define GDEF_SETTER(class, type, member, name, signal)                                             \
-	DropEmitter class ::name(type value) {                                                           \
-		if (value == this->member) return DropEmitter();                                               \
-		this->member = value;                                                                          \
-		return DROP_EMIT(this, signal);                                                                \
-	}
-
-#define GDECL_MEMBER(type, getter, setter)                                                         \
-	GDECL_GETTER(type, getter)                                                             \
-	GDECL_SETTER(type, setter)
-
-#define GDEF_MEMBER(class, type, member, getter, setter, signal)                                   \
-	GDEF_GETTER(class, type, member, getter)                                               \
-	GDEF_SETTER(class, type, member, setter, signal)
-
-#define GDEF_MEMBER_S(class, type, lower, upper)                                         \
-	GDEF_MEMBER(class, type, m##upper, lower, set##upper, lower##Changed)
-
 // NOLINTEND
 
 class DropEmitter {
@@ -75,7 +48,125 @@ public:
 		this->object = nullptr;
 	}
 
+	// orders calls for multiple emitters (instead of reverse definition order)
+	template <typename... Args>
+	static void call(Args&... args) {
+		(args.call(), ...);
+	}
+
 private:
 	void* object = nullptr;
 	void (*signal)(void*) = nullptr;
+};
+
+// NOLINTBEGIN
+#define DECLARE_MEMBER(class, name, member, signal)                                                \
+	using M_##name = MemberMetadata<&class ::member, &class ::signal>
+
+#define DECLARE_MEMBER_NS(class, name, member) using M_##name = MemberMetadata<&class ::member>
+
+#define DECLARE_MEMBER_GET(name) [[nodiscard]] M_##name::Ref name() const
+#define DECLARE_MEMBER_SET(name, setter) M_##name::Ret setter(M_##name::Ref value)
+
+#define DECLARE_MEMBER_GETSET(name, setter)                                                        \
+	DECLARE_MEMBER_GET(name);                                                                        \
+	DECLARE_MEMBER_SET(name, setter)
+
+#define DECLARE_MEMBER_FULL(class, name, setter, member, signal)                                   \
+	DECLARE_MEMBER(class, name, member, signal);                                                     \
+	DECLARE_MEMBER_GETSET(name, setter)
+
+#define DECLARE_MEMBER_WITH_GET(class, name, member, signal)                                       \
+	DECLARE_MEMBER(class, name, member, signal);                                                     \
+                                                                                                   \
+public:                                                                                            \
+	DECLARE_MEMBER_GET(name);                                                                        \
+                                                                                                   \
+private:
+
+#define DECLARE_PRIVATE_MEMBER(class, name, setter, member, signal)                                \
+	DECLARE_MEMBER_WITH_GET(class, name, member, signal);                                            \
+	DECLARE_MEMBER_SET(name, setter);
+
+#define DECLARE_PMEMBER(type, name) using M_##name = PseudomemberMetadata<type, true>;
+#define DECLARE_PMEMBER_NS(type, name) using M_##name = PseudomemberMetadata<type, false>;
+
+#define DECLARE_PMEMBER_FULL(type, name, setter)                                                   \
+	DECLARE_PMEMBER(type, name);                                                                     \
+	DECLARE_MEMBER_GETSET(name, setter)
+
+#define DECLARE_PMEMBER_WITH_GET(type, name)                                                       \
+	DECLARE_PMEMBER(type, name);                                                                     \
+                                                                                                   \
+public:                                                                                            \
+	DECLARE_MEMBER_GET(name);                                                                        \
+                                                                                                   \
+private:
+
+#define DECLARE_PRIVATE_PMEMBER(type, name, setter)                                                \
+	DECLARE_PMEMBER_WITH_GET(type, name);                                                            \
+	DECLARE_MEMBER_SET(name, setter);
+
+#define DEFINE_PMEMBER_GET_M(Class, Member, name) Member::Ref Class::name() const
+#define DEFINE_PMEMBER_GET(Class, name) DEFINE_PMEMBER_GET_M(Class, Class::M_##name, name)
+
+#define DEFINE_MEMBER_GET_M(Class, Member, name)                                                   \
+	DEFINE_PMEMBER_GET_M(Class, Member, name) { return Member::get(this); }
+
+#define DEFINE_MEMBER_GET(Class, name) DEFINE_MEMBER_GET_M(Class, Class::M_##name, name)
+
+#define DEFINE_MEMBER_SET_M(Class, Member, setter)                                                 \
+	Member::Ret Class::setter(Member::Ref value) { return Member::set(this, value); }
+
+#define DEFINE_MEMBER_SET(Class, name, setter) DEFINE_MEMBER_SET_M(Class, Class::M_##name, setter)
+
+#define DEFINE_MEMBER_GETSET(Class, name, setter)                                                  \
+	DEFINE_MEMBER_GET(Class, name)                                                                   \
+	DEFINE_MEMBER_SET(Class, name, setter)
+// NOLINTEND
+
+template <typename T>
+class MemberPointerTraits;
+
+template <typename T, typename C>
+class MemberPointerTraits<T C::*> {
+public:
+	using Class = C;
+	using Type = T;
+};
+
+template <auto member, auto signal = nullptr>
+class MemberMetadata {
+	using Traits = MemberPointerTraits<decltype(member)>;
+	using Class = Traits::Class;
+
+public:
+	using Type = Traits::Type;
+	using Ref = const Type&;
+	using Ret = std::conditional_t<signal == nullptr, void, DropEmitter>;
+
+	static Ref get(const Class* obj) { return obj->*member; }
+
+	static Ret set(Class* obj, Ref value) {
+		if constexpr (signal == nullptr) {
+			if (MemberMetadata::get(obj) == value) return;
+			obj->*member = value;
+		} else {
+			if (MemberMetadata::get(obj) == value) return DropEmitter();
+			obj->*member = value;
+			return DropEmitter(obj, &MemberMetadata::emitForObject);
+		}
+	}
+
+private:
+	static void emitForObject(Class* obj) { (obj->*signal)(); }
+};
+
+// allows use of member macros without an actual field backing them
+template <typename T, bool hasSignal>
+class PseudomemberMetadata {
+public:
+	using Type = T;
+	using Ref = const Type&;
+	using Ret = std::conditional_t<hasSignal, DropEmitter, void>;
 };

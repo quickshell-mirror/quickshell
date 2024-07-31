@@ -3,8 +3,8 @@
 #include <qdebug.h>
 #include <qnamespace.h>
 #include <qpoint.h>
-#include <qrect.h>
 #include <qqmlintegration.h>
+#include <qrect.h>
 #include <qtmetamacros.h>
 
 class Box {

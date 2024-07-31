@@ -8,9 +8,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../core/util.hpp"
 #include "../../core/desktopentry.hpp"
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/util.hpp"
 #include "dbusimage.hpp"
 #include "server.hpp"
 
@@ -47,7 +47,7 @@ void NotificationAction::invoke() {
 
 	NotificationServer::instance()->ActionInvoked(this->notification->id(), this->mIdentifier);
 
-	if (!this->notification->isResident()) {
+	if (!this->notification->resident()) {
 		this->notification->close(NotificationCloseReason::Dismissed);
 	}
 }
@@ -88,8 +88,8 @@ void Notification::updateProperties(
 	                                         : NotificationUrgency::Normal;
 
 	auto hasActionIcons = hints.value("action-icons").value<bool>();
-	auto isResident = hints.value("resident").value<bool>();
-	auto isTransient = hints.value("transient").value<bool>();
+	auto resident = hints.value("resident").value<bool>();
+	auto transient = hints.value("transient").value<bool>();
 	auto desktopEntry = hints.value("desktop-entry").value<QString>();
 
 	QString imageDataName;
@@ -131,20 +131,18 @@ void Notification::updateProperties(
 		}
 	}
 
-	DROP_EMIT_SET(this, appName, mAppName, appNameChanged);
-	DROP_EMIT_SET(this, appIcon, mAppIcon, appIconChanged);
-	DROP_EMIT_SET(this, summary, mSummary, summaryChanged);
-	DROP_EMIT_SET(this, body, mBody, bodyChanged);
-	DROP_EMIT_SET(this, expireTimeout, mExpireTimeout, expireTimeoutChanged);
-	DEFINE_DROP_EMIT_IF(urgency != this->mUrgency, this, urgencyChanged);
-	DROP_EMIT_SET(this, hasActionIcons, mHasActionIcons, hasActionIconsChanged);
-	DROP_EMIT_SET(this, isResident, mIsResident, isResidentChanged);
-	DROP_EMIT_SET(this, isTransient, mIsTransient, isTransientChanged);
-	DROP_EMIT_SET(this, desktopEntry, mDesktopEntry, desktopEntryChanged);
+	auto expireTimeoutChanged = this->setExpireTimeout(expireTimeout);
+	auto appNameChanged = this->setAppName(appName);
+	auto appIconChanged = this->setAppIcon(appIcon);
+	auto summaryChanged = this->setSummary(summary);
+	auto bodyChanged = this->setBody(body);
+	auto urgencyChanged = this->setUrgency(static_cast<NotificationUrgency::Enum>(urgency));
+	auto hasActionIconsChanged = this->setHasActionIcons(hasActionIcons);
+	auto residentChanged = this->setResident(resident);
+	auto transientChanged = this->setTransient(transient);
+	auto desktopEntryChanged = this->setDesktopEntry(desktopEntry);
 	DEFINE_DROP_EMIT_IF(imagePixmap || imagePath != this->mImagePath, this, imageChanged);
-	DROP_EMIT_SET(this, hints, mHints, hintsChanged);
-
-	if (urgencyChanged) this->mUrgency = static_cast<NotificationUrgency::Enum>(urgency);
+	auto hintsChanged = this->setHints(hints);
 
 	NotificationImage* oldImage = nullptr;
 
@@ -153,8 +151,6 @@ void Notification::updateProperties(
 		this->mImagePixmap = imagePixmap;
 		this->mImagePath = imagePath;
 	}
-
-	if (hintsChanged) this->mHints = hints;
 
 	bool actionsChanged = false;
 	auto deletedActions = QVector<NotificationAction*>();
@@ -195,6 +191,21 @@ void Notification::updateProperties(
 		                            << "sent an action set of an invalid length.";
 	}
 
+	DropEmitter::call(
+	    expireTimeoutChanged,
+	    appNameChanged,
+	    appIconChanged,
+	    summaryChanged,
+	    bodyChanged,
+	    urgencyChanged,
+	    hasActionIconsChanged,
+	    residentChanged,
+	    transientChanged,
+	    desktopEntryChanged,
+	    imageChanged,
+	    hintsChanged
+	);
+
 	if (actionsChanged) emit this->actionsChanged();
 
 	for (auto* action: deletedActions) {
@@ -217,17 +228,17 @@ void Notification::setTracked(bool tracked) {
 bool Notification::isLastGeneration() const { return this->mLastGeneration; }
 void Notification::setLastGeneration() { this->mLastGeneration = true; }
 
-qreal Notification::expireTimeout() const { return this->mExpireTimeout; }
-QString Notification::appName() const { return this->mAppName; }
-QString Notification::appIcon() const { return this->mAppIcon; }
-QString Notification::summary() const { return this->mSummary; }
-QString Notification::body() const { return this->mBody; }
-NotificationUrgency::Enum Notification::urgency() const { return this->mUrgency; }
-QVector<NotificationAction*> Notification::actions() const { return this->mActions; }
-bool Notification::hasActionIcons() const { return this->mHasActionIcons; }
-bool Notification::isResident() const { return this->mIsResident; }
-bool Notification::isTransient() const { return this->mIsTransient; }
-QString Notification::desktopEntry() const { return this->mDesktopEntry; }
+DEFINE_MEMBER_GETSET(Notification, expireTimeout, setExpireTimeout);
+DEFINE_MEMBER_GETSET(Notification, appName, setAppName);
+DEFINE_MEMBER_GETSET(Notification, appIcon, setAppIcon);
+DEFINE_MEMBER_GETSET(Notification, summary, setSummary);
+DEFINE_MEMBER_GETSET(Notification, body, setBody);
+DEFINE_MEMBER_GETSET(Notification, urgency, setUrgency);
+DEFINE_MEMBER_GET(Notification, actions);
+DEFINE_MEMBER_GETSET(Notification, hasActionIcons, setHasActionIcons);
+DEFINE_MEMBER_GETSET(Notification, resident, setResident);
+DEFINE_MEMBER_GETSET(Notification, transient, setTransient);
+DEFINE_MEMBER_GETSET(Notification, desktopEntry, setDesktopEntry);
 
 QString Notification::image() const {
 	if (this->mImagePixmap) {
@@ -237,6 +248,6 @@ QString Notification::image() const {
 	}
 }
 
-QVariantMap Notification::hints() const { return this->mHints; }
+DEFINE_MEMBER_GETSET(Notification, hints, setHints);
 
 } // namespace qs::service::notifications

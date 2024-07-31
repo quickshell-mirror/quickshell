@@ -7,7 +7,7 @@
 #include <qtypes.h>
 
 #include "../../core/doc.hpp"
-#include "../../core/types.hpp"
+#include "../../core/util.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_player.h"
 #include "dbus_player_app.h"
@@ -239,8 +239,8 @@ public:
 	[[nodiscard]] bool canRaise() const;
 	[[nodiscard]] bool canSetFullscreen() const;
 
-	[[nodiscard]] QString identity() const;
-	[[nodiscard]] QString desktopEntry() const;
+	[[nodiscard]] const QString& identity() const;
+	[[nodiscard]] const QString& desktopEntry() const;
 
 	[[nodiscard]] qlonglong positionMs() const;
 	[[nodiscard]] qreal position() const;
@@ -254,13 +254,7 @@ public:
 	[[nodiscard]] bool volumeSupported() const;
 	void setVolume(qreal volume);
 
-	[[nodiscard]] quint32 uniqueId() const;
-	[[nodiscard]] QVariantMap metadata() const;
-	[[nodiscard]] QString trackTitle() const;
-	[[nodiscard]] QString trackAlbum() const;
-	[[nodiscard]] QString trackAlbumArtist() const;
-	[[nodiscard]] QVector<QString> trackArtists() const;
-	[[nodiscard]] QString trackArtUrl() const;
+	[[nodiscard]] const QVariantMap& metadata() const;
 
 	[[nodiscard]] MprisPlaybackState::Enum playbackState() const;
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
@@ -338,13 +332,6 @@ private slots:
 	void onLoopStatusChanged();
 
 private:
-	DropEmitter setLength(qlonglong length);
-	DropEmitter setTrackTitle(QString title);
-	DropEmitter setTrackAlbum(QString album);
-	DropEmitter setTrackAlbumArtist(QString albumArtist);
-	DropEmitter setTrackArtists(QVector<QString> artists);
-	DropEmitter setTrackArtUrl(QString artUrl);
-
 	// clang-format off
 	dbus::DBusPropertyGroup appProperties;
 	dbus::DBusProperty<QString> pIdentity {this->appProperties, "Identity"};
@@ -386,10 +373,26 @@ private:
 	QString mTrackId;
 	QString mTrackUrl;
 	QString mTrackTitle;
+	QVector<QString> mTrackArtists;
 	QString mTrackAlbum;
 	QString mTrackAlbumArtist;
-	QVector<QString> mTrackArtists;
 	QString mTrackArtUrl;
+
+	DECLARE_MEMBER_NS(MprisPlayer, uniqueId, mUniqueId);
+
+	DECLARE_MEMBER(MprisPlayer, length, mLength, lengthChanged);
+	DECLARE_MEMBER_SET(length, setLength);
+
+	// clang-format off
+	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackTitle, setTrackTitle, mTrackTitle, trackTitleChanged);
+	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackArtists, setTrackArtists, mTrackArtists, trackArtistsChanged);
+	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackAlbum, setTrackAlbum, mTrackAlbum, trackAlbumChanged);
+	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackAlbumArtist, setTrackAlbumArtist, mTrackAlbumArtist, trackAlbumArtistChanged);
+	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackArtUrl, setTrackArtUrl, mTrackArtUrl, trackArtUrlChanged);
+	// clang-format on
+
+public:
+	DECLARE_MEMBER_GET(uniqueId);
 };
 
 } // namespace qs::service::mpris

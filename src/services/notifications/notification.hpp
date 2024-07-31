@@ -9,6 +9,7 @@
 #include <qtmetamacros.h>
 
 #include "../../core/retainable.hpp"
+#include "../../core/util.hpp"
 
 namespace qs::service::notifications {
 
@@ -94,9 +95,9 @@ class Notification
 	/// See @@NotificationAction.identifier for details.
 	Q_PROPERTY(bool hasActionIcons READ hasActionIcons NOTIFY hasActionIconsChanged);
 	/// If true, the notification will not be destroyed after an action is invoked.
-	Q_PROPERTY(bool resident READ isResident NOTIFY isResidentChanged);
+	Q_PROPERTY(bool resident READ resident NOTIFY residentChanged);
 	/// If true, the notification should skip any kind of persistence function like a notification area.
-	Q_PROPERTY(bool transient READ isTransient NOTIFY isTransientChanged);
+	Q_PROPERTY(bool transient READ transient NOTIFY transientChanged);
 	/// The name of the sender's desktop entry or "" if none was supplied.
 	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged);
 	/// An image associated with the notification.
@@ -140,19 +141,7 @@ public:
 	[[nodiscard]] bool isLastGeneration() const;
 	void setLastGeneration();
 
-	[[nodiscard]] qreal expireTimeout() const;
-	[[nodiscard]] QString appName() const;
-	[[nodiscard]] QString appIcon() const;
-	[[nodiscard]] QString summary() const;
-	[[nodiscard]] QString body() const;
-	[[nodiscard]] NotificationUrgency::Enum urgency() const;
-	[[nodiscard]] QVector<NotificationAction*> actions() const;
-	[[nodiscard]] bool hasActionIcons() const;
-	[[nodiscard]] bool isResident() const;
-	[[nodiscard]] bool isTransient() const;
-	[[nodiscard]] QString desktopEntry() const;
 	[[nodiscard]] QString image() const;
-	[[nodiscard]] QVariantMap hints() const;
 
 signals:
 	/// Sent when a notification has been closed.
@@ -169,8 +158,8 @@ signals:
 	void urgencyChanged();
 	void actionsChanged();
 	void hasActionIconsChanged();
-	void isResidentChanged();
-	void isTransientChanged();
+	void residentChanged();
+	void transientChanged();
 	void desktopEntryChanged();
 	void imageChanged();
 	void hintsChanged();
@@ -187,12 +176,27 @@ private:
 	NotificationUrgency::Enum mUrgency = NotificationUrgency::Normal;
 	QVector<NotificationAction*> mActions;
 	bool mHasActionIcons = false;
-	bool mIsResident = false;
-	bool mIsTransient = false;
+	bool mResident = false;
+	bool mTransient = false;
 	QString mImagePath;
 	NotificationImage* mImagePixmap = nullptr;
 	QString mDesktopEntry;
 	QVariantMap mHints;
+
+	// clang-format off
+	DECLARE_PRIVATE_MEMBER(Notification, expireTimeout, setExpireTimeout, mExpireTimeout, expireTimeoutChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, appName, setAppName, mAppName, appNameChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, appIcon, setAppIcon, mAppIcon, appIconChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, summary, setSummary, mSummary, summaryChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, body, setBody, mBody, bodyChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, urgency, setUrgency, mUrgency, urgencyChanged);
+	DECLARE_MEMBER_WITH_GET(Notification, actions, mActions, actionsChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, hasActionIcons, setHasActionIcons, mHasActionIcons, hasActionIconsChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, resident, setResident, mResident, residentChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, transient, setTransient, mTransient, transientChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, desktopEntry, setDesktopEntry, mDesktopEntry, desktopEntryChanged);
+	DECLARE_PRIVATE_MEMBER(Notification, hints, setHints, mHints, hintsChanged);
+	// clang-format on
 };
 
 ///! An action associated with a Notification.

@@ -1,5 +1,4 @@
 #include "player.hpp"
-#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
@@ -12,7 +11,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../core/types.hpp"
+#include "../../core/util.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_player.h"
 #include "dbus_player_app.h"
@@ -167,8 +166,8 @@ bool MprisPlayer::canQuit() const { return this->pCanQuit.get(); }
 bool MprisPlayer::canRaise() const { return this->pCanRaise.get(); }
 bool MprisPlayer::canSetFullscreen() const { return this->pCanSetFullscreen.get(); }
 
-QString MprisPlayer::identity() const { return this->pIdentity.get(); }
-QString MprisPlayer::desktopEntry() const { return this->pDesktopEntry.get(); }
+const QString& MprisPlayer::identity() const { return this->pIdentity.get(); }
+const QString& MprisPlayer::desktopEntry() const { return this->pDesktopEntry.get(); }
 
 qlonglong MprisPlayer::positionMs() const {
 	if (!this->positionSupported()) return 0; // unsupported
@@ -256,13 +255,7 @@ void MprisPlayer::setVolume(qreal volume) {
 	this->pVolume.write();
 }
 
-quint32 MprisPlayer::uniqueId() const { return this->mUniqueId; }
-QVariantMap MprisPlayer::metadata() const { return this->pMetadata.get(); }
-QString MprisPlayer::trackTitle() const { return this->mTrackTitle; }
-QString MprisPlayer::trackAlbum() const { return this->mTrackAlbum; }
-QString MprisPlayer::trackAlbumArtist() const { return this->mTrackAlbumArtist; }
-QVector<QString> MprisPlayer::trackArtists() const { return this->mTrackArtists; }
-QString MprisPlayer::trackArtUrl() const { return this->mTrackArtUrl; }
+const QVariantMap& MprisPlayer::metadata() const { return this->pMetadata.get(); }
 
 void MprisPlayer::onMetadataChanged() {
 	emit this->metadataChanged();
@@ -273,7 +266,7 @@ void MprisPlayer::onMetadataChanged() {
 		length = lengthVariant.value<qlonglong>();
 	}
 
-	auto emitLengthChanged = this->setLength(length);
+	auto lengthChanged = this->setLength(length);
 
 	auto trackChanged = false;
 
@@ -298,45 +291,20 @@ void MprisPlayer::onMetadataChanged() {
 		}
 	}
 
-	DropEmitter emitTrackTitle;
-	auto trackTitle = this->pMetadata.get().value("xesam:title");
-	if (trackTitle.isValid() && trackTitle.canConvert<QString>()) {
-		emitTrackTitle = this->setTrackTitle(trackTitle.toString());
-	} else if (trackChanged) {
-		emitTrackTitle = this->setTrackTitle("Unknown Track");
-	}
+	auto trackTitle = this->pMetadata.get().value("xesam:title").toString();
+	auto trackTitleChanged = this->setTrackTitle(trackTitle.isNull() ? "Unknown Track" : trackTitle);
 
-	DropEmitter emitTrackAlbum;
-	auto trackAlbum = this->pMetadata.get().value("xesam:album");
-	if (trackAlbum.isValid() && trackAlbum.canConvert<QString>()) {
-		emitTrackAlbum = this->setTrackAlbum(trackAlbum.toString());
-	} else if (trackChanged) {
-		emitTrackAlbum = this->setTrackAlbum("Unknown Album");
-	}
+	auto trackArtists = this->pMetadata.get().value("xesam:artist").value<QVector<QString>>();
+	auto trackArtistsChanged = this->setTrackArtists(trackArtists);
 
-	DropEmitter emitTrackAlbumArtist;
-	auto trackAlbumArtist = this->pMetadata.get().value("xesam:albumArtist");
-	if (trackAlbumArtist.isValid() && trackAlbumArtist.canConvert<QString>()) {
-		emitTrackAlbumArtist = this->setTrackAlbumArtist(trackAlbumArtist.toString());
-	} else if (trackChanged) {
-		emitTrackAlbumArtist = this->setTrackAlbumArtist("Unknown Artist");
-	}
+	auto trackAlbum = this->pMetadata.get().value("xesam:album").toString();
+	auto trackAlbumChanged = this->setTrackAlbum(trackAlbum.isNull() ? "Unknown Album" : trackAlbum);
 
-	DropEmitter emitTrackArtists;
-	auto trackArtists = this->pMetadata.get().value("xesam:artist");
-	if (trackArtists.isValid() && trackArtists.canConvert<QVector<QString>>()) {
-		emitTrackArtists = this->setTrackArtists(trackArtists.value<QVector<QString>>());
-	} else if (trackChanged) {
-		emitTrackArtists = this->setTrackArtists({});
-	}
+	auto trackAlbumArtist = this->pMetadata.get().value("xesam:albumArtist").toString();
+	auto trackAlbumArtistChanged = this->setTrackAlbumArtist(trackAlbumArtist);
 
-	DropEmitter emitTrackArtUrl;
-	auto trackArtUrl = this->pMetadata.get().value("mpris:artUrl");
-	if (trackArtUrl.isValid() && trackArtUrl.canConvert<QString>()) {
-		emitTrackArtUrl = this->setTrackArtUrl(trackArtUrl.toString());
-	} else if (trackChanged) {
-		emitTrackArtUrl = this->setTrackArtUrl("");
-	}
+	auto trackArtUrl = this->pMetadata.get().value("mpris:artUrl").toString();
+	auto trackArtUrlChanged = this->setTrackArtUrl(trackArtUrl);
 
 	if (trackChanged) {
 		this->mUniqueId++;
@@ -344,49 +312,25 @@ void MprisPlayer::onMetadataChanged() {
 		this->pPosition.update();
 		emit this->trackChanged();
 	}
+
+	DropEmitter::call(
+	    trackTitleChanged,
+	    trackArtistsChanged,
+	    trackAlbumChanged,
+	    trackAlbumArtistChanged,
+	    trackArtUrlChanged,
+	    lengthChanged
+	);
 }
 
-DropEmitter MprisPlayer::setLength(qlonglong length) {
-	if (length == this->mLength) return DropEmitter();
+DEFINE_MEMBER_GET(MprisPlayer, uniqueId);
+DEFINE_MEMBER_SET(MprisPlayer, length, setLength);
 
-	this->mLength = length;
-	return DROP_EMIT(this, lengthChanged);
-}
-
-DropEmitter MprisPlayer::setTrackTitle(QString title) {
-	if (title == this->mTrackTitle) return DropEmitter();
-
-	this->mTrackTitle = std::move(title);
-	return DROP_EMIT(this, trackTitleChanged);
-}
-
-DropEmitter MprisPlayer::setTrackAlbum(QString album) {
-	if (album == this->mTrackAlbum) return DropEmitter();
-
-	this->mTrackAlbum = std::move(album);
-	return DROP_EMIT(this, trackAlbumChanged);
-}
-
-DropEmitter MprisPlayer::setTrackAlbumArtist(QString albumArtist) {
-	if (albumArtist == this->mTrackAlbumArtist) return DropEmitter();
-
-	this->mTrackAlbumArtist = std::move(albumArtist);
-	return DROP_EMIT(this, trackAlbumArtistChanged);
-}
-
-DropEmitter MprisPlayer::setTrackArtists(QVector<QString> artists) {
-	if (artists == this->mTrackArtists) return DropEmitter();
-
-	this->mTrackArtists = std::move(artists);
-	return DROP_EMIT(this, trackArtistsChanged);
-}
-
-DropEmitter MprisPlayer::setTrackArtUrl(QString artUrl) {
-	if (artUrl == this->mTrackArtUrl) return DropEmitter();
-
-	this->mTrackArtUrl = std::move(artUrl);
-	return DROP_EMIT(this, trackArtUrlChanged);
-}
+DEFINE_MEMBER_GETSET(MprisPlayer, trackTitle, setTrackTitle);
+DEFINE_MEMBER_GETSET(MprisPlayer, trackArtists, setTrackArtists);
+DEFINE_MEMBER_GETSET(MprisPlayer, trackAlbum, setTrackAlbum);
+DEFINE_MEMBER_GETSET(MprisPlayer, trackAlbumArtist, setTrackAlbumArtist);
+DEFINE_MEMBER_GETSET(MprisPlayer, trackArtUrl, setTrackArtUrl);
 
 MprisPlaybackState::Enum MprisPlayer::playbackState() const { return this->mPlaybackState; }
 
@@ -426,9 +370,7 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 }
 
 void MprisPlayer::play() { this->setPlaybackState(MprisPlaybackState::Playing); }
-
 void MprisPlayer::pause() { this->setPlaybackState(MprisPlaybackState::Paused); }
-
 void MprisPlayer::stop() { this->setPlaybackState(MprisPlaybackState::Stopped); }
 
 void MprisPlayer::togglePlaying() {
