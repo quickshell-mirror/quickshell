@@ -55,7 +55,11 @@ void SystemClock::update() {
 		else if (minutePrecision) nextTime = nextTime.addSecs(60);
 		else if (hourPrecision) nextTime = nextTime.addSecs(3600);
 
-		this->timer.start(time.msecsTo(nextTime));
+		auto delay = time.msecsTo(nextTime);
+		// day rollover
+		if (delay < 0) delay += 86400000;
+
+		this->timer.start(delay);
 	} else {
 		this->timer.stop();
 	}
