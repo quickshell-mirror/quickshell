@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qdatetime.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtimer.h>
@@ -49,7 +50,7 @@ signals:
 	void secondsChanged();
 
 private slots:
-	void update();
+	void onTimeout();
 
 private:
 	bool mEnabled = true;
@@ -58,6 +59,11 @@ private:
 	quint32 mMinutes = 0;
 	quint32 mSeconds = 0;
 	QTimer timer;
+	QTime nextTime;
+
+	void update();
+	void setTime(QTime time);
+	void schedule(QTime floor);
 
 	DECLARE_PRIVATE_MEMBER(SystemClock, hours, setHours, mHours, hoursChanged);
 	DECLARE_PRIVATE_MEMBER(SystemClock, minutes, setMinutes, mMinutes, minutesChanged);
