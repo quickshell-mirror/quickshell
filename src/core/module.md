@@ -27,5 +27,6 @@ headers = [
 	"popupanchor.hpp",
 	"types.hpp",
 	"qsmenuanchor.hpp",
+	"clock.hpp",
 ]
 -----
