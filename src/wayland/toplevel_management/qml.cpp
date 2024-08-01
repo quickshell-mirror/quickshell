@@ -3,6 +3,7 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
+#include "../../core/util.hpp"
 #include "../../core/model.hpp"
 #include "../../core/proxywindow.hpp"
 #include "../../core/qmlscreen.hpp"
@@ -132,22 +133,49 @@ ObjectModel<Toplevel>* ToplevelManager::toplevels() { return &this->mToplevels; 
 
 void ToplevelManager::onToplevelReady(impl::ToplevelHandle* handle) {
 	auto* toplevel = new Toplevel(handle, this);
+
+	// clang-format off
 	QObject::connect(toplevel, &Toplevel::closed, this, &ToplevelManager::onToplevelClosed);
+	QObject::connect(toplevel, &Toplevel::activatedChanged, this, &ToplevelManager::onToplevelActiveChanged);
+	// clang-format on
+
+	if (toplevel->activated()) this->setActiveToplevel(toplevel);
 	this->mToplevels.insertObject(toplevel);
+}
+
+void ToplevelManager::onToplevelActiveChanged() {
+	auto* toplevel = qobject_cast<Toplevel*>(this->sender());
+	if (toplevel->activated()) this->setActiveToplevel(toplevel);
 }
 
 void ToplevelManager::onToplevelClosed() {
 	auto* toplevel = qobject_cast<Toplevel*>(this->sender());
+	if (toplevel == this->mActiveToplevel) this->setActiveToplevel(nullptr);
 	this->mToplevels.removeObject(toplevel);
 }
+
+DEFINE_MEMBER_GETSET(ToplevelManager, activeToplevel, setActiveToplevel);
 
 ToplevelManager* ToplevelManager::instance() {
 	static auto* instance = new ToplevelManager(); // NOLINT
 	return instance;
 }
 
+ToplevelManagerQml::ToplevelManagerQml(QObject* parent): QObject(parent) {
+	QObject::connect(
+	    ToplevelManager::instance(),
+	    &ToplevelManager::activeToplevelChanged,
+	    this,
+	    &ToplevelManagerQml::activeToplevelChanged
+	);
+}
+
 ObjectModel<Toplevel>* ToplevelManagerQml::toplevels() {
 	return ToplevelManager::instance()->toplevels();
+}
+
+Toplevel* ToplevelManagerQml::activeToplevel() {
+	return ToplevelManager::instance()->activeToplevel();
 }
 
 } // namespace qs::wayland::toplevel_management

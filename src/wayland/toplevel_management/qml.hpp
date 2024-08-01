@@ -7,6 +7,7 @@
 #include "../../core/model.hpp"
 #include "../../core/proxywindow.hpp"
 #include "../../core/qmlscreen.hpp"
+#include "../../core/util.hpp"
 
 namespace qs::wayland::toplevel_management {
 
@@ -111,14 +112,27 @@ public:
 
 	static ToplevelManager* instance();
 
+signals:
+	void activeToplevelChanged();
+
 private slots:
 	void onToplevelReady(impl::ToplevelHandle* handle);
+	void onToplevelActiveChanged();
 	void onToplevelClosed();
 
 private:
 	explicit ToplevelManager();
 
 	ObjectModel<Toplevel> mToplevels {this};
+	Toplevel* mActiveToplevel = nullptr;
+
+	DECLARE_PRIVATE_MEMBER(
+	    ToplevelManager,
+	    activeToplevel,
+	    setActiveToplevel,
+	    mActiveToplevel,
+	    activeToplevelChanged
+	);
 };
 
 ///! Exposes a list of Toplevels.
@@ -127,14 +141,24 @@ private:
 /// wayland protocol.
 class ToplevelManagerQml: public QObject {
 	Q_OBJECT;
+	/// All toplevel windows exposed by the compositor.
 	Q_PROPERTY(ObjectModel<Toplevel>* toplevels READ toplevels CONSTANT);
+	/// Active toplevel or null.
+	///
+	/// > [!INFO] If multiple are active, this will be the most recently activated one.
+	/// > Usually compositors will not report more than one toplevel as active at a time.
+	Q_PROPERTY(Toplevel* activeToplevel READ activeToplevel NOTIFY activeToplevelChanged);
 	QML_NAMED_ELEMENT(ToplevelManager);
 	QML_SINGLETON;
 
 public:
-	explicit ToplevelManagerQml(QObject* parent = nullptr): QObject(parent) {}
+	explicit ToplevelManagerQml(QObject* parent = nullptr);
 
 	[[nodiscard]] static ObjectModel<Toplevel>* toplevels();
+	[[nodiscard]] static Toplevel* activeToplevel();
+
+signals:
+	void activeToplevelChanged();
 };
 
 } // namespace qs::wayland::toplevel_management
