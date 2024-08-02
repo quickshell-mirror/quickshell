@@ -62,18 +62,9 @@
 
   QTWAYLANDSCANNER = lib.optionalString withWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
-  configurePhase = let
-    cmakeBuildType = if debug
-                     then "Debug"
-                     else "RelWithDebInfo";
-  in ''
-    cmakeBuildType=${cmakeBuildType} # qt6 setup hook resets this for some godforsaken reason
-    cmakeConfigurePhase
-  '';
+  cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
-  cmakeFlags = [
-    "-DGIT_REVISION=${gitRev}"
-  ]
+  cmakeFlags = [ "-DGIT_REVISION=${gitRev}" ]
   ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
   ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
   ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"
@@ -82,7 +73,13 @@
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;
-  dontStrip = true;
+
+  # How to get debuginfo in gdb from a release build:
+  # 1. build `quickshell.debug`
+  # 2. set NIX_DEBUG_INFO_DIRS="<quickshell.debug store path>/lib/debug"
+  # 3. launch gdb / coredumpctl and debuginfo will work
+  separateDebugInfo = !debug;
+  dontStrip = debug;
 
   meta = with lib; {
     homepage = "https://git.outfoxxed.me/outfoxxed/quickshell";
