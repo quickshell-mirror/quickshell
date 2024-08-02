@@ -143,7 +143,7 @@ class MemberMetadata {
 public:
 	using Type = Traits::Type;
 	using Ref = const Type&;
-	using Ret = std::conditional_t<signal == nullptr, void, DropEmitter>;
+	using Ret = std::conditional_t<std::is_null_pointer_v<decltype(signal)>, void, DropEmitter>;
 
 	static Ref get(const Class* obj) { return obj->*member; }
 
