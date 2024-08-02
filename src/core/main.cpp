@@ -5,6 +5,7 @@
 #include <qcommandlineoption.h>
 #include <qcommandlineparser.h>
 #include <qcoreapplication.h>
+#include <qcryptographichash.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qguiapplication.h>
@@ -31,10 +32,12 @@ int qs_main(int argc, char** argv) {
 	auto useQApplication = false;
 	auto nativeTextRendering = false;
 	auto desktopSettingsAware = true;
+	auto shellId = QString();
 	QHash<QString, QString> envOverrides;
 
 	int debugPort = -1;
 	bool waitForDebug = false;
+	bool printCurrent = false;
 
 	{
 		const auto app = QCoreApplication(argc, argv);
@@ -85,7 +88,7 @@ int qs_main(int argc, char** argv) {
 		}
 
 		{
-			auto printCurrent = parser.isSet(currentOption);
+			printCurrent = parser.isSet(currentOption);
 
 			// NOLINTBEGIN
 #define CHECK(rname, name, level, label, expr)                                                     \
@@ -274,9 +277,9 @@ int qs_main(int argc, char** argv) {
 #undef CHECK
 #undef OPTSTR
 
-			qInfo() << "config file path:" << configFilePath;
+			shellId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
 
-			if (printCurrent) return 0;
+			qInfo() << "config file path:" << configFilePath;
 		}
 
 		if (!QFile(configFilePath).exists()) {
@@ -315,6 +318,8 @@ int qs_main(int argc, char** argv) {
 					auto var = envPragma.sliced(0, splitIdx).trimmed();
 					auto val = envPragma.sliced(splitIdx + 1).trimmed();
 					envOverrides.insert(var, val);
+				} else if (pragma.startsWith("ShellId ")) {
+					shellId = pragma.sliced(8).trimmed();
 				} else {
 					qCritical() << "Unrecognized pragma" << pragma;
 					return -1;
@@ -323,6 +328,12 @@ int qs_main(int argc, char** argv) {
 		}
 
 		file.close();
+	}
+
+
+	if (printCurrent) {
+		qInfo() << "shell id:" << shellId;
+		return 0;
 	}
 
 	for (auto [var, val]: envOverrides.asKeyValueRange()) {
@@ -396,7 +407,7 @@ int qs_main(int argc, char** argv) {
 		QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 	}
 
-	auto root = RootWrapper(configFilePath);
+	auto root = RootWrapper(configFilePath, shellId);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
 
 	auto code = QGuiApplication::exec();

@@ -16,10 +16,11 @@
 #include "scan.hpp"
 #include "shell.hpp"
 
-RootWrapper::RootWrapper(QString rootPath)
-    : QObject(nullptr)
-    , rootPath(std::move(rootPath))
-    , originalWorkingDirectory(QDir::current().absolutePath()) {
+RootWrapper::RootWrapper(QString rootPath, QString shellId)
+		: QObject(nullptr)
+		, rootPath(std::move(rootPath))
+		, shellId(std::move(shellId))
+		, originalWorkingDirectory(QDir::current().absolutePath()) {
 	// clang-format off
 	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &RootWrapper::onWatchFilesChanged);
 	// clang-format on
