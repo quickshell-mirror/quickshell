@@ -329,12 +329,15 @@ int qs_main(int argc, char** argv) {
 		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
-	// The simple animation driver seems to work far better than the default one
-	// when more than one window is in use, and even with a single window appears
-	// to improve animation quality.
-	if (!qEnvironmentVariableIsSet("QSG_USE_SIMPLE_ANIMATION_DRIVER")) {
-		qputenv("QSG_USE_SIMPLE_ANIMATION_DRIVER", "1");
-	}
+	// While the simple animation driver can lead to better animations in some cases,
+	// it also can cause excessive repainting at excessively high framerates which can
+	// lead to noticeable amounts of gpu usage, including overheating on some systems.
+	// This gets worse the more windows are open, as repaints trigger on all of them for
+	// some reason. See QTBUG-126099 for details.
+
+	// if (!qEnvironmentVariableIsSet("QSG_USE_SIMPLE_ANIMATION_DRIVER")) {
+	// 	qputenv("QSG_USE_SIMPLE_ANIMATION_DRIVER", "1");
+	// }
 
 	// Some programs place icons in the pixmaps folder instead of the icons folder.
 	// This seems to be controlled by the QPA and qt6ct does not provide it.
