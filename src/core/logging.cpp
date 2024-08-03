@@ -5,70 +5,61 @@
 #include <qlogging.h>
 #include <qstring.h>
 #include <qtenvironmentvariables.h>
+#include <qtextstream.h>
+#include <qtmetamacros.h>
 
-namespace {
+LogManager::LogManager(): colorLogs(qEnvironmentVariableIsEmpty("NO_COLOR")), stdoutStream(stdout) {
+	qInstallMessageHandler(&LogManager::messageHandler);
+}
 
-bool COLOR_LOGS = false; // NOLINT
-
-void formatMessage(
+void LogManager::messageHandler(
     QtMsgType type,
     const QMessageLogContext& context,
-    const QString& msg,
-    bool color
+    const QString& msg
 ) {
-	const auto* typeString = "[log error]";
+	auto message = LogMessage(type, context.category, msg.toUtf8());
 
-	if (color) {
-		switch (type) {
-		case QtDebugMsg: typeString = "\033[34m DEBUG"; break;
-		case QtInfoMsg: typeString = "\033[32m  INFO"; break;
-		case QtWarningMsg: typeString = "\033[33m  WARN"; break;
-		case QtCriticalMsg: typeString = "\033[31m ERROR"; break;
-		case QtFatalMsg: typeString = "\033[31m FATAL"; break;
-		}
-	} else {
-		switch (type) {
-		case QtDebugMsg: typeString = " DEBUG"; break;
-		case QtInfoMsg: typeString = "  INFO"; break;
-		case QtWarningMsg: typeString = "  WARN"; break;
-		case QtCriticalMsg: typeString = " ERROR"; break;
-		case QtFatalMsg: typeString = " FATAL"; break;
-		}
-	}
+	auto* self = LogManager::instance();
 
-	const auto isDefault = strcmp(context.category, "default") == 0;
+	LogManager::formatMessage(self->stdoutStream, message, self->colorLogs);
+	self->stdoutStream << Qt::endl;
 
-	const char* format = nullptr;
-
-	if (color) {
-		if (type == QtFatalMsg) {
-			if (isDefault) format = "%s: %s\033[0m\n";
-			else format = "%s %s: %s\033[0m\n";
-		} else {
-			if (isDefault) format = "%s\033[0m: %s\n";
-			else format = "%s \033[97m%s\033[0m: %s\n";
-		}
-	} else {
-		if (isDefault) format = "%s: %s\n";
-		else format = "%s %s: %s\n";
-	}
-
-	if (isDefault) {
-		printf(format, typeString, msg.toStdString().c_str());
-	} else {
-		printf(format, typeString, context.category, msg.toStdString().c_str());
-	}
-
-	fflush(stdout);
+	emit self->logMessage(message);
 }
 
-void messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
-	formatMessage(type, context, msg, COLOR_LOGS);
+LogManager* LogManager::instance() {
+	static auto* instance = new LogManager(); // NOLINT
+	return instance;
 }
 
-} // namespace
+void LogManager::formatMessage(QTextStream& stream, const LogMessage& msg, bool color) {
+	if (color) {
+		switch (msg.type) {
+		case QtDebugMsg: stream << "\033[34m DEBUG"; break;
+		case QtInfoMsg: stream << "\033[32m  INFO"; break;
+		case QtWarningMsg: stream << "\033[33m  WARN"; break;
+		case QtCriticalMsg: stream << "\033[31m ERROR"; break;
+		case QtFatalMsg: stream << "\033[31m FATAL"; break;
+		}
+	} else {
+		switch (msg.type) {
+		case QtDebugMsg: stream << " DEBUG"; break;
+		case QtInfoMsg: stream << "  INFO"; break;
+		case QtWarningMsg: stream << "  WARN"; break;
+		case QtCriticalMsg: stream << " ERROR"; break;
+		case QtFatalMsg: stream << " FATAL"; break;
+		}
+	}
 
-void LogManager::setup() {
-	COLOR_LOGS = qEnvironmentVariableIsEmpty("NO_COLOR");
-	qInstallMessageHandler(&messageHandler);
+	const auto isDefault = strcmp(msg.category, "default") == 0;
+
+	if (color && !isDefault && msg.type != QtFatalMsg) stream << "\033[97m";
+
+	if (!isDefault) {
+		stream << ' ' << msg.category;
+	}
+
+	if (color && msg.type != QtFatalMsg) stream << "\033[0m";
+
+	stream << ": " << msg.body;
 }

@@ -22,12 +22,14 @@
 #include <qtextstream.h>
 #include <qtpreprocessorsupport.h>
 
+#include "filelogger.hpp"
 #include "logging.hpp"
+#include "paths.hpp"
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
 
 int qs_main(int argc, char** argv) {
-	LogManager::setup();
+	LogManager::instance();
 	QString configFilePath;
 	QString workingDirectory;
 
@@ -340,6 +342,8 @@ int qs_main(int argc, char** argv) {
 		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
+	QsPaths::init(shellId);
+
 	// While the simple animation driver can lead to better animations in some cases,
 	// it also can cause excessive repainting at excessively high framerates which can
 	// lead to noticeable amounts of gpu usage, including overheating on some systems.
@@ -385,6 +389,8 @@ int qs_main(int argc, char** argv) {
 	} else {
 		app = new QGuiApplication(argc, argv);
 	}
+
+	FileLoggerThread::init();
 
 	if (debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);

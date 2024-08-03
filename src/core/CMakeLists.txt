@@ -38,6 +38,8 @@ qt_add_library(quickshell-core STATIC
 	qsmenuanchor.cpp
 	clock.cpp
 	logging.cpp
+	paths.cpp
+	filelogger.cpp
 )
 
 set_source_files_properties(main.cpp PROPERTIES COMPILE_DEFINITIONS GIT_REVISION="${GIT_REVISION}")
