@@ -22,10 +22,12 @@
 #include <qtextstream.h>
 #include <qtpreprocessorsupport.h>
 
+#include "logging.hpp"
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
 
 int qs_main(int argc, char** argv) {
+	LogManager::setup();
 	QString configFilePath;
 	QString workingDirectory;
 
@@ -330,11 +332,9 @@ int qs_main(int argc, char** argv) {
 		file.close();
 	}
 
+	qInfo() << "shell id:" << shellId;
 
-	if (printCurrent) {
-		qInfo() << "shell id:" << shellId;
-		return 0;
-	}
+	if (printCurrent) return 0;
 
 	for (auto [var, val]: envOverrides.asKeyValueRange()) {
 		qputenv(var.toUtf8(), val.toUtf8());
