@@ -21,7 +21,6 @@ void QsPaths::init(QString shellId) { QsPaths::instance()->shellId = std::move(s
 QDir* QsPaths::cacheDir() {
 	if (this->cacheState == DirState::Unknown) {
 		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
-		dir = QDir(dir.filePath("quickshell"));
 		dir = QDir(dir.filePath(this->shellId));
 		this->mCacheDir = dir;
 

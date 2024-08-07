@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <qdatetime.h>
+#include <qfile.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qtextstream.h>
@@ -26,10 +27,44 @@ struct LogMessage {
 	QByteArray body;
 };
 
+class ThreadLogging: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit ThreadLogging(QObject* parent): QObject(parent) {}
+
+	void init();
+	void initFs();
+	void setupFileLogging();
+
+private slots:
+	void onMessage(const LogMessage& msg);
+
+private:
+	QFile* file = nullptr;
+	QTextStream fileStream;
+};
+
+class LoggingThreadProxy: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit LoggingThreadProxy() = default;
+
+public slots:
+	void initInThread();
+	void initFs();
+
+private:
+	ThreadLogging* logging = nullptr;
+};
+
 class LogManager: public QObject {
 	Q_OBJECT;
 
 public:
+	static void init();
+	static void initFs();
 	static LogManager* instance();
 
 	static void formatMessage(QTextStream& stream, const LogMessage& msg, bool color, bool timestamp);
@@ -43,4 +78,5 @@ private:
 
 	bool colorLogs;
 	QTextStream stdoutStream;
+	LoggingThreadProxy threadProxy;
 };

@@ -22,14 +22,12 @@
 #include <qtextstream.h>
 #include <qtpreprocessorsupport.h>
 
-#include "filelogger.hpp"
 #include "logging.hpp"
 #include "paths.hpp"
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
 
 int qs_main(int argc, char** argv) {
-	LogManager::instance();
 	QString configFilePath;
 	QString workingDirectory;
 
@@ -47,6 +45,9 @@ int qs_main(int argc, char** argv) {
 		const auto app = QCoreApplication(argc, argv);
 		QCoreApplication::setApplicationName("quickshell");
 		QCoreApplication::setApplicationVersion("0.1.0 (" GIT_REVISION ")");
+
+		// Start log manager - has to happen with an active event loop or offthread can't be started.
+		LogManager::init();
 
 		QCommandLineParser parser;
 		parser.addHelpOption();
@@ -390,7 +391,7 @@ int qs_main(int argc, char** argv) {
 		app = new QGuiApplication(argc, argv);
 	}
 
-	FileLoggerThread::init();
+	LogManager::initFs();
 
 	if (debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);

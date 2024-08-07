@@ -3,14 +3,25 @@
 #include <cstring>
 
 #include <qlogging.h>
+#include <qloggingcategory.h>
+#include <qnamespace.h>
+#include <qobject.h>
+#include <qobjectdefs.h>
 #include <qstring.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
+#include <qthread.h>
 #include <qtmetamacros.h>
+#include <sys/mman.h>
+#include <sys/sendfile.h>
 
-LogManager::LogManager(): colorLogs(qEnvironmentVariableIsEmpty("NO_COLOR")), stdoutStream(stdout) {
-	qInstallMessageHandler(&LogManager::messageHandler);
-}
+#include "paths.hpp"
+
+Q_LOGGING_CATEGORY(logLogging, "quickshell.logging", QtWarningMsg);
+
+LogManager::LogManager()
+    : colorLogs(qEnvironmentVariableIsEmpty("NO_COLOR"))
+    , stdoutStream(stdout) {}
 
 void LogManager::messageHandler(
     QtMsgType type,
@@ -30,6 +41,27 @@ void LogManager::messageHandler(
 LogManager* LogManager::instance() {
 	static auto* instance = new LogManager(); // NOLINT
 	return instance;
+}
+
+void LogManager::init() {
+	auto* instance = LogManager::instance();
+
+	qInstallMessageHandler(&LogManager::messageHandler);
+
+	qCDebug(logLogging) << "Creating offthread logger...";
+	auto* thread = new QThread();
+	instance->threadProxy.moveToThread(thread);
+	thread->start();
+	QMetaObject::invokeMethod(&instance->threadProxy, "initInThread", Qt::BlockingQueuedConnection);
+	qCDebug(logLogging) << "Logger initialized.";
+}
+
+void LogManager::initFs() {
+	QMetaObject::invokeMethod(
+	    &LogManager::instance()->threadProxy,
+	    "initFs",
+	    Qt::BlockingQueuedConnection
+	);
 }
 
 void LogManager::formatMessage(
@@ -74,4 +106,89 @@ void LogManager::formatMessage(
 	stream << ": " << msg.body;
 
 	if (color && msg.type == QtFatalMsg) stream << "\033[0m";
+}
+
+void LoggingThreadProxy::initInThread() {
+	this->logging = new ThreadLogging(this);
+	this->logging->init();
+}
+
+void LoggingThreadProxy::initFs() { this->logging->initFs(); }
+
+void ThreadLogging::init() {
+	auto mfd = memfd_create("quickshell:logs", 0);
+
+	if (mfd == -1) {
+		qCCritical(logLogging) << "Failed to create memfd for initial log storage"
+		                       << qt_error_string(-1);
+		return;
+	}
+
+	this->file = new QFile();
+	this->file->open(mfd, QFile::WriteOnly, QFile::AutoCloseHandle);
+	this->fileStream.setDevice(this->file);
+
+	// This connection is direct so it works while the event loop is destroyed between
+	// QCoreApplication delete and Q(Gui)Application launch.
+	QObject::connect(
+	    LogManager::instance(),
+	    &LogManager::logMessage,
+	    this,
+	    &ThreadLogging::onMessage,
+	    Qt::DirectConnection
+	);
+
+	qCDebug(logLogging) << "Created memfd" << mfd << "for early logs.";
+}
+
+void ThreadLogging::initFs() {
+
+	qCDebug(logLogging) << "Starting filesystem logging...";
+	auto* runDir = QsPaths::instance()->instanceRunDir();
+
+	if (!runDir) {
+		qCCritical(logLogging
+		) << "Could not start filesystem logging as the runtime directory could not be created.";
+		return;
+	}
+
+	auto path = runDir->filePath("log.log");
+	auto* file = new QFile(path);
+
+	if (!file->open(QFile::WriteOnly | QFile::Truncate)) {
+		qCCritical(logLogging
+		) << "Could not start filesystem logger as the log file could not be created:"
+		  << path;
+		return;
+	}
+
+	qCDebug(logLogging) << "Copying memfd logs to log file...";
+
+	auto* oldFile = this->file;
+	oldFile->seek(0);
+	sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
+	this->file = file;
+	this->fileStream.setDevice(file);
+	delete oldFile;
+
+	qCDebug(logLogging) << "Switched logging to disk logs.";
+
+	auto* logManager = LogManager::instance();
+	QObject::disconnect(logManager, &LogManager::logMessage, this, &ThreadLogging::onMessage);
+
+	QObject::connect(
+	    logManager,
+	    &LogManager::logMessage,
+	    this,
+	    &ThreadLogging::onMessage,
+	    Qt::QueuedConnection
+	);
+
+	qCDebug(logLogging) << "Switched threaded logger to queued eventloop connection.";
+}
+
+void ThreadLogging::onMessage(const LogMessage& msg) {
+	if (this->fileStream.device() == nullptr) return;
+	LogManager::formatMessage(this->fileStream, msg, false, true);
+	this->fileStream << Qt::endl;
 }
