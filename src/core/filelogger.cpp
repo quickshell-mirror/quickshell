@@ -55,6 +55,6 @@ void FileLogger::init() {
 }
 
 void FileLogger::onMessage(const LogMessage& msg) {
-	LogManager::formatMessage(this->fileStream, msg, false);
+	LogManager::formatMessage(this->fileStream, msg, false, true);
 	this->fileStream << Qt::endl;
 }

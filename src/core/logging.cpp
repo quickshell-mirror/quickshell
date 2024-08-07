@@ -21,7 +21,7 @@ void LogManager::messageHandler(
 
 	auto* self = LogManager::instance();
 
-	LogManager::formatMessage(self->stdoutStream, message, self->colorLogs);
+	LogManager::formatMessage(self->stdoutStream, message, self->colorLogs, false);
 	self->stdoutStream << Qt::endl;
 
 	emit self->logMessage(message);
@@ -32,7 +32,17 @@ LogManager* LogManager::instance() {
 	return instance;
 }
 
-void LogManager::formatMessage(QTextStream& stream, const LogMessage& msg, bool color) {
+void LogManager::formatMessage(
+    QTextStream& stream,
+    const LogMessage& msg,
+    bool color,
+    bool timestamp
+) {
+	if (timestamp) {
+		if (color) stream << "\033[90m";
+		stream << msg.time.toString("yyyy-MM-dd hh:mm:ss.zzz");
+	}
+
 	if (color) {
 		switch (msg.type) {
 		case QtDebugMsg: stream << "\033[34m DEBUG"; break;
@@ -62,4 +72,6 @@ void LogManager::formatMessage(QTextStream& stream, const LogMessage& msg, bool 
 	if (color && msg.type != QtFatalMsg) stream << "\033[0m";
 
 	stream << ": " << msg.body;
+
+	if (color && msg.type == QtFatalMsg) stream << "\033[0m";
 }
