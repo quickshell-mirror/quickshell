@@ -1,5 +1,6 @@
 #include "popupanchor.hpp"
 
+#include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qsize.h>
@@ -168,20 +169,56 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	             : anchorEdges.testFlag(Edges::Bottom) ? anchorRectGeometry.bottom()
 	                                                   : anchorRectGeometry.center().y();
 
-	auto calcEffectiveX = [&]() {
-		return anchorGravity.testFlag(Edges::Left)  ? anchorX - windowGeometry.width() + 1
-		     : anchorGravity.testFlag(Edges::Right) ? anchorX
-		                                            : anchorX - windowGeometry.width() / 2;
+	auto calcEffectiveX = [&](Edges::Flags anchorGravity, int anchorX) {
+		auto ex = anchorGravity.testFlag(Edges::Left)  ? anchorX - windowGeometry.width()
+		        : anchorGravity.testFlag(Edges::Right) ? anchorX - 1
+		                                               : anchorX - windowGeometry.width() / 2;
+
+		return ex + 1;
 	};
 
-	auto calcEffectiveY = [&]() {
-		return anchorGravity.testFlag(Edges::Top)    ? anchorY - windowGeometry.height() + 1
-		     : anchorGravity.testFlag(Edges::Bottom) ? anchorY
-		                                             : anchorY - windowGeometry.height() / 2;
+	auto calcEffectiveY = [&](Edges::Flags anchorGravity, int anchorY) {
+		auto ey = anchorGravity.testFlag(Edges::Top)    ? anchorY - windowGeometry.height()
+		        : anchorGravity.testFlag(Edges::Bottom) ? anchorY - 1
+		                                                : anchorY - windowGeometry.height() / 2;
+
+		return ey + 1;
 	};
 
-	auto effectiveX = calcEffectiveX();
-	auto effectiveY = calcEffectiveY();
+	auto calcRemainingWidth = [&](int effectiveX) {
+		auto width = windowGeometry.width();
+		if (effectiveX < screenGeometry.left()) {
+			auto diff = screenGeometry.left() - effectiveX;
+			effectiveX = screenGeometry.left();
+			width -= diff;
+		}
+
+		auto effectiveX2 = effectiveX + width;
+		if (effectiveX2 > screenGeometry.right()) {
+			width -= effectiveX2 - screenGeometry.right() - 1;
+		}
+
+		return QPair<int, int>(effectiveX, width);
+	};
+
+	auto calcRemainingHeight = [&](int effectiveY) {
+		auto height = windowGeometry.height();
+		if (effectiveY < screenGeometry.left()) {
+			auto diff = screenGeometry.top() - effectiveY;
+			effectiveY = screenGeometry.top();
+			height -= diff;
+		}
+
+		auto effectiveY2 = effectiveY + height;
+		if (effectiveY2 > screenGeometry.bottom()) {
+			height -= effectiveY2 - screenGeometry.bottom() - 1;
+		}
+
+		return QPair<int, int>(effectiveY, height);
+	};
+
+	auto effectiveX = calcEffectiveX(anchorGravity, anchorX);
+	auto effectiveY = calcEffectiveY(anchorGravity, anchorY);
 
 	if (adjustment.testFlag(PopupAdjustment::FlipX)) {
 		const bool flip = (anchorGravity.testFlag(Edges::Left) && effectiveX < screenGeometry.left())
@@ -189,13 +226,22 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 		                   && effectiveX + windowGeometry.width() > screenGeometry.right());
 
 		if (flip) {
-			anchorGravity ^= Edges::Left | Edges::Right;
+			auto newAnchorGravity = anchorGravity ^ (Edges::Left | Edges::Right);
 
-			anchorX = anchorEdges.testFlags(Edges::Left)  ? anchorRectGeometry.right()
-			        : anchorEdges.testFlags(Edges::Right) ? anchorRectGeometry.left()
-			                                              : anchorX;
+			auto newAnchorX = anchorEdges.testFlags(Edges::Left)  ? anchorRectGeometry.right()
+			                : anchorEdges.testFlags(Edges::Right) ? anchorRectGeometry.left()
+			                                                      : anchorX;
 
-			effectiveX = calcEffectiveX();
+			auto newEffectiveX = calcEffectiveX(newAnchorGravity, newAnchorX);
+
+			// TODO IN HL: pick constraint monitor based on anchor rect position in window
+
+			// if the available width when flipped is more than the available width without flipping then flip
+			if (calcRemainingWidth(newEffectiveX).second > calcRemainingWidth(effectiveX).second) {
+				anchorGravity = newAnchorGravity;
+				anchorX = newAnchorX;
+				effectiveX = newEffectiveX;
+			}
 		}
 	}
 
@@ -205,13 +251,20 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 		                   && effectiveY + windowGeometry.height() > screenGeometry.bottom());
 
 		if (flip) {
-			anchorGravity ^= Edges::Top | Edges::Bottom;
+			auto newAnchorGravity = anchorGravity ^ (Edges::Top | Edges::Bottom);
 
-			anchorY = anchorEdges.testFlags(Edges::Top)    ? anchorRectGeometry.bottom()
-			        : anchorEdges.testFlags(Edges::Bottom) ? anchorRectGeometry.top()
-			                                               : anchorY;
+			auto newAnchorY = anchorEdges.testFlags(Edges::Top)    ? anchorRectGeometry.bottom()
+			                : anchorEdges.testFlags(Edges::Bottom) ? anchorRectGeometry.top()
+			                                                       : anchorY;
 
-			effectiveY = calcEffectiveY();
+			auto newEffectiveY = calcEffectiveY(newAnchorGravity, newAnchorY);
+
+			// if the available width when flipped is more than the available width without flipping then flip
+			if (calcRemainingHeight(newEffectiveY).second > calcRemainingHeight(effectiveY).second) {
+				anchorGravity = newAnchorGravity;
+				anchorY = newAnchorY;
+				effectiveY = newEffectiveY;
+			}
 		}
 	}
 
@@ -237,29 +290,15 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::ResizeX)) {
-		if (effectiveX < screenGeometry.left()) {
-			auto diff = screenGeometry.left() - effectiveX;
-			effectiveX = screenGeometry.left();
-			width -= diff;
-		}
-
-		auto effectiveX2 = effectiveX + windowGeometry.width();
-		if (effectiveX2 > screenGeometry.right()) {
-			width -= effectiveX2 - screenGeometry.right() - 1;
-		}
+		auto [newX, newWidth] = calcRemainingWidth(effectiveX);
+		effectiveX = newX;
+		width = newWidth;
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::ResizeY)) {
-		if (effectiveY < screenGeometry.top()) {
-			auto diff = screenGeometry.top() - effectiveY;
-			effectiveY = screenGeometry.top();
-			height -= diff;
-		}
-
-		auto effectiveY2 = effectiveY + windowGeometry.height();
-		if (effectiveY2 > screenGeometry.bottom()) {
-			height -= effectiveY2 - screenGeometry.bottom() - 1;
-		}
+		auto [newY, newHeight] = calcRemainingHeight(effectiveY);
+		effectiveY = newY;
+		height = newHeight;
 	}
 
 	window->setGeometry({effectiveX, effectiveY, width, height});
