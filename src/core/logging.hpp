@@ -2,17 +2,22 @@
 
 #include <utility>
 
+#include <qcontainerfwd.h>
 #include <qdatetime.h>
-#include <qfile.h>
+#include <qhash.h>
+#include <qlatin1stringview.h>
 #include <qlogging.h>
 #include <qobject.h>
-#include <qtextstream.h>
 #include <qtmetamacros.h>
 
+namespace qs::log {
+
 struct LogMessage {
+	explicit LogMessage() = default;
+
 	explicit LogMessage(
 	    QtMsgType type,
-	    const char* category,
+	    QLatin1StringView category,
 	    QByteArray body,
 	    QDateTime time = QDateTime::currentDateTime()
 	)
@@ -21,29 +26,19 @@ struct LogMessage {
 	    , category(category)
 	    , body(std::move(body)) {}
 
-	QtMsgType type;
+	bool operator==(const LogMessage& other) const;
+
+	QtMsgType type = QtDebugMsg;
 	QDateTime time;
-	const char* category;
+	QLatin1StringView category;
 	QByteArray body;
+
+	static void formatMessage(QTextStream& stream, const LogMessage& msg, bool color, bool timestamp);
 };
 
-class ThreadLogging: public QObject {
-	Q_OBJECT;
+size_t qHash(const LogMessage& message);
 
-public:
-	explicit ThreadLogging(QObject* parent): QObject(parent) {}
-
-	void init();
-	void initFs();
-	void setupFileLogging();
-
-private slots:
-	void onMessage(const LogMessage& msg);
-
-private:
-	QFile* file = nullptr;
-	QTextStream fileStream;
-};
+class ThreadLogging;
 
 class LoggingThreadProxy: public QObject {
 	Q_OBJECT;
@@ -67,7 +62,7 @@ public:
 	static void initFs();
 	static LogManager* instance();
 
-	static void formatMessage(QTextStream& stream, const LogMessage& msg, bool color, bool timestamp);
+	bool colorLogs;
 
 signals:
 	void logMessage(LogMessage msg);
@@ -76,7 +71,12 @@ private:
 	explicit LogManager();
 	static void messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
-	bool colorLogs;
 	QTextStream stdoutStream;
 	LoggingThreadProxy threadProxy;
 };
+
+bool readEncodedLogs(QIODevice* device);
+
+} // namespace qs::log
+
+using LogManager = qs::log::LogManager;

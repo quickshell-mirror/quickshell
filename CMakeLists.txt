@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTING "Build tests" OFF)
-option(ASAN "Enable ASAN" OFF)
+option(ASAN "Enable ASAN" OFF) # note: better output with gcc than clang
 option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
 
 option(USE_JEMALLOC "Use jemalloc over the system malloc implementation" ON)

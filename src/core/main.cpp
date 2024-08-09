@@ -61,6 +61,7 @@ int qs_main(int argc, char** argv) {
 		auto workdirOption = QCommandLineOption({"d", "workdir"}, "Initial working directory.", "path");
 		auto debugPortOption = QCommandLineOption("debugport", "Enable the QML debugger.", "port");
 		auto debugWaitOption = QCommandLineOption("waitfordebug", "Wait for debugger connection before launching.");
+		auto readLogOption = QCommandLineOption("read-log", "Read a quickshell log file to stdout.", "path");
 		// clang-format on
 
 		parser.addOption(currentOption);
@@ -70,7 +71,21 @@ int qs_main(int argc, char** argv) {
 		parser.addOption(workdirOption);
 		parser.addOption(debugPortOption);
 		parser.addOption(debugWaitOption);
+		parser.addOption(readLogOption);
 		parser.process(app);
+
+		auto logOption = parser.value(readLogOption);
+		if (!logOption.isEmpty()) {
+			auto file = QFile(logOption);
+			if (!file.open(QFile::ReadOnly)) {
+				qCritical() << "Failed to open log for reading:" << logOption;
+				return -1;
+			} else {
+				qInfo() << "Reading log" << logOption;
+			}
+
+			return qs::log::readEncodedLogs(&file) ? 0 : -1;
+		}
 
 		auto debugPortStr = parser.value(debugPortOption);
 		if (!debugPortStr.isEmpty()) {

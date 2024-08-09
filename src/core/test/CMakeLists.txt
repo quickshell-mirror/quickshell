@@ -6,3 +6,4 @@ endfunction()
 
 qs_test(popupwindow popupwindow.cpp)
 qs_test(transformwatcher transformwatcher.cpp)
+qs_test(ringbuffer ringbuf.cpp)
