@@ -469,7 +469,7 @@ bool EncodedLogWriter::write(const LogMessage& message) {
 			quint8 field = compressedTypeOf(message.type);
 
 			auto secondDelta = this->lastMessageTime.secsTo(message.time);
-			if (secondDelta > 29) {
+			if (secondDelta >= 29) {
 				// 0x1d = followed by delta int
 				// 0x1e = followed by epoch delta int
 				field |= (secondDelta < 0xffff ? 0x1d : 0x1e) << 3;
