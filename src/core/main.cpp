@@ -129,9 +129,10 @@ int qs_main(int argc, char** argv) {
 		    ->needs(debugPortArg);
 
 		/// ---
-		bool sparseLogsOnly = false;
+		auto sparseLogsOnly = false;
 		app.add_flag("--info", printInfo, "Print information about the shell")->excludes(debugPortArg);
 		app.add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
+		auto* printVersion = app.add_flag("-V,--version", "Print quickshell's version, then exit.");
 
 		app.add_flag(
 		    "--no-detailed-logs",
@@ -163,7 +164,10 @@ int qs_main(int argc, char** argv) {
 		// Start log manager - has to happen with an active event loop or offthread can't be started.
 		LogManager::init(!noColor, sparseLogsOnly);
 
-		if (*readLog) {
+		if (*printVersion) {
+			std::cout << "quickshell pre-release, revision: " << GIT_REVISION << std::endl;
+			return 0;
+		} if (*readLog) {
 			auto file = QFile(*logPath);
 			if (!file.open(QFile::ReadOnly)) {
 				qCritical() << "Failed to open log for reading:" << *logPath;
