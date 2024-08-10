@@ -111,7 +111,7 @@ public:
 	void setupFileLogging();
 
 private slots:
-	void onMessage(const LogMessage& msg);
+	void onMessage(const LogMessage& msg, bool showInSparse);
 
 private:
 	QFile* file = nullptr;

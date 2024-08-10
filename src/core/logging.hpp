@@ -7,6 +7,7 @@
 #include <qhash.h>
 #include <qlatin1stringview.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
 
@@ -54,22 +55,41 @@ private:
 	ThreadLogging* logging = nullptr;
 };
 
+struct CategoryFilter {
+	explicit CategoryFilter() = default;
+	explicit CategoryFilter(QLoggingCategory* category)
+	    : debug(category->isDebugEnabled())
+	    , info(category->isInfoEnabled())
+	    , warn(category->isWarningEnabled())
+	    , critical(category->isCriticalEnabled()) {}
+
+	bool debug = true;
+	bool info = true;
+	bool warn = true;
+	bool critical = true;
+};
+
 class LogManager: public QObject {
 	Q_OBJECT;
 
 public:
-	static void init(bool color);
+	static void init(bool color, bool sparseOnly);
 	static void initFs();
 	static LogManager* instance();
 
 	bool colorLogs = true;
 
 signals:
-	void logMessage(LogMessage msg);
+	void logMessage(LogMessage msg, bool showInSparse);
 
 private:
 	explicit LogManager();
 	static void messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
+
+	static void filterCategory(QLoggingCategory* category);
+
+	QLoggingCategory::CategoryFilter lastCategoryFilter = nullptr;
+	QHash<const void*, CategoryFilter> sparseFilters;
 
 	QTextStream stdoutStream;
 	LoggingThreadProxy threadProxy;

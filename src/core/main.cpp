@@ -2,8 +2,8 @@
 #include <iostream>
 #include <string>
 
-#include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
 #include <CLI/App.hpp>
+#include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
 #include <CLI/Validators.hpp>
 #include <qapplication.h>
 #include <qcoreapplication.h>
@@ -129,8 +129,15 @@ int qs_main(int argc, char** argv) {
 		    ->needs(debugPortArg);
 
 		/// ---
+		bool sparseLogsOnly = false;
 		app.add_flag("--info", printInfo, "Print information about the shell")->excludes(debugPortArg);
 		app.add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
+
+		app.add_flag(
+		    "--no-detailed-logs",
+		    sparseLogsOnly,
+		    "Do not enable this unless you know what you are doing."
+		);
 
 		/// ---
 		QStringOption logpath;
@@ -143,7 +150,7 @@ int qs_main(int argc, char** argv) {
 		const auto qApplication = QCoreApplication(qArgC, qArgV);
 
 		// Start log manager - has to happen with an active event loop or offthread can't be started.
-		LogManager::init(!noColor);
+		LogManager::init(!noColor, sparseLogsOnly);
 
 		if (*readLog) {
 			auto file = QFile(*logpath);

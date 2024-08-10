@@ -5,6 +5,7 @@
 #include <qbytearrayview.h>
 #include <qdatetime.h>
 #include <qendian.h>
+#include <qhash.h>
 #include <qhashfunctions.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -92,10 +93,48 @@ void LogManager::messageHandler(
 
 	auto* self = LogManager::instance();
 
-	LogMessage::formatMessage(self->stdoutStream, message, self->colorLogs, false);
-	self->stdoutStream << Qt::endl;
+	auto display = true;
 
-	emit self->logMessage(message);
+	const auto* key = static_cast<const void*>(context.category);
+
+	if (self->sparseFilters.contains(key)) {
+		auto filter = self->sparseFilters.value(key);
+		switch (type) {
+		case QtDebugMsg: display = filter.debug; break;
+		case QtInfoMsg: display = filter.info; break;
+		case QtWarningMsg: display = filter.warn; break;
+		case QtCriticalMsg: display = filter.critical; break;
+		default: break;
+		}
+	}
+
+	if (display) {
+		LogMessage::formatMessage(self->stdoutStream, message, self->colorLogs, false);
+		self->stdoutStream << Qt::endl;
+	}
+
+	emit self->logMessage(message, display);
+}
+
+void LogManager::filterCategory(QLoggingCategory* category) {
+	auto* instance = LogManager::instance();
+
+	if (instance->lastCategoryFilter) {
+		instance->lastCategoryFilter(category);
+	}
+
+	if (QLatin1StringView(category->categoryName()).startsWith(QLatin1StringView("quickshell"))) {
+		// We assume the category name pointer will always be the same and be comparable in the message handler.
+		LogManager::instance()->sparseFilters.insert(
+		    static_cast<const void*>(category->categoryName()),
+		    CategoryFilter(category)
+		);
+
+		category->setEnabled(QtDebugMsg, true);
+		category->setEnabled(QtInfoMsg, true);
+		category->setEnabled(QtWarningMsg, true);
+		category->setEnabled(QtCriticalMsg, true);
+	}
 }
 
 LogManager* LogManager::instance() {
@@ -103,11 +142,15 @@ LogManager* LogManager::instance() {
 	return instance;
 }
 
-void LogManager::init(bool color) {
+void LogManager::init(bool color, bool sparseOnly) {
 	auto* instance = LogManager::instance();
 	instance->colorLogs = color;
 
 	qInstallMessageHandler(&LogManager::messageHandler);
+
+	if (!sparseOnly) {
+		instance->lastCategoryFilter = QLoggingCategory::installFilter(&LogManager::filterCategory);
+	}
 
 	qCDebug(logLogging) << "Creating offthread logger...";
 	auto* thread = new QThread();
@@ -269,10 +312,12 @@ void ThreadLogging::initFs() {
 	qCDebug(logLogging) << "Switched threaded logger to queued eventloop connection.";
 }
 
-void ThreadLogging::onMessage(const LogMessage& msg) {
-	if (this->fileStream.device() == nullptr) return;
-	LogMessage::formatMessage(this->fileStream, msg, false, true);
-	this->fileStream << Qt::endl;
+void ThreadLogging::onMessage(const LogMessage& msg, bool showInSparse) {
+	if (showInSparse) {
+		if (this->fileStream.device() == nullptr) return;
+		LogMessage::formatMessage(this->fileStream, msg, false, true);
+		this->fileStream << Qt::endl;
+	}
 
 	if (this->detailedWriter.write(msg)) {
 		this->detailedFile->flush();
