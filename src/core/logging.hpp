@@ -58,11 +58,11 @@ class LogManager: public QObject {
 	Q_OBJECT;
 
 public:
-	static void init();
+	static void init(bool color);
 	static void initFs();
 	static LogManager* instance();
 
-	bool colorLogs;
+	bool colorLogs = true;
 
 signals:
 	void logMessage(LogMessage msg);

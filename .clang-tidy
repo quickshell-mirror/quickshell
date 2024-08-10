@@ -15,6 +15,7 @@ Checks: >
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cppcoreguidelines-avoid-goto,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-avoid-do-while,
   google-build-using-namespace.
   google-explicit-constructor,
   google-global-names-in-headers,

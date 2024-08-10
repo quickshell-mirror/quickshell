@@ -81,9 +81,7 @@ void LogMessage::formatMessage(
 	if (color && msg.type == QtFatalMsg) stream << "\033[0m";
 }
 
-LogManager::LogManager()
-    : colorLogs(qEnvironmentVariableIsEmpty("NO_COLOR"))
-    , stdoutStream(stdout) {}
+LogManager::LogManager(): stdoutStream(stdout) {}
 
 void LogManager::messageHandler(
     QtMsgType type,
@@ -105,8 +103,9 @@ LogManager* LogManager::instance() {
 	return instance;
 }
 
-void LogManager::init() {
+void LogManager::init(bool color) {
 	auto* instance = LogManager::instance();
+	instance->colorLogs = color;
 
 	qInstallMessageHandler(&LogManager::messageHandler);
 
@@ -203,6 +202,8 @@ void ThreadLogging::initFs() {
 		  << path;
 		delete file;
 		file = nullptr;
+	} else {
+		qInfo() << "Saving logs to" << path;
 	}
 
 	// buffered by WriteBuffer
@@ -212,6 +213,8 @@ void ThreadLogging::initFs() {
 		  << detailedPath;
 		delete detailedFile;
 		detailedFile = nullptr;
+	} else {
+		qCInfo(logLogging) << "Saving detailed logs to" << path;
 	}
 
 	qCDebug(logLogging) << "Copying memfd logs to log file...";

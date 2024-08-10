@@ -8,6 +8,7 @@
   cmake,
   ninja,
   qt6,
+  cli11,
   jemalloc,
   wayland,
   wayland-protocols,
@@ -52,6 +53,7 @@
   buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
+    cli11
   ]
   ++ (lib.optional withJemalloc jemalloc)
   ++ (lib.optional withQtSvg qt6.qtsvg)

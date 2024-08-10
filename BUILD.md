@@ -9,6 +9,7 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `qt6base`
 - `qt6declarative`
 - `pkg-config`
+- `cli11`
 
 We recommend an implicit dependency on `qt6svg`. If it is not installed, svg images and
 svg icons will not work, including system ones.
