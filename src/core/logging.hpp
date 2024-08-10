@@ -33,6 +33,7 @@ struct LogMessage {
 	QDateTime time;
 	QLatin1StringView category;
 	QByteArray body;
+	quint16 readCategoryId = 0;
 
 	static void formatMessage(QTextStream& stream, const LogMessage& msg, bool color, bool timestamp);
 };
@@ -62,6 +63,8 @@ struct CategoryFilter {
 	    , info(category->isInfoEnabled())
 	    , warn(category->isWarningEnabled())
 	    , critical(category->isCriticalEnabled()) {}
+
+	[[nodiscard]] bool shouldDisplay(QtMsgType type) const;
 
 	bool debug = true;
 	bool info = true;
@@ -95,7 +98,7 @@ private:
 	LoggingThreadProxy threadProxy;
 };
 
-bool readEncodedLogs(QIODevice* device);
+bool readEncodedLogs(QIODevice* device, const QString& rulespec);
 
 } // namespace qs::log
 

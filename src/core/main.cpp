@@ -140,9 +140,17 @@ int qs_main(int argc, char** argv) {
 		);
 
 		/// ---
-		QStringOption logpath;
+		QStringOption logPath;
+		QStringOption logFilter;
 		auto* readLog = app.add_subcommand("read-log", "Read a quickshell log file.");
-		readLog->add_option("path", logpath, "Path to the log file to read")->required();
+		readLog->add_option("path", logPath, "Path to the log file to read")->required();
+
+		readLog->add_option(
+		    "-f,--filter",
+		    logFilter,
+		    "Logging categories to display. (same syntax as QT_LOGGING_RULES)"
+		);
+
 		readLog->add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
 
 		CLI11_PARSE(app, argc, argv);
@@ -153,15 +161,15 @@ int qs_main(int argc, char** argv) {
 		LogManager::init(!noColor, sparseLogsOnly);
 
 		if (*readLog) {
-			auto file = QFile(*logpath);
+			auto file = QFile(*logPath);
 			if (!file.open(QFile::ReadOnly)) {
-				qCritical() << "Failed to open log for reading:" << *logpath;
+				qCritical() << "Failed to open log for reading:" << *logPath;
 				return -1;
 			} else {
-				qInfo() << "Reading log" << *logpath;
+				qInfo() << "Reading log" << *logPath;
 			}
 
-			return qs::log::readEncodedLogs(&file) ? 0 : -1;
+			return qs::log::readEncodedLogs(&file, *logFilter) ? 0 : -1;
 		} else {
 
 			// NOLINTBEGIN

@@ -7,12 +7,14 @@
 #include <qendian.h>
 #include <qhash.h>
 #include <qhashfunctions.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
 #include <qstring.h>
+#include <qstringview.h>
 #include <qsysinfo.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
@@ -23,6 +25,7 @@
 #include <sys/sendfile.h>
 
 #include "logging_p.hpp"
+#include "logging_qtprivate.cpp" // NOLINT
 #include "paths.hpp"
 
 namespace qs::log {
@@ -82,6 +85,16 @@ void LogMessage::formatMessage(
 	if (color && msg.type == QtFatalMsg) stream << "\033[0m";
 }
 
+bool CategoryFilter::shouldDisplay(QtMsgType type) const {
+	switch (type) {
+	case QtDebugMsg: return this->debug;
+	case QtInfoMsg: return this->info;
+	case QtWarningMsg: return this->warn;
+	case QtCriticalMsg: return this->critical;
+	default: return true;
+	}
+}
+
 LogManager::LogManager(): stdoutStream(stdout) {}
 
 void LogManager::messageHandler(
@@ -98,14 +111,7 @@ void LogManager::messageHandler(
 	const auto* key = static_cast<const void*>(context.category);
 
 	if (self->sparseFilters.contains(key)) {
-		auto filter = self->sparseFilters.value(key);
-		switch (type) {
-		case QtDebugMsg: display = filter.debug; break;
-		case QtInfoMsg: display = filter.info; break;
-		case QtWarningMsg: display = filter.warn; break;
-		case QtCriticalMsg: display = filter.critical; break;
-		default: break;
-		}
+		display = self->sparseFilters.value(key).shouldDisplay(type);
 	}
 
 	if (display) {
@@ -520,7 +526,8 @@ start:
 			slot->time = this->lastMessageTime;
 		}
 	} else {
-		auto category = this->categories.value(next - EncodedLogOpcode::BeginCategories);
+		auto categoryId = next - EncodedLogOpcode::BeginCategories;
+		auto category = this->categories.value(categoryId);
 
 		quint8 field = 0;
 		if (!this->reader.readU8(&field)) return false;
@@ -555,6 +562,7 @@ start:
 		if (!this->readString(&body)) return false;
 
 		*slot = LogMessage(msgType, QLatin1StringView(category), body, this->lastMessageTime);
+		slot->readCategoryId = categoryId;
 	}
 
 	this->recentMessages.emplace(*slot);
@@ -633,7 +641,17 @@ bool EncodedLogReader::registerCategory() {
 	return true;
 }
 
-bool readEncodedLogs(QIODevice* device) {
+bool readEncodedLogs(QIODevice* device, const QString& rulespec) {
+	using namespace qt_logging_registry;
+
+	QList<QLoggingRule> rules;
+
+	{
+		QLoggingSettingsParser parser;
+		parser.setContent(rulespec);
+		rules = parser.rules();
+	}
+
 	auto reader = EncodedLogReader();
 	reader.setDevice(device);
 
@@ -655,11 +673,36 @@ bool readEncodedLogs(QIODevice* device) {
 
 	auto color = LogManager::instance()->colorLogs;
 
+	auto filters = QHash<quint16, CategoryFilter>();
+
 	LogMessage message;
 	auto stream = QTextStream(stdout);
 	while (reader.read(&message)) {
-		LogMessage::formatMessage(stream, message, color, true);
-		stream << '\n';
+		CategoryFilter filter;
+		if (filters.contains(message.readCategoryId)) {
+			filter = filters.value(message.readCategoryId);
+		} else {
+			for (const auto& rule: rules) {
+				auto filterpass = rule.pass(message.category, QtDebugMsg);
+				if (filterpass != 0) filter.debug = filterpass > 0;
+
+				filterpass = rule.pass(message.category, QtInfoMsg);
+				if (filterpass != 0) filter.info = filterpass > 0;
+
+				filterpass = rule.pass(message.category, QtWarningMsg);
+				if (filterpass != 0) filter.warn = filterpass > 0;
+
+				filterpass = rule.pass(message.category, QtCriticalMsg);
+				if (filterpass != 0) filter.critical = filterpass > 0;
+			}
+
+			filters.insert(message.readCategoryId, filter);
+		}
+
+		if (filter.shouldDisplay(message.type)) {
+			LogMessage::formatMessage(stream, message, color, true);
+			stream << '\n';
+		}
 	}
 
 	stream << Qt::flush;
