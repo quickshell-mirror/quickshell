@@ -641,7 +641,7 @@ bool EncodedLogReader::registerCategory() {
 	return true;
 }
 
-bool readEncodedLogs(QIODevice* device, const QString& rulespec) {
+bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec) {
 	using namespace qt_logging_registry;
 
 	QList<QLoggingRule> rules;
@@ -700,7 +700,7 @@ bool readEncodedLogs(QIODevice* device, const QString& rulespec) {
 		}
 
 		if (filter.shouldDisplay(message.type)) {
-			LogMessage::formatMessage(stream, message, color, true);
+			LogMessage::formatMessage(stream, message, color, timestamps);
 			stream << '\n';
 		}
 	}

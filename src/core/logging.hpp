@@ -98,7 +98,7 @@ private:
 	LoggingThreadProxy threadProxy;
 };
 
-bool readEncodedLogs(QIODevice* device, const QString& rulespec);
+bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec);
 
 } // namespace qs::log
 

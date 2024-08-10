@@ -142,6 +142,8 @@ int qs_main(int argc, char** argv) {
 		/// ---
 		QStringOption logPath;
 		QStringOption logFilter;
+		auto logNoTime = false;
+
 		auto* readLog = app.add_subcommand("read-log", "Read a quickshell log file.");
 		readLog->add_option("path", logPath, "Path to the log file to read")->required();
 
@@ -151,6 +153,7 @@ int qs_main(int argc, char** argv) {
 		    "Logging categories to display. (same syntax as QT_LOGGING_RULES)"
 		);
 
+		readLog->add_flag("--no-time", logNoTime, "Do not print timestamps of log messages.");
 		readLog->add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
 
 		CLI11_PARSE(app, argc, argv);
@@ -169,7 +172,7 @@ int qs_main(int argc, char** argv) {
 				qInfo() << "Reading log" << *logPath;
 			}
 
-			return qs::log::readEncodedLogs(&file, *logFilter) ? 0 : -1;
+			return qs::log::readEncodedLogs(&file, !logNoTime, *logFilter) ? 0 : -1;
 		} else {
 
 			// NOLINTBEGIN
