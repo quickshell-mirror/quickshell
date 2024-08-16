@@ -232,6 +232,9 @@ void XPanelWindow::updateDimensions() {
 			// we only care about windows below us
 			if (panel == this) break;
 
+			// we only care about windows in the same layer
+			if (panel->mAboveWindows != this->mAboveWindows) continue;
+
 			int side = -1;
 			quint32 exclusiveZone = 0;
 			panel->getExclusion(side, exclusiveZone);
