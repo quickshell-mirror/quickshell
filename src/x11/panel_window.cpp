@@ -88,10 +88,13 @@ void XPanelWindow::connectWindow() {
 
 	this->window->installEventFilter(&this->eventFilter);
 	this->connectScreen();
-	// clang-format off
-	QObject::connect(this->window, &QQuickWindow::screenChanged, this, &XPanelWindow::connectScreen);
-	QObject::connect(this->window, &QQuickWindow::visibleChanged, this, &XPanelWindow::updatePanelStack);
-	// clang-format on
+
+	QObject::connect(
+	    this->window,
+	    &QQuickWindow::visibleChanged,
+	    this,
+	    &XPanelWindow::updatePanelStack
+	);
 
 	// qt overwrites _NET_WM_STATE, so we have to use the qt api
 	// QXcbWindow::WindowType::Dock in qplatformwindow_p.h
@@ -127,6 +130,11 @@ void XPanelWindow::setHeight(qint32 height) {
 		this->ProxyWindowBase::setHeight(height);
 		this->updateDimensions();
 	}
+}
+
+void XPanelWindow::setScreen(QuickshellScreenInfo* screen) {
+	this->ProxyWindowBase::setScreen(screen);
+	this->connectScreen();
 }
 
 Anchors XPanelWindow::anchors() const { return this->mAnchors; }
@@ -194,14 +202,14 @@ void XPanelWindow::xInit() {
 	// Stick to every workspace
 	auto desktop = 0xffffffff;
 	xcb_change_property(
-			conn,
-			XCB_PROP_MODE_REPLACE,
-			this->window->winId(),
-			XAtom::_NET_WM_DESKTOP.atom(),
-			XCB_ATOM_CARDINAL,
-			32,
-			1,
-			&desktop
+	    conn,
+	    XCB_PROP_MODE_REPLACE,
+	    this->window->winId(),
+	    XAtom::_NET_WM_DESKTOP.atom(),
+	    XCB_ATOM_CARDINAL,
+	    32,
+	    1,
+	    &desktop
 	);
 }
 
@@ -210,7 +218,7 @@ void XPanelWindow::connectScreen() {
 		QObject::disconnect(this->mTrackedScreen, nullptr, this, nullptr);
 	}
 
-	this->mTrackedScreen = this->window->screen();
+	this->mTrackedScreen = this->mScreen;
 
 	if (this->mTrackedScreen != nullptr) {
 		QObject::connect(
@@ -220,12 +228,15 @@ void XPanelWindow::connectScreen() {
 		    &XPanelWindow::updateDimensions
 		);
 	}
+
+	this->updateDimensions();
 }
 
 void XPanelWindow::updateDimensions() {
-	if (this->window == nullptr || this->window->handle() == nullptr) return;
+	if (this->window == nullptr || this->window->handle() == nullptr || this->mScreen == nullptr)
+		return;
 
-	auto screenGeometry = this->window->screen()->virtualGeometry();
+	auto screenGeometry = this->mScreen->geometry();
 
 	if (this->mExclusionMode != ExclusionMode::Ignore) {
 		for (auto* panel: XPanelStack::instance()->panels(this)) {
@@ -234,6 +245,8 @@ void XPanelWindow::updateDimensions() {
 
 			// we only care about windows in the same layer
 			if (panel->mAboveWindows != this->mAboveWindows) continue;
+
+			if (panel->mScreen != this->mScreen) continue;
 
 			int side = -1;
 			quint32 exclusiveZone = 0;

@@ -49,6 +49,8 @@ public:
 	void setWidth(qint32 width) override;
 	void setHeight(qint32 height) override;
 
+	void setScreen(QuickshellScreenInfo* screen) override;
+
 	[[nodiscard]] Anchors anchors() const;
 	void setAnchors(Anchors anchors);
 
@@ -77,11 +79,11 @@ signals:
 
 private slots:
 	void xInit();
-	void connectScreen();
 	void updateDimensions();
 	void updatePanelStack();
 
 private:
+	void connectScreen();
 	void getExclusion(int& side, quint32& exclusiveZone);
 	void updateStrut();
 	void updateAboveWindows();

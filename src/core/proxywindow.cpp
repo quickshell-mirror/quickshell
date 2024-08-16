@@ -140,6 +140,8 @@ void ProxyWindowBase::completeWindow() {
 	if (this->mScreen != nullptr && this->window->screen() != this->mScreen) {
 		if (this->window->isVisible()) this->window->setVisible(false);
 		this->window->setScreen(this->mScreen);
+	} else if (this->mScreen == nullptr) {
+		this->mScreen = this->window->screen();
 	}
 
 	this->setWidth(this->mWidth);
@@ -259,7 +261,6 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	}
 
 	if (this->window == nullptr) {
-		this->mScreen = qscreen;
 		emit this->screenChanged();
 	} else {
 		auto reshow = this->isVisibleDirect();
@@ -267,6 +268,9 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 		if (this->window != nullptr) this->window->setScreen(qscreen);
 		if (reshow) this->setVisibleDirect(true);
 	}
+
+	if (qscreen) this->mScreen = qscreen;
+	else this->mScreen = this->window->screen();
 }
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
