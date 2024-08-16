@@ -23,11 +23,13 @@ xcb_connection_t* x11Connection() {
 // NOLINTBEGIN
 XAtom XAtom::_NET_WM_STRUT {};
 XAtom XAtom::_NET_WM_STRUT_PARTIAL {};
+XAtom XAtom::_NET_WM_DESKTOP {};
 // NOLINTEND
 
 void XAtom::initAtoms() {
 	_NET_WM_STRUT.init("_NET_WM_STRUT");
 	_NET_WM_STRUT_PARTIAL.init("_NET_WM_STRUT_PARTIAL");
+	_NET_WM_DESKTOP.init("_NET_WM_DESKTOP");
 }
 
 void XAtom::init(const QByteArray& name) {

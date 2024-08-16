@@ -15,6 +15,7 @@ public:
 	// NOLINTBEGIN
 	static XAtom _NET_WM_STRUT;
 	static XAtom _NET_WM_STRUT_PARTIAL;
+	static XAtom _NET_WM_DESKTOP;
 	// NOLINTEND
 
 	static void initAtoms();

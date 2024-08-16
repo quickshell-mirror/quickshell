@@ -185,7 +185,25 @@ void XPanelWindow::setFocusable(bool focusable) {
 	emit this->focusableChanged();
 }
 
-void XPanelWindow::xInit() { this->updateDimensions(); }
+void XPanelWindow::xInit() {
+	if (this->window == nullptr || this->window->handle() == nullptr) return;
+	this->updateDimensions();
+
+	auto* conn = x11Connection();
+
+	// Stick to every workspace
+	auto desktop = 0xffffffff;
+	xcb_change_property(
+			conn,
+			XCB_PROP_MODE_REPLACE,
+			this->window->winId(),
+			XAtom::_NET_WM_DESKTOP.atom(),
+			XCB_ATOM_CARDINAL,
+			32,
+			1,
+			&desktop
+	);
+}
 
 void XPanelWindow::connectScreen() {
 	if (this->mTrackedScreen != nullptr) {
