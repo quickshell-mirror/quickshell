@@ -31,20 +31,25 @@ void SystemClock::setPrecision(SystemClock::Enum precision) {
 }
 
 void SystemClock::onTimeout() {
-	this->setTime(this->nextTime);
-	this->schedule(this->nextTime);
+	this->setTime(this->targetTime);
+	this->schedule(this->targetTime);
 }
 
 void SystemClock::update() {
 	if (this->mEnabled) {
-		this->setTime(QTime::currentTime());
-		this->schedule(QTime::currentTime());
+		this->setTime(QDateTime::fromMSecsSinceEpoch(0));
+		this->schedule(QDateTime::fromMSecsSinceEpoch(0));
 	} else {
 		this->timer.stop();
 	}
 }
 
-void SystemClock::setTime(QTime time) {
+void SystemClock::setTime(const QDateTime& targetTime) {
+	auto currentTime = QDateTime::currentDateTime();
+	auto offset = currentTime.msecsTo(targetTime);
+	auto dtime = offset > -500 && offset < 500 ? targetTime : currentTime;
+	auto time = dtime.time();
+
 	auto secondPrecision = this->mPrecision >= SystemClock::Seconds;
 	auto secondChanged = this->setSeconds(secondPrecision ? time.second() : 0);
 
@@ -57,34 +62,33 @@ void SystemClock::setTime(QTime time) {
 	DropEmitter::call(secondChanged, minuteChanged, hourChanged);
 }
 
-void SystemClock::schedule(QTime floor) {
+void SystemClock::schedule(const QDateTime& targetTime) {
 	auto secondPrecision = this->mPrecision >= SystemClock::Seconds;
 	auto minutePrecision = this->mPrecision >= SystemClock::Minutes;
 	auto hourPrecision = this->mPrecision >= SystemClock::Hours;
 
-setnext:
-	auto nextTime = QTime(
-	    hourPrecision ? floor.hour() : 0,
-	    minutePrecision ? floor.minute() : 0,
-	    secondPrecision ? floor.second() : 0
+	auto currentTime = QDateTime::currentDateTime();
+
+	auto offset = currentTime.msecsTo(targetTime);
+
+	// timer skew
+	auto nextTime = offset > 0 && offset < 500 ? targetTime : currentTime;
+
+	auto baseTimeT = nextTime.time();
+	nextTime.setTime(
+	    {hourPrecision ? baseTimeT.hour() : 0,
+	     minutePrecision ? baseTimeT.minute() : 0,
+	     secondPrecision ? baseTimeT.second() : 0}
 	);
 
 	if (secondPrecision) nextTime = nextTime.addSecs(1);
 	else if (minutePrecision) nextTime = nextTime.addSecs(60);
 	else if (hourPrecision) nextTime = nextTime.addSecs(3600);
 
-	auto delay = QTime::currentTime().msecsTo(nextTime);
+	auto delay = currentTime.msecsTo(nextTime);
 
-	// If off by more than 2 hours we likely wrapped around midnight.
-	if (delay < -7200000) delay += 86400000;
-	else if (delay < 0) {
-		// Otherwise its just the timer being unstable.
-		floor = QTime::currentTime();
-		goto setnext;
-	}
-
-	this->timer.start(delay);
-	this->nextTime = nextTime;
+	this->timer.start(static_cast<qint32>(delay));
+	this->targetTime = nextTime;
 }
 
 DEFINE_MEMBER_GETSET(SystemClock, hours, setHours);

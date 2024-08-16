@@ -59,11 +59,11 @@ private:
 	quint32 mMinutes = 0;
 	quint32 mSeconds = 0;
 	QTimer timer;
-	QTime nextTime;
+	QDateTime targetTime;
 
 	void update();
-	void setTime(QTime time);
-	void schedule(QTime floor);
+	void setTime(const QDateTime& targetTime);
+	void schedule(const QDateTime& targetTime);
 
 	DECLARE_PRIVATE_MEMBER(SystemClock, hours, setHours, mHours, hoursChanged);
 	DECLARE_PRIVATE_MEMBER(SystemClock, minutes, setMinutes, mMinutes, minutesChanged);
