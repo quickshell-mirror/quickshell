@@ -1,5 +1,7 @@
 #include "qsmenuanchor.hpp"
 
+#include <qapplication.h>
+#include <qcoreapplication.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
@@ -15,6 +17,14 @@ namespace qs::menu {
 QsMenuAnchor::~QsMenuAnchor() { this->onClosed(); }
 
 void QsMenuAnchor::open() {
+	if (qobject_cast<QApplication*>(QCoreApplication::instance()) == nullptr) {
+		qCritical() << "Cannot call QsMenuAnchor.open() as quickshell was not started in "
+		               "QApplication mode.";
+		qCritical() << "To use platform menus, add `//@ pragma UseQApplication` to the top of your "
+		               "root QML file and restart quickshell.";
+		return;
+	}
+
 	if (this->mOpen) {
 		qCritical() << "Cannot call QsMenuAnchor.open() as it is already open.";
 		return;

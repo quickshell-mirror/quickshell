@@ -4,7 +4,9 @@
 
 #include <qaction.h>
 #include <qactiongroup.h>
+#include <qapplication.h>
 #include <qcontainerfwd.h>
+#include <qcoreapplication.h>
 #include <qicon.h>
 #include <qlogging.h>
 #include <qmenu.h>
@@ -74,7 +76,13 @@ void PlatformMenuEntry::registerCreationHook(std::function<void(PlatformMenuQMen
 bool PlatformMenuEntry::display(QObject* parentWindow, int relativeX, int relativeY) {
 	QWindow* window = nullptr;
 
-	if (this->qmenu == nullptr) {
+	if (qobject_cast<QApplication*>(QCoreApplication::instance()) == nullptr) {
+		qCritical() << "Cannot display PlatformMenuEntry as quickshell was not started in "
+		               "QApplication mode.";
+		qCritical() << "To use platform menus, add `//@ pragma UseQApplication` to the top of your "
+		               "root QML file and restart quickshell.";
+		return false;
+	} else if (this->qmenu == nullptr) {
 		qCritical() << "Cannot display PlatformMenuEntry as it is not a menu.";
 		return false;
 	} else if (parentWindow == nullptr) {
@@ -113,7 +121,13 @@ bool PlatformMenuEntry::display(QObject* parentWindow, int relativeX, int relati
 }
 
 bool PlatformMenuEntry::display(PopupAnchor* anchor) {
-	if (!anchor->backingWindow() || !anchor->backingWindow()->isVisible()) {
+	if (qobject_cast<QApplication*>(QCoreApplication::instance()) == nullptr) {
+		qCritical() << "Cannot display PlatformMenuEntry as quickshell was not started in "
+		               "QApplication mode.";
+		qCritical() << "To use platform menus, add `//@ pragma UseQApplication` to the top of your "
+		               "root QML file and restart quickshell.";
+		return false;
+	} else if (!anchor->backingWindow() || !anchor->backingWindow()->isVisible()) {
 		qCritical() << "Cannot display PlatformMenuEntry on anchor without visible window.";
 		return false;
 	}
@@ -140,6 +154,10 @@ bool PlatformMenuEntry::display(PopupAnchor* anchor) {
 }
 
 void PlatformMenuEntry::relayout() {
+	if (qobject_cast<QApplication*>(QCoreApplication::instance()) == nullptr) {
+		return;
+	}
+
 	if (this->menu->hasChildren()) {
 		delete this->qaction;
 		this->qaction = nullptr;
