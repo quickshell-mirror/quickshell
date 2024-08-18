@@ -217,6 +217,7 @@ void MprisPlayer::setPosition(qreal position) {
 void MprisPlayer::onPositionChanged() {
 	const bool firstChange = !this->lastPositionTimestamp.isValid();
 	this->lastPositionTimestamp = QDateTime::currentDateTimeUtc();
+	this->pausedTime = this->lastPositionTimestamp;
 	emit this->positionChanged();
 	if (firstChange) emit this->positionSupportedChanged();
 }
