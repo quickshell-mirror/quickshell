@@ -271,14 +271,19 @@ void MprisPlayer::onMetadataChanged() {
 
 	auto trackChanged = false;
 
+	QString trackId;
 	auto trackidVariant = this->pMetadata.get().value("mpris:trackid");
-	if (trackidVariant.isValid() && trackidVariant.canConvert<QString>()) {
-		auto trackId = trackidVariant.toString();
-
-		if (trackId != this->mTrackId) {
-			this->mTrackId = trackId;
-			trackChanged = true;
+	if (trackidVariant.isValid()) {
+		if (trackidVariant.canConvert<QString>()) {
+			trackId = trackidVariant.toString();
+		} else if (trackidVariant.canConvert<QDBusObjectPath>()) {
+			trackId = trackidVariant.value<QDBusObjectPath>().path();
 		}
+	}
+
+	if (trackId != this->mTrackId) {
+		this->mTrackId = trackId;
+		trackChanged = true;
 	}
 
 	// Helps to catch players without trackid.
