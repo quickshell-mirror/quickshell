@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qobject.h>
 #include <qqmllist.h>
+#include <qtimer.h>
 
 #include "generation.hpp"
 
@@ -12,8 +13,10 @@ void Reloadable::componentComplete() {
 	if (this->engineGeneration != nullptr) {
 		// When called this way there is no chance a reload will have old data,
 		// but this will at least help prevent weird behaviors due to never getting a reload.
-		if (this->engineGeneration->reloadComplete) this->reload();
-		else {
+		if (this->engineGeneration->reloadComplete) {
+			// Delayed due to Component.onCompleted running after QQmlParserStatus::componentComplete.
+			QTimer::singleShot(0, this, &Reloadable::onReloadFinished);
+		} else {
 			QObject::connect(
 			    this->engineGeneration,
 			    &EngineGeneration::reloadFinished,
