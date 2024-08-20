@@ -28,6 +28,8 @@ public:
 	void addWindow(QWindow* window);
 	void removeWindow(QWindow* window);
 	void sync();
+	void startTransaction();
+	void completeTransaction();
 
 signals:
 	void activated();
@@ -40,6 +42,7 @@ private:
 
 	QList<QWaylandWindow*> pendingAdditions;
 	bool commitRequired = false;
+	bool transactionActive = false;
 	bool active = false;
 };
 

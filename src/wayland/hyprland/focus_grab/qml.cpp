@@ -74,13 +74,13 @@ void HyprlandFocusGrab::tryActivate() {
 	QObject::connect(this->grab, &FocusGrab::activated, this, &HyprlandFocusGrab::onGrabActivated);
 	QObject::connect(this->grab, &FocusGrab::cleared, this, &HyprlandFocusGrab::onGrabCleared);
 
+	this->grab->startTransaction();
 	for (auto* proxy: this->trackedProxies) {
 		if (proxy->backingWindow() != nullptr) {
 			this->grab->addWindow(proxy->backingWindow());
 		}
 	}
-
-	this->grab->sync();
+	this->grab->completeTransaction();
 }
 
 void HyprlandFocusGrab::syncWindows() {
@@ -98,6 +98,8 @@ void HyprlandFocusGrab::syncWindows() {
 			newProxy.push_back(proxyWindow);
 		}
 	}
+
+	if (this->grab) this->grab->startTransaction();
 
 	for (auto* oldWindow: this->trackedProxies) {
 		if (!newProxy.contains(oldWindow)) {
@@ -125,7 +127,7 @@ void HyprlandFocusGrab::syncWindows() {
 	}
 
 	this->trackedProxies = newProxy;
-	if (this->grab != nullptr) this->grab->sync();
+	if (this->grab) this->grab->completeTransaction();
 }
 
 } // namespace qs::hyprland

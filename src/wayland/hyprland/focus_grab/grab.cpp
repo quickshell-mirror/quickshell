@@ -19,18 +19,34 @@ FocusGrab::~FocusGrab() {
 bool FocusGrab::isActive() const { return this->active; }
 
 void FocusGrab::addWindow(QWindow* window) {
+	auto tryAddWayland = [this](QWaylandWindow* waylandWindow) {
+		if (waylandWindow->surface()) {
+			this->addWaylandWindow(waylandWindow);
+			this->sync();
+		} else {
+			QObject::connect(
+			    waylandWindow,
+			    &QWaylandWindow::surfaceCreated,
+			    this,
+			    [this, waylandWindow]() {
+				    this->addWaylandWindow(waylandWindow);
+				    this->sync();
+			    }
+			);
+		}
+	};
+
 	if (auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle())) {
-		this->addWaylandWindow(waylandWindow);
+		tryAddWayland(waylandWindow);
 	} else {
-		QObject::connect(window, &QWindow::visibleChanged, this, [this, window]() {
+		QObject::connect(window, &QWindow::visibleChanged, this, [this, window, tryAddWayland]() {
 			if (window->isVisible()) {
 				if (window->handle() == nullptr) {
 					window->create();
 				}
 
 				auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle());
-				this->addWaylandWindow(waylandWindow);
-				this->sync();
+				tryAddWayland(waylandWindow);
 			}
 		});
 	}
@@ -53,6 +69,8 @@ void FocusGrab::addWaylandWindow(QWaylandWindow* window) {
 }
 
 void FocusGrab::sync() {
+	if (this->transactionActive) return;
+
 	if (this->commitRequired) {
 		this->commit();
 		this->commitRequired = false;
@@ -68,6 +86,13 @@ void FocusGrab::sync() {
 			}
 		}
 	}
+}
+
+void FocusGrab::startTransaction() { this->transactionActive = true; }
+
+void FocusGrab::completeTransaction() {
+	this->transactionActive = false;
+	this->sync();
 }
 
 void FocusGrab::hyprland_focus_grab_v1_cleared() {
