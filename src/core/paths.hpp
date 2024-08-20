@@ -1,10 +1,12 @@
 #pragma once
+#include <qdatetime.h>
 #include <qdir.h>
 
 class QsPaths {
 public:
 	static QsPaths* instance();
 	static void init(QString shellId);
+	static QDir crashDir(const QString& shellId, const QDateTime& launchTime);
 
 	QDir* cacheDir();
 	QDir* runDir();

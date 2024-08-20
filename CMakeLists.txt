@@ -9,6 +9,7 @@ option(BUILD_TESTING "Build tests" OFF)
 option(ASAN "Enable ASAN" OFF) # note: better output with gcc than clang
 option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
 
+option(CRASH_REPORTER "Enable the crash reporter" ON)
 option(USE_JEMALLOC "Use jemalloc over the system malloc implementation" ON)
 option(SOCKETS "Enable unix socket support" ON)
 option(WAYLAND "Enable wayland support" ON)
@@ -29,6 +30,7 @@ option(SERVICE_UPOWER "UPower service" ON)
 option(SERVICE_NOTIFICATIONS "Notification server" ON)
 
 message(STATUS "Quickshell configuration")
+message(STATUS "  Crash reporter: ${CRASH_REPORTER}")
 message(STATUS "  Jemalloc: ${USE_JEMALLOC}")
 message(STATUS "  Build tests: ${BUILD_TESTING}")
 message(STATUS "  Sockets: ${SOCKETS}")

@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 #include <sys/sendfile.h>
 
+#include "crashinfo.hpp"
 #include "logging_p.hpp"
 #include "logging_qtprivate.cpp" // NOLINT
 #include "paths.hpp"
@@ -198,14 +199,16 @@ void ThreadLogging::init() {
 
 	if (logMfd != -1) {
 		this->file = new QFile();
-		this->file->open(logMfd, QFile::WriteOnly, QFile::AutoCloseHandle);
+		this->file->open(logMfd, QFile::ReadWrite, QFile::AutoCloseHandle);
 		this->fileStream.setDevice(this->file);
 	}
 
 	if (dlogMfd != -1) {
+		crash::CrashInfo::INSTANCE.logFd = dlogMfd;
+
 		this->detailedFile = new QFile();
 		// buffered by WriteBuffer
-		this->detailedFile->open(dlogMfd, QFile::WriteOnly | QFile::Unbuffered, QFile::AutoCloseHandle);
+		this->detailedFile->open(dlogMfd, QFile::ReadWrite | QFile::Unbuffered, QFile::AutoCloseHandle);
 		this->detailedWriter.setDevice(this->detailedFile);
 
 		if (!this->detailedWriter.writeHeader()) {
@@ -245,7 +248,7 @@ void ThreadLogging::initFs() {
 	auto* file = new QFile(path);
 	auto* detailedFile = new QFile(detailedPath);
 
-	if (!file->open(QFile::WriteOnly | QFile::Truncate)) {
+	if (!file->open(QFile::ReadWrite | QFile::Truncate)) {
 		qCCritical(logLogging
 		) << "Could not start filesystem logger as the log file could not be created:"
 		  << path;
@@ -256,7 +259,7 @@ void ThreadLogging::initFs() {
 	}
 
 	// buffered by WriteBuffer
-	if (!detailedFile->open(QFile::WriteOnly | QFile::Truncate | QFile::Unbuffered)) {
+	if (!detailedFile->open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered)) {
 		qCCritical(logLogging
 		) << "Could not start detailed filesystem logger as the log file could not be created:"
 		  << detailedPath;
@@ -286,6 +289,8 @@ void ThreadLogging::initFs() {
 			oldFile->seek(0);
 			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
 		}
+
+		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
 
 		this->detailedFile = detailedFile;
 		this->detailedWriter.setDevice(detailedFile);

@@ -1,0 +1,72 @@
+name: Crash Report
+description: Quickshell has crashed
+labels: ["bug", "crash"]
+body:
+  - type: textarea
+    id: crashinfo
+    attributes:
+      label: General crash information
+      description: |
+        Paste the contents of the `info.txt` file in your crash folder here.
+      value: "<details> <summary>General information</summary>
+
+
+        ```
+
+        <Paste the contents of the file here inside of the triple backticks>
+
+        ```
+
+
+        </details>"
+    validations:
+        required: true
+  - type: textarea
+    id: userinfo
+    attributes:
+      label: What caused the crash
+      description: |
+        Any information likely to help debug the crash. What were you doing when the crash occurred,
+        what changes did you make, can you get it to happen again?
+  - type: textarea
+    id: dump
+    attributes:
+      label: Minidump
+      description: |
+        Attach `minidump.dmp` here. If it is too big to upload, compress it.
+
+        You may skip this step if quickshell crashed while processing a password
+        or other sensitive information. If you skipped it write why instead.
+    validations:
+        required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log file
+      description: |
+        Attach `log.qslog` here. If it is too big to upload, compress it.
+
+        You can preview the log if you'd like using `quickshell read-log <path-to-log>`.
+    validations:
+        required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        Attach your configuration here, preferrably in full (not just one file).
+        Compress it into a zip, tar, etc.
+
+        This will help us reproduce the crash ourselves.
+  - type: textarea
+    id: bt
+    attributes:
+      label: Backtrace
+      description: |
+        If you have gdb installed and use systemd, or otherwise know how to get a backtrace,
+        we would appreciate one. (You may have gdb installed without knowing it)
+
+        1. Run `coredumpctl debug <pid>` where `pid` is the number shown after "Crashed process ID"
+        in the crash reporter.
+        2. Once it loads, type `bt -full` (then enter)
+        3. Copy the output and attach it as a file or in a spoiler.

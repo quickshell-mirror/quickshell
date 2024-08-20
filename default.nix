@@ -9,6 +9,7 @@
   ninja,
   qt6,
   cli11,
+  breakpad,
   jemalloc,
   wayland,
   wayland-protocols,
@@ -28,6 +29,7 @@
      else "unknown"),
 
   debug ? false,
+  withCrashReporter ? true,
   withJemalloc ? true, # masks heap fragmentation
   withQtSvg ? true,
   withWayland ? true,
@@ -55,6 +57,7 @@
     qt6.qtdeclarative
     cli11
   ]
+  ++ (lib.optional withCrashReporter breakpad)
   ++ (lib.optional withJemalloc jemalloc)
   ++ (lib.optional withQtSvg qt6.qtsvg)
   ++ (lib.optionals withWayland [ qt6.qtwayland wayland ])
@@ -67,6 +70,7 @@
   cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
   cmakeFlags = [ "-DGIT_REVISION=${gitRev}" ]
+  ++ lib.optional (!withCrashReporter) "-DCRASH_REPORTER=OFF"
   ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
   ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
   ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"

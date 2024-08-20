@@ -1,13 +1,17 @@
 #include "main.hpp"
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
+#include <CLI/Error.hpp>
 #include <CLI/Validators.hpp>
 #include <qapplication.h>
 #include <qcoreapplication.h>
 #include <qcryptographichash.h>
+#include <qdatastream.h>
+#include <qdatetime.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qguiapplication.h>
@@ -24,162 +28,164 @@
 #include <qtextstream.h>
 #include <qtpreprocessorsupport.h>
 
+#include "build.hpp"
+#include "common.hpp"
+#include "crashinfo.hpp"
 #include "logging.hpp"
 #include "paths.hpp"
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
+#if CRASH_REPORTER
+#include "../crash/handler.hpp"
+#include "../crash/main.hpp"
+#endif
 
-int qs_main(int argc, char** argv) {
+struct CommandInfo {
+	QString configPath;
+	QString manifestPath;
+	QString configName;
+	QString& initialWorkdir;
+	int& debugPort;
+	bool& waitForDebug;
+	bool& printInfo;
+	bool& noColor;
+	bool& sparseLogsOnly;
+};
 
-	auto qArgC = 1;
-	auto* qArgV = argv;
+void processCommand(int argc, char** argv, CommandInfo& info) {
+	auto app = CLI::App("");
 
-	auto noColor = !qEnvironmentVariableIsEmpty("NO_COLOR");
+	class QStringOption {
+	public:
+		QStringOption() = default;
+		QStringOption& operator=(const std::string& str) {
+			this->str = QString::fromStdString(str);
+			return *this;
+		}
 
-	QString workingDirectory;
-	QString configFilePath;
-	QString shellId;
-	auto printInfo = false;
+		QString& operator*() { return this->str; }
 
-	auto debugPort = -1;
-	auto waitForDebug = false;
+	private:
+		QString str;
+	};
 
-	auto useQApplication = false;
-	auto nativeTextRendering = false;
-	auto desktopSettingsAware = true;
-	QHash<QString, QString> envOverrides;
+	class QStringRefOption {
+	public:
+		QStringRefOption(QString* str): str(str) {}
+		QStringRefOption& operator=(const std::string& str) {
+			*this->str = QString::fromStdString(str);
+			return *this;
+		}
 
-	{
-		auto app = CLI::App("");
+	private:
+		QString* str;
+	};
 
-		class QStringOption {
-		public:
-			QStringOption() = default;
-			QStringOption& operator=(const std::string& str) {
-				this->str = QString::fromStdString(str);
-				return *this;
-			}
+	/// ---
+	QStringRefOption path(&info.configPath);
+	QStringRefOption manifest(&info.manifestPath);
+	QStringRefOption config(&info.configName);
+	QStringRefOption workdirRef(&info.initialWorkdir);
 
-			QString& operator*() { return this->str; }
+	auto* selection = app.add_option_group(
+	    "Config Selection",
+	    "Select a configuration to run (defaults to $XDG_CONFIG_HOME/quickshell/shell.qml)"
+	);
 
-		private:
-			QString str;
-		};
+	auto* pathArg =
+	    selection->add_option("-p,--path", path, "Path to a QML file to run. (Env:QS_CONFIG_PATH)");
 
-		class QStringRefOption {
-		public:
-			QStringRefOption(QString* str): str(str) {}
-			QStringRefOption& operator=(const std::string& str) {
-				*this->str = QString::fromStdString(str);
-				return *this;
-			}
+	auto* mfArg = selection->add_option(
+	    "-m,--manifest",
+	    manifest,
+	    "Path to a manifest containing configurations. (Env:QS_MANIFEST)\n"
+	    "(Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf)"
+	);
 
-		private:
-			QString* str;
-		};
+	auto* cfgArg = selection->add_option(
+	    "-c,--config",
+	    config,
+	    "Name of a configuration within a manifest. (Env:QS_CONFIG_NAME)"
+	);
 
-		/// ---
-		QStringOption path;
-		QStringOption manifest;
-		QStringOption config;
-		QStringRefOption workdirRef(&workingDirectory);
+	selection->add_option("-d,--workdir", workdirRef, "Initial working directory.");
 
-		auto* selection = app.add_option_group(
-		    "Config Selection",
-		    "Select a configuration to run (defaults to $XDG_CONFIG_HOME/quickshell/shell.qml)"
-		);
+	pathArg->excludes(mfArg, cfgArg);
 
-		auto* pathArg =
-		    selection->add_option("-p,--path", path, "Path to a QML file to run. (Env:QS_CONFIG_PATH)");
+	/// ---
+	auto* debug = app.add_option_group("Debugging");
 
-		auto* mfArg = selection->add_option(
-		    "-m,--manifest",
-		    manifest,
-		    "Path to a manifest containing configurations. (Env:QS_MANIFEST)\n"
-		    "(Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf)"
-		);
+	auto* debugPortArg = debug
+	                         ->add_option(
+	                             "--debugport",
+	                             info.debugPort,
+	                             "Open the given port for a QML debugger to connect to."
+	                         )
+	                         ->check(CLI::Range(0, 65535));
 
-		auto* cfgArg = selection->add_option(
-		    "-c,--config",
-		    config,
-		    "Name of a configuration within a manifest. (Env:QS_CONFIG_NAME)"
-		);
+	debug
+	    ->add_flag(
+	        "--waitfordebug",
+	        info.waitForDebug,
+	        "Wait for a debugger to attach to the given port before launching."
+	    )
+	    ->needs(debugPortArg);
 
-		selection->add_option("-d,--workdir", workdirRef, "Initial working directory.");
+	/// ---
+	app.add_flag("--info", info.printInfo, "Print information about the shell")
+	    ->excludes(debugPortArg);
+	app.add_flag("--no-color", info.noColor, "Do not color the log output. (Env:NO_COLOR)");
+	auto* printVersion = app.add_flag("-V,--version", "Print quickshell's version, then exit.");
 
-		pathArg->excludes(mfArg, cfgArg);
+	app.add_flag(
+	    "--no-detailed-logs",
+	    info.sparseLogsOnly,
+	    "Do not enable this unless you know what you are doing."
+	);
 
-		/// ---
-		auto* debug = app.add_option_group("Debugging");
+	/// ---
+	QStringOption logPath;
+	QStringOption logFilter;
+	auto logNoTime = false;
 
-		auto* debugPortArg = debug
-		                         ->add_option(
-		                             "--debugport",
-		                             debugPort,
-		                             "Open the given port for a QML debugger to connect to."
-		                         )
-		                         ->check(CLI::Range(0, 65535));
+	auto* readLog = app.add_subcommand("read-log", "Read a quickshell log file.");
+	readLog->add_option("path", logPath, "Path to the log file to read")->required();
 
-		debug
-		    ->add_flag(
-		        "--waitfordebug",
-		        waitForDebug,
-		        "Wait for a debugger to attach to the given port before launching."
-		    )
-		    ->needs(debugPortArg);
+	readLog->add_option(
+	    "-f,--filter",
+	    logFilter,
+	    "Logging categories to display. (same syntax as QT_LOGGING_RULES)"
+	);
 
-		/// ---
-		auto sparseLogsOnly = false;
-		app.add_flag("--info", printInfo, "Print information about the shell")->excludes(debugPortArg);
-		app.add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
-		auto* printVersion = app.add_flag("-V,--version", "Print quickshell's version, then exit.");
+	readLog->add_flag("--no-time", logNoTime, "Do not print timestamps of log messages.");
+	readLog->add_flag("--no-color", info.noColor, "Do not color the log output. (Env:NO_COLOR)");
 
-		app.add_flag(
-		    "--no-detailed-logs",
-		    sparseLogsOnly,
-		    "Do not enable this unless you know what you are doing."
-		);
+	try {
+		app.parse(argc, argv);
+	} catch (const CLI::ParseError& e) {
+		exit(app.exit(e)); // NOLINT
+	};
 
-		/// ---
-		QStringOption logPath;
-		QStringOption logFilter;
-		auto logNoTime = false;
-
-		auto* readLog = app.add_subcommand("read-log", "Read a quickshell log file.");
-		readLog->add_option("path", logPath, "Path to the log file to read")->required();
-
-		readLog->add_option(
-		    "-f,--filter",
-		    logFilter,
-		    "Logging categories to display. (same syntax as QT_LOGGING_RULES)"
-		);
-
-		readLog->add_flag("--no-time", logNoTime, "Do not print timestamps of log messages.");
-		readLog->add_flag("--no-color", noColor, "Do not color the log output. (Env:NO_COLOR)");
-
-		CLI11_PARSE(app, argc, argv);
-
-		const auto qApplication = QCoreApplication(qArgC, qArgV);
-
-		// Start log manager - has to happen with an active event loop or offthread can't be started.
-		LogManager::init(!noColor, sparseLogsOnly);
-
-		if (*printVersion) {
-			std::cout << "quickshell pre-release, revision: " << GIT_REVISION << std::endl;
-			return 0;
-		} if (*readLog) {
-			auto file = QFile(*logPath);
-			if (!file.open(QFile::ReadOnly)) {
-				qCritical() << "Failed to open log for reading:" << *logPath;
-				return -1;
-			} else {
-				qInfo() << "Reading log" << *logPath;
-			}
-
-			return qs::log::readEncodedLogs(&file, !logNoTime, *logFilter) ? 0 : -1;
+	if (*printVersion) {
+		std::cout << "quickshell pre-release, revision: " << GIT_REVISION << std::endl;
+		exit(0); // NOLINT
+	} else if (*readLog) {
+		auto file = QFile(*logPath);
+		if (!file.open(QFile::ReadOnly)) {
+			qCritical() << "Failed to open log for reading:" << *logPath;
+			exit(-1); // NOLINT
 		} else {
+			qInfo() << "Reading log" << *logPath;
+		}
 
-			// NOLINTBEGIN
+		exit( // NOLINT
+		    qs::log::readEncodedLogs(&file, !logNoTime, *logFilter) ? 0 : -1
+		);
+	}
+}
+
+QString commandConfigPath(QString path, QString manifest, QString config, bool printInfo) {
+	// NOLINTBEGIN
 #define CHECK(rname, name, level, label, expr)                                                     \
 	QString name = expr;                                                                             \
 	if (rname.isEmpty() && !name.isEmpty()) {                                                        \
@@ -189,230 +195,340 @@ int qs_main(int argc, char** argv) {
 	}
 
 #define OPTSTR(name) (name.isEmpty() ? "(unset)" : name.toStdString())
-			// NOLINTEND
+	// NOLINTEND
 
-			QString basePath;
-			int basePathLevel = 0;
-			Q_UNUSED(basePathLevel);
-			{
-				// NOLINTBEGIN
-				// clang-format off
-				CHECK(basePath, envBasePath, 0, foundbase, qEnvironmentVariable("QS_BASE_PATH"));
-				CHECK(basePath, defaultBasePath, 0, foundbase, QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("quickshell"));
-				// clang-format on
-				// NOLINTEND
+	QString basePath;
+	int basePathLevel = 0;
+	Q_UNUSED(basePathLevel);
+	{
+		// NOLINTBEGIN
+		// clang-format off
+		CHECK(basePath, envBasePath, 0, foundbase, qEnvironmentVariable("QS_BASE_PATH"));
+		CHECK(basePath, defaultBasePath, 0, foundbase, QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("quickshell"));
+		// clang-format on
+		// NOLINTEND
 
-				if (printInfo) {
-					// clang-format off
-					std::cout << "Base path: " << OPTSTR(basePath) << "\n";
-					std::cout << " - Environment (QS_BASE_PATH): " << OPTSTR(envBasePath) << "\n";
-					std::cout << " - Default: " << OPTSTR(defaultBasePath) << "\n";
-					// clang-format on
-				}
-			}
-		foundbase:;
+		if (printInfo) {
+			// clang-format off
+			std::cout << "Base path: " << OPTSTR(basePath) << "\n";
+			std::cout << " - Environment (QS_BASE_PATH): " << OPTSTR(envBasePath) << "\n";
+			std::cout << " - Default: " << OPTSTR(defaultBasePath) << "\n";
+			// clang-format on
+		}
+	}
+foundbase:;
 
-			QString configPath;
-			int configPathLevel = 10;
-			{
-				// NOLINTBEGIN
-				CHECK(configPath, optionConfigPath, 0, foundpath, *path);
-				CHECK(configPath, envConfigPath, 1, foundpath, qEnvironmentVariable("QS_CONFIG_PATH"));
-				// NOLINTEND
+	QString configPath;
+	int configPathLevel = 10;
+	{
+		// NOLINTBEGIN
+		CHECK(configPath, optionConfigPath, 0, foundpath, path);
+		CHECK(configPath, envConfigPath, 1, foundpath, qEnvironmentVariable("QS_CONFIG_PATH"));
+		// NOLINTEND
 
-				if (printInfo) {
-					// clang-format off
-					std::cout << "\nConfig path: " << OPTSTR(configPath) << "\n";
-					std::cout << " - Option: " << OPTSTR(optionConfigPath) << "\n";
-					std::cout << " - Environment (QS_CONFIG_PATH): " << OPTSTR(envConfigPath) << "\n";
-					// clang-format on
-				}
-			}
-		foundpath:;
+		if (printInfo) {
+			// clang-format off
+			std::cout << "\nConfig path: " << OPTSTR(configPath) << "\n";
+			std::cout << " - Option: " << OPTSTR(optionConfigPath) << "\n";
+			std::cout << " - Environment (QS_CONFIG_PATH): " << OPTSTR(envConfigPath) << "\n";
+			// clang-format on
+		}
+	}
+foundpath:;
 
-			QString manifestPath;
-			int manifestPathLevel = 10;
-			{
-				// NOLINTBEGIN
-				// clang-format off
-				CHECK(manifestPath, optionManifestPath, 0, foundmf, *manifest);
-				CHECK(manifestPath, envManifestPath, 1, foundmf, qEnvironmentVariable("QS_MANIFEST"));
-				CHECK(manifestPath, defaultManifestPath, 2, foundmf, QDir(basePath).filePath("manifest.conf"));
-				// clang-format on
-				// NOLINTEND
+	QString manifestPath;
+	int manifestPathLevel = 10;
+	{
+		// NOLINTBEGIN
+		// clang-format off
+		CHECK(manifestPath, optionManifestPath, 0, foundmf, manifest);
+		CHECK(manifestPath, envManifestPath, 1, foundmf, qEnvironmentVariable("QS_MANIFEST"));
+		CHECK(manifestPath, defaultManifestPath, 2, foundmf, QDir(basePath).filePath("manifest.conf"));
+		// clang-format on
+		// NOLINTEND
 
-				if (printInfo) {
-					// clang-format off
-					std::cout << "\nManifest path: " << OPTSTR(manifestPath) << "\n";
-					std::cout << " - Option: " << OPTSTR(optionManifestPath) << "\n";
-					std::cout << " - Environment (QS_MANIFEST): " << OPTSTR(envManifestPath) << "\n";
-					std::cout << " - Default: " << OPTSTR(defaultManifestPath) << "\n";
-					// clang-format on
-				}
-			}
-		foundmf:;
+		if (printInfo) {
+			// clang-format off
+			std::cout << "\nManifest path: " << OPTSTR(manifestPath) << "\n";
+			std::cout << " - Option: " << OPTSTR(optionManifestPath) << "\n";
+			std::cout << " - Environment (QS_MANIFEST): " << OPTSTR(envManifestPath) << "\n";
+			std::cout << " - Default: " << OPTSTR(defaultManifestPath) << "\n";
+			// clang-format on
+		}
+	}
+foundmf:;
 
-			QString configName;
-			int configNameLevel = 10;
-			{
-				// NOLINTBEGIN
-				CHECK(configName, optionConfigName, 0, foundname, *config);
-				CHECK(configName, envConfigName, 1, foundname, qEnvironmentVariable("QS_CONFIG_NAME"));
-				// NOLINTEND
+	QString configName;
+	int configNameLevel = 10;
+	{
+		// NOLINTBEGIN
+		CHECK(configName, optionConfigName, 0, foundname, config);
+		CHECK(configName, envConfigName, 1, foundname, qEnvironmentVariable("QS_CONFIG_NAME"));
+		// NOLINTEND
 
-				if (printInfo) {
-					// clang-format off
-					std::cout << "\nConfig name: " << OPTSTR(configName) << "\n";
-					std::cout << " - Option: " << OPTSTR(optionConfigName) << "\n";
-					std::cout << " - Environment (QS_CONFIG_NAME): " << OPTSTR(envConfigName) << "\n\n";
-					// clang-format on
-				}
-			}
-		foundname:;
+		if (printInfo) {
+			// clang-format off
+			std::cout << "\nConfig name: " << OPTSTR(configName) << "\n";
+			std::cout << " - Option: " << OPTSTR(optionConfigName) << "\n";
+			std::cout << " - Environment (QS_CONFIG_NAME): " << OPTSTR(envConfigName) << "\n\n";
+			// clang-format on
+		}
+	}
+foundname:;
 
-			if (!configPath.isEmpty() && configPathLevel <= configNameLevel) {
-				configFilePath = configPath;
-			} else if (!configName.isEmpty()) {
-				if (!manifestPath.isEmpty()) {
-					auto file = QFile(manifestPath);
-					if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-						auto stream = QTextStream(&file);
-						while (!stream.atEnd()) {
-							auto line = stream.readLine();
-							if (line.trimmed().startsWith("#")) continue;
-							if (line.trimmed().isEmpty()) continue;
+	QString configFilePath;
 
-							auto split = line.split('=');
-							if (split.length() != 2) {
-								qCritical() << "manifest line not in expected format 'name = relativepath':"
-								            << line;
-								return -1;
-							}
+	if (!configPath.isEmpty() && configPathLevel <= configNameLevel) {
+		configFilePath = configPath;
+	} else if (!configName.isEmpty()) {
+		if (!manifestPath.isEmpty()) {
+			auto file = QFile(manifestPath);
+			if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				auto stream = QTextStream(&file);
+				while (!stream.atEnd()) {
+					auto line = stream.readLine();
+					if (line.trimmed().startsWith("#")) continue;
+					if (line.trimmed().isEmpty()) continue;
 
-							if (split[0].trimmed() == configName) {
-								configFilePath = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
-								goto haspath; // NOLINT
-							}
-						}
+					auto split = line.split('=');
+					if (split.length() != 2) {
+						qCritical() << "manifest line not in expected format 'name = relativepath':" << line;
+						exit(-1); // NOLINT
+					}
 
-						qCritical() << "configuration" << configName << "not found in manifest" << manifestPath;
-						return -1;
-					} else if (manifestPathLevel < 2) {
-						qCritical() << "cannot open config manifest at" << manifestPath;
-						return -1;
+					if (split[0].trimmed() == configName) {
+						configFilePath = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
+						goto foundp;
 					}
 				}
 
-				{
-					auto basePathInfo = QFileInfo(basePath);
-					if (!basePathInfo.exists()) {
-						qCritical() << "base path does not exist:" << basePath;
-						return -1;
-					} else if (!QFileInfo(basePathInfo.canonicalFilePath()).isDir()) {
-						qCritical() << "base path is not a directory" << basePath;
-						return -1;
-					}
+				qCritical() << "configuration" << configName << "not found in manifest" << manifestPath;
+				exit(-1); // NOLINT
+			} else if (manifestPathLevel < 2) {
+				qCritical() << "cannot open config manifest at" << manifestPath;
+				exit(-1); // NOLINT
+			}
+		}
 
-					auto dir = QDir(basePath);
-					for (auto& entry: dir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot)) {
-						if (entry == configName) {
-							configFilePath = dir.filePath(entry);
-							goto haspath; // NOLINT
-						}
-					}
+		{
+			auto basePathInfo = QFileInfo(basePath);
+			if (!basePathInfo.exists()) {
+				qCritical() << "base path does not exist:" << basePath;
+				exit(-1); // NOLINT
+			} else if (!QFileInfo(basePathInfo.canonicalFilePath()).isDir()) {
+				qCritical() << "base path is not a directory" << basePath;
+				exit(-1); // NOLINT
+			}
 
-					qCritical() << "no directory named " << configName << "found in base path" << basePath;
-					return -1;
+			auto dir = QDir(basePath);
+			for (auto& entry: dir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot)) {
+				if (entry == configName) {
+					configFilePath = dir.filePath(entry);
+					goto foundp;
 				}
-			haspath:;
-			} else {
-				configFilePath = basePath;
 			}
 
-			auto configFile = QFileInfo(configFilePath);
-			if (!configFile.exists()) {
-				qCritical() << "config path does not exist:" << configFilePath;
-				return -1;
-			}
+			qCritical() << "no directory named " << configName << "found in base path" << basePath;
+			exit(-1); // NOLINT
+		}
+	} else {
+		configFilePath = basePath;
+	}
 
-			if (configFile.isDir()) {
-				configFilePath = QDir(configFilePath).filePath("shell.qml");
-			}
+foundp:;
+	auto configFile = QFileInfo(configFilePath);
+	if (!configFile.exists()) {
+		qCritical() << "config path does not exist:" << configFilePath;
+		exit(-1); // NOLINT
+	}
 
-			configFile = QFileInfo(configFilePath);
-			if (!configFile.exists()) {
-				qCritical() << "no shell.qml found in config path:" << configFilePath;
-				return -1;
-			} else if (configFile.isDir()) {
-				qCritical() << "shell.qml is a directory:" << configFilePath;
-				return -1;
-			}
+	if (configFile.isDir()) {
+		configFilePath = QDir(configFilePath).filePath("shell.qml");
+	}
 
-			configFilePath = QFileInfo(configFilePath).canonicalFilePath();
-			configFile = QFileInfo(configFilePath);
-			if (!configFile.exists()) {
-				qCritical() << "config file does not exist:" << configFilePath;
-				return -1;
-			} else if (configFile.isDir()) {
-				qCritical() << "config file is a directory:" << configFilePath;
-				return -1;
-			}
+	configFile = QFileInfo(configFilePath);
+	if (!configFile.exists()) {
+		qCritical() << "no shell.qml found in config path:" << configFilePath;
+		exit(-1); // NOLINT
+	} else if (configFile.isDir()) {
+		qCritical() << "shell.qml is a directory:" << configFilePath;
+		exit(-1); // NOLINT
+	}
+
+	configFilePath = QFileInfo(configFilePath).canonicalFilePath();
+	configFile = QFileInfo(configFilePath);
+	if (!configFile.exists()) {
+		qCritical() << "config file does not exist:" << configFilePath;
+		exit(-1); // NOLINT
+	} else if (configFile.isDir()) {
+		qCritical() << "config file is a directory:" << configFilePath;
+		exit(-1); // NOLINT
+	}
 
 #undef CHECK
 #undef OPTSTR
 
-			shellId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+	return configFilePath;
+}
 
-			qInfo() << "Config file path:" << configFilePath;
+int qs_main(int argc, char** argv) {
+#if CRASH_REPORTER
+	qsCheckCrash(argc, argv);
+	auto crashHandler = qs::crash::CrashHandler();
+#endif
 
-			if (!QFile(configFilePath).exists()) {
-				qCritical() << "config file does not exist";
-				return -1;
+	auto qArgC = 1;
+	auto* qArgV = argv;
+
+	QString configFilePath;
+	QString initialWorkdir;
+	QString shellId;
+
+	int debugPort = -1;
+	bool waitForDebug = false;
+	bool printInfo = false;
+	bool noColor = !qEnvironmentVariableIsEmpty("NO_COLOR");
+	bool sparseLogsOnly = false;
+
+	auto useQApplication = false;
+	auto nativeTextRendering = false;
+	auto desktopSettingsAware = true;
+	QHash<QString, QString> envOverrides;
+
+	{
+		const auto qApplication = QCoreApplication(qArgC, qArgV);
+
+#if CRASH_REPORTER
+		auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
+
+		if (!lastInfoFdStr.isEmpty()) {
+			auto lastInfoFd = lastInfoFdStr.toInt();
+
+			QFile file;
+			file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+			file.seek(0);
+
+			auto ds = QDataStream(&file);
+			InstanceInfo info;
+			ds >> info;
+
+			configFilePath = info.configPath;
+			initialWorkdir = info.initialWorkdir;
+			noColor = info.noColor;
+			sparseLogsOnly = info.sparseLogsOnly;
+
+			LogManager::init(!noColor, sparseLogsOnly);
+
+			qCritical().nospace() << "Quickshell has crashed under pid "
+			                      << qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt()
+			                      << " (Coredumps will be available under that pid.)";
+
+			qCritical() << "Further crash information is stored under"
+			            << QsPaths::crashDir(info.shellId, info.launchTime).path();
+
+			if (info.launchTime.msecsTo(QDateTime::currentDateTime()) < 10000) {
+				qCritical() << "Quickshell crashed within 10 seconds of launching. Not restarting to avoid "
+				               "a crash loop.";
+				return 0;
+			} else {
+				qCritical() << "Quickshell has been restarted.";
 			}
 
-			auto file = QFile(configFilePath);
-			if (!file.open(QFile::ReadOnly | QFile::Text)) {
-				qCritical() << "could not open config file";
-				return -1;
-			}
+			crashHandler.init();
+		} else
+#endif
+		{
 
-			auto stream = QTextStream(&file);
-			while (!stream.atEnd()) {
-				auto line = stream.readLine().trimmed();
-				if (line.startsWith("//@ pragma ")) {
-					auto pragma = line.sliced(11).trimmed();
+			auto command = CommandInfo {
+			    .initialWorkdir = initialWorkdir,
+			    .debugPort = debugPort,
+			    .waitForDebug = waitForDebug,
+			    .printInfo = printInfo,
+			    .noColor = noColor,
+			    .sparseLogsOnly = sparseLogsOnly,
+			};
 
-					if (pragma == "UseQApplication") useQApplication = true;
-					else if (pragma == "NativeTextRendering") nativeTextRendering = true;
-					else if (pragma == "IgnoreSystemSettings") desktopSettingsAware = false;
-					else if (pragma.startsWith("Env ")) {
-						auto envPragma = pragma.sliced(4);
-						auto splitIdx = envPragma.indexOf('=');
+			processCommand(argc, argv, command);
 
-						if (splitIdx == -1) {
-							qCritical() << "Env pragma" << pragma << "not in the form 'VAR = VALUE'";
-							return -1;
-						}
+			// Start log manager - has to happen with an active event loop or offthread can't be started.
+			LogManager::init(!noColor, sparseLogsOnly);
 
-						auto var = envPragma.sliced(0, splitIdx).trimmed();
-						auto val = envPragma.sliced(splitIdx + 1).trimmed();
-						envOverrides.insert(var, val);
-					} else if (pragma.startsWith("ShellId ")) {
-						shellId = pragma.sliced(8).trimmed();
-					} else {
-						qCritical() << "Unrecognized pragma" << pragma;
+#if CRASH_REPORTER
+			// Started after log manager for pretty debug logs. Unlikely anything will crash before this point, but
+			// this can be moved if it happens.
+			crashHandler.init();
+#endif
+
+			configFilePath = commandConfigPath(
+			    command.configPath,
+			    command.manifestPath,
+			    command.configName,
+			    command.printInfo
+			);
+		}
+
+		shellId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+
+		qInfo() << "Config file path:" << configFilePath;
+
+		if (!QFile(configFilePath).exists()) {
+			qCritical() << "config file does not exist";
+			return -1;
+		}
+
+		auto file = QFile(configFilePath);
+		if (!file.open(QFile::ReadOnly | QFile::Text)) {
+			qCritical() << "could not open config file";
+			return -1;
+		}
+
+		auto stream = QTextStream(&file);
+		while (!stream.atEnd()) {
+			auto line = stream.readLine().trimmed();
+			if (line.startsWith("//@ pragma ")) {
+				auto pragma = line.sliced(11).trimmed();
+
+				if (pragma == "UseQApplication") useQApplication = true;
+				else if (pragma == "NativeTextRendering") nativeTextRendering = true;
+				else if (pragma == "IgnoreSystemSettings") desktopSettingsAware = false;
+				else if (pragma.startsWith("Env ")) {
+					auto envPragma = pragma.sliced(4);
+					auto splitIdx = envPragma.indexOf('=');
+
+					if (splitIdx == -1) {
+						qCritical() << "Env pragma" << pragma << "not in the form 'VAR = VALUE'";
 						return -1;
 					}
-				} else if (line.startsWith("import")) break;
-			}
 
-			file.close();
+					auto var = envPragma.sliced(0, splitIdx).trimmed();
+					auto val = envPragma.sliced(splitIdx + 1).trimmed();
+					envOverrides.insert(var, val);
+				} else if (pragma.startsWith("ShellId ")) {
+					shellId = pragma.sliced(8).trimmed();
+				} else {
+					qCritical() << "Unrecognized pragma" << pragma;
+					return -1;
+				}
+			} else if (line.startsWith("import")) break;
 		}
+
+		file.close();
 	}
 
 	qInfo() << "Shell ID:" << shellId;
 
 	if (printInfo) return 0;
+
+#if CRASH_REPORTER
+	crashHandler.setInstanceInfo(InstanceInfo {
+	    .configPath = configFilePath,
+	    .shellId = shellId,
+	    .initialWorkdir = initialWorkdir,
+	    .launchTime = qs::Common::LAUNCH_TIME,
+	    .noColor = noColor,
+	    .sparseLogsOnly = sparseLogsOnly,
+	});
+#endif
 
 	for (auto [var, val]: envOverrides.asKeyValueRange()) {
 		qputenv(var.toUtf8(), val.toUtf8());
@@ -484,8 +600,8 @@ int qs_main(int argc, char** argv) {
 		QQmlDebuggingEnabler::startTcpDebugServer(debugPort, wait);
 	}
 
-	if (!workingDirectory.isEmpty()) {
-		QDir::setCurrent(workingDirectory);
+	if (!initialWorkdir.isEmpty()) {
+		QDir::setCurrent(initialWorkdir);
 	}
 
 	QuickshellPlugin::initPlugins();

@@ -9,6 +9,8 @@
 #include <qtenvironmentvariables.h>
 #include <unistd.h>
 
+#include "common.hpp"
+
 Q_LOGGING_CATEGORY(logPaths, "quickshell.paths", QtWarningMsg);
 
 QsPaths* QsPaths::instance() {
@@ -17,6 +19,15 @@ QsPaths* QsPaths::instance() {
 }
 
 void QsPaths::init(QString shellId) { QsPaths::instance()->shellId = std::move(shellId); }
+
+QDir QsPaths::crashDir(const QString& shellId, const QDateTime& launchTime) {
+	auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+	dir = QDir(dir.filePath("crashes"));
+	dir = QDir(dir.filePath(shellId));
+	dir = QDir(dir.filePath(QString("run-%1").arg(launchTime.toMSecsSinceEpoch())));
+
+	return dir;
+}
 
 QDir* QsPaths::cacheDir() {
 	if (this->cacheState == DirState::Unknown) {
@@ -73,7 +84,7 @@ QDir* QsPaths::instanceRunDir() {
 			this->instanceRunState = DirState::Failed;
 		} else {
 			this->mInstanceRunDir =
-			    runtimeDir->filePath(QString("run-%1").arg(QDateTime::currentMSecsSinceEpoch()));
+			    runtimeDir->filePath(QString("run-%1").arg(qs::Common::LAUNCH_TIME.toMSecsSinceEpoch()));
 
 			qCDebug(logPaths) << "Initialized instance runtime path:" << this->mInstanceRunDir.path();
 

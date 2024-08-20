@@ -5,6 +5,10 @@ install(TARGETS quickshell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_subdirectory(core)
 add_subdirectory(io)
 
+if (CRASH_REPORTER)
+	add_subdirectory(crash)
+endif()
+
 if (DBUS)
 	add_subdirectory(dbus)
 endif()

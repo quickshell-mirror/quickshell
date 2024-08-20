@@ -11,6 +11,7 @@
 #include <qtmetamacros.h>
 #include <unistd.h>
 
+#include "../../core/common.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_watcher_interface.h"
 #include "item.hpp"
@@ -31,7 +32,10 @@ StatusNotifierHost::StatusNotifierHost(QObject* parent): QObject(parent) {
 		return;
 	}
 
-	this->hostId = QString("org.kde.StatusNotifierHost-") + QString::number(getpid());
+	this->hostId = QString("org.kde.StatusNotifierHost-%1-%2")
+	                   .arg(QString::number(getpid()))
+	                   .arg(QString::number(qs::Common::LAUNCH_TIME.toMSecsSinceEpoch()));
+
 	auto success = bus.registerService(this->hostId);
 
 	if (!success) {
@@ -98,7 +102,7 @@ void StatusNotifierHost::connectToWatcher() {
 	    [this](QStringList value, QDBusError error) { // NOLINT
 		    if (error.isValid()) {
 			    qCWarning(logStatusNotifierHost).noquote()
-			        << "Error reading \"RegisteredStatusNotifierITems\" property of watcher"
+			        << "Error reading \"RegisteredStatusNotifierItems\" property of watcher"
 			        << this->watcher->service();
 
 			    qCWarning(logStatusNotifierHost) << error;
