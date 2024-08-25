@@ -9,6 +9,7 @@ option(BUILD_TESTING "Build tests" OFF)
 option(ASAN "Enable ASAN" OFF) # note: better output with gcc than clang
 option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
 
+option(INSTALL_QML_LIB "Installing the QML lib" ON)
 option(CRASH_REPORTER "Enable the crash reporter" ON)
 option(USE_JEMALLOC "Use jemalloc over the system malloc implementation" ON)
 option(SOCKETS "Enable unix socket support" ON)
@@ -30,6 +31,7 @@ option(SERVICE_UPOWER "UPower service" ON)
 option(SERVICE_NOTIFICATIONS "Notification server" ON)
 
 message(STATUS "Quickshell configuration")
+message(STATUS "  QML lib installation: ${INSTALL_QML_LIB}")
 message(STATUS "  Crash reporter: ${CRASH_REPORTER}")
 message(STATUS "  Jemalloc: ${USE_JEMALLOC}")
 message(STATUS "  Build tests: ${BUILD_TESTING}")
@@ -118,6 +120,14 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
+
+if (INSTALL_QML_LIB)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt-6/qml
+		FILES_MATCHING PATTERN "*"
+	)
+endif()
 
 # pch breaks clang-tidy..... somehow
 if (NOT NO_PCH)

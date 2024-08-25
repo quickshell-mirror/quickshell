@@ -23,6 +23,12 @@ If your package manager supports enabling some features but not others,
 we recommend not exposing the subfeatures and just the main ones that introduce
 new dependencies: `wayland`, `x11`, `pipewire`, `hyprland`
 
+### QML Library
+If you wish to use a linter or similar tools, you will need the QML Modules for it to pick up on the types.
+
+To disable: `-DINSTALL_QML_LIB=OFF`
+
+
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused
 by the QML engine, which results in much lower memory usage. Without this you

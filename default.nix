@@ -37,6 +37,7 @@
   withPipewire ? true,
   withPam ? true,
   withHyprland ? true,
+  withQMLLib ? true,
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -75,7 +76,8 @@
   ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
   ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"
   ++ lib.optional (!withPam) "-DSERVICE_PAM=OFF"
-  ++ lib.optional (!withHyprland) "-DHYPRLAND=OFF";
+  ++ lib.optional (!withHyprland) "-DHYPRLAND=OFF"
+  ++ lib.optional (!withQMLLib) "-DINSTALL_QML_LIB=OFF";
 
   buildPhase = "ninjaBuildPhase";
   enableParallelBuilding = true;
