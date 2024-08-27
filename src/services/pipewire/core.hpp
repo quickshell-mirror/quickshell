@@ -28,8 +28,11 @@ public:
 	pw_context* context = nullptr;
 	pw_core* core = nullptr;
 
+signals:
+	void polled();
+
 private slots:
-	void poll() const;
+	void poll();
 
 private:
 	QSocketNotifier notifier;

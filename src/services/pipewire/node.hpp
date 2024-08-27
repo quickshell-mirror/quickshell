@@ -18,6 +18,8 @@
 
 namespace qs::service::pipewire {
 
+class PwDevice;
+
 ///! Audio channel of a pipewire node.
 /// See @@PwNodeAudio.channels.
 class PwAudioChannel: public QObject {
@@ -160,6 +162,9 @@ public:
 	bool isStream = false;
 
 	PwNodeBoundData* boundData = nullptr;
+
+	PwDevice* device = nullptr;
+	qint32 routeDevice = -1;
 
 signals:
 	void propertiesChanged();

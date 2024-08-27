@@ -9,6 +9,7 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qsocketnotifier.h>
+#include <qtmetamacros.h>
 #include <spa/utils/defs.h>
 #include <spa/utils/hook.h>
 
@@ -68,11 +69,12 @@ bool PwCore::isValid() const {
 	return this->core != nullptr;
 }
 
-void PwCore::poll() const {
+void PwCore::poll() {
 	qCDebug(logLoop) << "Pipewire event loop received new events, iterating.";
 	// Spin pw event loop.
 	pw_loop_iterate(this->loop, 0);
 	qCDebug(logLoop) << "Done iterating pipewire event loop.";
+	emit this->polled();
 }
 
 SpaHook::SpaHook() { // NOLINT

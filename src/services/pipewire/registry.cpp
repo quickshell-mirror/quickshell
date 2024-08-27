@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include <pipewire/core.h>
+#include <pipewire/device.h>
 #include <pipewire/extensions/metadata.h>
 #include <pipewire/link.h>
 #include <pipewire/node.h>
@@ -14,6 +15,7 @@
 #include <qtypes.h>
 
 #include "core.hpp"
+#include "device.hpp"
 #include "link.hpp"
 #include "metadata.hpp"
 #include "node.hpp"
@@ -114,6 +116,7 @@ void PwBindableObjectRef::onObjectDestroyed() {
 }
 
 void PwRegistry::init(PwCore& core) {
+	this->core = &core;
 	this->object = pw_core_get_registry(core.core, PW_VERSION_REGISTRY, 0);
 	pw_registry_add_listener(this->object, &this->listener.hook, &PwRegistry::EVENTS, this);
 }
@@ -156,6 +159,12 @@ void PwRegistry::onGlobal(
 
 		self->nodes.emplace(id, node);
 		emit self->nodeAdded(node);
+	} else if (strcmp(type, PW_TYPE_INTERFACE_Device) == 0) {
+		auto* device = new PwDevice();
+		device->init(self, id, permissions);
+		device->initProps(props);
+
+		self->devices.emplace(id, device);
 	}
 }
 

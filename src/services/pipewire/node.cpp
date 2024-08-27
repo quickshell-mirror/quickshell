@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include <pipewire/core.h>
+#include <pipewire/keys.h>
 #include <pipewire/node.h>
 #include <qcontainerfwd.h>
 #include <qlogging.h>
@@ -17,11 +18,14 @@
 #include <spa/param/props.h>
 #include <spa/pod/builder.h>
 #include <spa/pod/iter.h>
+#include <spa/pod/parser.h>
 #include <spa/pod/pod.h>
 #include <spa/pod/vararg.h>
 #include <spa/utils/dict.h>
 #include <spa/utils/keys.h>
 #include <spa/utils/type.h>
+
+#include "device.hpp"
 
 namespace qs::service::pipewire {
 
@@ -79,17 +83,25 @@ QString PwAudioChannel::toString(Enum value) {
 }
 
 void PwNode::bindHooks() {
+	// Bind the device first as pw is in order, meaning the device should be bound before
+	// we want to do anything with it.
+	if (this->device) this->device->ref();
+
 	pw_node_add_listener(this->proxy(), &this->listener.hook, &PwNode::EVENTS, this);
 }
 
 void PwNode::unbindHooks() {
 	this->listener.remove();
+	this->routeDevice = -1;
 	this->properties.clear();
 	emit this->propertiesChanged();
 
 	if (this->boundData != nullptr) {
 		this->boundData->onUnbind();
 	}
+
+	// unbind after the node is unbound
+	if (this->device) this->device->unref();
 }
 
 void PwNode::initProps(const spa_dict* props) {
@@ -121,8 +133,26 @@ void PwNode::initProps(const spa_dict* props) {
 		this->description = nodeDesc;
 	}
 
-	if (const auto* nodeNick = spa_dict_lookup(props, "node.nick")) {
+	if (const auto* nodeNick = spa_dict_lookup(props, PW_KEY_NODE_NICK)) {
 		this->nick = nodeNick;
+	}
+
+	if (const auto* deviceId = spa_dict_lookup(props, PW_KEY_DEVICE_ID)) {
+		auto ok = false;
+		auto id = QString::fromUtf8(deviceId).toInt(&ok);
+
+		if (!ok) {
+			qCCritical(logNode) << this << "has a device.id property but the value is not an integer. Id:"
+			                    << deviceId;
+		} else {
+			this->device = this->registry->devices.value(id);
+
+			if (this->device == nullptr) {
+				qCCritical(logNode
+				) << this
+				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
+			}
+		}
 	}
 
 	if (this->type == PwNodeType::Audio) {
@@ -141,6 +171,24 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PROPS) != 0) {
 		auto properties = QMap<QString, QString>();
+
+		if (self->device) {
+			if (const auto* routeDevice = spa_dict_lookup(info->props, "card.profile.device")) {
+				auto ok = false;
+				auto id = QString::fromUtf8(routeDevice).toInt(&ok);
+
+				if (!ok) {
+					qCCritical(logNode
+					) << self
+					  << "has a card.profile.device property but the value is not an integer. Value:" << id;
+				}
+
+				self->routeDevice = id;
+			} else {
+				qCCritical(logNode) << self << "has attached device" << self->device
+				                    << "but no card.profile.device property.";
+			}
+		}
 
 		const spa_dict_item* item = nullptr;
 		spa_dict_for_each(item, info->props) { properties.insert(item->key, item->value); }
@@ -191,29 +239,6 @@ void PwNodeBoundAudio::updateVolumeFromParam(const spa_pod* param) {
 	const auto* volumesProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelVolumes);
 	const auto* channelsProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelMap);
 
-	if (volumesProp == nullptr) {
-		qCWarning(logNode) << "Cannot update volume props of" << this->node
-		                   << "- channelVolumes was null.";
-		return;
-	}
-
-	if (channelsProp == nullptr) {
-		qCWarning(logNode) << "Cannot update volume props of" << this->node << "- channelMap was null.";
-		return;
-	}
-
-	if (spa_pod_is_array(&volumesProp->value) == 0) {
-		qCWarning(logNode) << "Cannot update volume props of" << this->node
-		                   << "- channelVolumes was not an array.";
-		return;
-	}
-
-	if (spa_pod_is_array(&channelsProp->value) == 0) {
-		qCWarning(logNode) << "Cannot update volume props of" << this->node
-		                   << "- channelMap was not an array.";
-		return;
-	}
-
 	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);   // NOLINT
 	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value); // NOLINT
 
@@ -246,13 +271,13 @@ void PwNodeBoundAudio::updateVolumeFromParam(const spa_pod* param) {
 	if (this->mChannels != channelsVec) {
 		this->mChannels = channelsVec;
 		channelsChanged = true;
-		qCDebug(logNode) << "Got updated channels of" << this->node << '-' << this->mChannels;
+		qCInfo(logNode) << "Got updated channels of" << this->node << '-' << this->mChannels;
 	}
 
 	if (this->mVolumes != volumesVec) {
 		this->mVolumes = volumesVec;
 		volumesChanged = true;
-		qCDebug(logNode) << "Got updated volumes of" << this->node << '-' << this->mVolumes;
+		qCInfo(logNode) << "Got updated volumes of" << this->node << '-' << this->mVolumes;
 	}
 
 	if (channelsChanged) emit this->channelsChanged();
@@ -260,25 +285,21 @@ void PwNodeBoundAudio::updateVolumeFromParam(const spa_pod* param) {
 }
 
 void PwNodeBoundAudio::updateMutedFromParam(const spa_pod* param) {
-	const auto* mutedProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
+	auto parser = spa_pod_parser();
+	spa_pod_parser_pod(&parser, param);
 
-	if (mutedProp == nullptr) {
-		qCWarning(logNode) << "Cannot update muted state of" << this->node
-		                   << "- mute property was null.";
-		return;
-	}
+	auto muted = false;
 
-	if (spa_pod_is_bool(&mutedProp->value) == 0) {
-		qCWarning(logNode) << "Cannot update muted state of" << this->node
-		                   << "- mute property was not a boolean.";
-		return;
-	}
-
-	bool muted = false;
-	spa_pod_get_bool(&mutedProp->value, &muted);
+	// clang-format off
+	quint32 id = SPA_PARAM_Props;
+	spa_pod_parser_get_object(
+			&parser, SPA_TYPE_OBJECT_Props, &id,
+			SPA_PROP_mute, SPA_POD_Bool(&muted)
+	);
+	// clang-format on
 
 	if (muted != this->mMuted) {
-		qCDebug(logNode) << "Got updated mute status of" << this->node << '-' << muted;
+		qCInfo(logNode) << "Got updated mute status of" << this->node << '-' << muted;
 		this->mMuted = muted;
 		emit this->mutedChanged();
 	}
@@ -295,26 +316,35 @@ bool PwNodeBoundAudio::isMuted() const { return this->mMuted; }
 
 void PwNodeBoundAudio::setMuted(bool muted) {
 	if (this->node->proxy() == nullptr) {
-		qCWarning(logNode) << "Tried to change mute state for" << this->node << "which is not bound.";
+		qCCritical(logNode) << "Tried to change mute state for" << this->node << "which is not bound.";
 		return;
 	}
 
 	if (muted == this->mMuted) return;
 
-	auto buffer = std::array<quint32, 1024>();
-	auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
+	if (this->node->device) {
+		if (!this->node->device->setMuted(this->node->routeDevice, muted)) {
+			return;
+		}
 
-	// is this a leak? seems like probably not? docs don't say, as usual.
-	// clang-format off
-	auto* pod = spa_pod_builder_add_object(
-			&builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
-			SPA_PROP_mute, SPA_POD_Bool(muted)
-	);
-	// clang-format on
+		qCInfo(logNode) << "Changed muted state of" << this->node << "to" << muted << "via device";
+	} else {
+		auto buffer = std::array<quint8, 1024>();
+		auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
 
-	qCDebug(logNode) << "Changed muted state of" << this->node << "to" << muted;
+		// is this a leak? seems like probably not? docs don't say, as usual.
+		// clang-format off
+		auto* pod = spa_pod_builder_add_object(
+				&builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
+				SPA_PROP_mute, SPA_POD_Bool(muted)
+		);
+		// clang-format on
+
+		qCInfo(logNode) << "Changed muted state of" << this->node << "to" << muted;
+		pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
+	}
+
 	this->mMuted = muted;
-	pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
 	emit this->mutedChanged();
 }
 
@@ -346,38 +376,48 @@ QVector<float> PwNodeBoundAudio::volumes() const { return this->mVolumes; }
 
 void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 	if (this->node->proxy() == nullptr) {
-		qCWarning(logNode) << "Tried to change node volumes for" << this->node << "which is not bound.";
+		qCCritical(logNode) << "Tried to change node volumes for" << this->node
+		                    << "which is not bound.";
 		return;
 	}
 
 	if (volumes == this->mVolumes) return;
 
 	if (volumes.length() != this->mVolumes.length()) {
-		qCWarning(logNode) << "Tried to change node volumes for" << this->node << "from"
-		                   << this->mVolumes << "to" << volumes
-		                   << "which has a different length than the list of channels"
-		                   << this->mChannels;
+		qCCritical(logNode) << "Tried to change node volumes for" << this->node << "from"
+		                    << this->mVolumes << "to" << volumes
+		                    << "which has a different length than the list of channels"
+		                    << this->mChannels;
 		return;
 	}
 
-	auto buffer = std::array<quint32, 1024>();
-	auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
+	if (this->node->device) {
+		if (!this->node->device->setVolumes(this->node->routeDevice, volumes)) {
+			return;
+		}
 
-	auto cubedVolumes = QVector<float>();
-	for (auto volume: volumes) {
-		cubedVolumes.push_back(volume * volume * volume);
+		qCInfo(logNode) << "Changed volumes of" << this->node << "to" << volumes << "via device";
+	} else {
+		auto buffer = std::array<quint8, 1024>();
+		auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
+
+		auto cubedVolumes = QVector<float>();
+		for (auto volume: volumes) {
+			cubedVolumes.push_back(volume * volume * volume);
+		}
+
+		// clang-format off
+		auto* pod = spa_pod_builder_add_object(
+				&builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
+				SPA_PROP_channelVolumes, SPA_POD_Array(sizeof(float), SPA_TYPE_Float, cubedVolumes.length(), cubedVolumes.data())
+		);
+		// clang-format on
+
+		qCInfo(logNode) << "Changed volumes of" << this->node << "to" << volumes;
+		pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
 	}
 
-	// clang-format off
-	auto* pod = spa_pod_builder_add_object(
-			&builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
-			SPA_PROP_channelVolumes, SPA_POD_Array(sizeof(float), SPA_TYPE_Float, cubedVolumes.length(), cubedVolumes.data())
-	);
-	// clang-format on
-
-	qCDebug(logNode) << "Changed volumes of" << this->node << "to" << volumes;
 	this->mVolumes = volumes;
-	pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
 	emit this->volumesChanged();
 }
 

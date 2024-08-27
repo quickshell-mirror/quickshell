@@ -21,6 +21,7 @@ class PwRegistry;
 class PwMetadata;
 class PwNode;
 class PwLink;
+class PwDevice;
 class PwLinkGroup;
 
 class PwBindableObject: public QObject {
@@ -120,8 +121,11 @@ public:
 	//QHash<quint32, PwClient*> clients;
 	QHash<quint32, PwMetadata*> metadata;
 	QHash<quint32, PwNode*> nodes;
+	QHash<quint32, PwDevice*> devices;
 	QHash<quint32, PwLink*> links;
 	QVector<PwLinkGroup*> linkGroups;
+
+	PwCore* core = nullptr;
 
 signals:
 	void nodeAdded(PwNode* node);
