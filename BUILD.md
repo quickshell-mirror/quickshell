@@ -18,16 +18,20 @@ At least Qt 6.6 is required.
 
 All features are enabled by default and some have their own dependencies.
 
-##### Additional note to packagers:
-If your package manager supports enabling some features but not others,
-we recommend not exposing the subfeatures and just the main ones that introduce
-new dependencies: `wayland`, `x11`, `pipewire`, `hyprland`
-
 ### QML Library
-If you wish to use a linter or similar tools, you will need the QML Modules for it to pick up on the types.
+If you wish to use a linter or similar tools, you will need the QML Modules for it
+to pick up on the types.
 
 To disable: `-DINSTALL_QML_LIB=OFF`
 
+### Crash Reporter
+The crash reporter catches crashes, restarts quickshell when it crashes,
+and collects useful crash information in one place. Leaving this enabled will
+enable us to fix bugs far more easily.
+
+To disable: `-DCRASH_REPORTER=OFF`
+
+Dependencies: `google-breakpad`
 
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused

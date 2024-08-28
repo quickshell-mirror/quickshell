@@ -47,6 +47,8 @@ qt_add_library(quickshell-core STATIC
 
 if (CRASH_REPORTER)
 	set(CRASH_REPORTER_DEF 1)
+else()
+	set(CRASH_REPORTER_DEF 0)
 endif()
 
 add_library(quickshell-build INTERFACE)
