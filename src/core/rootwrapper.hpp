@@ -19,6 +19,7 @@ public:
 	void reloadGraph(bool hard);
 
 private slots:
+	void generationDestroyed();
 	void onWatchFilesChanged();
 	void onWatchedFilesChanged();
 

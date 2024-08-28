@@ -96,6 +96,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	generation->onReload(hard ? nullptr : this->generation);
 
 	if (hard && this->generation != nullptr) {
+		QObject::disconnect(this->generation, nullptr, this, nullptr);
 		this->generation->destroy();
 	}
 
@@ -103,6 +104,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	qInfo() << "Configuration Loaded";
 
+	QObject::connect(this->generation, &QObject::destroyed, this, &RootWrapper::generationDestroyed);
 	QObject::connect(
 	    this->generation,
 	    &EngineGeneration::filesChanged,
@@ -116,6 +118,8 @@ void RootWrapper::reloadGraph(bool hard) {
 		emit this->generation->qsgInstance->reloadCompleted();
 	}
 }
+
+void RootWrapper::generationDestroyed() { this->generation = nullptr; }
 
 void RootWrapper::onWatchFilesChanged() {
 	auto watchFiles = QuickshellSettings::instance()->watchFiles();
