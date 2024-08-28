@@ -28,6 +28,12 @@ public:
 	bool setVolumes(qint32 routeDevice, const QVector<float>& volumes);
 	bool setMuted(qint32 routeDevice, bool muted);
 
+	void waitForDevice();
+	[[nodiscard]] bool waitingForDevice() const;
+
+signals:
+	void deviceReady();
+
 private slots:
 	void polled();
 
@@ -44,6 +50,8 @@ private:
 	bool
 	setRouteProps(qint32 routeDevice, const std::function<void*(spa_pod_builder*)>& propsCallback);
 
+	bool mWaitingForDevice = false;
+	bool deviceResponded = false;
 	SpaHook listener;
 };
 

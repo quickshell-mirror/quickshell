@@ -18,7 +18,6 @@
 #include <spa/param/props.h>
 #include <spa/pod/builder.h>
 #include <spa/pod/iter.h>
-#include <spa/pod/parser.h>
 #include <spa/pod/pod.h>
 #include <spa/pod/vararg.h>
 #include <spa/utils/dict.h>
@@ -216,13 +215,25 @@ void PwNode::onParam(
 	}
 }
 
+PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): node(node) {
+	if (node->device) {
+		QObject::connect(node->device, &PwDevice::deviceReady, this, &PwNodeBoundAudio::onDeviceReady);
+	}
+}
+
 void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PARAMS) != 0) {
 		for (quint32 i = 0; i < info->n_params; i++) {
 			auto& param = info->params[i]; // NOLINT
 
-			if (param.id == SPA_PARAM_Props && (param.flags & SPA_PARAM_INFO_READ) != 0) {
-				pw_node_enum_params(this->node->proxy(), 0, param.id, 0, UINT32_MAX, nullptr);
+			if (param.id == SPA_PARAM_Props) {
+				if ((param.flags & SPA_PARAM_INFO_READWRITE) == SPA_PARAM_INFO_READWRITE) {
+					qCDebug(logNode) << "Enumerating props param for" << this;
+					pw_node_enum_params(this->node->proxy(), 0, param.id, 0, UINT32_MAX, nullptr);
+				} else {
+					qCWarning(logNode) << "Unable to enumerate props param for" << this
+					                   << "as the param does not have read+write permissions.";
+				}
 			}
 		}
 	}
@@ -230,84 +241,53 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* param) {
 	if (id == SPA_PARAM_Props && index == 0) {
-		this->updateVolumeFromParam(param);
-		this->updateMutedFromParam(param);
+		this->updateVolumeProps(param);
 	}
 }
 
-void PwNodeBoundAudio::updateVolumeFromParam(const spa_pod* param) {
-	const auto* volumesProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelVolumes);
-	const auto* channelsProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelMap);
+void PwNodeBoundAudio::updateVolumeProps(const spa_pod* param) {
+	auto volumeProps = PwVolumeProps::parseSpaPod(param);
 
-	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);   // NOLINT
-	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value); // NOLINT
-
-	auto volumesVec = QVector<float>();
-	auto channelsVec = QVector<PwAudioChannel::Enum>();
-
-	spa_pod* iter = nullptr;
-	SPA_POD_ARRAY_FOREACH(volumes, iter) {
-		// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
-		auto linear = *reinterpret_cast<float*>(iter); // NOLINT
-		auto visual = std::cbrt(linear);
-		volumesVec.push_back(visual);
-	}
-
-	SPA_POD_ARRAY_FOREACH(channels, iter) {
-		channelsVec.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter)); // NOLINT
-	}
-
-	if (volumesVec.size() != channelsVec.size()) {
+	if (volumeProps.volumes.size() != volumeProps.channels.size()) {
 		qCWarning(logNode) << "Cannot update volume props of" << this->node
 		                   << "- channelVolumes and channelMap are not the same size. Sizes:"
-		                   << volumesVec.size() << channelsVec.size();
+		                   << volumeProps.volumes.size() << volumeProps.channels.size();
 		return;
 	}
 
 	// It is important that the lengths of channels and volumes stay in sync whenever you read them.
 	auto channelsChanged = false;
 	auto volumesChanged = false;
+	auto mutedChanged = false;
 
-	if (this->mChannels != channelsVec) {
-		this->mChannels = channelsVec;
+	if (this->mChannels != volumeProps.channels) {
+		this->mChannels = volumeProps.channels;
 		channelsChanged = true;
 		qCInfo(logNode) << "Got updated channels of" << this->node << '-' << this->mChannels;
 	}
 
-	if (this->mVolumes != volumesVec) {
-		this->mVolumes = volumesVec;
+	if (this->mVolumes != volumeProps.volumes) {
+		this->mVolumes = volumeProps.volumes;
 		volumesChanged = true;
 		qCInfo(logNode) << "Got updated volumes of" << this->node << '-' << this->mVolumes;
 	}
 
+	if (volumeProps.mute != this->mMuted) {
+		this->mMuted = volumeProps.mute;
+		mutedChanged = true;
+		qCInfo(logNode) << "Got updated mute status of" << this->node << '-' << volumeProps.mute;
+	}
+
 	if (channelsChanged) emit this->channelsChanged();
 	if (volumesChanged) emit this->volumesChanged();
-}
-
-void PwNodeBoundAudio::updateMutedFromParam(const spa_pod* param) {
-	auto parser = spa_pod_parser();
-	spa_pod_parser_pod(&parser, param);
-
-	auto muted = false;
-
-	// clang-format off
-	quint32 id = SPA_PARAM_Props;
-	spa_pod_parser_get_object(
-			&parser, SPA_TYPE_OBJECT_Props, &id,
-			SPA_PROP_mute, SPA_POD_Bool(&muted)
-	);
-	// clang-format on
-
-	if (muted != this->mMuted) {
-		qCInfo(logNode) << "Got updated mute status of" << this->node << '-' << muted;
-		this->mMuted = muted;
-		emit this->mutedChanged();
-	}
+	if (mutedChanged) emit this->mutedChanged();
 }
 
 void PwNodeBoundAudio::onUnbind() {
 	this->mChannels.clear();
 	this->mVolumes.clear();
+	this->mDeviceVolumes.clear();
+	this->waitingVolumes.clear();
 	emit this->channelsChanged();
 	emit this->volumesChanged();
 }
@@ -323,11 +303,10 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 	if (muted == this->mMuted) return;
 
 	if (this->node->device) {
+		qCInfo(logNode) << "Changing muted state of" << this->node << "to" << muted << "via device";
 		if (!this->node->device->setMuted(this->node->routeDevice, muted)) {
 			return;
 		}
-
-		qCInfo(logNode) << "Changed muted state of" << this->node << "to" << muted << "via device";
 	} else {
 		auto buffer = std::array<quint8, 1024>();
 		auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
@@ -340,7 +319,7 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 		);
 		// clang-format on
 
-		qCInfo(logNode) << "Changed muted state of" << this->node << "to" << muted;
+		qCInfo(logNode) << "Changed muted state of" << this->node << "to" << muted << "via node";
 		pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
 	}
 
@@ -381,9 +360,14 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 		return;
 	}
 
-	if (volumes == this->mVolumes) return;
+	auto realVolumes = QVector<float>();
+	for (auto volume: volumes) {
+		realVolumes.push_back(volume < 0 ? 0 : volume);
+	}
 
-	if (volumes.length() != this->mVolumes.length()) {
+	if (realVolumes == this->mVolumes) return;
+
+	if (realVolumes.length() != this->mVolumes.length()) {
 		qCCritical(logNode) << "Tried to change node volumes for" << this->node << "from"
 		                    << this->mVolumes << "to" << volumes
 		                    << "which has a different length than the list of channels"
@@ -392,17 +376,25 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 	}
 
 	if (this->node->device) {
-		if (!this->node->device->setVolumes(this->node->routeDevice, volumes)) {
-			return;
-		}
+		if (this->node->device->waitingForDevice()) {
+			qCInfo(logNode) << "Waiting to change volumes of" << this->node << "to" << realVolumes
+			                << "via device";
+			this->waitingVolumes = realVolumes;
+		} else {
+			qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes << "via device";
+			if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
+				return;
+			}
 
-		qCInfo(logNode) << "Changed volumes of" << this->node << "to" << volumes << "via device";
+			this->mDeviceVolumes = realVolumes;
+			this->node->device->waitForDevice();
+		}
 	} else {
 		auto buffer = std::array<quint8, 1024>();
 		auto builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
 
 		auto cubedVolumes = QVector<float>();
-		for (auto volume: volumes) {
+		for (auto volume: realVolumes) {
 			cubedVolumes.push_back(volume * volume * volume);
 		}
 
@@ -413,12 +405,54 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 		);
 		// clang-format on
 
-		qCInfo(logNode) << "Changed volumes of" << this->node << "to" << volumes;
+		qCInfo(logNode) << "Changing volumes of" << this->node << "to" << volumes << "via node";
 		pw_node_set_param(this->node->proxy(), SPA_PARAM_Props, 0, static_cast<spa_pod*>(pod));
 	}
 
-	this->mVolumes = volumes;
+	this->mVolumes = realVolumes;
 	emit this->volumesChanged();
+}
+
+void PwNodeBoundAudio::onDeviceReady() {
+	if (!this->waitingVolumes.isEmpty()) {
+		if (this->waitingVolumes != this->mDeviceVolumes) {
+			qCInfo(logNode) << "Changing volumes of" << this->node << "to" << this->waitingVolumes
+			                << "via device (delayed)";
+
+			this->node->device->setVolumes(this->node->routeDevice, this->waitingVolumes);
+			this->mDeviceVolumes = this->waitingVolumes;
+			this->mVolumes = this->waitingVolumes;
+		}
+
+		this->waitingVolumes.clear();
+	}
+}
+
+PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
+	auto props = PwVolumeProps();
+
+	const auto* volumesProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelVolumes);
+	const auto* channelsProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelMap);
+	const auto* muteProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
+
+	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);   // NOLINT
+	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value); // NOLINT
+
+	spa_pod* iter = nullptr;
+	SPA_POD_ARRAY_FOREACH(volumes, iter) {
+		// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
+		auto linear = *reinterpret_cast<float*>(iter); // NOLINT
+		auto visual = std::cbrt(linear);
+		props.volumes.push_back(visual);
+	}
+
+	SPA_POD_ARRAY_FOREACH(channels, iter) {
+		props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter)); // NOLINT
+	}
+
+	spa_pod_get_bool(&muteProp->value, &props.mute);
+
+	return props;
 }
 
 } // namespace qs::service::pipewire

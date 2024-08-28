@@ -94,6 +94,14 @@ enum class PwNodeType {
 
 class PwNode;
 
+struct PwVolumeProps {
+	QVector<PwAudioChannel::Enum> channels;
+	QVector<float> volumes;
+	bool mute = false;
+
+	static PwVolumeProps parseSpaPod(const spa_pod* param);
+};
+
 class PwNodeBoundData {
 public:
 	PwNodeBoundData() = default;
@@ -111,7 +119,7 @@ class PwNodeBoundAudio
 	Q_OBJECT;
 
 public:
-	explicit PwNodeBoundAudio(PwNode* node): node(node) {}
+	explicit PwNodeBoundAudio(PwNode* node);
 
 	void onInfo(const pw_node_info* info) override;
 	void onSpaParam(quint32 id, quint32 index, const spa_pod* param) override;
@@ -133,13 +141,17 @@ signals:
 	void channelsChanged();
 	void mutedChanged();
 
+private slots:
+	void onDeviceReady();
+
 private:
-	void updateVolumeFromParam(const spa_pod* param);
-	void updateMutedFromParam(const spa_pod* param);
+	void updateVolumeProps(const spa_pod* param);
 
 	bool mMuted = false;
 	QVector<PwAudioChannel::Enum> mChannels;
 	QVector<float> mVolumes;
+	QVector<float> mDeviceVolumes;
+	QVector<float> waitingVolumes;
 	PwNode* node;
 };
 

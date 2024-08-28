@@ -8,6 +8,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/param/param.h>
 #include <spa/param/props.h>
@@ -37,6 +38,7 @@ void PwDevice::unbindHooks() {
 	this->listener.remove();
 	this->stagingIndexes.clear();
 	this->routeDeviceIndexes.clear();
+	this->mWaitingForDevice = false;
 }
 
 const pw_device_events PwDevice::EVENTS = {
@@ -56,6 +58,7 @@ void PwDevice::onInfo(void* data, const pw_device_info* info) {
 				if ((param.flags & SPA_PARAM_INFO_READWRITE) == SPA_PARAM_INFO_READWRITE) {
 					qCDebug(logDevice) << "Enumerating routes param for" << self;
 					self->stagingIndexes.clear();
+					self->deviceResponded = false;
 					pw_device_enum_params(self->proxy(), 0, param.id, 0, UINT32_MAX, nullptr);
 				} else {
 					qCWarning(logDevice) << "Unable to enumerate route param for" << self
@@ -73,12 +76,21 @@ void PwDevice::onParam(
     qint32 /*seq*/,
     quint32 id,
     quint32 /*index*/,
-    quint32 next,
+    quint32 /*next*/,
     const spa_pod* param
 ) {
 	auto* self = static_cast<PwDevice*>(data);
 
 	if (id == SPA_PARAM_Route) {
+		if (!self->deviceResponded) {
+			self->deviceResponded = true;
+
+			if (self->mWaitingForDevice) {
+				self->mWaitingForDevice = false;
+				emit self->deviceReady();
+			}
+		}
+
 		self->addDeviceIndexPairs(param);
 	}
 }
@@ -131,7 +143,7 @@ bool PwDevice::setVolumes(qint32 routeDevice, const QVector<float>& volumes) {
 		);
 		// clang-format on
 
-		qCInfo(logDevice) << "Changed volumes of" << this << "on route device" << routeDevice << "to"
+		qCInfo(logDevice) << "Changing volumes of" << this << "on route device" << routeDevice << "to"
 		                  << volumes;
 		return props;
 	});
@@ -146,11 +158,14 @@ bool PwDevice::setMuted(qint32 routeDevice, bool muted) {
 		);
 		// clang-format on
 
-		qCInfo(logDevice) << "Changed muted state of" << this << "on route device" << routeDevice
+		qCInfo(logDevice) << "Changing muted state of" << this << "on route device" << routeDevice
 		                  << "to" << muted;
 		return props;
 	});
 }
+
+void PwDevice::waitForDevice() { this->mWaitingForDevice = true; }
+bool PwDevice::waitingForDevice() const { return this->mWaitingForDevice; }
 
 bool PwDevice::setRouteProps(
     qint32 routeDevice,
