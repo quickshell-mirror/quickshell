@@ -121,14 +121,6 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
 
-if (INSTALL_QML_LIB)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
-		DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt-6/qml
-		FILES_MATCHING PATTERN "*"
-	)
-endif()
-
 # pch breaks clang-tidy..... somehow
 if (NOT NO_PCH)
 	file(GENERATE
@@ -164,3 +156,18 @@ if (USE_JEMALLOC)
 	pkg_check_modules(JEMALLOC REQUIRED jemalloc)
 	target_link_libraries(quickshell PRIVATE ${JEMALLOC_LIBRARIES})
 endif()
+
+if (INSTALL_QML_LIB)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt-6/qml
+		FILES_MATCHING PATTERN "*"
+	)
+endif()
+
+install(CODE "
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E create_symlink \
+		${CMAKE_INSTALL_FULL_BINDIR}/quickshell ${CMAKE_INSTALL_FULL_BINDIR}/qs
+	)
+")
