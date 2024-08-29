@@ -53,6 +53,8 @@ struct CommandInfo {
 };
 
 void processCommand(int argc, char** argv, CommandInfo& info) {
+	QCoreApplication::setApplicationName("quickshell");
+
 	auto app = CLI::App("");
 
 	class QStringOption {
