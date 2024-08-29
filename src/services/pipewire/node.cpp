@@ -228,10 +228,10 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 			if (param.id == SPA_PARAM_Props) {
 				if ((param.flags & SPA_PARAM_INFO_READWRITE) == SPA_PARAM_INFO_READWRITE) {
-					qCDebug(logNode) << "Enumerating props param for" << this;
+					qCDebug(logNode) << "Enumerating props param for" << this->node;
 					pw_node_enum_params(this->node->proxy(), 0, param.id, 0, UINT32_MAX, nullptr);
 				} else {
-					qCWarning(logNode) << "Unable to enumerate props param for" << this
+					qCWarning(logNode) << "Unable to enumerate props param for" << this->node
 					                   << "as the param does not have read+write permissions.";
 				}
 			}
@@ -266,6 +266,10 @@ void PwNodeBoundAudio::updateVolumeProps(const spa_pod* param) {
 		qCInfo(logNode) << "Got updated channels of" << this->node << '-' << this->mChannels;
 	}
 
+	if (this->mServerVolumes != volumeProps.volumes) {
+		this->mServerVolumes = volumeProps.volumes;
+	}
+
 	if (this->mVolumes != volumeProps.volumes) {
 		this->mVolumes = volumeProps.volumes;
 		volumesChanged = true;
@@ -286,6 +290,7 @@ void PwNodeBoundAudio::updateVolumeProps(const spa_pod* param) {
 void PwNodeBoundAudio::onUnbind() {
 	this->mChannels.clear();
 	this->mVolumes.clear();
+	this->mServerVolumes.clear();
 	this->mDeviceVolumes.clear();
 	this->waitingVolumes.clear();
 	emit this->channelsChanged();
@@ -381,13 +386,32 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 			                << "via device";
 			this->waitingVolumes = realVolumes;
 		} else {
-			qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes << "via device";
-			if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
-				return;
+			auto significantChange = this->mServerVolumes.isEmpty();
+			for (auto i = 0; i < this->mServerVolumes.length(); i++) {
+				auto serverVolume = this->mServerVolumes.value(i);
+				auto targetVolume = realVolumes.value(i);
+				if (targetVolume == 0 || abs(targetVolume - serverVolume) >= 0.0001) {
+					significantChange = true;
+					break;
+				}
 			}
 
-			this->mDeviceVolumes = realVolumes;
-			this->node->device->waitForDevice();
+			if (significantChange) {
+				qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
+				                << "via device";
+				if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
+					return;
+				}
+
+				this->mDeviceVolumes = realVolumes;
+				this->node->device->waitForDevice();
+			} else {
+				// Insignificant changes won't cause an info event on the device, leaving qs hung in the
+				// "waiting for acknowledgement" state forever.
+				qCInfo(logNode) << "Ignoring volume change for" << this->node << "to" << realVolumes
+				                << "from" << this->mServerVolumes
+				                << "as it is a device node and the change is too small.";
+			}
 		}
 	} else {
 		auto buffer = std::array<quint8, 1024>();

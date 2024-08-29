@@ -150,6 +150,7 @@ private:
 	bool mMuted = false;
 	QVector<PwAudioChannel::Enum> mChannels;
 	QVector<float> mVolumes;
+	QVector<float> mServerVolumes;
 	QVector<float> mDeviceVolumes;
 	QVector<float> waitingVolumes;
 	PwNode* node;
