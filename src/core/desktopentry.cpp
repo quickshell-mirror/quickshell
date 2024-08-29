@@ -142,7 +142,7 @@ void DesktopEntry::parseEntry(const QString& text) {
 
 		auto splitIdx = line.indexOf(u'=');
 		if (splitIdx == -1) {
-			qCDebug(logDesktopEntry) << "Encountered invalid line in desktop entry (no =)" << line;
+			qCWarning(logDesktopEntry) << "Encountered invalid line in desktop entry (no =)" << line;
 			continue;
 		}
 
@@ -159,7 +159,10 @@ void DesktopEntry::parseEntry(const QString& text) {
 		if (entries.contains(key)) {
 			const auto& old = entries.value(key);
 
-			if (system.matchScore(locale) > system.matchScore(old.first)) {
+			auto oldScore = system.matchScore(old.first);
+			auto newScore = system.matchScore(locale);
+
+			if (newScore > oldScore || (oldScore == 0 && !locale.isValid())) {
 				entries.insert(key, qMakePair(locale, value));
 			}
 		} else {
