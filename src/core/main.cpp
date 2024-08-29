@@ -535,6 +535,7 @@ int qs_main(int argc, char** argv) {
 	}
 
 	QsPaths::init(shellId);
+	QsPaths::instance()->linkPidRunDir();
 
 	if (auto* cacheDir = QsPaths::instance()->cacheDir()) {
 		auto qmlCacheDir = cacheDir->filePath("qml-engine-cache");

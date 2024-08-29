@@ -9,8 +9,10 @@ public:
 	static QDir crashDir(const QString& shellId, const QDateTime& launchTime);
 
 	QDir* cacheDir();
+	QDir* baseRunDir();
 	QDir* runDir();
 	QDir* instanceRunDir();
+	void linkPidRunDir();
 
 private:
 	enum class DirState {
@@ -21,9 +23,11 @@ private:
 
 	QString shellId;
 	QDir mCacheDir;
+	QDir mBaseRunDir;
 	QDir mRunDir;
 	QDir mInstanceRunDir;
 	DirState cacheState = DirState::Unknown;
+	DirState baseRunState = DirState::Unknown;
 	DirState runState = DirState::Unknown;
 	DirState instanceRunState = DirState::Unknown;
 };

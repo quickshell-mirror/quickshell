@@ -1,4 +1,5 @@
 #include "paths.hpp"
+#include <cerrno>
 #include <utility>
 
 #include <qdatetime.h>
@@ -38,9 +39,11 @@ QDir* QsPaths::cacheDir() {
 		qCDebug(logPaths) << "Initialized cache path:" << dir.path();
 
 		if (!dir.mkpath(".")) {
-			qCCritical(logPaths) << "Cannot create cache directory at" << dir.path();
+			qCCritical(logPaths) << "Could not create cache directory at" << dir.path();
 
 			this->cacheState = DirState::Failed;
+		} else {
+			this->cacheState = DirState::Ready;
 		}
 	}
 
@@ -48,23 +51,48 @@ QDir* QsPaths::cacheDir() {
 	else return &this->mCacheDir;
 }
 
-QDir* QsPaths::runDir() {
-	if (this->runState == DirState::Unknown) {
+QDir* QsPaths::baseRunDir() {
+	if (this->baseRunState == DirState::Unknown) {
 		auto runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
 		if (runtimeDir.isEmpty()) {
 			runtimeDir = QString("/run/user/$1").arg(getuid());
 			qCInfo(logPaths) << "XDG_RUNTIME_DIR was not set, defaulting to" << runtimeDir;
 		}
 
-		auto dir = QDir(runtimeDir);
-		dir = QDir(dir.filePath("quickshell"));
-		dir = QDir(dir.filePath(this->shellId));
-		this->mRunDir = dir;
+		this->mBaseRunDir = QDir(runtimeDir);
+		this->mBaseRunDir = QDir(this->mBaseRunDir.filePath("quickshell"));
+		qCDebug(logPaths) << "Initialized base runtime path:" << this->mBaseRunDir.path();
 
-		qCDebug(logPaths) << "Initialized runtime path:" << dir.path();
+		if (!this->mBaseRunDir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create base runtime directory at"
+			                     << this->mBaseRunDir.path();
 
-		if (!dir.mkpath(".")) {
-			qCCritical(logPaths) << "Cannot create runtime directory at" << dir.path();
+			this->baseRunState = DirState::Failed;
+		} else {
+			this->baseRunState = DirState::Ready;
+		}
+	}
+
+	if (this->baseRunState == DirState::Failed) return nullptr;
+	else return &this->mBaseRunDir;
+}
+
+QDir* QsPaths::runDir() {
+	if (this->runState == DirState::Unknown) {
+		if (auto* baseRunDir = this->baseRunDir()) {
+			this->mRunDir = QDir(baseRunDir->filePath(this->shellId));
+
+			qCDebug(logPaths) << "Initialized runtime path:" << this->mRunDir.path();
+
+			if (!this->mRunDir.mkpath(".")) {
+				qCCritical(logPaths) << "Could not create runtime directory at" << this->mRunDir.path();
+				this->runState = DirState::Failed;
+			} else {
+				this->runState = DirState::Ready;
+			}
+		} else {
+			qCCritical(logPaths) << "Could not create shell runtime path as it was not possible to "
+			                        "create the base runtime path.";
 
 			this->runState = DirState::Failed;
 		}
@@ -89,13 +117,43 @@ QDir* QsPaths::instanceRunDir() {
 			qCDebug(logPaths) << "Initialized instance runtime path:" << this->mInstanceRunDir.path();
 
 			if (!this->mInstanceRunDir.mkpath(".")) {
-				qCCritical(logPaths) << "Cannot create instance runtime directory at"
+				qCCritical(logPaths) << "Could not create instance runtime directory at"
 				                     << this->mInstanceRunDir.path();
 				this->instanceRunState = DirState::Failed;
+			} else {
+				this->instanceRunState = DirState::Ready;
 			}
 		}
 	}
 
 	if (this->runState == DirState::Failed) return nullptr;
 	else return &this->mInstanceRunDir;
+}
+
+void QsPaths::linkPidRunDir() {
+	if (auto* runDir = this->instanceRunDir()) {
+		auto pidDir = QDir(this->baseRunDir()->filePath("by-pid"));
+
+		if (!pidDir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create PID symlink directory.";
+			return;
+		}
+
+		auto pidPath = pidDir.filePath(QString::number(getpid()));
+
+		QFile::remove(pidPath);
+		auto r = symlinkat(runDir->filesystemCanonicalPath().c_str(), 0, pidPath.toStdString().c_str());
+
+		if (r != 0) {
+			qCCritical(logPaths).nospace()
+			    << "Could not create PID symlink to " << runDir->path() << " at " << pidPath
+			    << " with error code " << errno << ": " << qt_error_string();
+		} else {
+			qCDebug(logPaths) << "Created PID symlink" << pidPath << "to instance runtime path"
+			                  << runDir->path();
+		}
+	} else {
+		qCCritical(logPaths) << "Could not create PID symlink to runtime directory, as the runtime "
+		                        "directory could not be created.";
+	}
 }
