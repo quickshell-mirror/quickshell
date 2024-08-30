@@ -71,6 +71,7 @@ public:
 
 private slots:
 	void onReloadFinished();
+	void onGenerationDestroyed();
 
 protected:
 	// Called unconditionally in the reload phase, with nullptr if no source could be determined.

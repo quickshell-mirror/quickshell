@@ -16,6 +16,15 @@ void Reloadable::componentComplete() {
 		if (this->engineGeneration->reloadComplete) {
 			// Delayed due to Component.onCompleted running after QQmlParserStatus::componentComplete.
 			QTimer::singleShot(0, this, &Reloadable::onReloadFinished);
+
+			// This only matters for preventing the above timer from UAFing the generation,
+			// so it isn't connected anywhere else.
+			QObject::connect(
+			    this->engineGeneration,
+			    &QObject::destroyed,
+			    this,
+			    &Reloadable::onGenerationDestroyed
+			);
 		} else {
 			QObject::connect(
 			    this->engineGeneration,
@@ -43,6 +52,7 @@ void Reloadable::reload(QObject* oldInstance) {
 }
 
 void Reloadable::onReloadFinished() { this->reload(nullptr); }
+void Reloadable::onGenerationDestroyed() { this->engineGeneration = nullptr; }
 
 void ReloadPropagator::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<ReloadPropagator*>(oldInstance);
