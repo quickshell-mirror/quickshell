@@ -17,10 +17,10 @@
 #include "shell.hpp"
 
 RootWrapper::RootWrapper(QString rootPath, QString shellId)
-		: QObject(nullptr)
-		, rootPath(std::move(rootPath))
-		, shellId(std::move(shellId))
-		, originalWorkingDirectory(QDir::current().absolutePath()) {
+    : QObject(nullptr)
+    , rootPath(std::move(rootPath))
+    , shellId(std::move(shellId))
+    , originalWorkingDirectory(QDir::current().absolutePath()) {
 	// clang-format off
 	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &RootWrapper::onWatchFilesChanged);
 	// clang-format on
@@ -92,11 +92,14 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	component.completeCreate();
 
+	if (this->generation) {
+		QObject::disconnect(this->generation, nullptr, this, nullptr);
+	}
+
 	auto isReload = this->generation != nullptr;
 	generation->onReload(hard ? nullptr : this->generation);
 
-	if (hard && this->generation != nullptr) {
-		QObject::disconnect(this->generation, nullptr, this, nullptr);
+	if (hard && this->generation) {
 		this->generation->destroy();
 	}
 
