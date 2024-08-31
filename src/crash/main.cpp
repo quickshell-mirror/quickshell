@@ -5,7 +5,6 @@
 #include <qapplication.h>
 #include <qconfig.h>
 #include <qdatastream.h>
-#include <qdatetime.h>
 #include <qdir.h>
 #include <qfile.h>
 #include <qlogging.h>
@@ -15,7 +14,7 @@
 #include <sys/sendfile.h>
 #include <sys/types.h>
 
-#include "../core/crashinfo.hpp"
+#include "../core/instanceinfo.hpp"
 #include "../core/logging.hpp"
 #include "../core/paths.hpp"
 #include "build.hpp"
@@ -23,14 +22,14 @@
 
 Q_LOGGING_CATEGORY(logCrashReporter, "quickshell.crashreporter", QtWarningMsg);
 
-void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instanceInfo);
+void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance);
 
 void qsCheckCrash(int argc, char** argv) {
 	auto fd = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_FD");
 	if (fd.isEmpty()) return;
 	auto app = QApplication(argc, argv);
 
-	InstanceInfo instance;
+	RelaunchInfo info;
 
 	auto crashProc = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
 
@@ -42,15 +41,15 @@ void qsCheckCrash(int argc, char** argv) {
 		file.seek(0);
 
 		auto ds = QDataStream(&file);
-		ds >> instance;
+		ds >> info;
 	}
 
-	LogManager::init(!instance.noColor, false);
-	auto crashDir = QsPaths::crashDir(instance.shellId, instance.launchTime);
+	LogManager::init(!info.noColor, false);
+	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 
 	qCInfo(logCrashReporter) << "Starting crash reporter...";
 
-	recordCrashInfo(crashDir, instance);
+	recordCrashInfo(crashDir, info.instance);
 
 	auto gui = CrashReporterGui(crashDir.path(), crashProc);
 	gui.show();
@@ -125,8 +124,7 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 			stream << "===== Quickshell Crash =====\n";
 			stream << "Git Revision: " << GIT_REVISION << '\n';
 			stream << "Crashed process ID: " << crashProc << '\n';
-			stream << "Run ID: " << QString("run-%1").arg(instance.launchTime.toMSecsSinceEpoch())
-			       << '\n';
+			stream << "Run ID: " << instance.instanceId << '\n';
 
 			stream << "\n===== Shell Information =====\n";
 			stream << "Shell ID: " << instance.shellId << '\n';

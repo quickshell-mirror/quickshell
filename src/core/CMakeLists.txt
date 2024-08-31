@@ -41,8 +41,9 @@ qt_add_library(quickshell-core STATIC
 	clock.cpp
 	logging.cpp
 	paths.cpp
-	crashinfo.cpp
+	instanceinfo.cpp
 	common.cpp
+	ipc.cpp
 )
 
 if (CRASH_REPORTER)

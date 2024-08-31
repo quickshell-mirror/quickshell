@@ -24,10 +24,12 @@
 #include <sys/mman.h>
 #include <sys/sendfile.h>
 
-#include "crashinfo.hpp"
+#include "instanceinfo.hpp"
 #include "logging_p.hpp"
 #include "logging_qtprivate.cpp" // NOLINT
 #include "paths.hpp"
+
+Q_LOGGING_CATEGORY(logBare, "quickshell.bare");
 
 namespace qs::log {
 
@@ -53,37 +55,41 @@ void LogMessage::formatMessage(
 		stream << msg.time.toString("yyyy-MM-dd hh:mm:ss.zzz");
 	}
 
-	if (color) {
-		switch (msg.type) {
-		case QtDebugMsg: stream << "\033[34m DEBUG"; break;
-		case QtInfoMsg: stream << "\033[32m  INFO"; break;
-		case QtWarningMsg: stream << "\033[33m  WARN"; break;
-		case QtCriticalMsg: stream << "\033[31m ERROR"; break;
-		case QtFatalMsg: stream << "\033[31m FATAL"; break;
-		}
+	if (msg.category == "quickshell.bare") {
+		stream << msg.body;
 	} else {
-		switch (msg.type) {
-		case QtDebugMsg: stream << " DEBUG"; break;
-		case QtInfoMsg: stream << "  INFO"; break;
-		case QtWarningMsg: stream << "  WARN"; break;
-		case QtCriticalMsg: stream << " ERROR"; break;
-		case QtFatalMsg: stream << " FATAL"; break;
+		if (color) {
+			switch (msg.type) {
+			case QtDebugMsg: stream << "\033[34m DEBUG"; break;
+			case QtInfoMsg: stream << "\033[32m  INFO"; break;
+			case QtWarningMsg: stream << "\033[33m  WARN"; break;
+			case QtCriticalMsg: stream << "\033[31m ERROR"; break;
+			case QtFatalMsg: stream << "\033[31m FATAL"; break;
+			}
+		} else {
+			switch (msg.type) {
+			case QtDebugMsg: stream << " DEBUG"; break;
+			case QtInfoMsg: stream << "  INFO"; break;
+			case QtWarningMsg: stream << "  WARN"; break;
+			case QtCriticalMsg: stream << " ERROR"; break;
+			case QtFatalMsg: stream << " FATAL"; break;
+			}
 		}
+
+		const auto isDefault = msg.category == "default";
+
+		if (color && !isDefault && msg.type != QtFatalMsg) stream << "\033[97m";
+
+		if (!isDefault) {
+			stream << ' ' << msg.category;
+		}
+
+		if (color && msg.type != QtFatalMsg) stream << "\033[0m";
+
+		stream << ": " << msg.body;
+
+		if (color && msg.type == QtFatalMsg) stream << "\033[0m";
 	}
-
-	const auto isDefault = msg.category == "default";
-
-	if (color && !isDefault && msg.type != QtFatalMsg) stream << "\033[97m";
-
-	if (!isDefault) {
-		stream << ' ' << msg.category;
-	}
-
-	if (color && msg.type != QtFatalMsg) stream << "\033[0m";
-
-	stream << ": " << msg.body;
-
-	if (color && msg.type == QtFatalMsg) stream << "\033[0m";
 }
 
 bool CategoryFilter::shouldDisplay(QtMsgType type) const {

@@ -14,7 +14,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "../core/crashinfo.hpp"
+#include "../core/instanceinfo.hpp"
 
 extern char** environ; // NOLINT
 
@@ -64,7 +64,7 @@ void CrashHandler::init() {
 	qCInfo(logCrashHandler) << "Crash handler initialized.";
 }
 
-void CrashHandler::setInstanceInfo(const InstanceInfo& info) {
+void CrashHandler::setInstanceInfo(const RelaunchInfo& info) {
 	this->d->infoFd = memfd_create("quickshell:instance_info", MFD_CLOEXEC);
 
 	if (this->d->infoFd == -1) {

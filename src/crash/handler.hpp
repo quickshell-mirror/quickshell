@@ -2,7 +2,7 @@
 
 #include <qtclasshelpermacros.h>
 
-#include "../core/crashinfo.hpp"
+#include "../core/instanceinfo.hpp"
 namespace qs::crash {
 
 struct CrashHandlerPrivate;
@@ -14,7 +14,7 @@ public:
 	Q_DISABLE_COPY_MOVE(CrashHandler);
 
 	void init();
-	void setInstanceInfo(const InstanceInfo& info);
+	void setInstanceInfo(const RelaunchInfo& info);
 
 private:
 	CrashHandlerPrivate* d;

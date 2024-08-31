@@ -1,8 +1,11 @@
 #include "paths.hpp"
 #include <cerrno>
+#include <cstdio>
 #include <utility>
 
-#include <qdatetime.h>
+#include <fcntl.h>
+#include <qcontainerfwd.h>
+#include <qdatastream.h>
 #include <qdir.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -10,7 +13,7 @@
 #include <qtenvironmentvariables.h>
 #include <unistd.h>
 
-#include "common.hpp"
+#include "instanceinfo.hpp"
 
 Q_LOGGING_CATEGORY(logPaths, "quickshell.paths", QtWarningMsg);
 
@@ -19,15 +22,25 @@ QsPaths* QsPaths::instance() {
 	return instance;
 }
 
-void QsPaths::init(QString shellId) { QsPaths::instance()->shellId = std::move(shellId); }
+void QsPaths::init(QString shellId, QString pathId) {
+	auto* instance = QsPaths::instance();
+	instance->shellId = std::move(shellId);
+	instance->pathId = std::move(pathId);
+}
 
-QDir QsPaths::crashDir(const QString& shellId, const QDateTime& launchTime) {
+QDir QsPaths::crashDir(const QString& id) {
 	auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
 	dir = QDir(dir.filePath("crashes"));
-	dir = QDir(dir.filePath(shellId));
-	dir = QDir(dir.filePath(QString("run-%1").arg(launchTime.toMSecsSinceEpoch())));
+	dir = QDir(dir.filePath(id));
 
 	return dir;
+}
+
+QString QsPaths::ipcPath(const QString& id) {
+	auto ipcPath = QsPaths::instance()->baseRunDir()->filePath("by-id");
+	ipcPath = QDir(ipcPath).filePath(id);
+	ipcPath = QDir(ipcPath).filePath("ipc.sock");
+	return ipcPath;
 }
 
 QDir* QsPaths::cacheDir() {
@@ -77,42 +90,45 @@ QDir* QsPaths::baseRunDir() {
 	else return &this->mBaseRunDir;
 }
 
-QDir* QsPaths::runDir() {
-	if (this->runState == DirState::Unknown) {
+QDir* QsPaths::shellRunDir() {
+	if (this->shellRunState == DirState::Unknown) {
 		if (auto* baseRunDir = this->baseRunDir()) {
-			this->mRunDir = QDir(baseRunDir->filePath(this->shellId));
+			this->mShellRunDir = QDir(baseRunDir->filePath("by-shell"));
+			this->mShellRunDir = QDir(this->mShellRunDir.filePath(this->shellId));
 
-			qCDebug(logPaths) << "Initialized runtime path:" << this->mRunDir.path();
+			qCDebug(logPaths) << "Initialized runtime path:" << this->mShellRunDir.path();
 
-			if (!this->mRunDir.mkpath(".")) {
-				qCCritical(logPaths) << "Could not create runtime directory at" << this->mRunDir.path();
-				this->runState = DirState::Failed;
+			if (!this->mShellRunDir.mkpath(".")) {
+				qCCritical(logPaths) << "Could not create runtime directory at"
+				                     << this->mShellRunDir.path();
+				this->shellRunState = DirState::Failed;
 			} else {
-				this->runState = DirState::Ready;
+				this->shellRunState = DirState::Ready;
 			}
 		} else {
 			qCCritical(logPaths) << "Could not create shell runtime path as it was not possible to "
 			                        "create the base runtime path.";
 
-			this->runState = DirState::Failed;
+			this->shellRunState = DirState::Failed;
 		}
 	}
 
-	if (this->runState == DirState::Failed) return nullptr;
-	else return &this->mRunDir;
+	if (this->shellRunState == DirState::Failed) return nullptr;
+	else return &this->mShellRunDir;
 }
 
 QDir* QsPaths::instanceRunDir() {
 	if (this->instanceRunState == DirState::Unknown) {
-		auto* runtimeDir = this->runDir();
+		auto* runDir = this->baseRunDir();
 
-		if (!runtimeDir) {
+		if (!runDir) {
 			qCCritical(logPaths) << "Cannot create instance runtime directory as main runtim directory "
 			                        "could not be created.";
 			this->instanceRunState = DirState::Failed;
 		} else {
-			this->mInstanceRunDir =
-			    runtimeDir->filePath(QString("run-%1").arg(qs::Common::LAUNCH_TIME.toMSecsSinceEpoch()));
+			auto byIdDir = QDir(runDir->filePath("by-id"));
+
+			this->mInstanceRunDir = byIdDir.filePath(InstanceInfo::CURRENT.instanceId);
 
 			qCDebug(logPaths) << "Initialized instance runtime path:" << this->mInstanceRunDir.path();
 
@@ -126,34 +142,162 @@ QDir* QsPaths::instanceRunDir() {
 		}
 	}
 
-	if (this->runState == DirState::Failed) return nullptr;
+	if (this->shellRunState == DirState::Failed) return nullptr;
 	else return &this->mInstanceRunDir;
 }
 
-void QsPaths::linkPidRunDir() {
+void QsPaths::linkRunDir() {
 	if (auto* runDir = this->instanceRunDir()) {
 		auto pidDir = QDir(this->baseRunDir()->filePath("by-pid"));
+		auto* shellDir = this->shellRunDir();
+
+		if (!shellDir) {
+			qCCritical(logPaths
+			) << "Could not create by-id symlink as the shell runtime path could not be created.";
+		} else {
+			auto shellPath = shellDir->filePath(runDir->dirName());
+
+			QFile::remove(shellPath);
+			auto r =
+			    symlinkat(runDir->filesystemCanonicalPath().c_str(), 0, shellPath.toStdString().c_str());
+
+			if (r != 0) {
+				qCCritical(logPaths).nospace()
+				    << "Could not create id symlink to " << runDir->path() << " at " << shellPath
+				    << " with error code " << errno << ": " << qt_error_string();
+			} else {
+				qCDebug(logPaths) << "Created shellid symlink" << shellPath << "to instance runtime path"
+				                  << runDir->path();
+			}
+		}
 
 		if (!pidDir.mkpath(".")) {
 			qCCritical(logPaths) << "Could not create PID symlink directory.";
-			return;
-		}
-
-		auto pidPath = pidDir.filePath(QString::number(getpid()));
-
-		QFile::remove(pidPath);
-		auto r = symlinkat(runDir->filesystemCanonicalPath().c_str(), 0, pidPath.toStdString().c_str());
-
-		if (r != 0) {
-			qCCritical(logPaths).nospace()
-			    << "Could not create PID symlink to " << runDir->path() << " at " << pidPath
-			    << " with error code " << errno << ": " << qt_error_string();
 		} else {
-			qCDebug(logPaths) << "Created PID symlink" << pidPath << "to instance runtime path"
-			                  << runDir->path();
+			auto pidPath = pidDir.filePath(QString::number(getpid()));
+
+			QFile::remove(pidPath);
+			auto r =
+			    symlinkat(runDir->filesystemCanonicalPath().c_str(), 0, pidPath.toStdString().c_str());
+
+			if (r != 0) {
+				qCCritical(logPaths).nospace()
+				    << "Could not create PID symlink to " << runDir->path() << " at " << pidPath
+				    << " with error code " << errno << ": " << qt_error_string();
+			} else {
+				qCDebug(logPaths) << "Created PID symlink" << pidPath << "to instance runtime path"
+				                  << runDir->path();
+			}
 		}
 	} else {
 		qCCritical(logPaths) << "Could not create PID symlink to runtime directory, as the runtime "
 		                        "directory could not be created.";
 	}
+}
+
+void QsPaths::linkPathDir() {
+	if (auto* runDir = this->shellRunDir()) {
+		auto pathDir = QDir(this->baseRunDir()->filePath("by-path"));
+
+		if (!pathDir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create path symlink directory.";
+			return;
+		}
+
+		auto linkPath = pathDir.filePath(this->pathId);
+
+		QFile::remove(linkPath);
+		auto r =
+		    symlinkat(runDir->filesystemCanonicalPath().c_str(), 0, linkPath.toStdString().c_str());
+
+		if (r != 0) {
+			qCCritical(logPaths).nospace()
+			    << "Could not create path symlink to " << runDir->path() << " at " << linkPath
+			    << " with error code " << errno << ": " << qt_error_string();
+		} else {
+			qCDebug(logPaths) << "Created path symlink" << linkPath << "to shell runtime path"
+			                  << runDir->path();
+		}
+	} else {
+		qCCritical(logPaths) << "Could not create path symlink to shell runtime directory, as the "
+		                        "shell runtime directory could not be created.";
+	}
+}
+
+void QsPaths::createLock() {
+	if (auto* runDir = this->instanceRunDir()) {
+		auto path = runDir->filePath("instance.lock");
+		auto* file = new QFile(path); // leaked
+
+		if (!file->open(QFile::ReadWrite | QFile::Truncate)) {
+			qCCritical(logPaths) << "Could not create instance lock at" << path;
+			return;
+		}
+
+		auto lock = flock {
+		    .l_type = F_WRLCK,
+		    .l_whence = SEEK_SET,
+		    .l_start = 0,
+		    .l_len = 0,
+		};
+
+		if (fcntl(file->handle(), F_SETLK, &lock) != 0) { // NOLINT
+			qCCritical(logPaths).nospace() << "Could not lock instance lock at " << path
+			                               << " with error code " << errno << ": " << qt_error_string();
+		} else {
+			auto stream = QDataStream(file);
+			stream << InstanceInfo::CURRENT;
+			file->flush();
+			qCDebug(logPaths) << "Created instance lock at" << path;
+		}
+	} else {
+		qCCritical(logPaths
+		) << "Could not create instance lock, as the instance runtime directory could not be created.";
+	}
+}
+
+bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info) {
+	auto file = QFile(QDir(path).filePath("instance.lock"));
+	if (!file.open(QFile::ReadOnly)) return false;
+
+	auto lock = flock {
+	    .l_type = F_WRLCK,
+	    .l_whence = SEEK_SET,
+	    .l_start = 0,
+	    .l_len = 0,
+	};
+
+	fcntl(file.handle(), F_GETLK, &lock); // NOLINT
+	if (lock.l_type == F_UNLCK) return false;
+
+	if (info) {
+		info->pid = lock.l_pid;
+
+		auto stream = QDataStream(&file);
+		stream >> info->instance;
+	}
+
+	return true;
+}
+
+QVector<InstanceLockInfo> QsPaths::collectInstances(const QString& path) {
+	qCDebug(logPaths) << "Collecting instances from" << path;
+	auto instances = QVector<InstanceLockInfo>();
+	auto dir = QDir(path);
+
+	InstanceLockInfo info;
+	for (auto& entry: dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+		auto path = dir.filePath(entry);
+
+		if (QsPaths::checkLock(path, &info)) {
+			qCDebug(logPaths).nospace() << "Found live instance " << info.instance.instanceId << " (pid "
+			                            << info.pid << ") at " << path;
+
+			instances.push_back(info);
+		} else {
+			qCDebug(logPaths) << "Skipped dead instance at" << path;
+		}
+	}
+
+	return instances;
 }

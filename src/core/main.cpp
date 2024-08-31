@@ -1,4 +1,6 @@
 #include "main.hpp"
+#include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -8,6 +10,7 @@
 #include <CLI/Error.hpp>
 #include <CLI/Validators.hpp>
 #include <qapplication.h>
+#include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qcryptographichash.h>
 #include <qdatastream.h>
@@ -17,8 +20,12 @@
 #include <qguiapplication.h>
 #include <qhash.h>
 #include <qicon.h>
+#include <qjsonarray.h>
+#include <qjsondocument.h>
+#include <qjsonobject.h>
 #include <qlist.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qqmldebug.h>
 #include <qquickwindow.h>
@@ -27,10 +34,13 @@
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
 #include <qtpreprocessorsupport.h>
+#include <sched.h>
+#include <unistd.h>
 
 #include "build.hpp"
 #include "common.hpp"
-#include "crashinfo.hpp"
+#include "instanceinfo.hpp"
+#include "ipc.hpp"
 #include "logging.hpp"
 #include "paths.hpp"
 #include "plugin.hpp"
@@ -39,6 +49,8 @@
 #include "../crash/handler.hpp"
 #include "../crash/main.hpp"
 #endif
+
+using qs::ipc::IpcClient;
 
 struct CommandInfo {
 	QString configPath;
@@ -51,6 +63,8 @@ struct CommandInfo {
 	bool& noColor;
 	bool& sparseLogsOnly;
 };
+
+QString commandConfigPath(QString path, QString manifest, QString config, bool printInfo);
 
 void processCommand(int argc, char** argv, CommandInfo& info) {
 	QCoreApplication::setApplicationName("quickshell");
@@ -162,11 +176,96 @@ void processCommand(int argc, char** argv, CommandInfo& info) {
 	readLog->add_flag("--no-time", logNoTime, "Do not print timestamps of log messages.");
 	readLog->add_flag("--no-color", info.noColor, "Do not color the log output. (Env:NO_COLOR)");
 
+	/// ---
+	QStringOption instanceId;
+	pid_t instancePid = -1;
+
+	auto sortInstances = [](QVector<InstanceLockInfo>& list) {
+		std::sort(list.begin(), list.end(), [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
+			return a.instance.launchTime < b.instance.launchTime;
+		});
+	};
+
+	auto selectInstance = [&]() {
+		auto* basePath = QsPaths::instance()->baseRunDir();
+		if (!basePath) exit(-1); // NOLINT
+
+		QString path;
+		InstanceLockInfo instance;
+
+		if (instancePid != -1) {
+			path = QDir(basePath->filePath("by-pid")).filePath(QString::number(instancePid));
+			if (!QsPaths::checkLock(path, &instance)) {
+				qCInfo(logBare) << "No instance found for pid" << instancePid;
+				exit(-1); // NOLINT
+			}
+		} else if (!(*instanceId).isEmpty()) {
+			path = basePath->filePath("by-pid");
+			auto instances = QsPaths::collectInstances(path);
+
+			auto itr =
+			    std::remove_if(instances.begin(), instances.end(), [&](const InstanceLockInfo& info) {
+				    return !info.instance.instanceId.startsWith(*instanceId);
+			    });
+
+			instances.erase(itr, instances.end());
+
+			if (instances.isEmpty()) {
+				qCInfo(logBare) << "No running instances start with" << *instanceId;
+			} else if (instances.length() != 1) {
+				qCInfo(logBare) << "More than one instance starts with" << *instanceId;
+
+				for (auto& instance: instances) {
+					qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+				}
+
+				exit(-1); // NOLINT
+			} else {
+				instance = instances.value(0);
+			}
+		} else {
+			auto configFilePath =
+			    commandConfigPath(info.configPath, info.manifestPath, info.configName, info.printInfo);
+
+			auto pathId =
+			    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+
+			path = QDir(basePath->filePath("by-path")).filePath(pathId);
+
+			auto instances = QsPaths::collectInstances(path);
+			sortInstances(instances);
+
+			if (instances.isEmpty()) {
+				qCInfo(logBare) << "No running instances for" << configFilePath;
+				exit(-1); // NOLINT
+			}
+
+			instance = instances.value(0);
+		}
+
+		return instance;
+	};
+
+	auto* instances =
+	    app.add_subcommand("instances", "List running quickshell instances.")->fallthrough();
+
+	auto* allInstances =
+	    instances->add_flag("-a,--all", "List all instances instead of just the current config.");
+
+	auto* instancesJson = instances->add_flag("-j,--json", "Output the list as a json.");
+
+	auto* kill = app.add_subcommand("kill", "Kill an instance.")->fallthrough();
+	auto* kInstance = app.add_option("-i,--instance", instanceId, "The instance id to kill.");
+	app.add_option("-p,--pid", instancePid, "The process id to kill.")->excludes(kInstance);
+
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError& e) {
 		exit(app.exit(e)); // NOLINT
 	};
+
+	// Start log manager - has to happen with an active event loop or offthread can't be started.
+	LogManager::init(!info.noColor, info.sparseLogsOnly);
 
 	if (*printVersion) {
 		std::cout << "quickshell pre-release, revision: " << GIT_REVISION << std::endl;
@@ -183,6 +282,86 @@ void processCommand(int argc, char** argv, CommandInfo& info) {
 		exit( // NOLINT
 		    qs::log::readEncodedLogs(&file, !logNoTime, *logFilter) ? 0 : -1
 		);
+	} else if (*instances) {
+		auto* basePath = QsPaths::instance()->baseRunDir();
+		if (!basePath) exit(-1); // NOLINT
+
+		QString path;
+		QString configFilePath;
+		if (*allInstances) {
+			path = basePath->filePath("by-pid");
+		} else {
+			configFilePath =
+			    commandConfigPath(info.configPath, info.manifestPath, info.configName, info.printInfo);
+
+			auto pathId =
+			    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+
+			path = QDir(basePath->filePath("by-path")).filePath(pathId);
+		}
+
+		auto instances = QsPaths::collectInstances(path);
+
+		if (instances.isEmpty()) {
+			if (*allInstances) {
+				qCInfo(logBare) << "No running instances.";
+			} else {
+				qCInfo(logBare) << "No running instances for" << configFilePath;
+				qCInfo(logBare) << "Use --all to list all instances.";
+			}
+		} else {
+			sortInstances(instances);
+
+			if (*instancesJson) {
+				auto array = QJsonArray();
+
+				for (auto& instance: instances) {
+					auto json = QJsonObject();
+
+					json["id"] = instance.instance.instanceId;
+					json["pid"] = instance.pid;
+					json["shell_id"] = instance.instance.shellId;
+					json["config_path"] = instance.instance.configPath;
+					json["launch_time"] = instance.instance.launchTime.toString(Qt::ISODate);
+
+					array.push_back(json);
+				}
+
+				auto document = QJsonDocument(array);
+				QTextStream(stdout) << document.toJson(QJsonDocument::Indented);
+			} else {
+				for (auto& instance: instances) {
+					auto launchTimeStr = instance.instance.launchTime.toString("yyyy-MM-dd hh:mm:ss");
+
+					auto runSeconds = instance.instance.launchTime.secsTo(QDateTime::currentDateTime());
+					auto remSeconds = runSeconds % 60;
+					auto runMinutes = (runSeconds - remSeconds) / 60;
+					auto remMinutes = runMinutes % 60;
+					auto runHours = (runMinutes - remMinutes) / 60;
+					auto runtimeStr = QString("%1 hours, %2 minutes, %3 seconds")
+					                      .arg(runHours)
+					                      .arg(remMinutes)
+					                      .arg(remSeconds);
+
+					qCInfo(logBare).noquote().nospace()
+					    << "Instance " << instance.instance.instanceId << ":\n"
+					    << "  Process ID: " << instance.pid << '\n'
+					    << "  Shell ID: " << instance.instance.shellId << '\n'
+					    << "  Config path: " << instance.instance.configPath << '\n'
+					    << "  Launch time: " << launchTimeStr << " (running for " << runtimeStr << ")\n";
+				}
+			}
+		}
+		exit(0); // NOLINT
+	} else if (*kill) {
+		auto instance = selectInstance();
+
+		auto r = IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
+			client.kill();
+			qCInfo(logBare).noquote() << "Killed" << instance.instance.instanceId;
+		});
+
+		exit(r ? 0 : -1); // NOLINT
 	}
 }
 
@@ -373,6 +552,26 @@ foundp:;
 	return configFilePath;
 }
 
+template <typename T>
+QString base36Encode(T number) {
+	const QString digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+	QString result;
+
+	do {
+		result.prepend(digits[number % 36]);
+		number /= 36;
+	} while (number > 0);
+
+	for (auto i = 0; i < result.length() / 2; i++) {
+		auto opposite = result.length() - i - 1;
+		auto c = result.at(i);
+		result[i] = result.at(opposite);
+		result[opposite] = c;
+	}
+
+	return result;
+}
+
 int qs_main(int argc, char** argv) {
 #if CRASH_REPORTER
 	qsCheckCrash(argc, argv);
@@ -385,6 +584,7 @@ int qs_main(int argc, char** argv) {
 	QString configFilePath;
 	QString initialWorkdir;
 	QString shellId;
+	QString pathId;
 
 	int debugPort = -1;
 	bool waitForDebug = false;
@@ -411,11 +611,11 @@ int qs_main(int argc, char** argv) {
 			file.seek(0);
 
 			auto ds = QDataStream(&file);
-			InstanceInfo info;
+			RelaunchInfo info;
 			ds >> info;
 
-			configFilePath = info.configPath;
-			initialWorkdir = info.initialWorkdir;
+			configFilePath = info.instance.configPath;
+			initialWorkdir = info.instance.initialWorkdir;
 			noColor = info.noColor;
 			sparseLogsOnly = info.sparseLogsOnly;
 
@@ -426,9 +626,9 @@ int qs_main(int argc, char** argv) {
 			                      << " (Coredumps will be available under that pid.)";
 
 			qCritical() << "Further crash information is stored under"
-			            << QsPaths::crashDir(info.shellId, info.launchTime).path();
+			            << QsPaths::crashDir(info.instance.instanceId).path();
 
-			if (info.launchTime.msecsTo(QDateTime::currentDateTime()) < 10000) {
+			if (info.instance.launchTime.msecsTo(QDateTime::currentDateTime()) < 10000) {
 				qCritical() << "Quickshell crashed within 10 seconds of launching. Not restarting to avoid "
 				               "a crash loop.";
 				return 0;
@@ -452,9 +652,6 @@ int qs_main(int argc, char** argv) {
 
 			processCommand(argc, argv, command);
 
-			// Start log manager - has to happen with an active event loop or offthread can't be started.
-			LogManager::init(!noColor, sparseLogsOnly);
-
 #if CRASH_REPORTER
 			// Started after log manager for pretty debug logs. Unlikely anything will crash before this point, but
 			// this can be moved if it happens.
@@ -469,7 +666,8 @@ int qs_main(int argc, char** argv) {
 			);
 		}
 
-		shellId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+		pathId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+		shellId = pathId;
 
 		qInfo() << "Config file path:" << configFilePath;
 
@@ -521,12 +719,18 @@ int qs_main(int argc, char** argv) {
 
 	if (printInfo) return 0;
 
-#if CRASH_REPORTER
-	crashHandler.setInstanceInfo(InstanceInfo {
+	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
+	InstanceInfo::CURRENT = InstanceInfo {
+	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
 	    .configPath = configFilePath,
 	    .shellId = shellId,
 	    .initialWorkdir = initialWorkdir,
 	    .launchTime = qs::Common::LAUNCH_TIME,
+	};
+
+#if CRASH_REPORTER
+	crashHandler.setInstanceInfo(RelaunchInfo {
+	    .instance = InstanceInfo::CURRENT,
 	    .noColor = noColor,
 	    .sparseLogsOnly = sparseLogsOnly,
 	});
@@ -536,8 +740,9 @@ int qs_main(int argc, char** argv) {
 		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
-	QsPaths::init(shellId);
-	QsPaths::instance()->linkPidRunDir();
+	QsPaths::init(shellId, pathId);
+	QsPaths::instance()->linkRunDir();
+	QsPaths::instance()->linkPathDir();
 
 	if (auto* cacheDir = QsPaths::instance()->cacheDir()) {
 		auto qmlCacheDir = cacheDir->filePath("qml-engine-cache");
@@ -616,6 +821,9 @@ int qs_main(int argc, char** argv) {
 	if (nativeTextRendering) {
 		QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 	}
+
+	qs::ipc::IpcServer::start();
+	QsPaths::instance()->createLock();
 
 	auto root = RootWrapper(configFilePath, shellId);
 	QGuiApplication::setQuitOnLastWindowClosed(false);

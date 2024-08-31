@@ -11,6 +11,8 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
+Q_DECLARE_LOGGING_CATEGORY(logBare);
+
 namespace qs::log {
 
 struct LogMessage {
