@@ -56,7 +56,7 @@ public:
 
 	void kill();
 
-	[[nodiscard]] static bool
+	[[nodiscard]] static int
 	connect(const QString& id, const std::function<void(IpcClient& client)>& callback);
 
 signals:

@@ -13,12 +13,16 @@ QDataStream& operator>>(QDataStream& stream, InstanceInfo& info) {
 }
 
 QDataStream& operator<<(QDataStream& stream, const RelaunchInfo& info) {
-	stream << info.instance << info.noColor << info.sparseLogsOnly;
+	stream << info.instance << info.noColor << info.timestamp << info.sparseLogsOnly
+	       << info.defaultLogLevel << info.logRules;
+
 	return stream;
 }
 
 QDataStream& operator>>(QDataStream& stream, RelaunchInfo& info) {
-	stream >> info.instance >> info.noColor >> info.sparseLogsOnly;
+	stream >> info.instance >> info.noColor >> info.timestamp >> info.sparseLogsOnly
+	    >> info.defaultLogLevel >> info.logRules;
+
 	return stream;
 }
 

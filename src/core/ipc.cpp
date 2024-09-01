@@ -104,16 +104,16 @@ void IpcClient::onError(QLocalSocket::LocalSocketError error) {
 	qCCritical(logIpc) << "Socket Error" << error;
 }
 
-bool IpcClient::connect(const QString& id, const std::function<void(IpcClient& client)>& callback) {
+int IpcClient::connect(const QString& id, const std::function<void(IpcClient& client)>& callback) {
 	auto path = QsPaths::ipcPath(id);
 	auto client = IpcClient(path);
 	qCDebug(logIpc) << "Connecting to instance" << id << "at" << path;
 
 	client.waitForConnected();
-	if (!client.isConnected()) return false;
+	if (!client.isConnected()) return -1;
 	qCDebug(logIpc) << "Connected.";
 
 	callback(client);
-	return true;
+	return 0;
 }
 } // namespace qs::ipc

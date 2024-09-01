@@ -44,7 +44,14 @@ void qsCheckCrash(int argc, char** argv) {
 		ds >> info;
 	}
 
-	LogManager::init(!info.noColor, false);
+	LogManager::init(
+	    !info.noColor,
+	    info.timestamp,
+	    info.sparseLogsOnly,
+	    info.defaultLogLevel,
+	    info.logRules
+	);
+
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 
 	qCInfo(logCrashReporter) << "Starting crash reporter...";

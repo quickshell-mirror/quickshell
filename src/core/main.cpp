@@ -2,12 +2,10 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
-#include <CLI/Error.hpp>
 #include <CLI/Validators.hpp>
 #include <qapplication.h>
 #include <qcontainerfwd.h>
@@ -33,8 +31,6 @@
 #include <qstring.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
-#include <qtpreprocessorsupport.h>
-#include <sched.h>
 #include <unistd.h>
 
 #include "build.hpp"
@@ -45,423 +41,286 @@
 #include "paths.hpp"
 #include "plugin.hpp"
 #include "rootwrapper.hpp"
+
 #if CRASH_REPORTER
 #include "../crash/handler.hpp"
 #include "../crash/main.hpp"
 #endif
 
+namespace qs::launch {
+
 using qs::ipc::IpcClient;
 
-struct CommandInfo {
-	QString configPath;
-	QString manifestPath;
-	QString configName;
-	QString& initialWorkdir;
-	int& debugPort;
-	bool& waitForDebug;
-	bool& printInfo;
-	bool& noColor;
-	bool& sparseLogsOnly;
-};
+void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication);
+int runCommand(int argc, char** argv, QCoreApplication* coreApplication);
 
-QString commandConfigPath(QString path, QString manifest, QString config, bool printInfo);
-
-void processCommand(int argc, char** argv, CommandInfo& info) {
+int main(int argc, char** argv) {
 	QCoreApplication::setApplicationName("quickshell");
 
-	auto app = CLI::App("");
+#if CRASH_REPORTER
+	qsCheckCrash(argc, argv);
+#endif
 
-	class QStringOption {
-	public:
-		QStringOption() = default;
-		QStringOption& operator=(const std::string& str) {
-			this->str = QString::fromStdString(str);
-			return *this;
-		}
+	auto qArgC = 1;
+	auto* coreApplication = new QCoreApplication(qArgC, argv);
 
-		QString& operator*() { return this->str; }
-
-	private:
-		QString str;
-	};
-
-	class QStringRefOption {
-	public:
-		QStringRefOption(QString* str): str(str) {}
-		QStringRefOption& operator=(const std::string& str) {
-			*this->str = QString::fromStdString(str);
-			return *this;
-		}
-
-	private:
-		QString* str;
-	};
-
-	/// ---
-	QStringRefOption path(&info.configPath);
-	QStringRefOption manifest(&info.manifestPath);
-	QStringRefOption config(&info.configName);
-	QStringRefOption workdirRef(&info.initialWorkdir);
-
-	auto* selection = app.add_option_group(
-	    "Config Selection",
-	    "Select a configuration to run (defaults to $XDG_CONFIG_HOME/quickshell/shell.qml)"
-	);
-
-	auto* pathArg =
-	    selection->add_option("-p,--path", path, "Path to a QML file to run. (Env:QS_CONFIG_PATH)");
-
-	auto* mfArg = selection->add_option(
-	    "-m,--manifest",
-	    manifest,
-	    "Path to a manifest containing configurations. (Env:QS_MANIFEST)\n"
-	    "(Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf)"
-	);
-
-	auto* cfgArg = selection->add_option(
-	    "-c,--config",
-	    config,
-	    "Name of a configuration within a manifest. (Env:QS_CONFIG_NAME)"
-	);
-
-	selection->add_option("-d,--workdir", workdirRef, "Initial working directory.");
-
-	pathArg->excludes(mfArg, cfgArg);
-
-	/// ---
-	auto* debug = app.add_option_group("Debugging");
-
-	auto* debugPortArg = debug
-	                         ->add_option(
-	                             "--debugport",
-	                             info.debugPort,
-	                             "Open the given port for a QML debugger to connect to."
-	                         )
-	                         ->check(CLI::Range(0, 65535));
-
-	debug
-	    ->add_flag(
-	        "--waitfordebug",
-	        info.waitForDebug,
-	        "Wait for a debugger to attach to the given port before launching."
-	    )
-	    ->needs(debugPortArg);
-
-	/// ---
-	app.add_flag("--info", info.printInfo, "Print information about the shell")
-	    ->excludes(debugPortArg);
-	app.add_flag("--no-color", info.noColor, "Do not color the log output. (Env:NO_COLOR)");
-	auto* printVersion = app.add_flag("-V,--version", "Print quickshell's version, then exit.");
-
-	app.add_flag(
-	    "--no-detailed-logs",
-	    info.sparseLogsOnly,
-	    "Do not enable this unless you know what you are doing."
-	);
-
-	/// ---
-	QStringOption logPath;
-	QStringOption logFilter;
-	auto logNoTime = false;
-
-	auto* readLog = app.add_subcommand("read-log", "Read a quickshell log file.");
-	readLog->add_option("path", logPath, "Path to the log file to read")->required();
-
-	readLog->add_option(
-	    "-f,--filter",
-	    logFilter,
-	    "Logging categories to display. (same syntax as QT_LOGGING_RULES)"
-	);
-
-	readLog->add_flag("--no-time", logNoTime, "Do not print timestamps of log messages.");
-	readLog->add_flag("--no-color", info.noColor, "Do not color the log output. (Env:NO_COLOR)");
-
-	/// ---
-	QStringOption instanceId;
-	pid_t instancePid = -1;
-
-	auto sortInstances = [](QVector<InstanceLockInfo>& list) {
-		std::sort(list.begin(), list.end(), [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
-			return a.instance.launchTime < b.instance.launchTime;
-		});
-	};
-
-	auto selectInstance = [&]() {
-		auto* basePath = QsPaths::instance()->baseRunDir();
-		if (!basePath) exit(-1); // NOLINT
-
-		QString path;
-		InstanceLockInfo instance;
-
-		if (instancePid != -1) {
-			path = QDir(basePath->filePath("by-pid")).filePath(QString::number(instancePid));
-			if (!QsPaths::checkLock(path, &instance)) {
-				qCInfo(logBare) << "No instance found for pid" << instancePid;
-				exit(-1); // NOLINT
-			}
-		} else if (!(*instanceId).isEmpty()) {
-			path = basePath->filePath("by-pid");
-			auto instances = QsPaths::collectInstances(path);
-
-			auto itr =
-			    std::remove_if(instances.begin(), instances.end(), [&](const InstanceLockInfo& info) {
-				    return !info.instance.instanceId.startsWith(*instanceId);
-			    });
-
-			instances.erase(itr, instances.end());
-
-			if (instances.isEmpty()) {
-				qCInfo(logBare) << "No running instances start with" << *instanceId;
-			} else if (instances.length() != 1) {
-				qCInfo(logBare) << "More than one instance starts with" << *instanceId;
-
-				for (auto& instance: instances) {
-					qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
-				}
-
-				exit(-1); // NOLINT
-			} else {
-				instance = instances.value(0);
-			}
-		} else {
-			auto configFilePath =
-			    commandConfigPath(info.configPath, info.manifestPath, info.configName, info.printInfo);
-
-			auto pathId =
-			    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
-
-			path = QDir(basePath->filePath("by-path")).filePath(pathId);
-
-			auto instances = QsPaths::collectInstances(path);
-			sortInstances(instances);
-
-			if (instances.isEmpty()) {
-				qCInfo(logBare) << "No running instances for" << configFilePath;
-				exit(-1); // NOLINT
-			}
-
-			instance = instances.value(0);
-		}
-
-		return instance;
-	};
-
-	auto* instances =
-	    app.add_subcommand("instances", "List running quickshell instances.")->fallthrough();
-
-	auto* allInstances =
-	    instances->add_flag("-a,--all", "List all instances instead of just the current config.");
-
-	auto* instancesJson = instances->add_flag("-j,--json", "Output the list as a json.");
-
-	auto* kill = app.add_subcommand("kill", "Kill an instance.")->fallthrough();
-	auto* kInstance = app.add_option("-i,--instance", instanceId, "The instance id to kill.");
-	app.add_option("-p,--pid", instancePid, "The process id to kill.")->excludes(kInstance);
-
-	try {
-		app.parse(argc, argv);
-	} catch (const CLI::ParseError& e) {
-		exit(app.exit(e)); // NOLINT
-	};
-
-	// Start log manager - has to happen with an active event loop or offthread can't be started.
-	LogManager::init(!info.noColor, info.sparseLogsOnly);
-
-	if (*printVersion) {
-		std::cout << "quickshell pre-release, revision: " << GIT_REVISION << std::endl;
-		exit(0); // NOLINT
-	} else if (*readLog) {
-		auto file = QFile(*logPath);
-		if (!file.open(QFile::ReadOnly)) {
-			qCritical() << "Failed to open log for reading:" << *logPath;
-			exit(-1); // NOLINT
-		} else {
-			qInfo() << "Reading log" << *logPath;
-		}
-
-		exit( // NOLINT
-		    qs::log::readEncodedLogs(&file, !logNoTime, *logFilter) ? 0 : -1
-		);
-	} else if (*instances) {
-		auto* basePath = QsPaths::instance()->baseRunDir();
-		if (!basePath) exit(-1); // NOLINT
-
-		QString path;
-		QString configFilePath;
-		if (*allInstances) {
-			path = basePath->filePath("by-pid");
-		} else {
-			configFilePath =
-			    commandConfigPath(info.configPath, info.manifestPath, info.configName, info.printInfo);
-
-			auto pathId =
-			    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
-
-			path = QDir(basePath->filePath("by-path")).filePath(pathId);
-		}
-
-		auto instances = QsPaths::collectInstances(path);
-
-		if (instances.isEmpty()) {
-			if (*allInstances) {
-				qCInfo(logBare) << "No running instances.";
-			} else {
-				qCInfo(logBare) << "No running instances for" << configFilePath;
-				qCInfo(logBare) << "Use --all to list all instances.";
-			}
-		} else {
-			sortInstances(instances);
-
-			if (*instancesJson) {
-				auto array = QJsonArray();
-
-				for (auto& instance: instances) {
-					auto json = QJsonObject();
-
-					json["id"] = instance.instance.instanceId;
-					json["pid"] = instance.pid;
-					json["shell_id"] = instance.instance.shellId;
-					json["config_path"] = instance.instance.configPath;
-					json["launch_time"] = instance.instance.launchTime.toString(Qt::ISODate);
-
-					array.push_back(json);
-				}
-
-				auto document = QJsonDocument(array);
-				QTextStream(stdout) << document.toJson(QJsonDocument::Indented);
-			} else {
-				for (auto& instance: instances) {
-					auto launchTimeStr = instance.instance.launchTime.toString("yyyy-MM-dd hh:mm:ss");
-
-					auto runSeconds = instance.instance.launchTime.secsTo(QDateTime::currentDateTime());
-					auto remSeconds = runSeconds % 60;
-					auto runMinutes = (runSeconds - remSeconds) / 60;
-					auto remMinutes = runMinutes % 60;
-					auto runHours = (runMinutes - remMinutes) / 60;
-					auto runtimeStr = QString("%1 hours, %2 minutes, %3 seconds")
-					                      .arg(runHours)
-					                      .arg(remMinutes)
-					                      .arg(remSeconds);
-
-					qCInfo(logBare).noquote().nospace()
-					    << "Instance " << instance.instance.instanceId << ":\n"
-					    << "  Process ID: " << instance.pid << '\n'
-					    << "  Shell ID: " << instance.instance.shellId << '\n'
-					    << "  Config path: " << instance.instance.configPath << '\n'
-					    << "  Launch time: " << launchTimeStr << " (running for " << runtimeStr << ")\n";
-				}
-			}
-		}
-		exit(0); // NOLINT
-	} else if (*kill) {
-		auto instance = selectInstance();
-
-		auto r = IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
-			client.kill();
-			qCInfo(logBare).noquote() << "Killed" << instance.instance.instanceId;
-		});
-
-		exit(r ? 0 : -1); // NOLINT
-	}
+	checkCrashRelaunch(argv, coreApplication);
+	return runCommand(argc, argv, coreApplication);
 }
 
-QString commandConfigPath(QString path, QString manifest, QString config, bool printInfo) {
-	// NOLINTBEGIN
-#define CHECK(rname, name, level, label, expr)                                                     \
-	QString name = expr;                                                                             \
-	if (rname.isEmpty() && !name.isEmpty()) {                                                        \
-		rname = name;                                                                                  \
-		rname##Level = level;                                                                          \
-		if (!printInfo) goto label;                                                                    \
+class QStringOption {
+public:
+	QStringOption() = default;
+	QStringOption& operator=(const std::string& str) {
+		this->str = QString::fromStdString(str);
+		return *this;
 	}
 
-#define OPTSTR(name) (name.isEmpty() ? "(unset)" : name.toStdString())
-	// NOLINTEND
+	QString& operator*() { return this->str; }
+	QString* operator->() { return &this->str; }
 
-	QString basePath;
-	int basePathLevel = 0;
-	Q_UNUSED(basePathLevel);
-	{
-		// NOLINTBEGIN
-		// clang-format off
-		CHECK(basePath, envBasePath, 0, foundbase, qEnvironmentVariable("QS_BASE_PATH"));
-		CHECK(basePath, defaultBasePath, 0, foundbase, QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("quickshell"));
-		// clang-format on
-		// NOLINTEND
+private:
+	QString str;
+};
 
-		if (printInfo) {
-			// clang-format off
-			std::cout << "Base path: " << OPTSTR(basePath) << "\n";
-			std::cout << " - Environment (QS_BASE_PATH): " << OPTSTR(envBasePath) << "\n";
-			std::cout << " - Default: " << OPTSTR(defaultBasePath) << "\n";
-			// clang-format on
-		}
-	}
-foundbase:;
+struct CommandState {
+	struct {
+		int argc = 0;
+		char** argv = nullptr;
+	} exec;
 
+	struct {
+		bool timestamp = false;
+		bool noColor = !qEnvironmentVariableIsEmpty("NO_COLOR");
+		bool sparse = false;
+		size_t verbosity = 0;
+		QStringOption rules;
+		QStringOption readoutRules;
+		QStringOption file;
+	} log;
+
+	struct {
+		QStringOption path;
+		QStringOption manifest;
+		QStringOption name;
+	} config;
+
+	struct {
+		int port = -1;
+		bool wait = false;
+	} debug;
+
+	struct {
+		QStringOption id;
+		pid_t pid = -1; // NOLINT (include)
+		bool all = false;
+	} instance;
+
+	struct {
+		bool json = false;
+	} output;
+
+	struct {
+		CLI::App* log = nullptr;
+		CLI::App* list = nullptr;
+		CLI::App* kill = nullptr;
+	} subcommand;
+
+	struct {
+		bool printVersion = false;
+		bool killAll = false;
+	} misc;
+};
+
+int readLogFile(CommandState& cmd);
+int listInstances(CommandState& cmd);
+int killInstances(CommandState& cmd);
+int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication);
+
+struct LaunchArgs {
 	QString configPath;
-	int configPathLevel = 10;
+	int debugPort = -1;
+	bool waitForDebug = false;
+};
+
+int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication);
+
+int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
+	auto state = CommandState();
+
+	state.exec = {
+	    .argc = argc,
+	    .argv = argv,
+	};
+
+	auto addConfigSelection = [&](CLI::App* cmd) {
+		auto* group = cmd->add_option_group("Config Selection")
+		                  ->description("If no options in this group are specified,\n"
+		                                "$XDG_CONFIG_HOME/quickshell/shell.qml will be used.");
+
+		auto* path = group->add_option("-p,--path", state.config.path)
+		                 ->description("Path to a QML file.")
+		                 ->envname("QS_CONFIG_PATH");
+
+		group->add_option("-m,--manifest", state.config.manifest)
+		    ->description("Path to a quickshell manifest.\n"
+		                  "Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf")
+		    ->envname("QS_MANIFEST")
+		    ->excludes(path);
+
+		group->add_option("-c,--config", state.config.name)
+		    ->description("Name of a quickshell configuration to run.\n"
+		                  "If -m is specified, this is a configuration in the manifest,\n"
+		                  "otherwise it is the name of a folder in $XDG_CONFIG_HOME/quickshell.")
+		    ->envname("QS_CONFIG_NAME");
+
+		return group;
+	};
+
+	auto addDebugOptions = [&](CLI::App* cmd) {
+		auto* group = cmd->add_option_group("Debugging", "Options for QML debugging.");
+
+		auto* debug = group->add_option("--debug", state.debug.port)
+		                  ->description("Open the given port for a QML debugger connection.")
+		                  ->check(CLI::Range(0, 65535));
+
+		group->add_flag("--waitfordebug", state.debug.wait)
+		    ->description("Wait for a QML debugger to connect before executing the configuration.")
+		    ->needs(debug);
+
+		return group;
+	};
+
+	auto addLoggingOptions = [&](CLI::App* cmd, bool noGroup, bool noDisplay = false) {
+		auto* group = noGroup ? cmd : cmd->add_option_group(noDisplay ? "" : "Logging");
+
+		group->add_flag("--no-color", state.log.noColor)
+		    ->description("Disables colored logging.\n"
+		                  "Colored logging can also be disabled by specifying a non empty value\n"
+		                  "for the NO_COLOR environment variable.");
+
+		group->add_flag("--log-times", state.log.timestamp)
+		    ->description("Log timestamps with each message.");
+
+		group->add_option("--log-rules", state.log.rules)
+		    ->description("Log rules to apply, in the format of QT_LOGGING_RULES.");
+
+		group->add_flag("-v,--verbose", [&](size_t count) { state.log.verbosity = count; })
+		    ->description("Increases log verbosity.\n"
+		                  "-v will show INFO level internal logs.\n"
+		                  "-vv will show DEBUG level internal logs.");
+
+		auto* hgroup = cmd->add_option_group("");
+		hgroup->add_flag("--no-detailed-logs", state.log.sparse);
+	};
+
+	auto addInstanceSelection = [&](CLI::App* cmd) {
+		auto* group = cmd->add_option_group("Instance Selection");
+
+		group->add_option("-i,--instance", state.instance.id)
+		    ->description("The instance id to operate on.\n"
+		                  "You may also use a substring the id as long as it is unique,\n"
+		                  "for example \"abc\" will select \"abcdefg\".");
+
+		group->add_option("--pid", state.instance.pid)
+		    ->description("The process id of the instance to operate on.");
+
+		return group;
+	};
+
+	auto cli = CLI::App();
+	addConfigSelection(&cli);
+	addLoggingOptions(&cli, false);
+	addDebugOptions(&cli);
+
 	{
-		// NOLINTBEGIN
-		CHECK(configPath, optionConfigPath, 0, foundpath, path);
-		CHECK(configPath, envConfigPath, 1, foundpath, qEnvironmentVariable("QS_CONFIG_PATH"));
-		// NOLINTEND
-
-		if (printInfo) {
-			// clang-format off
-			std::cout << "\nConfig path: " << OPTSTR(configPath) << "\n";
-			std::cout << " - Option: " << OPTSTR(optionConfigPath) << "\n";
-			std::cout << " - Environment (QS_CONFIG_PATH): " << OPTSTR(envConfigPath) << "\n";
-			// clang-format on
-		}
+		cli.add_flag("-V,--version", state.misc.printVersion)
+		    ->description("Print quickshell's version and exit.");
 	}
-foundpath:;
 
-	QString manifestPath;
-	int manifestPathLevel = 10;
 	{
-		// NOLINTBEGIN
-		// clang-format off
-		CHECK(manifestPath, optionManifestPath, 0, foundmf, manifest);
-		CHECK(manifestPath, envManifestPath, 1, foundmf, qEnvironmentVariable("QS_MANIFEST"));
-		CHECK(manifestPath, defaultManifestPath, 2, foundmf, QDir(basePath).filePath("manifest.conf"));
-		// clang-format on
-		// NOLINTEND
+		auto* sub = cli.add_subcommand("log", "Read quickshell logs.");
+		sub->add_option("--file", state.log.file, "Log file to read.")->required();
 
-		if (printInfo) {
-			// clang-format off
-			std::cout << "\nManifest path: " << OPTSTR(manifestPath) << "\n";
-			std::cout << " - Option: " << OPTSTR(optionManifestPath) << "\n";
-			std::cout << " - Environment (QS_MANIFEST): " << OPTSTR(envManifestPath) << "\n";
-			std::cout << " - Default: " << OPTSTR(defaultManifestPath) << "\n";
-			// clang-format on
-		}
+		sub->add_option("-r,--rules", state.log.readoutRules, "Log file to read.")
+		    ->description("Rules to apply to the log being read, in the format of QT_LOGGING_RULES.");
+
+		addLoggingOptions(sub, false);
+
+		// todo
+		// addConfigSelection(sub)->excludes(file);
+
+		state.subcommand.log = sub;
 	}
-foundmf:;
 
-	QString configName;
-	int configNameLevel = 10;
 	{
-		// NOLINTBEGIN
-		CHECK(configName, optionConfigName, 0, foundname, config);
-		CHECK(configName, envConfigName, 1, foundname, qEnvironmentVariable("QS_CONFIG_NAME"));
-		// NOLINTEND
+		auto* sub = cli.add_subcommand("list", "List running quickshell instances.");
+		auto* all = sub->add_flag("-a,--all", state.instance.all)
+		                ->description("List all instances.\n"
+		                              "If unspecified, only instances of"
+		                              "the selected config will be listed.");
 
-		if (printInfo) {
-			// clang-format off
-			std::cout << "\nConfig name: " << OPTSTR(configName) << "\n";
-			std::cout << " - Option: " << OPTSTR(optionConfigName) << "\n";
-			std::cout << " - Environment (QS_CONFIG_NAME): " << OPTSTR(envConfigName) << "\n\n";
-			// clang-format on
-		}
+		sub->add_flag("-j,--json", state.output.json, "Output the list as a json.");
+
+		addConfigSelection(sub)->excludes(all);
+		addLoggingOptions(sub, false, true);
+
+		state.subcommand.list = sub;
 	}
-foundname:;
 
-	QString configFilePath;
+	{
+		auto* sub = cli.add_subcommand("kill", "Kill quickshell instances.");
+		//sub->add_flag("-a,--all", "Kill all matching instances instead of just one.");
+		auto* instance = addInstanceSelection(sub);
+		addConfigSelection(sub)->excludes(instance);
+		addLoggingOptions(sub, false, true);
 
-	if (!configPath.isEmpty() && configPathLevel <= configNameLevel) {
-		configFilePath = configPath;
-	} else if (!configName.isEmpty()) {
+		state.subcommand.kill = sub;
+	}
+
+	CLI11_PARSE(cli, argc, argv);
+
+	{
+		auto level = state.log.verbosity == 0 ? QtWarningMsg
+		           : state.log.verbosity == 1 ? QtInfoMsg
+		                                      : QtDebugMsg;
+
+		LogManager::init(
+		    !state.log.noColor,
+		    state.log.timestamp,
+		    state.log.sparse,
+		    level,
+		    *state.log.rules,
+		    *state.subcommand.log ? "READER" : ""
+		);
+	}
+
+	if (state.misc.printVersion) {
+		qCInfo(logBare).noquote() << "quickshell pre-release, revision" << GIT_REVISION;
+	} else if (*state.subcommand.log) {
+		return readLogFile(state);
+	} else if (*state.subcommand.list) {
+		return listInstances(state);
+	} else if (*state.subcommand.kill) {
+		return killInstances(state);
+	} else {
+		return launchFromCommand(state, coreApplication);
+	}
+
+	return 0;
+}
+
+int locateConfigFile(CommandState& cmd, QString& path) {
+	if (!cmd.config.path->isEmpty()) {
+		path = *cmd.config.path;
+	} else {
+		auto manifestPath = *cmd.config.manifest;
+		if (manifestPath.isEmpty()) {
+			auto configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+			auto path = configDir.filePath("manifest.conf");
+			if (QFileInfo(path).isFile()) manifestPath = path;
+		}
+
 		if (!manifestPath.isEmpty()) {
 			auto file = QFile(manifestPath);
 			if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -473,83 +332,214 @@ foundname:;
 
 					auto split = line.split('=');
 					if (split.length() != 2) {
-						qCritical() << "manifest line not in expected format 'name = relativepath':" << line;
-						exit(-1); // NOLINT
+						qCritical() << "Manifest line not in expected format 'name = relativepath':" << line;
+						return -1;
 					}
 
-					if (split[0].trimmed() == configName) {
-						configFilePath = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
-						goto foundp;
+					if (split[0].trimmed() == *cmd.config.name) {
+						path = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
+						break;
 					}
 				}
 
-				qCritical() << "configuration" << configName << "not found in manifest" << manifestPath;
-				exit(-1); // NOLINT
-			} else if (manifestPathLevel < 2) {
-				qCritical() << "cannot open config manifest at" << manifestPath;
-				exit(-1); // NOLINT
+				if (path.isEmpty()) {
+					qCCritical(logBare) << "Configuration" << *cmd.config.name
+					                    << "not found when searching manifest" << manifestPath;
+					return -1;
+				}
+			} else {
+				qCCritical(logBare) << "Could not open maifest at path" << *cmd.config.manifest;
+				return -1;
+			}
+		} else {
+			auto configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+
+			if (cmd.config.name->isEmpty()) {
+				path = configDir.path();
+			} else {
+				path = configDir.filePath(*cmd.config.name);
 			}
 		}
+	}
 
-		{
-			auto basePathInfo = QFileInfo(basePath);
-			if (!basePathInfo.exists()) {
-				qCritical() << "base path does not exist:" << basePath;
-				exit(-1); // NOLINT
-			} else if (!QFileInfo(basePathInfo.canonicalFilePath()).isDir()) {
-				qCritical() << "base path is not a directory" << basePath;
-				exit(-1); // NOLINT
+	if (QFileInfo(path).isDir()) {
+		path = QDir(path).filePath("shell.qml");
+	}
+
+	if (!QFileInfo(path).isFile()) {
+		qCCritical(logBare) << "Could not open config file at" << path;
+		return -1;
+	}
+
+	path = QFileInfo(path).canonicalFilePath();
+
+	return 0;
+}
+
+void sortInstances(QVector<InstanceLockInfo>& list) {
+	std::sort(list.begin(), list.end(), [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
+		return a.instance.launchTime < b.instance.launchTime;
+	});
+};
+
+int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
+	auto* basePath = QsPaths::instance()->baseRunDir();
+	if (!basePath) return -1;
+
+	QString path;
+
+	if (cmd.instance.pid != -1) {
+		path = QDir(basePath->filePath("by-pid")).filePath(QString::number(cmd.instance.pid));
+		if (!QsPaths::checkLock(path, instance)) {
+			qCInfo(logBare) << "No instance found for pid" << cmd.instance.pid;
+			return -1;
+		}
+	} else if (!cmd.instance.id->isEmpty()) {
+		path = basePath->filePath("by-pid");
+		auto instances = QsPaths::collectInstances(path);
+
+		auto itr =
+		    std::remove_if(instances.begin(), instances.end(), [&](const InstanceLockInfo& info) {
+			    return !info.instance.instanceId.startsWith(*cmd.instance.id);
+		    });
+
+		instances.erase(itr, instances.end());
+
+		if (instances.isEmpty()) {
+			qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
+			return -1;
+		} else if (instances.length() != 1) {
+			qCInfo(logBare) << "More than one instance starts with" << *cmd.instance.id;
+
+			for (auto& instance: instances) {
+				qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
 			}
 
-			auto dir = QDir(basePath);
-			for (auto& entry: dir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot)) {
-				if (entry == configName) {
-					configFilePath = dir.filePath(entry);
-					goto foundp;
-				}
-			}
-
-			qCritical() << "no directory named " << configName << "found in base path" << basePath;
-			exit(-1); // NOLINT
+			return -1;
+		} else {
+			*instance = instances.value(0);
 		}
 	} else {
-		configFilePath = basePath;
+		QString configFilePath;
+		auto r = locateConfigFile(cmd, configFilePath);
+		if (r != 0) return r;
+
+		auto pathId =
+		    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+
+		path = QDir(basePath->filePath("by-path")).filePath(pathId);
+
+		auto instances = QsPaths::collectInstances(path);
+		sortInstances(instances);
+
+		if (instances.isEmpty()) {
+			qCInfo(logBare) << "No running instances for" << configFilePath;
+			return -1;
+		}
+
+		*instance = instances.value(0);
 	}
 
-foundp:;
-	auto configFile = QFileInfo(configFilePath);
-	if (!configFile.exists()) {
-		qCritical() << "config path does not exist:" << configFilePath;
-		exit(-1); // NOLINT
+	return 0;
+}
+
+int readLogFile(CommandState& cmd) {
+	auto file = QFile(*cmd.log.file);
+	if (!file.open(QFile::ReadOnly)) {
+		qCCritical(logBare) << "Failed to open log file" << *cmd.log.file;
+		return -1;
 	}
 
-	if (configFile.isDir()) {
-		configFilePath = QDir(configFilePath).filePath("shell.qml");
+	return qs::log::readEncodedLogs(&file, cmd.log.timestamp, *cmd.log.readoutRules) ? 0 : -1;
+}
+
+int listInstances(CommandState& cmd) {
+	auto* basePath = QsPaths::instance()->baseRunDir();
+	if (!basePath) exit(-1); // NOLINT
+
+	QString path;
+	QString configFilePath;
+	if (cmd.instance.all) {
+		path = basePath->filePath("by-pid");
+	} else {
+		auto r = locateConfigFile(cmd, configFilePath);
+
+		if (r != 0) {
+			qCInfo(logBare) << "Use --all to list all instances.";
+			return r;
+		}
+
+		auto pathId =
+		    QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
+
+		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	configFile = QFileInfo(configFilePath);
-	if (!configFile.exists()) {
-		qCritical() << "no shell.qml found in config path:" << configFilePath;
-		exit(-1); // NOLINT
-	} else if (configFile.isDir()) {
-		qCritical() << "shell.qml is a directory:" << configFilePath;
-		exit(-1); // NOLINT
+	auto instances = QsPaths::collectInstances(path);
+
+	if (instances.isEmpty()) {
+		if (cmd.instance.all) {
+			qCInfo(logBare) << "No running instances.";
+		} else {
+			qCInfo(logBare) << "No running instances for" << configFilePath;
+			qCInfo(logBare) << "Use --all to list all instances.";
+		}
+	} else {
+		sortInstances(instances);
+
+		if (cmd.output.json) {
+			auto array = QJsonArray();
+
+			for (auto& instance: instances) {
+				auto json = QJsonObject();
+
+				json["id"] = instance.instance.instanceId;
+				json["pid"] = instance.pid;
+				json["shell_id"] = instance.instance.shellId;
+				json["config_path"] = instance.instance.configPath;
+				json["launch_time"] = instance.instance.launchTime.toString(Qt::ISODate);
+
+				array.push_back(json);
+			}
+
+			auto document = QJsonDocument(array);
+			QTextStream(stdout) << document.toJson(QJsonDocument::Indented);
+		} else {
+			for (auto& instance: instances) {
+				auto launchTimeStr = instance.instance.launchTime.toString("yyyy-MM-dd hh:mm:ss");
+
+				auto runSeconds = instance.instance.launchTime.secsTo(QDateTime::currentDateTime());
+				auto remSeconds = runSeconds % 60;
+				auto runMinutes = (runSeconds - remSeconds) / 60;
+				auto remMinutes = runMinutes % 60;
+				auto runHours = (runMinutes - remMinutes) / 60;
+				auto runtimeStr = QString("%1 hours, %2 minutes, %3 seconds")
+				                      .arg(runHours)
+				                      .arg(remMinutes)
+				                      .arg(remSeconds);
+
+				qCInfo(logBare).noquote().nospace()
+				    << "Instance " << instance.instance.instanceId << ":\n"
+				    << "  Process ID: " << instance.pid << '\n'
+				    << "  Shell ID: " << instance.instance.shellId << '\n'
+				    << "  Config path: " << instance.instance.configPath << '\n'
+				    << "  Launch time: " << launchTimeStr << " (running for " << runtimeStr << ")\n";
+			}
+		}
 	}
 
-	configFilePath = QFileInfo(configFilePath).canonicalFilePath();
-	configFile = QFileInfo(configFilePath);
-	if (!configFile.exists()) {
-		qCritical() << "config file does not exist:" << configFilePath;
-		exit(-1); // NOLINT
-	} else if (configFile.isDir()) {
-		qCritical() << "config file is a directory:" << configFilePath;
-		exit(-1); // NOLINT
-	}
+	return 0;
+}
 
-#undef CHECK
-#undef OPTSTR
+int killInstances(CommandState& cmd) {
+	InstanceLockInfo instance;
+	auto r = selectInstance(cmd, &instance);
+	if (r != 0) return r;
 
-	return configFilePath;
+	return IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
+		client.kill();
+		qCInfo(logBare).noquote() << "Killed" << instance.instance.instanceId;
+	});
 }
 
 template <typename T>
@@ -572,186 +562,163 @@ QString base36Encode(T number) {
 	return result;
 }
 
-int qs_main(int argc, char** argv) {
+void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 #if CRASH_REPORTER
-	qsCheckCrash(argc, argv);
-	auto crashHandler = qs::crash::CrashHandler();
+	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
+
+	if (!lastInfoFdStr.isEmpty()) {
+		auto lastInfoFd = lastInfoFdStr.toInt();
+
+		QFile file;
+		file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		file.seek(0);
+
+		auto ds = QDataStream(&file);
+		RelaunchInfo info;
+		ds >> info;
+
+		LogManager::init(
+		    !info.noColor,
+		    info.timestamp,
+		    info.sparseLogsOnly,
+		    info.defaultLogLevel,
+		    info.logRules
+		);
+
+		qCritical().nospace() << "Quickshell has crashed under pid "
+		                      << qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt()
+		                      << " (Coredumps will be available under that pid.)";
+
+		qCritical() << "Further crash information is stored under"
+		            << QsPaths::crashDir(info.instance.instanceId).path();
+
+		if (info.instance.launchTime.msecsTo(QDateTime::currentDateTime()) < 10000) {
+			qCritical() << "Quickshell crashed within 10 seconds of launching. Not restarting to avoid "
+			               "a crash loop.";
+			exit(-1); // NOLINT
+		} else {
+			qCritical() << "Quickshell has been restarted.";
+
+			launch({.configPath = info.instance.configPath}, argv, coreApplication);
+		}
+	}
 #endif
+}
 
-	auto qArgC = 1;
-	auto* qArgV = argv;
+int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
+	QString configPath;
 
-	QString configFilePath;
-	QString initialWorkdir;
-	QString shellId;
-	QString pathId;
+	auto r = locateConfigFile(cmd, configPath);
+	if (r != 0) return r;
 
-	int debugPort = -1;
-	bool waitForDebug = false;
-	bool printInfo = false;
-	bool noColor = !qEnvironmentVariableIsEmpty("NO_COLOR");
-	bool sparseLogsOnly = false;
+	return launch(
+	    {
+	        .configPath = configPath,
+	        .debugPort = cmd.debug.port,
+	        .waitForDebug = cmd.debug.wait,
+	    },
+	    cmd.exec.argv,
+	    coreApplication
+	);
+}
 
-	auto useQApplication = false;
-	auto nativeTextRendering = false;
-	auto desktopSettingsAware = true;
-	QHash<QString, QString> envOverrides;
+int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication) {
+	auto pathId = QCryptographicHash::hash(args.configPath.toUtf8(), QCryptographicHash::Md5).toHex();
+	auto shellId = QString(pathId);
 
-	{
-		const auto qApplication = QCoreApplication(qArgC, qArgV);
+	qInfo() << "Launching config:" << args.configPath;
 
-#if CRASH_REPORTER
-		auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
-
-		if (!lastInfoFdStr.isEmpty()) {
-			auto lastInfoFd = lastInfoFdStr.toInt();
-
-			QFile file;
-			file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
-			file.seek(0);
-
-			auto ds = QDataStream(&file);
-			RelaunchInfo info;
-			ds >> info;
-
-			configFilePath = info.instance.configPath;
-			initialWorkdir = info.instance.initialWorkdir;
-			noColor = info.noColor;
-			sparseLogsOnly = info.sparseLogsOnly;
-
-			LogManager::init(!noColor, sparseLogsOnly);
-
-			qCritical().nospace() << "Quickshell has crashed under pid "
-			                      << qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt()
-			                      << " (Coredumps will be available under that pid.)";
-
-			qCritical() << "Further crash information is stored under"
-			            << QsPaths::crashDir(info.instance.instanceId).path();
-
-			if (info.instance.launchTime.msecsTo(QDateTime::currentDateTime()) < 10000) {
-				qCritical() << "Quickshell crashed within 10 seconds of launching. Not restarting to avoid "
-				               "a crash loop.";
-				return 0;
-			} else {
-				qCritical() << "Quickshell has been restarted.";
-			}
-
-			crashHandler.init();
-		} else
-#endif
-		{
-
-			auto command = CommandInfo {
-			    .initialWorkdir = initialWorkdir,
-			    .debugPort = debugPort,
-			    .waitForDebug = waitForDebug,
-			    .printInfo = printInfo,
-			    .noColor = noColor,
-			    .sparseLogsOnly = sparseLogsOnly,
-			};
-
-			processCommand(argc, argv, command);
-
-#if CRASH_REPORTER
-			// Started after log manager for pretty debug logs. Unlikely anything will crash before this point, but
-			// this can be moved if it happens.
-			crashHandler.init();
-#endif
-
-			configFilePath = commandConfigPath(
-			    command.configPath,
-			    command.manifestPath,
-			    command.configName,
-			    command.printInfo
-			);
-		}
-
-		pathId = QCryptographicHash::hash(configFilePath.toUtf8(), QCryptographicHash::Md5).toHex();
-		shellId = pathId;
-
-		qInfo() << "Config file path:" << configFilePath;
-
-		if (!QFile(configFilePath).exists()) {
-			qCritical() << "config file does not exist";
-			return -1;
-		}
-
-		auto file = QFile(configFilePath);
-		if (!file.open(QFile::ReadOnly | QFile::Text)) {
-			qCritical() << "could not open config file";
-			return -1;
-		}
-
-		auto stream = QTextStream(&file);
-		while (!stream.atEnd()) {
-			auto line = stream.readLine().trimmed();
-			if (line.startsWith("//@ pragma ")) {
-				auto pragma = line.sliced(11).trimmed();
-
-				if (pragma == "UseQApplication") useQApplication = true;
-				else if (pragma == "NativeTextRendering") nativeTextRendering = true;
-				else if (pragma == "IgnoreSystemSettings") desktopSettingsAware = false;
-				else if (pragma.startsWith("Env ")) {
-					auto envPragma = pragma.sliced(4);
-					auto splitIdx = envPragma.indexOf('=');
-
-					if (splitIdx == -1) {
-						qCritical() << "Env pragma" << pragma << "not in the form 'VAR = VALUE'";
-						return -1;
-					}
-
-					auto var = envPragma.sliced(0, splitIdx).trimmed();
-					auto val = envPragma.sliced(splitIdx + 1).trimmed();
-					envOverrides.insert(var, val);
-				} else if (pragma.startsWith("ShellId ")) {
-					shellId = pragma.sliced(8).trimmed();
-				} else {
-					qCritical() << "Unrecognized pragma" << pragma;
-					return -1;
-				}
-			} else if (line.startsWith("import")) break;
-		}
-
-		file.close();
+	auto file = QFile(args.configPath);
+	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+		qCritical() << "Could not open config file" << args.configPath;
+		return -1;
 	}
 
-	qInfo() << "Shell ID:" << shellId;
+	struct {
+		bool useQApplication = false;
+		bool nativeTextRendering = false;
+		bool desktopSettingsAware = true;
+		QHash<QString, QString> envOverrides;
+	} pragmas;
 
-	if (printInfo) return 0;
+	auto stream = QTextStream(&file);
+	while (!stream.atEnd()) {
+		auto line = stream.readLine().trimmed();
+		if (line.startsWith("//@ pragma ")) {
+			auto pragma = line.sliced(11).trimmed();
+
+			if (pragma == "UseQApplication") pragmas.useQApplication = true;
+			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
+			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
+			else if (pragma.startsWith("Env ")) {
+				auto envPragma = pragma.sliced(4);
+				auto splitIdx = envPragma.indexOf('=');
+
+				if (splitIdx == -1) {
+					qCritical() << "Env pragma" << pragma << "not in the form 'VAR = VALUE'";
+					return -1;
+				}
+
+				auto var = envPragma.sliced(0, splitIdx).trimmed();
+				auto val = envPragma.sliced(splitIdx + 1).trimmed();
+				pragmas.envOverrides.insert(var, val);
+			} else if (pragma.startsWith("ShellId ")) {
+				shellId = pragma.sliced(8).trimmed();
+			} else {
+				qCritical() << "Unrecognized pragma" << pragma;
+				return -1;
+			}
+		} else if (line.startsWith("import")) break;
+	}
+
+	file.close();
+
+	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 
 	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
 	InstanceInfo::CURRENT = InstanceInfo {
 	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
-	    .configPath = configFilePath,
+	    .configPath = args.configPath,
 	    .shellId = shellId,
-	    .initialWorkdir = initialWorkdir,
 	    .launchTime = qs::Common::LAUNCH_TIME,
 	};
 
 #if CRASH_REPORTER
-	crashHandler.setInstanceInfo(RelaunchInfo {
-	    .instance = InstanceInfo::CURRENT,
-	    .noColor = noColor,
-	    .sparseLogsOnly = sparseLogsOnly,
-	});
-#endif
+	auto crashHandler = crash::CrashHandler();
+	crashHandler.init();
 
-	for (auto [var, val]: envOverrides.asKeyValueRange()) {
-		qputenv(var.toUtf8(), val.toUtf8());
+	{
+		auto* log = LogManager::instance();
+		crashHandler.setRelaunchInfo({
+		    .instance = InstanceInfo::CURRENT,
+		    .noColor = !log->colorLogs,
+		    .timestamp = log->timestampLogs,
+		    .sparseLogsOnly = log->isSparse(),
+		    .defaultLogLevel = log->defaultLevel(),
+		    .logRules = log->rulesString(),
+		});
 	}
+#endif
 
 	QsPaths::init(shellId, pathId);
 	QsPaths::instance()->linkRunDir();
 	QsPaths::instance()->linkPathDir();
+	LogManager::initFs();
 
-	if (auto* cacheDir = QsPaths::instance()->cacheDir()) {
-		auto qmlCacheDir = cacheDir->filePath("qml-engine-cache");
-		qputenv("QML_DISK_CACHE_PATH", qmlCacheDir.toLocal8Bit());
-
-		if (!qEnvironmentVariableIsSet("QML_DISK_CACHE")) {
-			qputenv("QML_DISK_CACHE", "aot,qmlc");
-		}
+	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
+		qputenv(var.toUtf8(), val.toUtf8());
 	}
+
+	// The qml engine currently refuses to cache non file (qsintercept) paths.
+
+	// if (auto* cacheDir = QsPaths::instance()->cacheDir()) {
+	// 	auto qmlCacheDir = cacheDir->filePath("qml-engine-cache");
+	// 	qputenv("QML_DISK_CACHE_PATH", qmlCacheDir.toLocal8Bit());
+	//
+	// 	if (!qEnvironmentVariableIsSet("QML_DISK_CACHE")) {
+	// 		qputenv("QML_DISK_CACHE", "aot,qmlc");
+	// 	}
+	// }
 
 	// While the simple animation driver can lead to better animations in some cases,
 	// it also can cause excessive repainting at excessively high framerates which can
@@ -789,27 +756,24 @@ int qs_main(int argc, char** argv) {
 		QIcon::setFallbackSearchPaths(fallbackPaths);
 	}
 
-	QGuiApplication::setDesktopSettingsAware(desktopSettingsAware);
+	QGuiApplication::setDesktopSettingsAware(pragmas.desktopSettingsAware);
+
+	delete coreApplication;
 
 	QGuiApplication* app = nullptr;
+	auto qArgC = 0;
 
-	if (useQApplication) {
-		app = new QApplication(qArgC, qArgV);
+	if (pragmas.useQApplication) {
+		app = new QApplication(qArgC, argv);
 	} else {
-		app = new QGuiApplication(qArgC, qArgV);
+		app = new QGuiApplication(qArgC, argv);
 	}
 
-	LogManager::initFs();
-
-	if (debugPort != -1) {
+	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);
-		auto wait = waitForDebug ? QQmlDebuggingEnabler::WaitForClient
-		                         : QQmlDebuggingEnabler::DoNotWaitForClient;
-		QQmlDebuggingEnabler::startTcpDebugServer(debugPort, wait);
-	}
-
-	if (!initialWorkdir.isEmpty()) {
-		QDir::setCurrent(initialWorkdir);
+		auto wait = args.waitForDebug ? QQmlDebuggingEnabler::WaitForClient
+		                              : QQmlDebuggingEnabler::DoNotWaitForClient;
+		QQmlDebuggingEnabler::startTcpDebugServer(args.debugPort, wait);
 	}
 
 	QuickshellPlugin::initPlugins();
@@ -818,17 +782,19 @@ int qs_main(int argc, char** argv) {
 	// Use a fully transparent window with a colored rect.
 	QQuickWindow::setDefaultAlphaBuffer(true);
 
-	if (nativeTextRendering) {
+	if (pragmas.nativeTextRendering) {
 		QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 	}
 
 	qs::ipc::IpcServer::start();
 	QsPaths::instance()->createLock();
 
-	auto root = RootWrapper(configFilePath, shellId);
+	auto root = RootWrapper(args.configPath, shellId);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
 
 	auto code = QGuiApplication::exec();
 	delete app;
 	return code;
 }
+
+} // namespace qs::launch

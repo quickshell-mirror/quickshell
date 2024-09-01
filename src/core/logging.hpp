@@ -37,7 +37,13 @@ struct LogMessage {
 	QByteArray body;
 	quint16 readCategoryId = 0;
 
-	static void formatMessage(QTextStream& stream, const LogMessage& msg, bool color, bool timestamp);
+	static void formatMessage(
+	    QTextStream& stream,
+	    const LogMessage& msg,
+	    bool color,
+	    bool timestamp,
+	    const QString& prefix = ""
+	);
 };
 
 size_t qHash(const LogMessage& message);
@@ -58,6 +64,10 @@ private:
 	ThreadLogging* logging = nullptr;
 };
 
+namespace qt_logging_registry {
+class QLoggingRule;
+}
+
 struct CategoryFilter {
 	explicit CategoryFilter() = default;
 	explicit CategoryFilter(QLoggingCategory* category)
@@ -67,6 +77,8 @@ struct CategoryFilter {
 	    , critical(category->isCriticalEnabled()) {}
 
 	[[nodiscard]] bool shouldDisplay(QtMsgType type) const;
+	void apply(QLoggingCategory* category) const;
+	void applyRule(QLatin1StringView category, const qt_logging_registry::QLoggingRule& rule);
 
 	bool debug = true;
 	bool info = true;
@@ -78,11 +90,24 @@ class LogManager: public QObject {
 	Q_OBJECT;
 
 public:
-	static void init(bool color, bool sparseOnly);
+	static void init(
+	    bool color,
+	    bool timestamp,
+	    bool sparseOnly,
+	    QtMsgType defaultLevel,
+	    const QString& rules,
+	    const QString& prefix = ""
+	);
+
 	static void initFs();
 	static LogManager* instance();
 
 	bool colorLogs = true;
+	bool timestampLogs = false;
+
+	[[nodiscard]] QString rulesString() const;
+	[[nodiscard]] QtMsgType defaultLevel() const;
+	[[nodiscard]] bool isSparse() const;
 
 signals:
 	void logMessage(LogMessage msg, bool showInSparse);
@@ -94,6 +119,11 @@ private:
 	static void filterCategory(QLoggingCategory* category);
 
 	QLoggingCategory::CategoryFilter lastCategoryFilter = nullptr;
+	bool sparse = false;
+	QString prefix;
+	QString mRulesString;
+	QList<qt_logging_registry::QLoggingRule>* rules = nullptr;
+	QtMsgType mDefaultLevel = QtWarningMsg;
 	QHash<const void*, CategoryFilter> sparseFilters;
 
 	QTextStream stdoutStream;

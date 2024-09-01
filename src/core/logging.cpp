@@ -32,6 +32,7 @@
 Q_LOGGING_CATEGORY(logBare, "quickshell.bare");
 
 namespace qs::log {
+using namespace qt_logging_registry;
 
 Q_LOGGING_CATEGORY(logLogging, "quickshell.logging", QtWarningMsg);
 
@@ -48,8 +49,16 @@ void LogMessage::formatMessage(
     QTextStream& stream,
     const LogMessage& msg,
     bool color,
-    bool timestamp
+    bool timestamp,
+    const QString& prefix
 ) {
+	if (!prefix.isEmpty()) {
+		if (color) stream << "\033[90m";
+		stream << '[' << prefix << ']';
+		if (timestamp) stream << ' ';
+		if (color) stream << "\033[0m";
+	}
+
 	if (timestamp) {
 		if (color) stream << "\033[90m";
 		stream << msg.time.toString("yyyy-MM-dd hh:mm:ss.zzz");
@@ -102,6 +111,30 @@ bool CategoryFilter::shouldDisplay(QtMsgType type) const {
 	}
 }
 
+void CategoryFilter::apply(QLoggingCategory* category) const {
+	category->setEnabled(QtDebugMsg, this->debug);
+	category->setEnabled(QtInfoMsg, this->info);
+	category->setEnabled(QtWarningMsg, this->warn);
+	category->setEnabled(QtCriticalMsg, this->critical);
+}
+
+void CategoryFilter::applyRule(
+    QLatin1StringView category,
+    const qt_logging_registry::QLoggingRule& rule
+) {
+	auto filterpass = rule.pass(category, QtDebugMsg);
+	if (filterpass != 0) this->debug = filterpass > 0;
+
+	filterpass = rule.pass(category, QtInfoMsg);
+	if (filterpass != 0) this->info = filterpass > 0;
+
+	filterpass = rule.pass(category, QtWarningMsg);
+	if (filterpass != 0) this->warn = filterpass > 0;
+
+	filterpass = rule.pass(category, QtCriticalMsg);
+	if (filterpass != 0) this->critical = filterpass > 0;
+}
+
 LogManager::LogManager(): stdoutStream(stdout) {}
 
 void LogManager::messageHandler(
@@ -122,7 +155,14 @@ void LogManager::messageHandler(
 	}
 
 	if (display) {
-		LogMessage::formatMessage(self->stdoutStream, message, self->colorLogs, false);
+		LogMessage::formatMessage(
+		    self->stdoutStream,
+		    message,
+		    self->colorLogs,
+		    self->timestampLogs,
+		    self->prefix
+		);
+
 		self->stdoutStream << Qt::endl;
 	}
 
@@ -132,21 +172,37 @@ void LogManager::messageHandler(
 void LogManager::filterCategory(QLoggingCategory* category) {
 	auto* instance = LogManager::instance();
 
+	auto categoryName = QLatin1StringView(category->categoryName());
+	auto isQs = categoryName.startsWith(QLatin1StringView("quickshell."));
+
 	if (instance->lastCategoryFilter) {
 		instance->lastCategoryFilter(category);
 	}
 
-	if (QLatin1StringView(category->categoryName()).startsWith(QLatin1StringView("quickshell"))) {
+	auto filter = CategoryFilter(category);
+
+	if (isQs) {
+		filter.debug = filter.debug || instance->mDefaultLevel == QtDebugMsg;
+		filter.info = filter.debug || instance->mDefaultLevel == QtInfoMsg;
+		filter.warn = filter.info || instance->mDefaultLevel == QtWarningMsg;
+		filter.critical = filter.warn || instance->mDefaultLevel == QtCriticalMsg;
+	}
+
+	for (const auto& rule: *instance->rules) {
+		filter.applyRule(categoryName, rule);
+	}
+
+	if (isQs && instance->sparse) {
 		// We assume the category name pointer will always be the same and be comparable in the message handler.
 		LogManager::instance()->sparseFilters.insert(
 		    static_cast<const void*>(category->categoryName()),
-		    CategoryFilter(category)
+		    filter
 		);
 
-		category->setEnabled(QtDebugMsg, true);
-		category->setEnabled(QtInfoMsg, true);
-		category->setEnabled(QtWarningMsg, true);
-		category->setEnabled(QtCriticalMsg, true);
+		// all enabled by default
+		CategoryFilter().apply(category);
+	} else {
+		filter.apply(category);
 	}
 }
 
@@ -155,15 +211,31 @@ LogManager* LogManager::instance() {
 	return instance;
 }
 
-void LogManager::init(bool color, bool sparseOnly) {
+void LogManager::init(
+    bool color,
+    bool timestamp,
+    bool sparseOnly,
+    QtMsgType defaultLevel,
+    const QString& rules,
+    const QString& prefix
+) {
 	auto* instance = LogManager::instance();
 	instance->colorLogs = color;
+	instance->timestampLogs = timestamp;
+	instance->sparse = sparseOnly;
+	instance->prefix = prefix;
+	instance->mDefaultLevel = defaultLevel;
+	instance->mRulesString = rules;
+
+	{
+		QLoggingSettingsParser parser;
+		parser.setContent(rules);
+		instance->rules = new QList(parser.rules());
+	}
 
 	qInstallMessageHandler(&LogManager::messageHandler);
 
-	if (!sparseOnly) {
-		instance->lastCategoryFilter = QLoggingCategory::installFilter(&LogManager::filterCategory);
-	}
+	instance->lastCategoryFilter = QLoggingCategory::installFilter(&LogManager::filterCategory);
 
 	qCDebug(logLogging) << "Creating offthread logger...";
 	auto* thread = new QThread();
@@ -180,6 +252,10 @@ void LogManager::initFs() {
 	    Qt::BlockingQueuedConnection
 	);
 }
+
+QString LogManager::rulesString() const { return this->mRulesString; }
+QtMsgType LogManager::defaultLevel() const { return this->mDefaultLevel; }
+bool LogManager::isSparse() const { return this->sparse; }
 
 void LoggingThreadProxy::initInThread() {
 	this->logging = new ThreadLogging(this);
@@ -654,8 +730,6 @@ bool EncodedLogReader::registerCategory() {
 }
 
 bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec) {
-	using namespace qt_logging_registry;
-
 	QList<QLoggingRule> rules;
 
 	{
@@ -695,17 +769,7 @@ bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec
 			filter = filters.value(message.readCategoryId);
 		} else {
 			for (const auto& rule: rules) {
-				auto filterpass = rule.pass(message.category, QtDebugMsg);
-				if (filterpass != 0) filter.debug = filterpass > 0;
-
-				filterpass = rule.pass(message.category, QtInfoMsg);
-				if (filterpass != 0) filter.info = filterpass > 0;
-
-				filterpass = rule.pass(message.category, QtWarningMsg);
-				if (filterpass != 0) filter.warn = filterpass > 0;
-
-				filterpass = rule.pass(message.category, QtCriticalMsg);
-				if (filterpass != 0) filter.critical = filterpass > 0;
+				filter.applyRule(message.category, rule);
 			}
 
 			filters.insert(message.readCategoryId, filter);

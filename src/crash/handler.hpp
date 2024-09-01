@@ -14,7 +14,7 @@ public:
 	Q_DISABLE_COPY_MOVE(CrashHandler);
 
 	void init();
-	void setInstanceInfo(const RelaunchInfo& info);
+	void setRelaunchInfo(const RelaunchInfo& info);
 
 private:
 	CrashHandlerPrivate* d;

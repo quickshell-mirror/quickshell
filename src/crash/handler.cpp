@@ -64,7 +64,7 @@ void CrashHandler::init() {
 	qCInfo(logCrashHandler) << "Crash handler initialized.";
 }
 
-void CrashHandler::setInstanceInfo(const RelaunchInfo& info) {
+void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
 	this->d->infoFd = memfd_create("quickshell:instance_info", MFD_CLOEXEC);
 
 	if (this->d->infoFd == -1) {
