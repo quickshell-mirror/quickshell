@@ -10,6 +10,7 @@
 #include <qqmllist.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <xcb/xproto.h>
@@ -17,6 +18,7 @@
 #include "../core/generation.hpp"
 #include "../core/panelinterface.hpp"
 #include "../core/proxywindow.hpp"
+#include "../core/qmlscreen.hpp"
 #include "util.hpp"
 
 class XPanelStack {
@@ -53,6 +55,17 @@ public:
 			for (auto* panel: panels) {
 				panel->updateDimensions();
 			}
+		}
+	}
+
+	void updateLowerDimensions(XPanelWindow* exclude) {
+		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(exclude)];
+
+		// update all panels lower than the one we start from
+		auto found = false;
+		for (auto* panel: panels) {
+			if (panel == exclude) found = true;
+			else if (found) panel->updateDimensions(false);
 		}
 	}
 
@@ -151,9 +164,8 @@ qint32 XPanelWindow::exclusiveZone() const { return this->mExclusiveZone; }
 void XPanelWindow::setExclusiveZone(qint32 exclusiveZone) {
 	if (this->mExclusiveZone == exclusiveZone) return;
 	this->mExclusiveZone = exclusiveZone;
-	const bool wasNormal = this->mExclusionMode == ExclusionMode::Normal;
 	this->setExclusionMode(ExclusionMode::Normal);
-	if (wasNormal) this->updateStrut();
+	this->updateStrut();
 	emit this->exclusiveZoneChanged();
 }
 
@@ -225,14 +237,16 @@ void XPanelWindow::connectScreen() {
 		    this->mTrackedScreen,
 		    &QScreen::geometryChanged,
 		    this,
-		    &XPanelWindow::updateDimensions
+		    &XPanelWindow::updateDimensionsSlot
 		);
 	}
 
 	this->updateDimensions();
 }
 
-void XPanelWindow::updateDimensions() {
+void XPanelWindow::updateDimensionsSlot() { this->updateDimensions(); }
+
+void XPanelWindow::updateDimensions(bool propagate) {
 	if (this->window == nullptr || this->window->handle() == nullptr || this->mScreen == nullptr)
 		return;
 
@@ -302,7 +316,15 @@ void XPanelWindow::updateDimensions() {
 	}
 
 	this->window->setGeometry(geometry);
-	this->updateStrut();
+	this->updateStrut(propagate);
+
+	// AwesomeWM incorrectly repositions the window without this.
+	// See https://github.com/polybar/polybar/blob/f0f9563ecf39e78ba04cc433cb7b38a83efde473/src/components/bar.cpp#L666
+	QTimer::singleShot(0, this, [this, geometry]() {
+		// forces second call not to be discarded as duplicate
+		this->window->setGeometry({0, 0, 0, 0});
+		this->window->setGeometry(geometry);
+	});
 }
 
 void XPanelWindow::updatePanelStack() {
@@ -314,7 +336,10 @@ void XPanelWindow::updatePanelStack() {
 }
 
 void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
-	if (this->mExclusionMode == ExclusionMode::Ignore) return;
+	if (this->mExclusionMode == ExclusionMode::Ignore) {
+		exclusiveZone = 0;
+		return;
+	}
 
 	auto& anchors = this->mAnchors;
 	if (anchors.mLeft || anchors.mRight || anchors.mTop || anchors.mBottom) {
@@ -344,7 +369,7 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 	}
 }
 
-void XPanelWindow::updateStrut() {
+void XPanelWindow::updateStrut(bool propagate) {
 	if (this->window == nullptr || this->window->handle() == nullptr) return;
 	auto* conn = x11Connection();
 
@@ -359,13 +384,19 @@ void XPanelWindow::updateStrut() {
 		return;
 	}
 
+	// Due to missing headers it isn't even possible to do this right.
+	// We assume a single xinerama monitor with a matching size root.
+	auto screenGeometry = this->window->screen()->geometry();
+	auto horizontal = side == 0 || side == 1;
+
 	auto data = std::array<quint32, 12>();
 	data[side] = exclusiveZone;
 
-	// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45573693101552
-	// assuming "specified in root window coordinates" means relative to the window geometry
-	// in which case only the end position should be set, to the opposite extent.
-	data[side * 2 + 5] = side == 0 || side == 1 ? this->window->height() : this->window->width();
+	auto start = horizontal ? screenGeometry.top() + this->window->y()
+	                        : screenGeometry.left() + this->window->x();
+
+	data[4 + side * 2] = start;
+	data[5 + side * 2] = start + (horizontal ? this->window->height() : this->window->width());
 
 	xcb_change_property(
 	    conn,
@@ -388,6 +419,8 @@ void XPanelWindow::updateStrut() {
 	    12,
 	    data.data()
 	);
+
+	if (propagate) XPanelStack::instance()->updateLowerDimensions(this);
 }
 
 void XPanelWindow::updateAboveWindows() {

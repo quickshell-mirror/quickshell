@@ -79,15 +79,16 @@ signals:
 
 private slots:
 	void xInit();
-	void updateDimensions();
 	void updatePanelStack();
+	void updateDimensionsSlot();
 
 private:
 	void connectScreen();
 	void getExclusion(int& side, quint32& exclusiveZone);
-	void updateStrut();
+	void updateStrut(bool propagate = true);
 	void updateAboveWindows();
 	void updateFocusable();
+	void updateDimensions(bool propagate = true);
 
 	QPointer<QScreen> mTrackedScreen = nullptr;
 	bool mAboveWindows = true;
