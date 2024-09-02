@@ -10,6 +10,7 @@
 #include <qqmllist.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
+#include <qtenvironmentvariables.h>
 #include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -386,6 +387,11 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 	}
 }
 
+// Disable xinerama structs to break multi monitor configurations with bad WMs less.
+// Usually this results in one monitor at the top left corner of the root window working
+// perfectly and all others being broken semi randomly.
+static bool XINERAMA_STRUTS = qEnvironmentVariableIsEmpty("QS_NO_XINERAMA_STRUTS"); // NOLINT
+
 void XPanelWindow::updateStrut(bool propagate) {
 	if (this->window == nullptr || this->window->handle() == nullptr) return;
 	auto* conn = x11Connection();
@@ -405,12 +411,14 @@ void XPanelWindow::updateStrut(bool propagate) {
 	auto screenGeometry = this->window->screen()->geometry();
 	auto horizontal = side == 0 || side == 1;
 
-	switch (side) {
-	case 0: exclusiveZone += screenGeometry.left(); break;
-	case 1: exclusiveZone += rootGeometry.right() - screenGeometry.right(); break;
-	case 2: exclusiveZone += screenGeometry.top(); break;
-	case 3: exclusiveZone += rootGeometry.bottom() - screenGeometry.bottom(); break;
-	default: break;
+	if (XINERAMA_STRUTS) {
+		switch (side) {
+		case 0: exclusiveZone += screenGeometry.left(); break;
+		case 1: exclusiveZone += rootGeometry.right() - screenGeometry.right(); break;
+		case 2: exclusiveZone += screenGeometry.top(); break;
+		case 3: exclusiveZone += rootGeometry.bottom() - screenGeometry.bottom(); break;
+		default: break;
+		}
 	}
 
 	auto data = std::array<quint32, 12>();
