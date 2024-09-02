@@ -239,9 +239,26 @@ void XPanelWindow::connectScreen() {
 		    this,
 		    &XPanelWindow::updateDimensionsSlot
 		);
+
+		QObject::connect(
+		    this->mTrackedScreen,
+		    &QScreen::virtualGeometryChanged,
+		    this,
+		    &XPanelWindow::onScreenVirtualGeometryChanged
+
+		);
 	}
 
 	this->updateDimensions();
+}
+
+// For some reason this gets sent multiple times with the same value.
+void XPanelWindow::onScreenVirtualGeometryChanged() {
+	auto geometry = this->mTrackedScreen->virtualGeometry();
+	if (geometry != this->lastScreenVirtualGeometry) {
+		this->lastScreenVirtualGeometry = geometry;
+		this->updateStrut(false);
+	}
 }
 
 void XPanelWindow::updateDimensionsSlot() { this->updateDimensions(); }
@@ -384,16 +401,22 @@ void XPanelWindow::updateStrut(bool propagate) {
 		return;
 	}
 
-	// Due to missing headers it isn't even possible to do this right.
-	// We assume a single xinerama monitor with a matching size root.
+	auto rootGeometry = this->window->screen()->virtualGeometry();
 	auto screenGeometry = this->window->screen()->geometry();
 	auto horizontal = side == 0 || side == 1;
+
+	switch (side) {
+	case 0: exclusiveZone += screenGeometry.left(); break;
+	case 1: exclusiveZone += rootGeometry.right() - screenGeometry.right(); break;
+	case 2: exclusiveZone += screenGeometry.top(); break;
+	case 3: exclusiveZone += rootGeometry.bottom() - screenGeometry.bottom(); break;
+	default: break;
+	}
 
 	auto data = std::array<quint32, 12>();
 	data[side] = exclusiveZone;
 
-	auto start = horizontal ? screenGeometry.top() + this->window->y()
-	                        : screenGeometry.left() + this->window->x();
+	auto start = horizontal ? this->window->y() : this->window->x();
 
 	data[4 + side * 2] = start;
 	data[5 + side * 2] = start + (horizontal ? this->window->height() : this->window->width());

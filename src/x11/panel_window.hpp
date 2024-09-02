@@ -81,6 +81,7 @@ private slots:
 	void xInit();
 	void updatePanelStack();
 	void updateDimensionsSlot();
+	void onScreenVirtualGeometryChanged();
 
 private:
 	void connectScreen();
@@ -97,6 +98,8 @@ private:
 	Margins mMargins;
 	qint32 mExclusiveZone = 0;
 	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
+
+	QRect lastScreenVirtualGeometry;
 	XPanelEventFilter eventFilter;
 
 	friend class XPanelStack;
