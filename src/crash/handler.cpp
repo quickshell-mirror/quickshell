@@ -126,8 +126,10 @@ bool CrashHandlerPrivate::minidumpCallback(
 
 	auto populateEnv = [&]() {
 		auto senvi = 0;
-		while (envi < 4095) {
-			env[envi++] = environ[senvi++]; // NOLINT
+		while (envi != 4095) {
+			auto var = environ[senvi++]; // NOLINT
+			if (var == nullptr) break;
+			env[envi++] = var;
 		}
 
 		env[envi] = nullptr;
