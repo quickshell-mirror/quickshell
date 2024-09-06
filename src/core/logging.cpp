@@ -192,7 +192,7 @@ void LogManager::filterCategory(QLoggingCategory* category) {
 		filter.applyRule(categoryName, rule);
 	}
 
-	if (isQs && instance->sparse) {
+	if (isQs && !instance->sparse) {
 		// We assume the category name pointer will always be the same and be comparable in the message handler.
 		LogManager::instance()->sparseFilters.insert(
 		    static_cast<const void*>(category->categoryName()),
@@ -241,7 +241,13 @@ void LogManager::init(
 	auto* thread = new QThread();
 	instance->threadProxy.moveToThread(thread);
 	thread->start();
-	QMetaObject::invokeMethod(&instance->threadProxy, "initInThread", Qt::BlockingQueuedConnection);
+
+	QMetaObject::invokeMethod(
+			&instance->threadProxy,
+			&LoggingThreadProxy::initInThread,
+			Qt::BlockingQueuedConnection
+	);
+
 	qCDebug(logLogging) << "Logger initialized.";
 }
 
