@@ -58,29 +58,28 @@
     qt6.qtdeclarative
     cli11
   ]
-  ++ (lib.optional withCrashReporter breakpad)
-  ++ (lib.optional withJemalloc jemalloc)
-  ++ (lib.optional withQtSvg qt6.qtsvg)
-  ++ (lib.optionals withWayland [ qt6.qtwayland wayland ])
-  ++ (lib.optional withX11 xorg.libxcb)
-  ++ (lib.optional withPam pam)
-  ++ (lib.optional withPipewire pipewire);
+  ++ lib.optional withCrashReporter breakpad
+  ++ lib.optional withJemalloc jemalloc
+  ++ lib.optional withQtSvg qt6.qtsvg
+  ++ lib.optionals withWayland [ qt6.qtwayland wayland ]
+  ++ lib.optional withX11 xorg.libxcb
+  ++ lib.optional withPam pam
+  ++ lib.optional withPipewire pipewire;
 
   QTWAYLANDSCANNER = lib.optionalString withWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
 
   cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
-  cmakeFlags = [ "-DGIT_REVISION=${gitRev}" ]
-  ++ lib.optional (!withCrashReporter) "-DCRASH_REPORTER=OFF"
-  ++ lib.optional (!withJemalloc) "-DUSE_JEMALLOC=OFF"
-  ++ lib.optional (!withWayland) "-DWAYLAND=OFF"
-  ++ lib.optional (!withPipewire) "-DSERVICE_PIPEWIRE=OFF"
-  ++ lib.optional (!withPam) "-DSERVICE_PAM=OFF"
-  ++ lib.optional (!withHyprland) "-DHYPRLAND=OFF"
-  ++ lib.optional (!withQMLLib) "-DINSTALL_QML_LIB=OFF";
-
-  buildPhase = "ninjaBuildPhase";
-  enableParallelBuilding = true;
+  cmakeFlags = [
+    (lib.cmakeFeature "GIT_REVISION" gitRev)
+    (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
+    (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
+    (lib.cmakeBool "WAYLAND" withWayland)
+    (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
+    (lib.cmakeBool "SERVICE_PAM" withPam)
+    (lib.cmakeBool "HYPRLAND" withHyprland)
+    (lib.cmakeBool "INSTALL_QML_LIB" withQMLLib)
+  ];
 
   # How to get debuginfo in gdb from a release build:
   # 1. build `quickshell.debug`
@@ -91,7 +90,7 @@
 
   meta = with lib; {
     homepage = "https://git.outfoxxed.me/outfoxxed/quickshell";
-    description = "Simple and flexbile QtQuick based desktop shell toolkit";
+    description = "Flexbile QtQuick based desktop shell toolkit";
     license = licenses.lgpl3Only;
     platforms = platforms.linux;
   };
