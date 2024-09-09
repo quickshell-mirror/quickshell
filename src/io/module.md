@@ -4,5 +4,6 @@ headers = [
 	"datastream.hpp",
 	"socket.hpp",
 	"process.hpp",
+	"fileview.hpp",
 ]
 -----

@@ -1,6 +1,8 @@
 #pragma once
 #include <type_traits>
 
+#include <qtclasshelpermacros.h>
+
 // NOLINTBEGIN
 #define DROP_EMIT(object, func)                                                                    \
 	DropEmitter(object, static_cast<void (*)(typeof(object))>([](typeof(object) o) { o->func(); }))
@@ -72,6 +74,8 @@ private:
 	DECLARE_MEMBER_GET(name);                                                                        \
 	DECLARE_MEMBER_SET(name, setter)
 
+#define DECLARE_MEMBER_SETONLY(class, name, setter, member, signal) DECLARE_MEMBER(cl
+
 #define DECLARE_MEMBER_FULL(class, name, setter, member, signal)                                   \
 	DECLARE_MEMBER(class, name, member, signal);                                                     \
 	DECLARE_MEMBER_GETSET(name, setter)
@@ -123,6 +127,8 @@ private:
 #define DEFINE_MEMBER_GETSET(Class, name, setter)                                                  \
 	DEFINE_MEMBER_GET(Class, name)                                                                   \
 	DEFINE_MEMBER_SET(Class, name, setter)
+
+#define MEMBER_EMIT(name) std::remove_reference_t<decltype(*this)>::M_##name::emitter(this)
 // NOLINTEND
 
 template <typename T>
@@ -154,6 +160,12 @@ public:
 		} else {
 			if (MemberMetadata::get(obj) == value) return DropEmitter();
 			obj->*member = value;
+			return MemberMetadata::emitter(obj);
+		}
+	}
+
+	static Ret emitter(Class* obj) {
+		if constexpr (signal != nullptr) {
 			return DropEmitter(obj, &MemberMetadata::emitForObject);
 		}
 	}
@@ -169,4 +181,33 @@ public:
 	using Type = T;
 	using Ref = const Type&;
 	using Ret = std::conditional_t<hasSignal, DropEmitter, void>;
+};
+
+class GuardedEmitBlocker {
+public:
+	explicit GuardedEmitBlocker(bool* var): var(var) { *this->var = true; }
+	~GuardedEmitBlocker() { *this->var = false; }
+	Q_DISABLE_COPY_MOVE(GuardedEmitBlocker);
+
+private:
+	bool* var;
+};
+
+template <auto signal>
+class GuardedEmitter {
+	using Traits = MemberPointerTraits<decltype(signal)>;
+	using Class = Traits::Class;
+
+	bool blocked = false;
+
+public:
+	GuardedEmitter() = default;
+	~GuardedEmitter() = default;
+	Q_DISABLE_COPY_MOVE(GuardedEmitter);
+
+	void call(Class* obj) {
+		if (!this->blocked) (obj->*signal)();
+	}
+
+	GuardedEmitBlocker block() { return GuardedEmitBlocker(&this->blocked); }
 };
