@@ -32,6 +32,9 @@ This repo has a nix flake you can use to install the package directly:
 
     quickshell = {
       url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+
+      # THIS IS IMPORTANT
+      # Mismatched system dependencies will lead to crashes and other issues.
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
