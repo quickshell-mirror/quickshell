@@ -110,6 +110,8 @@ public:
 	[[nodiscard]] QtMsgType defaultLevel() const;
 	[[nodiscard]] bool isSparse() const;
 
+	[[nodiscard]] CategoryFilter getFilter(QLatin1StringView category);
+
 signals:
 	void logMessage(LogMessage msg, bool showInSparse);
 
@@ -126,6 +128,7 @@ private:
 	QList<qt_logging_registry::QLoggingRule>* rules = nullptr;
 	QtMsgType mDefaultLevel = QtWarningMsg;
 	QHash<const void*, CategoryFilter> sparseFilters;
+	QHash<QLatin1StringView, CategoryFilter> allFilters;
 
 	QTextStream stdoutStream;
 	LoggingThreadProxy threadProxy;

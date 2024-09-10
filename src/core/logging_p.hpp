@@ -94,6 +94,7 @@ public:
 	[[nodiscard]] bool readHeader(bool* success, quint8* logVersion, quint8* readerVersion);
 	// WARNING: log messages written to the given slot are invalidated when the log reader is destroyed.
 	[[nodiscard]] bool read(LogMessage* slot);
+	[[nodiscard]] CategoryFilter categoryFilterById(quint16 id);
 
 private:
 	[[nodiscard]] bool readVarInt(quint32* slot);
@@ -101,7 +102,7 @@ private:
 	[[nodiscard]] bool registerCategory();
 
 	DeviceReader reader;
-	QVector<QByteArray> categories;
+	QVector<QPair<QByteArray, CategoryFilter>> categories;
 	QDateTime lastMessageTime = QDateTime::fromSecsSinceEpoch(0);
 	RingBuffer<LogMessage> recentMessages {256};
 };

@@ -17,6 +17,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
+#include <qpair.h>
 #include <qstring.h>
 #include <qstringview.h>
 #include <qsysinfo.h>
@@ -200,16 +201,15 @@ void LogManager::filterCategory(QLoggingCategory* category) {
 
 	if (isQs && !instance->sparse) {
 		// We assume the category name pointer will always be the same and be comparable in the message handler.
-		LogManager::instance()->sparseFilters.insert(
-		    static_cast<const void*>(category->categoryName()),
-		    filter
-		);
+		instance->sparseFilters.insert(static_cast<const void*>(category->categoryName()), filter);
 
 		// all enabled by default
 		CategoryFilter().apply(category);
 	} else {
 		filter.apply(category);
 	}
+
+	instance->allFilters.insert(categoryName, filter);
 }
 
 LogManager* LogManager::instance() {
@@ -268,6 +268,10 @@ void LogManager::initFs() {
 QString LogManager::rulesString() const { return this->mRulesString; }
 QtMsgType LogManager::defaultLevel() const { return this->mDefaultLevel; }
 bool LogManager::isSparse() const { return this->sparse; }
+
+CategoryFilter LogManager::getFilter(QLatin1StringView category) {
+	return this->allFilters.value(category);
+}
 
 void LoggingThreadProxy::initInThread() {
 	this->logging = new ThreadLogging(this);
@@ -527,7 +531,7 @@ bool DeviceReader::readU64(quint64* data) {
 void EncodedLogWriter::setDevice(QIODevice* target) { this->buffer.setDevice(target); }
 void EncodedLogReader::setDevice(QIODevice* source) { this->reader.setDevice(source); }
 
-constexpr quint8 LOG_VERSION = 1;
+constexpr quint8 LOG_VERSION = 2;
 
 bool EncodedLogWriter::writeHeader() {
 	this->buffer.writeU8(LOG_VERSION);
@@ -673,12 +677,16 @@ start:
 		QByteArray body;
 		if (!this->readString(&body)) return false;
 
-		*slot = LogMessage(msgType, QLatin1StringView(category), body, this->lastMessageTime);
+		*slot = LogMessage(msgType, QLatin1StringView(category.first), body, this->lastMessageTime);
 		slot->readCategoryId = categoryId;
 	}
 
 	this->recentMessages.emplace(*slot);
 	return true;
+}
+
+CategoryFilter EncodedLogReader::categoryFilterById(quint16 id) {
+	return this->categories.value(id).second;
 }
 
 void EncodedLogWriter::writeOp(EncodedLogOpcode opcode) { this->buffer.writeU8(opcode); }
@@ -742,14 +750,31 @@ quint16 EncodedLogWriter::getOrCreateCategory(QLatin1StringView category) {
 		auto id = this->nextCategory++;
 		this->categories.insert(category, id);
 
+		auto filter = LogManager::instance()->getFilter(category);
+		quint8 flags = 0;
+		flags |= filter.debug << 0;
+		flags |= filter.info << 1;
+		flags |= filter.warn << 2;
+		flags |= filter.critical << 3;
+
+		this->buffer.writeU8(flags);
 		return id;
 	}
 }
 
 bool EncodedLogReader::registerCategory() {
 	QByteArray name;
+	quint8 flags = 0;
 	if (!this->readString(&name)) return false;
-	this->categories.append(name);
+	if (!this->reader.readU8(&flags)) return false;
+
+	CategoryFilter filter;
+	filter.debug = (flags >> 0) & 1;
+	filter.info = (flags >> 1) & 1;
+	filter.warn = (flags >> 2) & 1;
+	filter.critical = (flags >> 3) & 1;
+
+	this->categories.append(qMakePair(name, filter));
 	return true;
 }
 
@@ -789,6 +814,8 @@ bool LogReader::continueReading() {
 		if (this->filters.contains(message.readCategoryId)) {
 			filter = this->filters.value(message.readCategoryId);
 		} else {
+			filter = this->reader.categoryFilterById(message.readCategoryId);
+
 			for (const auto& rule: this->rules) {
 				filter.applyRule(message.category, rule);
 			}
