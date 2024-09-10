@@ -239,16 +239,22 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	{
-		auto* sub = cli.add_subcommand("log", "Read quickshell logs.");
-		sub->add_option("--file", state.log.file, "Log file to read.")->required();
+		auto* sub = cli.add_subcommand(
+		    "log",
+		    "Read quickshell logs.\n"
+		    "If --file is specified, the given file will be read.\n"
+		    "If not, the log of the first launched instance matching"
+		    "the instance selection flags will be read."
+		);
+
+		auto* file = sub->add_option("--file", state.log.file, "Log file to read.");
 
 		sub->add_option("-r,--rules", state.log.readoutRules, "Log file to read.")
 		    ->description("Rules to apply to the log being read, in the format of QT_LOGGING_RULES.");
 
+		auto* instance = addInstanceSelection(sub)->excludes(file);
+		addConfigSelection(sub)->excludes(instance)->excludes(file);
 		addLoggingOptions(sub, false);
-
-		// todo
-		// addConfigSelection(sub)->excludes(file);
 
 		state.subcommand.log = sub;
 	}
@@ -444,9 +450,19 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 }
 
 int readLogFile(CommandState& cmd) {
-	auto file = QFile(*cmd.log.file);
+	auto path = *cmd.log.file;
+
+	if (path.isEmpty()) {
+		InstanceLockInfo instance;
+		auto r = selectInstance(cmd, &instance);
+		if (r != 0) return r;
+
+		path = QDir(QsPaths::basePath(instance.instance.instanceId)).filePath("log.qslog");
+	}
+
+	auto file = QFile(path);
 	if (!file.open(QFile::ReadOnly)) {
-		qCCritical(logBare) << "Failed to open log file" << *cmd.log.file;
+		qCCritical(logBare) << "Failed to open log file" << path;
 		return -1;
 	}
 
