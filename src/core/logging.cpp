@@ -594,7 +594,7 @@ bool EncodedLogWriter::write(const LogMessage& message) {
 
 			this->buffer.writeU8(field);
 
-			if (secondDelta > 29) {
+			if (secondDelta >= 0x1d) {
 				if (secondDelta > 0xffff) {
 					writeFullTimestamp();
 				} else {
