@@ -46,20 +46,6 @@ class WindowInterface: public Reloadable {
 	/// along with map[To|From]Item (which is not reactive).
 	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
 	/// The background color of the window. Defaults to white.
-	///
-	/// > [!WARNING] This seems to behave weirdly when using transparent colors on some systems.
-	/// > Using a colored content item over a transparent window is the recommended way to work around this:
-	/// > ```qml
-	/// > ProxyWindow {
-	/// >   color: "transparent"
-	/// >   Rectangle {
-	/// >     anchors.fill: parent
-	/// >     color: "#20ffffff"
-	/// >
-	/// >     // your content here
-	/// >   }
-	/// > }
-	/// > ```
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	/// The clickthrough mask. Defaults to null.
 	///

@@ -287,16 +287,23 @@ QuickshellScreenInfo* ProxyWindowBase::screen() const {
 	return QuickshellTracked::instance()->screenInfo(qscreen);
 }
 
-QColor ProxyWindowBase::color() const {
-	if (this->window == nullptr) return this->mColor;
-	else return this->window->color();
-}
+QColor ProxyWindowBase::color() const { return this->mColor; }
 
 void ProxyWindowBase::setColor(QColor color) {
+	this->mColor = color;
+
 	if (this->window == nullptr) {
-		this->mColor = color;
-		emit this->colorChanged();
-	} else this->window->setColor(color);
+		if (color != this->mColor) emit this->colorChanged();
+	} else {
+		auto premultiplied = QColor::fromRgbF(
+		    color.redF() * color.alphaF(),
+		    color.greenF() * color.alphaF(),
+		    color.blueF() * color.alphaF(),
+		    color.alphaF()
+		);
+
+		this->window->setColor(premultiplied);
+	}
 }
 
 PendingRegion* ProxyWindowBase::mask() const { return this->mMask; }
