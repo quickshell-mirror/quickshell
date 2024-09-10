@@ -1,5 +1,7 @@
 #include "main.hpp"
 #include <algorithm>
+#include <array>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
@@ -8,6 +10,7 @@
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
 #include <CLI/Validators.hpp>
+#include <fcntl.h>
 #include <qapplication.h>
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
@@ -55,6 +58,34 @@ using qs::ipc::IpcClient;
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication);
 int runCommand(int argc, char** argv, QCoreApplication* coreApplication);
 
+int DAEMON_PIPE = -1; // NOLINT
+void exitDaemon(int code) {
+	if (DAEMON_PIPE == -1) return;
+
+	if (write(DAEMON_PIPE, &code, sizeof(int)) == -1) {
+		qCritical().nospace() << "Failed to write daemon exit command with error code " << errno << ": "
+		                      << qt_error_string();
+	}
+
+	close(DAEMON_PIPE);
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
+	if (open("/dev/null", O_RDONLY) != STDIN_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stdin";
+	}
+
+	if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stdout";
+	}
+
+	if (open("/dev/null", O_WRONLY) != STDERR_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stderr";
+	}
+}
+
 int main(int argc, char** argv) {
 	QCoreApplication::setApplicationName("quickshell");
 
@@ -66,7 +97,10 @@ int main(int argc, char** argv) {
 	auto* coreApplication = new QCoreApplication(qArgC, argv);
 
 	checkCrashRelaunch(argv, coreApplication);
-	return runCommand(argc, argv, coreApplication);
+	auto code = runCommand(argc, argv, coreApplication);
+
+	exitDaemon(code);
+	return code;
 }
 
 class QStringOption {
@@ -133,6 +167,7 @@ struct CommandState {
 		bool printVersion = false;
 		bool killAll = false;
 		bool noDuplicate = false;
+		bool daemonize = false;
 	} misc;
 };
 
@@ -241,8 +276,11 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		cli.add_flag("-V,--version", state.misc.printVersion)
 		    ->description("Print quickshell's version and exit.");
 
-		cli.add_flag("--no-duplicate", state.misc.noDuplicate)
+		cli.add_flag("-n,--no-duplicate", state.misc.noDuplicate)
 		    ->description("Exit immediately if another instance of the given config is running.");
+
+		cli.add_flag("-d,--daemonize", state.misc.daemonize)
+		    ->description("Detach from the controlling terminal.");
 	}
 
 	{
@@ -294,6 +332,39 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	CLI11_PARSE(cli, argc, argv);
+
+	// Has to happen before extra threads are spawned.
+	if (state.misc.daemonize) {
+		auto closepipes = std::array<int, 2>();
+		if (pipe(closepipes.data()) == -1) {
+			qFatal().nospace() << "Failed to create messaging pipes for daemon with error " << errno
+			                   << ": " << qt_error_string();
+		}
+
+		DAEMON_PIPE = closepipes[1];
+
+		pid_t pid = fork(); // NOLINT (include)
+
+		if (pid == -1) {
+			qFatal().nospace() << "Failed to fork daemon with error " << errno << ": "
+			                   << qt_error_string();
+		} else if (pid == 0) {
+			close(closepipes[0]);
+
+			if (setsid() == -1) {
+				qFatal().nospace() << "Failed to setsid with error " << errno << ": " << qt_error_string();
+			}
+		} else {
+			close(closepipes[1]);
+
+			int ret = 0;
+			if (read(closepipes[0], &ret, sizeof(int)) == -1) {
+				qFatal() << "Failed to wait for daemon launch (it may have crashed)";
+			}
+
+			return ret;
+		}
+	}
 
 	{
 		auto level = state.log.verbosity == 0 ? QtWarningMsg
@@ -489,7 +560,7 @@ int readLogFile(CommandState& cmd) {
 
 int listInstances(CommandState& cmd) {
 	auto* basePath = QsPaths::instance()->baseRunDir();
-	if (!basePath) exit(-1); // NOLINT
+	if (!basePath) return -1; // NOLINT
 
 	QString path;
 	QString configFilePath;
@@ -648,7 +719,7 @@ int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
 	{
 		InstanceLockInfo info;
 		if (cmd.misc.noDuplicate && selectInstance(cmd, &info) == 0) {
-			qCDebug(logBare) << "An instance of this configuration is already running.";
+			qCInfo(logBare) << "An instance of this configuration is already running.";
 			return 0;
 		}
 	}
@@ -833,6 +904,8 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 
 	auto root = RootWrapper(args.configPath, shellId);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
+
+	exitDaemon(0);
 
 	auto code = QGuiApplication::exec();
 	delete app;
