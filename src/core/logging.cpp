@@ -1,10 +1,14 @@
 #include "logging.hpp"
 #include <array>
+#include <cerrno>
 #include <cstdio>
 
+#include <fcntl.h>
 #include <qbytearrayview.h>
+#include <qcoreapplication.h>
 #include <qdatetime.h>
 #include <qendian.h>
+#include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qhashfunctions.h>
 #include <qlist.h>
@@ -356,6 +360,18 @@ void ThreadLogging::initFs() {
 		delete detailedFile;
 		detailedFile = nullptr;
 	} else {
+		auto lock = flock {
+		    .l_type = F_WRLCK,
+		    .l_whence = SEEK_SET,
+		    .l_start = 0,
+		    .l_len = 0,
+		};
+
+		if (fcntl(detailedFile->handle(), F_SETLK, &lock) != 0) { // NOLINT
+			qCWarning(logLogging) << "Unable to set lock marker on detailed log file. --follow from "
+			                         "other instances will not work.";
+		}
+
 		qCInfo(logLogging) << "Saving detailed logs to" << path;
 	}
 
@@ -737,22 +753,13 @@ bool EncodedLogReader::registerCategory() {
 	return true;
 }
 
-bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString& rulespec) {
-	QList<QLoggingRule> rules;
-
-	{
-		QLoggingSettingsParser parser;
-		parser.setContent(rulespec);
-		rules = parser.rules();
-	}
-
-	auto reader = EncodedLogReader();
-	reader.setDevice(device);
+bool LogReader::initialize() {
+	this->reader.setDevice(this->file);
 
 	bool readable = false;
 	quint8 logVersion = 0;
 	quint8 readerVersion = 0;
-	if (!reader.readHeader(&readable, &logVersion, &readerVersion)) {
+	if (!this->reader.readHeader(&readable, &logVersion, &readerVersion)) {
 		qCritical() << "Failed to read log header.";
 		return false;
 	}
@@ -765,29 +772,33 @@ bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString
 		return false;
 	}
 
+	return true;
+}
+
+bool LogReader::continueReading() {
 	auto color = LogManager::instance()->colorLogs;
-
-	auto filters = QHash<quint16, CategoryFilter>();
-
-	auto tailRing = RingBuffer<LogMessage>(tail);
+	auto tailRing = RingBuffer<LogMessage>(this->remainingTail);
 
 	LogMessage message;
 	auto stream = QTextStream(stdout);
-	while (reader.read(&message)) {
+	auto readCursor = this->file->pos();
+	while (this->reader.read(&message)) {
+		readCursor = this->file->pos();
+
 		CategoryFilter filter;
-		if (filters.contains(message.readCategoryId)) {
-			filter = filters.value(message.readCategoryId);
+		if (this->filters.contains(message.readCategoryId)) {
+			filter = this->filters.value(message.readCategoryId);
 		} else {
-			for (const auto& rule: rules) {
+			for (const auto& rule: this->rules) {
 				filter.applyRule(message.category, rule);
 			}
 
-			filters.insert(message.readCategoryId, filter);
+			this->filters.insert(message.readCategoryId, filter);
 		}
 
 		if (filter.shouldDisplay(message.type)) {
-			if (tail == 0) {
-				LogMessage::formatMessage(stream, message, color, timestamps);
+			if (this->remainingTail == 0) {
+				LogMessage::formatMessage(stream, message, color, this->timestamps);
 				stream << '\n';
 			} else {
 				tailRing.emplace(message);
@@ -795,19 +806,97 @@ bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString
 		}
 	}
 
-	if (tail != 0) {
+	if (this->remainingTail != 0) {
 		for (auto i = tailRing.size() - 1; i != -1; i--) {
 			auto& message = tailRing.at(i);
-			LogMessage::formatMessage(stream, message, color, timestamps);
+			LogMessage::formatMessage(stream, message, color, this->timestamps);
 			stream << '\n';
 		}
 	}
 
 	stream << Qt::flush;
 
-	if (!device->atEnd()) {
+	if (this->file->pos() != readCursor) {
 		qCritical() << "An error occurred parsing the end of this log file.";
-		qCritical() << "Remaining data:" << device->readAll();
+		qCritical() << "Remaining data:" << this->file->readAll();
+		return false;
+	}
+
+	return true;
+}
+
+void LogFollower::FcntlWaitThread::run() {
+	auto lock = flock {
+	    .l_type = F_RDLCK, // won't block other read locks when we take it
+	    .l_whence = SEEK_SET,
+	    .l_start = 0,
+	    .l_len = 0,
+	};
+
+	auto r = fcntl(this->follower->reader->file->handle(), F_SETLKW, &lock); // NOLINT
+
+	if (r != 0) {
+		qCWarning(logLogging).nospace()
+		    << "Failed to wait for write locks to be removed from log file with error code " << errno
+		    << ": " << qt_error_string();
+	}
+}
+
+bool LogFollower::follow() {
+	QObject::connect(&this->waitThread, &QThread::finished, this, &LogFollower::onFileLocked);
+
+	QObject::connect(
+	    &this->fileWatcher,
+	    &QFileSystemWatcher::fileChanged,
+	    this,
+	    &LogFollower::onFileChanged
+	);
+
+	this->fileWatcher.addPath(this->path);
+	this->waitThread.start();
+
+	auto r = QCoreApplication::exec();
+	return r == 0;
+}
+
+void LogFollower::onFileChanged() {
+	if (!this->reader->continueReading()) {
+		QCoreApplication::exit(1);
+	}
+}
+
+void LogFollower::onFileLocked() {
+	if (!this->reader->continueReading()) {
+		QCoreApplication::exit(1);
+	} else {
+		QCoreApplication::exit(0);
+	}
+}
+
+bool readEncodedLogs(
+    QFile* file,
+    const QString& path,
+    bool timestamps,
+    int tail,
+    bool follow,
+    const QString& rulespec
+) {
+	QList<QLoggingRule> rules;
+
+	{
+		QLoggingSettingsParser parser;
+		parser.setContent(rulespec);
+		rules = parser.rules();
+	}
+
+	auto reader = LogReader(file, timestamps, tail, rules);
+
+	if (!reader.initialize()) return false;
+	if (!reader.continueReading()) return false;
+
+	if (follow) {
+		auto follower = LogFollower(&reader, path);
+		return follower.follow();
 	}
 
 	return true;

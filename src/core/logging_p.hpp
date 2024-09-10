@@ -1,12 +1,18 @@
 #pragma once
+#include <utility>
+
 #include <qbytearrayview.h>
 #include <qcontainerfwd.h>
 #include <qfile.h>
+#include <qfilesystemwatcher.h>
 #include <qlogging.h>
+#include <qobject.h>
+#include <qthread.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "logging.hpp"
+#include "logging_qtprivate.hpp"
 #include "ringbuf.hpp"
 
 namespace qs::log {
@@ -118,6 +124,66 @@ private:
 	QTextStream fileStream;
 	QFile* detailedFile = nullptr;
 	EncodedLogWriter detailedWriter;
+};
+
+class LogFollower;
+
+class LogReader {
+public:
+	explicit LogReader(
+	    QFile* file,
+	    bool timestamps,
+	    int tail,
+	    QList<qt_logging_registry::QLoggingRule> rules
+	)
+	    : file(file)
+	    , timestamps(timestamps)
+	    , remainingTail(tail)
+	    , rules(std::move(rules)) {}
+
+	bool initialize();
+	bool continueReading();
+
+private:
+	QFile* file;
+	EncodedLogReader reader;
+	bool timestamps;
+	int remainingTail;
+	QHash<quint16, CategoryFilter> filters;
+	QList<qt_logging_registry::QLoggingRule> rules;
+
+	friend class LogFollower;
+};
+
+class LogFollower: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit LogFollower(LogReader* reader, QString path): reader(reader), path(std::move(path)) {}
+
+	bool follow();
+
+private slots:
+	void onFileChanged();
+	void onFileLocked();
+
+private:
+	LogReader* reader;
+	QString path;
+	QFileSystemWatcher fileWatcher;
+
+	class FcntlWaitThread: public QThread {
+	public:
+		explicit FcntlWaitThread(LogFollower* follower): follower(follower) {}
+
+	protected:
+		void run() override;
+
+	private:
+		LogFollower* follower;
+	};
+
+	FcntlWaitThread waitThread {this};
 };
 
 } // namespace qs::log

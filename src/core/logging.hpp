@@ -4,6 +4,7 @@
 
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
+#include <qfile.h>
 #include <qhash.h>
 #include <qlatin1stringview.h>
 #include <qlogging.h>
@@ -130,7 +131,14 @@ private:
 	LoggingThreadProxy threadProxy;
 };
 
-bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString& rulespec);
+bool readEncodedLogs(
+    QFile* file,
+    const QString& path,
+    bool timestamps,
+    int tail,
+    bool follow,
+    const QString& rulespec
+);
 
 } // namespace qs::log
 

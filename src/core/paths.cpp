@@ -36,11 +36,14 @@ QDir QsPaths::crashDir(const QString& id) {
 	return dir;
 }
 
+QString QsPaths::basePath(const QString& id) {
+	auto path = QsPaths::instance()->baseRunDir()->filePath("by-id");
+	path = QDir(path).filePath(id);
+	return path;
+}
+
 QString QsPaths::ipcPath(const QString& id) {
-	auto ipcPath = QsPaths::instance()->baseRunDir()->filePath("by-id");
-	ipcPath = QDir(ipcPath).filePath(id);
-	ipcPath = QDir(ipcPath).filePath("ipc.sock");
-	return ipcPath;
+	return QDir(QsPaths::basePath(id)).filePath("ipc.sock");
 }
 
 QDir* QsPaths::cacheDir() {
