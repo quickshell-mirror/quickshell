@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <string>
 
 #include <CLI/App.hpp>
@@ -94,6 +95,7 @@ struct CommandState {
 		bool noColor = !qEnvironmentVariableIsEmpty("NO_COLOR");
 		bool sparse = false;
 		size_t verbosity = 0;
+		int tail = 0;
 		QStringOption rules;
 		QStringOption readoutRules;
 		QStringOption file;
@@ -248,6 +250,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		);
 
 		auto* file = sub->add_option("--file", state.log.file, "Log file to read.");
+
+		sub->add_option("-t,--tail", state.log.tail)
+		    ->description("Maximum number of lines to print, starting from the bottom.")
+		    ->check(CLI::Range(1, std::numeric_limits<int>::max(), "INT > 0"));
 
 		sub->add_option("-r,--rules", state.log.readoutRules, "Log file to read.")
 		    ->description("Rules to apply to the log being read, in the format of QT_LOGGING_RULES.");
@@ -466,7 +472,9 @@ int readLogFile(CommandState& cmd) {
 		return -1;
 	}
 
-	return qs::log::readEncodedLogs(&file, cmd.log.timestamp, *cmd.log.readoutRules) ? 0 : -1;
+	return qs::log::readEncodedLogs(&file, cmd.log.timestamp, cmd.log.tail, *cmd.log.readoutRules)
+	         ? 0
+	         : -1;
 }
 
 int listInstances(CommandState& cmd) {

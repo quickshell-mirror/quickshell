@@ -130,7 +130,7 @@ private:
 	LoggingThreadProxy threadProxy;
 };
 
-bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec);
+bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString& rulespec);
 
 } // namespace qs::log
 

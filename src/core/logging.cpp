@@ -28,6 +28,7 @@
 #include "logging_p.hpp"
 #include "logging_qtprivate.cpp" // NOLINT
 #include "paths.hpp"
+#include "ringbuf.hpp"
 
 Q_LOGGING_CATEGORY(logBare, "quickshell.bare");
 
@@ -65,6 +66,7 @@ void LogMessage::formatMessage(
 	}
 
 	if (msg.category == "quickshell.bare") {
+		if (!prefix.isEmpty()) stream << ' ';
 		stream << msg.body;
 	} else {
 		if (color) {
@@ -243,9 +245,9 @@ void LogManager::init(
 	thread->start();
 
 	QMetaObject::invokeMethod(
-			&instance->threadProxy,
-			&LoggingThreadProxy::initInThread,
-			Qt::BlockingQueuedConnection
+	    &instance->threadProxy,
+	    &LoggingThreadProxy::initInThread,
+	    Qt::BlockingQueuedConnection
 	);
 
 	qCDebug(logLogging) << "Logger initialized.";
@@ -735,7 +737,7 @@ bool EncodedLogReader::registerCategory() {
 	return true;
 }
 
-bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec) {
+bool readEncodedLogs(QIODevice* device, bool timestamps, int tail, const QString& rulespec) {
 	QList<QLoggingRule> rules;
 
 	{
@@ -767,6 +769,8 @@ bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec
 
 	auto filters = QHash<quint16, CategoryFilter>();
 
+	auto tailRing = RingBuffer<LogMessage>(tail);
+
 	LogMessage message;
 	auto stream = QTextStream(stdout);
 	while (reader.read(&message)) {
@@ -782,6 +786,18 @@ bool readEncodedLogs(QIODevice* device, bool timestamps, const QString& rulespec
 		}
 
 		if (filter.shouldDisplay(message.type)) {
+			if (tail == 0) {
+				LogMessage::formatMessage(stream, message, color, timestamps);
+				stream << '\n';
+			} else {
+				tailRing.emplace(message);
+			}
+		}
+	}
+
+	if (tail != 0) {
+		for (auto i = tailRing.size() - 1; i != -1; i--) {
+			auto& message = tailRing.at(i);
 			LogMessage::formatMessage(stream, message, color, timestamps);
 			stream << '\n';
 		}
