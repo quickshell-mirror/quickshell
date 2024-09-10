@@ -243,17 +243,17 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 
 	{
 		auto* sub = cli.add_subcommand("log", "Read quickshell logs.\n")
-		                ->description("If --file is specified, the given file will be read.\n"
+		                ->description("If file is specified, the given file will be read.\n"
 		                              "If not, the log of the first launched instance matching"
 		                              "the instance selection flags will be read.");
 
-		auto* file = sub->add_option("--file", state.log.file, "Log file to read.");
+		auto* file = sub->add_option("file", state.log.file, "Log file to read.");
 
 		sub->add_option("-t,--tail", state.log.tail)
 		    ->description("Maximum number of lines to print, starting from the bottom.")
 		    ->check(CLI::Range(1, std::numeric_limits<int>::max(), "INT > 0"));
 
-		sub->add_flag("--follow", state.log.follow)
+		sub->add_flag("-f,--follow", state.log.follow)
 		    ->description("Keep reading the log until the logging process terminates.");
 
 		sub->add_option("-r,--rules", state.log.readoutRules, "Log file to read.")
