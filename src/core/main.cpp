@@ -132,6 +132,7 @@ struct CommandState {
 	struct {
 		bool printVersion = false;
 		bool killAll = false;
+		bool noDuplicate = false;
 	} misc;
 };
 
@@ -239,13 +240,13 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	{
 		cli.add_flag("-V,--version", state.misc.printVersion)
 		    ->description("Print quickshell's version and exit.");
+
+		cli.add_flag("--no-duplicate", state.misc.noDuplicate)
+		    ->description("Exit immediately if another instance of the given config is running.");
 	}
 
 	{
-		auto* sub = cli.add_subcommand("log", "Read quickshell logs.\n")
-		                ->description("If file is specified, the given file will be read.\n"
-		                              "If not, the log of the first launched instance matching"
-		                              "the instance selection flags will be read.");
+		auto* sub = cli.add_subcommand("log", "Print quickshell logs.");
 
 		auto* file = sub->add_option("file", state.log.file, "Log file to read.");
 
@@ -643,6 +644,14 @@ int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
 
 	auto r = locateConfigFile(cmd, configPath);
 	if (r != 0) return r;
+
+	{
+		InstanceLockInfo info;
+		if (cmd.misc.noDuplicate && selectInstance(cmd, &info) == 0) {
+			qCDebug(logBare) << "An instance of this configuration is already running.";
+			return 0;
+		}
+	}
 
 	return launch(
 	    {
