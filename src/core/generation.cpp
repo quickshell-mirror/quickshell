@@ -94,6 +94,8 @@ void EngineGeneration::destroy() {
 		this->root->deleteLater();
 		this->root = nullptr;
 	} else {
+		g_generations.remove(this->engine);
+
 		// the engine has never been used, no need to clean up
 		delete this->engine;
 		this->engine = nullptr;
