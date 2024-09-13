@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qfilesystemwatcher.h>
+#include <qhash.h>
 #include <qicon.h>
 #include <qobject.h>
 #include <qpair.h>
@@ -20,6 +21,13 @@
 class RootWrapper;
 class QuickshellGlobal;
 
+class EngineGenerationExt {
+public:
+	EngineGenerationExt() = default;
+	virtual ~EngineGenerationExt() = default;
+	Q_DISABLE_COPY_MOVE(EngineGenerationExt);
+};
+
 class EngineGeneration: public QObject {
 	Q_OBJECT;
 
@@ -34,6 +42,10 @@ public:
 
 	void registerIncubationController(QQmlIncubationController* controller);
 	void deregisterIncubationController(QQmlIncubationController* controller);
+
+	// takes ownership
+	void registerExtension(const void* key, EngineGenerationExt* extension);
+	EngineGenerationExt* findExtension(const void* key);
 
 	static EngineGeneration* findEngineGeneration(QQmlEngine* engine);
 	static EngineGeneration* findObjectGeneration(QObject* object);
@@ -78,6 +90,7 @@ private:
 	void postReload();
 	void assignIncubationController();
 	QVector<QPair<QQmlIncubationController*, QObject*>> incubationControllers;
+	QHash<const void*, EngineGenerationExt*> extensions;
 
 	bool destroying = false;
 	bool shouldTerminate = false;

@@ -2,6 +2,9 @@ qt_add_library(quickshell-io STATIC
 	datastream.cpp
 	process.cpp
 	fileview.cpp
+	ipccomm.cpp
+	ipc.cpp
+	ipchandler.cpp
 )
 
 add_library(quickshell-io-init OBJECT init.cpp)

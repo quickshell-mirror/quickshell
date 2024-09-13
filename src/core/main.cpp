@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
@@ -37,6 +38,7 @@
 #include <qtextstream.h>
 #include <unistd.h>
 
+#include "../io/ipccomm.hpp"
 #include "build.hpp"
 #include "common.hpp"
 #include "instanceinfo.hpp"
@@ -158,9 +160,17 @@ struct CommandState {
 	} output;
 
 	struct {
+		bool info = false;
+		QStringOption target;
+		QStringOption function;
+		std::vector<QStringOption> arguments;
+	} ipc;
+
+	struct {
 		CLI::App* log = nullptr;
 		CLI::App* list = nullptr;
 		CLI::App* kill = nullptr;
+		CLI::App* msg = nullptr;
 	} subcommand;
 
 	struct {
@@ -174,6 +184,7 @@ struct CommandState {
 int readLogFile(CommandState& cmd);
 int listInstances(CommandState& cmd);
 int killInstances(CommandState& cmd);
+int msgInstance(CommandState& cmd);
 int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication);
 
 struct LaunchArgs {
@@ -268,6 +279,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	};
 
 	auto cli = CLI::App();
+
+	// Require 0-1 subcommands. Without this, positionals can be parsed as more subcommands.
+	cli.require_subcommand(0, 1);
+
 	addConfigSelection(&cli);
 	addLoggingOptions(&cli, false);
 	addDebugOptions(&cli);
@@ -331,6 +346,34 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		state.subcommand.kill = sub;
 	}
 
+	{
+		auto* sub = cli.add_subcommand("msg", "Send messages to IpcHandlers.")->require_option();
+
+		auto* target = sub->add_option("target", state.ipc.target, "The target to message.");
+
+		auto* function = sub->add_option("function", state.ipc.function)
+		                     ->description("The function to call in the target.")
+		                     ->needs(target);
+
+		auto* arguments = sub->add_option("arguments", state.ipc.arguments)
+		                      ->description("Arguments to the called function.")
+		                      ->needs(function)
+		                      ->allow_extra_args();
+
+		sub->add_flag("-i,--info", state.ipc.info)
+		    ->description("Print information about a function or target if given, or all available "
+		                  "targets if not.")
+		    ->excludes(arguments);
+
+		auto* instance = addInstanceSelection(sub);
+		addConfigSelection(sub)->excludes(instance);
+		addLoggingOptions(sub, false, true);
+
+		sub->require_option();
+
+		state.subcommand.msg = sub;
+	}
+
 	CLI11_PARSE(cli, argc, argv);
 
 	// Has to happen before extra threads are spawned.
@@ -389,6 +432,8 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		return listInstances(state);
 	} else if (*state.subcommand.kill) {
 		return killInstances(state);
+	} else if (*state.subcommand.msg) {
+		return msgInstance(state);
 	} else {
 		return launchFromCommand(state, coreApplication);
 	}
@@ -644,6 +689,32 @@ int killInstances(CommandState& cmd) {
 	return IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
 		client.kill();
 		qCInfo(logBare).noquote() << "Killed" << instance.instance.instanceId;
+	});
+}
+
+int msgInstance(CommandState& cmd) {
+	InstanceLockInfo instance;
+	auto r = selectInstance(cmd, &instance);
+	if (r != 0) return r;
+
+	return IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
+		if (cmd.ipc.info) {
+			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.function);
+		} else {
+			QVector<QString> arguments;
+			for (auto& arg: cmd.ipc.arguments) {
+				arguments += *arg;
+			}
+
+			return qs::io::ipc::comm::callFunction(
+			    &client,
+			    *cmd.ipc.target,
+			    *cmd.ipc.function,
+			    arguments
+			);
+		}
+
+		return -1;
 	});
 }
 

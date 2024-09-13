@@ -67,6 +67,10 @@ void EngineGeneration::destroy() {
 		this->watcher = nullptr;
 	}
 
+	for (auto* extension: this->extensions.values()) {
+		delete extension;
+	}
+
 	if (this->root != nullptr) {
 		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
 			// prevent further js execution between garbage collection and engine destruction.
@@ -283,6 +287,18 @@ void EngineGeneration::incubationControllerDestroyed() {
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
 	}
+}
+
+void EngineGeneration::registerExtension(const void* key, EngineGenerationExt* extension) {
+	if (this->extensions.contains(key)) {
+		delete this->extensions.value(key);
+	}
+
+	this->extensions.insert(key, extension);
+}
+
+EngineGenerationExt* EngineGeneration::findExtension(const void* key) {
+	return this->extensions.value(key);
 }
 
 void EngineGeneration::quit() {

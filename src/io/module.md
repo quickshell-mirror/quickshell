@@ -5,5 +5,6 @@ headers = [
 	"socket.hpp",
 	"process.hpp",
 	"fileview.hpp",
+	"ipchandler.hpp",
 ]
 -----

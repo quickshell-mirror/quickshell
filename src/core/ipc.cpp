@@ -1,6 +1,8 @@
 #include "ipc.hpp"
 #include <functional>
+#include <variant>
 
+#include <qbuffer.h>
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
 #include <qlogging.h>
@@ -8,6 +10,7 @@
 #include <qobject.h>
 
 #include "generation.hpp"
+#include "ipccommand.hpp"
 #include "paths.hpp"
 
 namespace qs::ipc {
@@ -62,20 +65,21 @@ void IpcServerConnection::onReadyRead() {
 	this->stream.startTransaction();
 
 	this->stream.startTransaction();
-	auto command = IpcCommand::Unknown;
+	IpcCommand command;
 	this->stream >> command;
 	if (!this->stream.commitTransaction()) return;
 
-	switch (command) {
-	case IpcCommand::Kill:
-		qInfo() << "Exiting due to IPC request.";
-		EngineGeneration::currentGeneration()->quit();
-		break;
-	default:
-		qCCritical(logIpc) << "Received invalid IPC command from" << this;
-		this->socket->disconnectFromServer();
-		break;
-	}
+	std::visit(
+	    [this]<typename Command>(Command& command) {
+		    if constexpr (std::is_same_v<std::monostate, Command>) {
+			    qCCritical(logIpc) << "Received invalid IPC command from" << this;
+			    this->socket->disconnectFromServer();
+		    } else {
+			    command.exec(this);
+		    }
+	    },
+	    command
+	);
 
 	if (!this->stream.commitTransaction()) return;
 }
@@ -94,11 +98,7 @@ bool IpcClient::isConnected() const { return this->socket.isValid(); }
 void IpcClient::waitForConnected() { this->socket.waitForConnected(); }
 void IpcClient::waitForDisconnected() { this->socket.waitForDisconnected(); }
 
-void IpcClient::kill() {
-	qCDebug(logIpc) << "Sending kill command...";
-	this->stream << IpcCommand::Kill;
-	this->socket.flush();
-}
+void IpcClient::kill() { this->sendMessage(IpcCommand(IpcKillCommand())); }
 
 void IpcClient::onError(QLocalSocket::LocalSocketError error) {
 	qCCritical(logIpc) << "Socket Error" << error;
@@ -116,4 +116,10 @@ int IpcClient::connect(const QString& id, const std::function<void(IpcClient& cl
 	callback(client);
 	return 0;
 }
+
+void IpcKillCommand::exec(IpcServerConnection* /*unused*/) {
+	qInfo() << "Exiting due to IPC request.";
+	EngineGeneration::currentGeneration()->quit();
+}
+
 } // namespace qs::ipc
