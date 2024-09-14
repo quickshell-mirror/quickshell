@@ -1,6 +1,7 @@
 #include "surface.hpp"
 #include <any>
 
+#include <private/qhighdpiscaling_p.h>
 #include <private/qwaylanddisplay_p.h>
 #include <private/qwaylandscreen_p.h>
 #include <private/qwaylandshellsurface_p.h>
@@ -70,7 +71,7 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 	// new updates will be sent from the extension
 	this->ext->surface = this;
 
-	auto size = constrainedSize(this->ext->mAnchors, qwindow->size());
+	auto size = constrainedSize(this->ext->mAnchors, window->surfaceSize());
 	this->set_size(size.width(), size.height());
 }
 
@@ -137,7 +138,8 @@ void QSWaylandLayerSurface::updateMargins() {
 }
 
 void QSWaylandLayerSurface::updateExclusiveZone() {
-	this->set_exclusive_zone(this->ext->mExclusiveZone);
+	auto nativeZone = QHighDpi::toNativePixels(this->ext->mExclusiveZone, this->window()->window());
+	this->set_exclusive_zone(nativeZone);
 	this->window()->waylandSurface()->commit();
 }
 
