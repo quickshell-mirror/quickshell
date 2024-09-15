@@ -28,10 +28,10 @@ Item {
 
 	/// URL of the image. Defaults to an empty string.
 	/// See @@QtQuick.Image.source.
-	property alias source: image.source
+	property /*string*/alias source: image.source
 	/// If the image should be loaded asynchronously. Defaults to false.
 	/// See @@QtQuick.Image.asynchronous.
-	property alias asynchronous: image.asynchronous
+	property /*bool*/alias asynchronous: image.asynchronous
 	/// The load status of the image. See @@QtQuick.Image.status.
 	property alias status: image.status
 	/// If the image should be mipmap filtered. Defaults to false.
@@ -39,12 +39,12 @@ Item {
 	///
 	/// Try enabling this if your image is significantly scaled down
 	/// and looks bad because of it.
-	property alias mipmap: image.mipmap
+	property /*bool*/alias mipmap: image.mipmap
 	/// The @@QtQuick.Image backing this object.
 	///
 	/// This is useful if you need to access more functionality than
 	/// exposed by IconImage.
-	property alias backer: image
+	property /*Image*/alias backer: image
 
 	/// The suggested size of the image. This is used as a defualt
 	/// for @@QtQuick.Item.implicitWidth and @@QtQuick.Item.implicitHeight.
