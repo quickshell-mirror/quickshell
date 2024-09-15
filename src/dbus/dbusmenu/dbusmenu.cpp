@@ -98,7 +98,7 @@ void DBusMenuItem::updateLayout() const {
 	this->menu->updateLayout(this->id, -1);
 }
 
-bool DBusMenuItem::hasChildren() const { return this->displayChildren; }
+bool DBusMenuItem::hasChildren() const { return this->displayChildren || this->id == 0; }
 
 QQmlListProperty<QsMenuEntry> DBusMenuItem::children() {
 	return QQmlListProperty<QsMenuEntry>(
