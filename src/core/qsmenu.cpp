@@ -71,8 +71,8 @@ void QsMenuOpener::setMenu(QsMenuHandle* menu) {
 		QObject::disconnect(this->mMenu, nullptr, this, nullptr);
 
 		if (this->mMenu->menu()) {
-			this->mMenu->menu()->unref();
 			QObject::disconnect(this->mMenu->menu(), nullptr, this, nullptr);
+			this->mMenu->menu()->unref();
 		}
 
 		this->mMenu->unrefHandle();
