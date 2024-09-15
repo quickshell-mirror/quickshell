@@ -545,6 +545,9 @@ void DBusMenuHandle::onMenuPathChanged() {
 	qCDebug(logDbusMenu) << "Updating" << this << "with refcount" << this->refcount;
 
 	if (this->mMenu) {
+		// Without this, layout updated can be sent after mMenu is set to null,
+		// leaving loaded = true while mMenu = nullptr.
+		QObject::disconnect(&this->mMenu->rootItem, nullptr, this, nullptr);
 		this->mMenu->deleteLater();
 		this->mMenu = nullptr;
 		this->loaded = false;
