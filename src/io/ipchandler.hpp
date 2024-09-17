@@ -112,9 +112,9 @@ class IpcHandlerRegistry;
 ///   }
 /// }
 /// ```
-/// The list of registered targets can be inspected using `qs msg -i`.
+/// The list of registered targets can be inspected using `qs msg -s`.
 /// ```sh
-/// $ qs msg -i
+/// $ qs msg -s
 /// target rect
 ///   function setColor(color: color): void
 ///   function getColor(): color

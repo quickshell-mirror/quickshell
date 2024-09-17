@@ -267,7 +267,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	auto addInstanceSelection = [&](CLI::App* cmd) {
 		auto* group = cmd->add_option_group("Instance Selection");
 
-		group->add_option("-i,--instance", state.instance.id)
+		group->add_option("-i,--id", state.instance.id)
 		    ->description("The instance id to operate on.\n"
 		                  "You may also use a substring the id as long as it is unique,\n"
 		                  "for example \"abc\" will select \"abcdefg\".");
@@ -360,7 +360,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		                      ->needs(function)
 		                      ->allow_extra_args();
 
-		sub->add_flag("-i,--info", state.ipc.info)
+		sub->add_flag("-s,--show", state.ipc.info)
 		    ->description("Print information about a function or target if given, or all available "
 		                  "targets if not.")
 		    ->excludes(arguments);
