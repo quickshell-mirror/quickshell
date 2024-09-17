@@ -822,6 +822,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool useQApplication = false;
 		bool nativeTextRendering = false;
 		bool desktopSettingsAware = true;
+		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
 	} pragmas;
 
@@ -834,6 +835,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			if (pragma == "UseQApplication") pragmas.useQApplication = true;
 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
+			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
 			else if (pragma.startsWith("Env ")) {
 				auto envPragma = pragma.sliced(4);
 				auto splitIdx = envPragma.indexOf('=');
@@ -856,6 +858,10 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	}
 
 	file.close();
+
+	if (!pragmas.iconTheme.isEmpty()) {
+		QIcon::setThemeName(pragmas.iconTheme);
+	}
 
 	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 

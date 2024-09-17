@@ -124,6 +124,13 @@ public:
 	Q_INVOKABLE QVariant env(const QString& variable);
 
 	/// Returns a string usable for a @@QtQuick.Image.source for a given system icon.
+	///
+	/// > [!INFO] By default, icons are loaded from the theme selected by the qt platform theme,
+	/// > which means they should match with all other qt applications on your system.
+	/// >
+	/// > If you want to use a different icon theme, you can put `//@ pragma IconTheme <name>`
+	/// > at the top of your root config file or set the `QS_ICON_THEME` variable to the name
+	/// > of your icon theme.
 	Q_INVOKABLE static QString iconPath(const QString& icon);
 
 	[[nodiscard]] QString workingDirectory() const;
