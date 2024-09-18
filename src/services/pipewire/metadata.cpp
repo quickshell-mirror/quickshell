@@ -70,22 +70,11 @@ void PwDefaultsMetadata::onMetadataUpdate(
 ) {
 	if (subject != 0) return;
 
-	// non "configured" sinks and sources have lower priority as wireplumber seems to only change
-	// the "configured" ones.
-
-	bool sink = false;
-	if (strcmp(key, "default.configured.audio.sink") == 0) {
-		sink = true;
-		this->sinkConfigured = true;
-	} else if ((!this->sinkConfigured && strcmp(key, "default.audio.sink") == 0)) {
-		sink = true;
-	}
-
-	if (sink) {
+	if (strcmp(key, "default.audio.sink") == 0) {
 		this->defaultSinkHolder.setObject(metadata);
 
 		auto newSink = PwDefaultsMetadata::parseNameSpaJson(value);
-		qCInfo(logMeta) << "Got default sink" << newSink << "configured:" << this->sinkConfigured;
+		qCInfo(logMeta) << "Got default sink" << newSink;
 		if (newSink == this->mDefaultSink) return;
 
 		this->mDefaultSink = newSink;
@@ -93,19 +82,11 @@ void PwDefaultsMetadata::onMetadataUpdate(
 		return;
 	}
 
-	bool source = false;
-	if (strcmp(key, "default.configured.audio.source") == 0) {
-		source = true;
-		this->sourceConfigured = true;
-	} else if ((!this->sourceConfigured && strcmp(key, "default.audio.source") == 0)) {
-		source = true;
-	}
-
-	if (source) {
+	if (strcmp(key, "default.audio.source") == 0) {
 		this->defaultSourceHolder.setObject(metadata);
 
 		auto newSource = PwDefaultsMetadata::parseNameSpaJson(value);
-		qCInfo(logMeta) << "Got default source" << newSource << "configured:" << this->sourceConfigured;
+		qCInfo(logMeta) << "Got default source" << newSource;
 		if (newSource == this->mDefaultSource) return;
 
 		this->mDefaultSource = newSource;

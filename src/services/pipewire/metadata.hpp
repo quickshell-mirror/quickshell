@@ -55,9 +55,7 @@ private:
 	PwBindableRef<PwMetadata> defaultSinkHolder;
 	PwBindableRef<PwMetadata> defaultSourceHolder;
 
-	bool sinkConfigured = false;
 	QString mDefaultSink;
-	bool sourceConfigured = false;
 	QString mDefaultSource;
 };
 
