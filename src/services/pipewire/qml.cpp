@@ -220,6 +220,8 @@ PwNodeLinkTracker::linkGroupAt(QQmlListProperty<PwLinkGroupIface>* property, qsi
 
 void PwNodeLinkTracker::onNodeDestroyed() {
 	this->mNode = nullptr;
+	QObject::disconnect(&PwConnection::instance()->registry, nullptr, this, nullptr);
+
 	this->updateLinks();
 	emit this->nodeChanged();
 }
@@ -350,7 +352,6 @@ PwLinkIface* PwLinkIface::instance(PwLink* link) {
 
 PwLinkGroupIface::PwLinkGroupIface(PwLinkGroup* group): QObject(group), mGroup(group) {
 	QObject::connect(group, &PwLinkGroup::stateChanged, this, &PwLinkGroupIface::stateChanged);
-	QObject::connect(group, &QObject::destroyed, this, [this]() { delete this; });
 }
 
 void PwLinkGroupIface::ref() { this->mGroup->ref(); }
