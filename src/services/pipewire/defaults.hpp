@@ -1,0 +1,73 @@
+#pragma once
+
+#include <qobject.h>
+#include <qtmetamacros.h>
+
+#include "registry.hpp"
+
+namespace qs::service::pipewire {
+
+class PwDefaultTracker: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit PwDefaultTracker(PwRegistry* registry);
+
+	[[nodiscard]] PwNode* defaultSink() const;
+	[[nodiscard]] PwNode* defaultSource() const;
+
+	[[nodiscard]] PwNode* defaultConfiguredSink() const;
+	[[nodiscard]] const QString& defaultConfiguredSinkName() const;
+
+	[[nodiscard]] PwNode* defaultConfiguredSource() const;
+	[[nodiscard]] const QString& defaultConfiguredSourceName() const;
+
+signals:
+	void defaultSinkChanged();
+	void defaultSinkNameChanged();
+
+	void defaultSourceChanged();
+	void defaultSourceNameChanged();
+
+	void defaultConfiguredSinkChanged();
+	void defaultConfiguredSinkNameChanged();
+
+	void defaultConfiguredSourceChanged();
+	void defaultConfiguredSourceNameChanged();
+
+private slots:
+	void onMetadataAdded(PwMetadata* metadata);
+	void onMetadataProperty(const char* key, const char* type, const char* value);
+	void onNodeAdded(PwNode* node);
+	void onNodeDestroyed(QObject* node);
+
+private:
+	void setDefaultSink(PwNode* node);
+	void setDefaultSinkName(const QString& name);
+
+	void setDefaultSource(PwNode* node);
+	void setDefaultSourceName(const QString& name);
+
+	void setDefaultConfiguredSink(PwNode* node);
+	void setDefaultConfiguredSinkName(const QString& name);
+
+	void setDefaultConfiguredSource(PwNode* node);
+	void setDefaultConfiguredSourceName(const QString& name);
+
+	PwRegistry* registry;
+	PwBindableRef<PwMetadata> defaultsMetadata;
+
+	PwNode* mDefaultSink = nullptr;
+	QString mDefaultSinkName;
+
+	PwNode* mDefaultSource = nullptr;
+	QString mDefaultSourceName;
+
+	PwNode* mDefaultConfiguredSink = nullptr;
+	QString mDefaultConfiguredSinkName;
+
+	PwNode* mDefaultConfiguredSource = nullptr;
+	QString mDefaultConfiguredSourceName;
+};
+
+} // namespace qs::service::pipewire

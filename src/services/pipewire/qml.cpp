@@ -10,8 +10,8 @@
 
 #include "../../core/model.hpp"
 #include "connection.hpp"
+#include "defaults.hpp"
 #include "link.hpp"
-#include "metadata.hpp"
 #include "node.hpp"
 #include "registry.hpp"
 
@@ -60,10 +60,33 @@ Pipewire::Pipewire(QObject* parent): QObject(parent) {
 	    &Pipewire::onLinkGroupAdded
 	);
 
-	// clang-format off
-	QObject::connect(&connection->defaults, &PwDefaultsMetadata::defaultSinkChanged, this, &Pipewire::defaultAudioSinkChanged);
-	QObject::connect(&connection->defaults, &PwDefaultsMetadata::defaultSourceChanged, this, &Pipewire::defaultAudioSourceChanged);
-	// clang-format on
+	QObject::connect(
+	    &connection->defaults,
+	    &PwDefaultTracker::defaultSinkChanged,
+	    this,
+	    &Pipewire::defaultAudioSinkChanged
+	);
+
+	QObject::connect(
+	    &connection->defaults,
+	    &PwDefaultTracker::defaultSourceChanged,
+	    this,
+	    &Pipewire::defaultAudioSourceChanged
+	);
+
+	QObject::connect(
+	    &connection->defaults,
+	    &PwDefaultTracker::defaultConfiguredSinkChanged,
+	    this,
+	    &Pipewire::defaultConfiguredAudioSinkChanged
+	);
+
+	QObject::connect(
+	    &connection->defaults,
+	    &PwDefaultTracker::defaultConfiguredSourceChanged,
+	    this,
+	    &Pipewire::defaultConfiguredAudioSourceChanged
+	);
 }
 
 ObjectModel<PwNodeIface>* Pipewire::nodes() { return &this->mNodes; }
@@ -106,29 +129,23 @@ void Pipewire::onLinkGroupRemoved(QObject* object) {
 }
 
 PwNodeIface* Pipewire::defaultAudioSink() const { // NOLINT
-	auto* connection = PwConnection::instance();
-	auto name = connection->defaults.defaultSink();
-
-	for (auto* node: connection->registry.nodes.values()) {
-		if (name == node->name) {
-			return PwNodeIface::instance(node);
-		}
-	}
-
-	return nullptr;
+	auto* node = PwConnection::instance()->defaults.defaultSink();
+	return PwNodeIface::instance(node);
 }
 
 PwNodeIface* Pipewire::defaultAudioSource() const { // NOLINT
-	auto* connection = PwConnection::instance();
-	auto name = connection->defaults.defaultSource();
+	auto* node = PwConnection::instance()->defaults.defaultSource();
+	return PwNodeIface::instance(node);
+}
 
-	for (auto* node: connection->registry.nodes.values()) {
-		if (name == node->name) {
-			return PwNodeIface::instance(node);
-		}
-	}
+PwNodeIface* Pipewire::defaultConfiguredAudioSink() const { // NOLINT
+	auto* node = PwConnection::instance()->defaults.defaultConfiguredSink();
+	return PwNodeIface::instance(node);
+}
 
-	return nullptr;
+PwNodeIface* Pipewire::defaultConfiguredAudioSource() const { // NOLINT
+	auto* node = PwConnection::instance()->defaults.defaultConfiguredSource();
+	return PwNodeIface::instance(node);
 }
 
 PwNodeIface* PwNodeLinkTracker::node() const { return this->mNode; }
@@ -305,6 +322,8 @@ QVariantMap PwNodeIface::properties() const {
 PwNodeAudioIface* PwNodeIface::audio() const { return this->audioIface; }
 
 PwNodeIface* PwNodeIface::instance(PwNode* node) {
+	if (node == nullptr) return nullptr;
+
 	auto v = node->property("iface");
 	if (v.canConvert<PwNodeIface*>()) {
 		return v.value<PwNodeIface*>();

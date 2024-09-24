@@ -7,6 +7,7 @@
 #include <qhash.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qstringview.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -105,9 +106,8 @@ class PwBindableRef: public PwBindableObjectRef {
 public:
 	explicit PwBindableRef(T* object = nullptr): PwBindableObjectRef(object) {}
 
+	T* object() { return static_cast<T*>(this->mObject); }
 	void setObject(T* object) { this->PwBindableObjectRef::setObject(object); }
-
-	T* object() { return this->mObject; }
 };
 
 class PwRegistry
@@ -127,17 +127,13 @@ public:
 
 	PwCore* core = nullptr;
 
+	[[nodiscard]] PwNode* findNodeByName(QStringView name) const;
+
 signals:
 	void nodeAdded(PwNode* node);
 	void linkAdded(PwLink* link);
 	void linkGroupAdded(PwLinkGroup* group);
-	void metadataUpdate(
-	    PwMetadata* owner,
-	    quint32 subject,
-	    const char* key,
-	    const char* type,
-	    const char* value
-	);
+	void metadataAdded(PwMetadata* metadata);
 
 private slots:
 	void onLinkGroupDestroyed(QObject* object);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "metadata.hpp"
+#include "defaults.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
@@ -13,7 +13,7 @@ public:
 	explicit PwConnection(QObject* parent = nullptr);
 
 	PwRegistry registry;
-	PwDefaultsMetadata defaults {&this->registry};
+	PwDefaultTracker defaults {&this->registry};
 
 	static PwConnection* instance();
 

@@ -11,6 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qstringview.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -143,7 +144,7 @@ void PwRegistry::onGlobal(
 		meta->initProps(props);
 
 		self->metadata.emplace(id, meta);
-		meta->bind();
+		emit self->metadataAdded(meta);
 	} else if (strcmp(type, PW_TYPE_INTERFACE_Link) == 0) {
 		auto* link = new PwLink();
 		link->init(self, id, permissions);
@@ -197,6 +198,16 @@ void PwRegistry::addLinkToGroup(PwLink* link) {
 void PwRegistry::onLinkGroupDestroyed(QObject* object) {
 	auto* group = static_cast<PwLinkGroup*>(object); // NOLINT
 	this->linkGroups.removeOne(group);
+}
+
+PwNode* PwRegistry::findNodeByName(QStringView name) const {
+	if (name.isEmpty()) return nullptr;
+
+	for (auto* node: this->nodes.values()) {
+		if (node->name == name) return node;
+	}
+
+	return nullptr;
 }
 
 } // namespace qs::service::pipewire

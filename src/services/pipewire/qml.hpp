@@ -58,10 +58,30 @@ class Pipewire: public QObject {
 	Q_PROPERTY(ObjectModel<PwLinkIface>* links READ links CONSTANT);
 	/// All pipewire link groups.
 	Q_PROPERTY(ObjectModel<PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
-	/// The default audio sink or `null`.
+	/// The default audio sink (output) or `null`.
+	///
+	/// > [!INFO] When the default sink changes, this property may breifly become null.
+	/// > This depends on your hardware.
 	Q_PROPERTY(PwNodeIface* defaultAudioSink READ defaultAudioSink NOTIFY defaultAudioSinkChanged);
-	/// The default audio source or `null`.
+	/// The default audio source (input) or `null`.
+	///
+	/// > [!INFO] When the default source changes, this property may breifly become null.
+	/// > This depends on your hardware.
 	Q_PROPERTY(PwNodeIface* defaultAudioSource READ defaultAudioSource NOTIFY defaultAudioSourceChanged);
+	/// The configured default audio sink (output) or `null`.
+	///
+	/// This is not the same as @@defaultAudioSink. While @@defaultAudioSink is the
+	/// sink that will be used by applications, @@defaultConfiguredAudioSink is the
+	/// sink requested to be the default by quickshell or another configuration tool,
+	/// which might not exist or be valid.
+	Q_PROPERTY(PwNodeIface* defaultConfiguredAudioSink READ defaultConfiguredAudioSink NOTIFY defaultConfiguredAudioSinkChanged);
+	/// The configured default audio source (input) or `null`.
+	///
+	/// This is not the same as @@defaultAudioSource. While @@defaultAudioSource is the
+	/// source that will be used by applications, @@defaultConfiguredAudioSource is the
+	/// source requested to be the default by quickshell or another configuration tool,
+	/// which might not exist or be valid.
+	Q_PROPERTY(PwNodeIface* defaultConfiguredAudioSource READ defaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
 	// clang-format on
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -72,12 +92,19 @@ public:
 	[[nodiscard]] ObjectModel<PwNodeIface>* nodes();
 	[[nodiscard]] ObjectModel<PwLinkIface>* links();
 	[[nodiscard]] ObjectModel<PwLinkGroupIface>* linkGroups();
+
 	[[nodiscard]] PwNodeIface* defaultAudioSink() const;
 	[[nodiscard]] PwNodeIface* defaultAudioSource() const;
+
+	[[nodiscard]] PwNodeIface* defaultConfiguredAudioSink() const;
+	[[nodiscard]] PwNodeIface* defaultConfiguredAudioSource() const;
 
 signals:
 	void defaultAudioSinkChanged();
 	void defaultAudioSourceChanged();
+
+	void defaultConfiguredAudioSinkChanged();
+	void defaultConfiguredAudioSourceChanged();
 
 private slots:
 	void onNodeAdded(PwNode* node);

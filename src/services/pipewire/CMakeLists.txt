@@ -10,6 +10,7 @@ qt_add_library(quickshell-service-pipewire STATIC
 	metadata.cpp
 	link.cpp
 	device.cpp
+	defaults.cpp
 )
 
 qt_add_qml_module(quickshell-service-pipewire
