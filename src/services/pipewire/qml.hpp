@@ -60,28 +60,38 @@ class Pipewire: public QObject {
 	Q_PROPERTY(ObjectModel<PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
 	/// The default audio sink (output) or `null`.
 	///
+	/// This is the default sink currently in use by pipewire, and the one applications
+	/// are currently using.
+	///
+	/// To set the default sink, use @@preferredDefaultAudioSink.
+	///
 	/// > [!INFO] When the default sink changes, this property may breifly become null.
 	/// > This depends on your hardware.
 	Q_PROPERTY(PwNodeIface* defaultAudioSink READ defaultAudioSink NOTIFY defaultAudioSinkChanged);
 	/// The default audio source (input) or `null`.
 	///
+	/// This is the default source currently in use by pipewire, and the one applications
+	/// are currently using.
+	///
+	/// To set the default source, use @@preferredDefaultAudioSource.
+	///
 	/// > [!INFO] When the default source changes, this property may breifly become null.
 	/// > This depends on your hardware.
 	Q_PROPERTY(PwNodeIface* defaultAudioSource READ defaultAudioSource NOTIFY defaultAudioSourceChanged);
-	/// The configured default audio sink (output) or `null`.
+	/// The preferred default audio sink (output) or `null`.
 	///
-	/// This is not the same as @@defaultAudioSink. While @@defaultAudioSink is the
-	/// sink that will be used by applications, @@defaultConfiguredAudioSink is the
-	/// sink requested to be the default by quickshell or another configuration tool,
-	/// which might not exist or be valid.
-	Q_PROPERTY(PwNodeIface* defaultConfiguredAudioSink READ defaultConfiguredAudioSink NOTIFY defaultConfiguredAudioSinkChanged);
-	/// The configured default audio source (input) or `null`.
+	/// This is a hint to pipewire telling it which sink should be the default when possible.
+	/// @@defaultAudioSink may differ when it is not possible for pipewire to pick this node.
 	///
-	/// This is not the same as @@defaultAudioSource. While @@defaultAudioSource is the
-	/// source that will be used by applications, @@defaultConfiguredAudioSource is the
-	/// source requested to be the default by quickshell or another configuration tool,
-	/// which might not exist or be valid.
-	Q_PROPERTY(PwNodeIface* defaultConfiguredAudioSource READ defaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
+	/// See @@defaultAudioSink for the current default sink, regardless of preference.
+	Q_PROPERTY(PwNodeIface* preferredDefaultAudioSink READ defaultConfiguredAudioSink WRITE setDefaultConfiguredAudioSink NOTIFY defaultConfiguredAudioSinkChanged);
+	/// The preferred default audio source (input) or `null`.
+	///
+	/// This is a hint to pipewire telling it which source should be the default when possible.
+	/// @@defaultAudioSource may differ when it is not possible for pipewire to pick this node.
+	///
+	/// See @@defaultAudioSource for the current default source, regardless of preference.
+	Q_PROPERTY(PwNodeIface* preferredDefaultAudioSource READ defaultConfiguredAudioSource WRITE setDefaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
 	// clang-format on
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -97,7 +107,10 @@ public:
 	[[nodiscard]] PwNodeIface* defaultAudioSource() const;
 
 	[[nodiscard]] PwNodeIface* defaultConfiguredAudioSink() const;
+	static void setDefaultConfiguredAudioSink(PwNodeIface* node);
+
 	[[nodiscard]] PwNodeIface* defaultConfiguredAudioSource() const;
+	static void setDefaultConfiguredAudioSource(PwNodeIface* node);
 
 signals:
 	void defaultAudioSinkChanged();

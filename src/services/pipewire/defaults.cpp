@@ -2,9 +2,12 @@
 #include <array>
 #include <cstring>
 
+#include <qjsondocument.h>
+#include <qjsonobject.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qstringview.h>
 #include <qtmetamacros.h>
 #include <spa/utils/json.h>
 
@@ -63,7 +66,7 @@ void PwDefaultTracker::onMetadataProperty(const char* key, const char* type, con
 	} else return;
 
 	QString name;
-	if (strcmp(type, "Spa:String:JSON") == 0) {
+	if (type != nullptr && value != nullptr && strcmp(type, "Spa:String:JSON") == 0) {
 		auto failed = true;
 		auto iter = std::array<spa_json, 2>();
 		spa_json_init(&iter[0], value, strlen(value));
@@ -136,6 +139,70 @@ void PwDefaultTracker::onNodeDestroyed(QObject* node) {
 		this->mDefaultConfiguredSource = nullptr;
 		emit this->defaultConfiguredSourceChanged();
 	}
+}
+
+void PwDefaultTracker::changeConfiguredSink(PwNode* node) {
+	if (node != nullptr) {
+		if (!node->isSink) {
+			qCCritical(logDefaults) << "Cannot change default sink to a node that is not a sink.";
+			return;
+		}
+
+		this->changeConfiguredSinkName(node->name);
+	} else {
+		this->changeConfiguredSinkName("");
+	}
+}
+
+void PwDefaultTracker::changeConfiguredSinkName(const QString& sink) {
+	if (sink == this->mDefaultConfiguredSinkName) return;
+
+	if (this->setConfiguredDefault("default.configured.audio.sink", sink)) {
+		this->mDefaultConfiguredSinkName = sink;
+		qCInfo(logDefaults) << "Set default configured sink to" << sink;
+	}
+}
+
+void PwDefaultTracker::changeConfiguredSource(PwNode* node) {
+	if (node != nullptr) {
+		if (node->isSink) {
+			qCCritical(logDefaults) << "Cannot change default source to a node that is not a source.";
+			return;
+		}
+
+		this->changeConfiguredSourceName(node->name);
+	} else {
+		this->changeConfiguredSourceName("");
+	}
+}
+
+void PwDefaultTracker::changeConfiguredSourceName(const QString& source) {
+	if (source == this->mDefaultConfiguredSourceName) return;
+
+	if (this->setConfiguredDefault("default.configured.audio.source", source)) {
+		this->mDefaultConfiguredSourceName = source;
+		qCInfo(logDefaults) << "Set default configured source to" << source;
+	}
+}
+
+bool PwDefaultTracker::setConfiguredDefault(const char* key, const QString& value) {
+	auto* meta = this->defaultsMetadata.object();
+
+	if (!meta || !meta->proxy()) {
+		qCCritical(logDefaults) << "Cannot set default node as metadata is not ready.";
+		return false;
+	}
+
+	if (value.isEmpty()) {
+		meta->setProperty(key, "Spa:String:JSON", nullptr);
+	} else {
+		// Spa json is a superset of json so we can avoid the awful spa json api when serializing.
+		auto json = QJsonDocument({{"name", value}}).toJson(QJsonDocument::Compact);
+
+		meta->setProperty(key, "Spa:String:JSON", json.toStdString().c_str());
+	}
+
+	return true;
 }
 
 void PwDefaultTracker::setDefaultSink(PwNode* node) {

@@ -18,9 +18,13 @@ public:
 
 	[[nodiscard]] PwNode* defaultConfiguredSink() const;
 	[[nodiscard]] const QString& defaultConfiguredSinkName() const;
+	void changeConfiguredSink(PwNode* node);
+	void changeConfiguredSinkName(const QString& sink);
 
 	[[nodiscard]] PwNode* defaultConfiguredSource() const;
 	[[nodiscard]] const QString& defaultConfiguredSourceName() const;
+	void changeConfiguredSource(PwNode* node);
+	void changeConfiguredSourceName(const QString& source);
 
 signals:
 	void defaultSinkChanged();
@@ -53,6 +57,8 @@ private:
 
 	void setDefaultConfiguredSource(PwNode* node);
 	void setDefaultConfiguredSourceName(const QString& name);
+
+	bool setConfiguredDefault(const char* key, const QString& value);
 
 	PwRegistry* registry;
 	PwBindableRef<PwMetadata> defaultsMetadata;

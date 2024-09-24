@@ -143,9 +143,17 @@ PwNodeIface* Pipewire::defaultConfiguredAudioSink() const { // NOLINT
 	return PwNodeIface::instance(node);
 }
 
+void Pipewire::setDefaultConfiguredAudioSink(PwNodeIface* node) {
+	PwConnection::instance()->defaults.changeConfiguredSink(node ? node->node() : nullptr);
+}
+
 PwNodeIface* Pipewire::defaultConfiguredAudioSource() const { // NOLINT
 	auto* node = PwConnection::instance()->defaults.defaultConfiguredSource();
 	return PwNodeIface::instance(node);
+}
+
+void Pipewire::setDefaultConfiguredAudioSource(PwNodeIface* node) {
+	PwConnection::instance()->defaults.changeConfiguredSource(node ? node->node() : nullptr);
 }
 
 PwNodeIface* PwNodeLinkTracker::node() const { return this->mNode; }
