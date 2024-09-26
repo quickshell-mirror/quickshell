@@ -2,13 +2,13 @@
 
 #include <pipewire/core.h>
 #include <pipewire/extensions/metadata.h>
+#include <pipewire/permission.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstringview.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
-#include <spa/param/param.h>
 #include <spa/utils/dict.h>
 
 #include "registry.hpp"
@@ -54,7 +54,7 @@ int PwMetadata::onProperty(
 }
 
 bool PwMetadata::hasSetPermission() const {
-	return (this->perms & SPA_PARAM_INFO_WRITE) == SPA_PARAM_INFO_WRITE;
+	return (this->perms & (PW_PERM_W | PW_PERM_X)) == (PW_PERM_W | PW_PERM_X);
 }
 
 void PwMetadata::setProperty(const char* key, const char* type, const char* value) {
@@ -64,7 +64,8 @@ void PwMetadata::setProperty(const char* key, const char* type, const char* valu
 	}
 
 	if (!this->hasSetPermission()) {
-		qCCritical(logMeta) << "Tried to change property of" << this << "which is read-only.";
+		qCCritical(logMeta) << "Tried to change property of" << this
+		                    << "which is missing write+execute permissions.";
 	}
 
 	pw_metadata_set_property(this->proxy(), PW_ID_CORE, key, type, value);

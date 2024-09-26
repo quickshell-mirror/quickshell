@@ -193,6 +193,13 @@ bool PwDefaultTracker::setConfiguredDefault(const char* key, const QString& valu
 		return false;
 	}
 
+	if (!meta->hasSetPermission()) {
+		qCCritical(logDefaults
+		) << "Cannot set default node as write+execute permissions are missing for"
+		  << meta;
+		return false;
+	}
+
 	if (value.isEmpty()) {
 		meta->setProperty(key, "Spa:String:JSON", nullptr);
 	} else {
