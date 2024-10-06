@@ -51,7 +51,8 @@ void PwDefaultTracker::onMetadataProperty(const char* key, const char* type, con
 	qCDebug(logDefaults).nospace() << "Got default metadata update for " << key << ": "
 	                               << QString(value);
 
-	if (strcmp(key, "default.audio.sink") == 0) {
+	if (key == nullptr) return; // NOLINT(bugprone-branch-clone)
+	else if (strcmp(key, "default.audio.sink") == 0) {
 		nodeSetter = &PwDefaultTracker::setDefaultSink;
 		nameSetter = &PwDefaultTracker::setDefaultSinkName;
 	} else if (strcmp(key, "default.audio.source") == 0) {
