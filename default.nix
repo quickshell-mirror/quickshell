@@ -37,7 +37,6 @@
   withPipewire ? true,
   withPam ? true,
   withHyprland ? true,
-  withQMLLib ? true,
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
@@ -71,6 +70,8 @@
   cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
   cmakeFlags = [
+    (lib.cmakeFeature "DISTRIBUTOR" "Official-Nix-Flake")
+    (lib.cmakeBool "DISTRIBUTOR_DEBUGINFO_AVAILABLE" true)
     (lib.cmakeFeature "GIT_REVISION" gitRev)
     (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
     (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
@@ -78,7 +79,6 @@
     (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
     (lib.cmakeBool "SERVICE_PAM" withPam)
     (lib.cmakeBool "HYPRLAND" withHyprland)
-    (lib.cmakeBool "INSTALL_QML_LIB" withQMLLib)
   ];
 
   # How to get debuginfo in gdb from a release build:

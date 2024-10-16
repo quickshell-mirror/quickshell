@@ -5,58 +5,64 @@ set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_TESTING "Build tests" OFF)
-option(ASAN "Enable ASAN" OFF) # note: better output with gcc than clang
-option(FRAME_POINTERS "Always keep frame pointers" ${ASAN})
+set(QS_BUILD_OPTIONS "")
 
-option(INSTALL_QML_LIB "Installing the QML lib" ON)
-option(CRASH_REPORTER "Enable the crash reporter" ON)
-option(USE_JEMALLOC "Use jemalloc over the system malloc implementation" ON)
-option(SOCKETS "Enable unix socket support" ON)
-option(WAYLAND "Enable wayland support" ON)
-option(WAYLAND_WLR_LAYERSHELL "Support the zwlr_layer_shell_v1 wayland protocol" ON)
-option(WAYLAND_SESSION_LOCK "Support the ext_session_lock_v1 wayland protocol" ON)
-option(WAYLAND_TOPLEVEL_MANAGEMENT "Support the zwlr_foreign_toplevel_management_v1 wayland protocol" ON)
-option(X11 "Enable X11 support" ON)
-option(HYPRLAND "Support hyprland specific features" ON)
-option(HYPRLAND_IPC "Hyprland IPC" ON)
-option(HYPRLAND_GLOBAL_SHORTCUTS "Hyprland Global Shortcuts" ON)
-option(HYPRLAND_FOCUS_GRAB "Hyprland Focus Grabbing" ON)
-option(SERVICE_STATUS_NOTIFIER "StatusNotifierItem service" ON)
-option(SERVICE_PIPEWIRE "PipeWire service" ON)
-option(SERVICE_MPRIS "Mpris service" ON)
-option(SERVICE_PAM "Pam service" ON)
-option(SERVICE_GREETD "Greet service" ON)
-option(SERVICE_UPOWER "UPower service" ON)
-option(SERVICE_NOTIFICATIONS "Notification server" ON)
+function(boption VAR NAME DEFAULT)
+	cmake_parse_arguments(PARSE_ARGV 3 arg "" "REQUIRES" "")
+
+	option(${VAR} ${NAME} ${DEFAULT})
+
+	set(STATUS "${VAR}_status")
+	set(EFFECTIVE "${VAR}_effective")
+	set(${STATUS} ${${VAR}})
+	set(${EFFECTIVE} ${${VAR}})
+
+	if (${${VAR}} AND DEFINED arg_REQUIRES)
+		set(REQUIRED_EFFECTIVE "${arg_REQUIRES}_effective")
+		if (NOT ${${REQUIRED_EFFECTIVE}})
+			set(${STATUS} "OFF (Requires ${arg_REQUIRES})")
+			set(${EFFECTIVE} OFF)
+		endif()
+	endif()
+
+	set(${EFFECTIVE} "${${EFFECTIVE}}" PARENT_SCOPE)
+
+	message(STATUS "  ${NAME}: ${${STATUS}}")
+
+	string(APPEND QS_BUILD_OPTIONS "\\n  ${NAME}: ${${STATUS}}")
+	set(QS_BUILD_OPTIONS "${QS_BUILD_OPTIONS}" PARENT_SCOPE)
+endfunction()
+
+set(DISTRIBUTOR "Unset" CACHE STRING "Distributor")
+string(APPEND QS_BUILD_OPTIONS "  Distributor: ${DISTRIBUTOR}")
 
 message(STATUS "Quickshell configuration")
-message(STATUS "  QML lib installation: ${INSTALL_QML_LIB}")
-message(STATUS "  Crash reporter: ${CRASH_REPORTER}")
-message(STATUS "  Jemalloc: ${USE_JEMALLOC}")
-message(STATUS "  Build tests: ${BUILD_TESTING}")
-message(STATUS "  Sockets: ${SOCKETS}")
-message(STATUS "  Wayland: ${WAYLAND}")
-if (WAYLAND)
-	message(STATUS "    Wlroots Layershell: ${WAYLAND_WLR_LAYERSHELL}")
-	message(STATUS "    Session Lock: ${WAYLAND_SESSION_LOCK}")
-	message(STATUS "    Toplevel Management: ${WAYLAND_TOPLEVEL_MANAGEMENT}")
-endif ()
-message(STATUS "  X11: ${X11}")
-message(STATUS "  Services")
-message(STATUS "    StatusNotifier: ${SERVICE_STATUS_NOTIFIER}")
-message(STATUS "    PipeWire: ${SERVICE_PIPEWIRE}")
-message(STATUS "    Mpris: ${SERVICE_MPRIS}")
-message(STATUS "    Pam: ${SERVICE_PAM}")
-message(STATUS "    Greetd: ${SERVICE_GREETD}")
-message(STATUS "    UPower: ${SERVICE_UPOWER}")
-message(STATUS "    Notifications: ${SERVICE_NOTIFICATIONS}")
-message(STATUS "  Hyprland: ${HYPRLAND}")
-if (HYPRLAND)
-	message(STATUS "    IPC: ${HYPRLAND_IPC}")
-	message(STATUS "    Focus Grabbing: ${HYPRLAND_FOCUS_GRAB}")
-	message(STATUS "    Global Shortcuts: ${HYPRLAND_GLOBAL_SHORTCUTS}")
-endif()
+message(STATUS "  Distributor: ${DISTRIBUTOR}")
+boption(DISTRIBUTOR_DEBUGINFO_AVAILABLE "Distributor provided debuginfo" NO)
+boption(NO_PCH "Disable precompild headers (dev)" OFF)
+boption(BUILD_TESTING "Build tests (dev)" OFF)
+boption(ASAN "ASAN (dev)" OFF) # note: better output with gcc than clang
+boption(FRAME_POINTERS "Keep Frame Pointers (dev)" ${ASAN})
+
+boption(CRASH_REPORTER "Crash Handling" ON)
+boption(USE_JEMALLOC "Use jemalloc" ON)
+boption(SOCKETS "Unix Sockets" ON)
+boption(WAYLAND "Wayland" ON)
+boption(WAYLAND_WLR_LAYERSHELL "  Wlroots Layer-Shell" ON REQUIRES WAYLAND)
+boption(WAYLAND_SESSION_LOCK "  Session Lock" ON REQUIRES WAYLAND)
+boption(WAYLAND_TOPLEVEL_MANAGEMENT "  Foreign Toplevel Management" ON REQUIRES WAYLAND)
+boption(HYPRLAND "  Hyprland" ON REQUIRES WAYLAND)
+boption(HYPRLAND_IPC "    Hyprland IPC" ON REQUIRES HYPRLAND)
+boption(HYPRLAND_GLOBAL_SHORTCUTS "    Hyprland Global Shortcuts" ON REQUIRES HYPRLAND)
+boption(HYPRLAND_FOCUS_GRAB "    Hyprland Focus Grabbing" ON REQUIRES HYPRLAND)
+boption(X11 "X11" ON)
+boption(SERVICE_STATUS_NOTIFIER "System Tray" ON)
+boption(SERVICE_PIPEWIRE "PipeWire" ON)
+boption(SERVICE_MPRIS "Mpris" ON)
+boption(SERVICE_PAM "Pam" ON)
+boption(SERVICE_GREETD "Greetd" ON)
+boption(SERVICE_UPOWER "UPower" ON)
+boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 
 if (NOT DEFINED GIT_REVISION)
 	execute_process(
@@ -157,13 +163,11 @@ if (USE_JEMALLOC)
 	target_link_libraries(quickshell PRIVATE ${JEMALLOC_LIBRARIES})
 endif()
 
-if (INSTALL_QML_LIB)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
-		DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt-6/qml
-		FILES_MATCHING PATTERN "*"
-	)
-endif()
+install(
+	DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt-6/qml
+	FILES_MATCHING PATTERN "*"
+)
 
 install(CODE "
 	execute_process(

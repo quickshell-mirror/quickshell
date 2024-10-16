@@ -52,8 +52,16 @@ else()
 	set(CRASH_REPORTER_DEF 0)
 endif()
 
+if (DISTRIBUTOR_DEBUGINFO_AVAILABLE)
+	set(DEBUGINFO_AVAILABLE 1)
+else()
+	set(DEBUGINFO_AVAILABLE 0)
+endif()
+
 add_library(quickshell-build INTERFACE)
-configure_file(build.hpp.in build.hpp)
+
+configure_file(build.hpp.in build.hpp @ONLY ESCAPE_QUOTES)
+
 target_include_directories(quickshell-build INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(quickshell-core PRIVATE quickshell-build)
 

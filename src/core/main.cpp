@@ -13,6 +13,7 @@
 #include <CLI/Validators.hpp>
 #include <fcntl.h>
 #include <qapplication.h>
+#include <qconfig.h>
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qcryptographichash.h>
@@ -36,6 +37,7 @@
 #include <qstring.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
+#include <qtversion.h>
 #include <unistd.h>
 
 #include "../io/ipccomm.hpp"
@@ -425,7 +427,21 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote() << "quickshell pre-release, revision" << GIT_REVISION;
+		qCInfo(logBare).noquote().nospace() << "quickshell pre-release, revision " << GIT_REVISION
+		                                    << ", distributed by: " << DISTRIBUTOR;
+
+		if (state.log.verbosity > 1) {
+			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
+			qCInfo(logBare).noquote() << "Runtime Qt Version:" << qVersion();
+			qCInfo(logBare).noquote() << "Compiler:" << COMPILER;
+			qCInfo(logBare).noquote() << "Compile Flags:" << COMPILE_FLAGS;
+		}
+
+		if (state.log.verbosity > 0) {
+			qCInfo(logBare).noquote() << "\nBuild Type:" << BUILD_TYPE;
+			qCInfo(logBare).noquote() << "Build configuration:";
+			qCInfo(logBare).noquote().nospace() << BUILD_CONFIGURATION;
+		}
 	} else if (*state.subcommand.log) {
 		return readLogFile(state);
 	} else if (*state.subcommand.list) {

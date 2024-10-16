@@ -2,6 +2,29 @@
 Instructions for building from source and distro packagers. We highly recommend
 distro packagers read through this page fully.
 
+## Packaging
+If you are packaging quickshell for official or unofficial distribution channels,
+such as a distro package repository, user repository, or other shared build location,
+please set the following CMake flags.
+
+`-DDISTRIBUTOR="your distribution platform"`
+
+Please make this descriptive enough to identify your specific package, for example:
+- `Official Nix Flake`
+- `AUR (quickshell-git)`
+- `Nixpkgs`
+- `Fedora COPR (errornointernet/quickshell)`
+
+`-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=YES/NO`
+
+If we can retrieve binaries and debug information for the package without actually running your
+distribution (e.g. from an website), and you would like to strip the binary, please set this to `YES`.
+
+If we cannot retrieve debug information, please set this to `NO` and
+**ensure you aren't distributing stripped (non debuggable) binaries**.
+
+In both cases you should build with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (then split or keep the debuginfo).
+
 ## Dependencies
 Quickshell has a set of base dependencies you will always need, names vary by distro:
 
@@ -17,12 +40,6 @@ svg icons will not work, including system ones.
 At least Qt 6.6 is required.
 
 All features are enabled by default and some have their own dependencies.
-
-### QML Library
-If you wish to use a linter or similar tools, you will need the QML Modules for it
-to pick up on the types.
-
-To disable: `-DINSTALL_QML_LIB=OFF`
 
 ### Crash Reporter
 The crash reporter catches crashes, restarts quickshell when it crashes,
@@ -168,9 +185,6 @@ Note that features you do not supply dependencies for MUST be disabled with thei
 or quickshell will fail to build.
 
 Additionally, note that clang builds much faster than gcc if you care.
-
-You may disable debug information but it's only a couple megabytes and is extremely helpful
-for helping us fix problems when they do arise.
 
 #### Building
 ```sh

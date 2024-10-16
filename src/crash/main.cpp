@@ -11,6 +11,8 @@
 #include <qloggingcategory.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
+#include <qtversion.h>
+#include <qversiontagging.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
 
@@ -111,15 +113,24 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 	auto logFd = qEnvironmentVariable("__QUICKSHELL_CRASH_LOG_FD").toInt();
 
 	qCDebug(logCrashReporter) << "Saving minidump from fd" << dumpFd;
-	auto dumpDupStatus = tryDup(dumpFd, crashDir.filePath("minidump.dmp"));
+	auto dumpDupStatus = tryDup(dumpFd, crashDir.filePath("minidump.dmp.log"));
 	if (dumpDupStatus != 0) {
 		qCCritical(logCrashReporter) << "Failed to write minidump:" << dumpDupStatus;
 	}
 
 	qCDebug(logCrashReporter) << "Saving log from fd" << logFd;
-	auto logDupStatus = tryDup(logFd, crashDir.filePath("log.qslog"));
+	auto logDupStatus = tryDup(logFd, crashDir.filePath("log.qslog.log"));
 	if (logDupStatus != 0) {
 		qCCritical(logCrashReporter) << "Failed to save log:" << logDupStatus;
+	}
+
+	auto copyBinStatus = 0;
+	if (!DISTRIBUTOR_DEBUGINFO_AVAILABLE) {
+		qCDebug(logCrashReporter) << "Copying binary to crash folder";
+		if (!QFile(QCoreApplication::applicationFilePath()).copy(crashDir.filePath("executable.txt"))) {
+			copyBinStatus = 1;
+			qCCritical(logCrashReporter) << "Failed to copy binary.";
+		}
 	}
 
 	{
@@ -128,22 +139,27 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 			qCCritical(logCrashReporter) << "Failed to open crash info file for writing.";
 		} else {
 			auto stream = QTextStream(&extraInfoFile);
-			stream << "===== Quickshell Crash =====\n";
+			stream << "===== Build Information =====\n";
 			stream << "Git Revision: " << GIT_REVISION << '\n';
+			stream << "Buildtime Qt Version: " << QT_VERSION_STR << "\n";
+			stream << "Build Type: " << BUILD_TYPE << '\n';
+			stream << "Compiler: " << COMPILER << '\n';
+			stream << "Complie Flags: " << COMPILE_FLAGS << "\n\n";
+			stream << "Build configuration:\n" << BUILD_CONFIGURATION << "\n";
+
+			stream << "\n===== Runtime Information =====\n";
+			stream << "Runtime Qt Version: " << qVersion() << '\n';
 			stream << "Crashed process ID: " << crashProc << '\n';
 			stream << "Run ID: " << instance.instanceId << '\n';
-
-			stream << "\n===== Shell Information =====\n";
 			stream << "Shell ID: " << instance.shellId << '\n';
 			stream << "Config Path: " << instance.configPath << '\n';
 
 			stream << "\n===== Report Integrity =====\n";
 			stream << "Minidump save status: " << dumpDupStatus << '\n';
 			stream << "Log save status: " << logDupStatus << '\n';
+			stream << "Binary copy status: " << copyBinStatus << '\n';
 
-			stream << "\n===== System Information =====\n";
-			stream << "Qt Version: " << QT_VERSION_STR << "\n\n";
-
+			stream << "\n===== System Information =====\n\n";
 			stream << "/etc/os-release:";
 			auto osReleaseFile = QFile("/etc/os-release");
 			if (osReleaseFile.open(QFile::ReadOnly)) {
@@ -156,7 +172,7 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 			stream << "/etc/lsb-release:";
 			auto lsbReleaseFile = QFile("/etc/lsb-release");
 			if (lsbReleaseFile.open(QFile::ReadOnly)) {
-				stream << '\n' << lsbReleaseFile.readAll() << '\n';
+				stream << '\n' << lsbReleaseFile.readAll();
 				lsbReleaseFile.close();
 			} else {
 				stream << "FAILED TO OPEN\n";

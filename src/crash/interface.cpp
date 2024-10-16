@@ -54,7 +54,7 @@ CrashReporterGui::CrashReporterGui(QString reportFolder, int pid)
 
 	mainLayout->addWidget(new ReportLabel(
 	    "Github:",
-	    "https://github.com/outfoxxed/quickshell/issues/new?template=crash.yml",
+	    "https://github.com/quickshell-mirror/quickshell/issues/new?template=crash.yml",
 	    this
 	));
 

@@ -33,7 +33,7 @@ body:
     attributes:
       label: Minidump
       description: |
-        Attach `minidump.dmp` here. If it is too big to upload, compress it.
+        Attach `minidump.dmp.log` here. If it is too big to upload, compress it.
 
         You may skip this step if quickshell crashed while processing a password
         or other sensitive information. If you skipped it write why instead.
@@ -44,7 +44,7 @@ body:
     attributes:
       label: Log file
       description: |
-        Attach `log.qslog` here. If it is too big to upload, compress it.
+        Attach `log.qslog.log` here. If it is too big to upload, compress it.
 
         You can preview the log if you'd like using `quickshell read-log <path-to-log>`.
     validations:
@@ -70,3 +70,13 @@ body:
         in the crash reporter.
         2. Once it loads, type `bt -full` (then enter)
         3. Copy the output and attach it as a file or in a spoiler.
+  - type: textarea
+    id: exe
+    attributes:
+      label: Executable
+      description: |
+        If the crash folder contains a executable.txt file, upload it here. If not you can ignore this field.
+        If it is too big to upload, compress it.
+
+        Note: executable.txt is the quickshell binary. It has a .txt extension due to github's limitations on
+        filetypes.
