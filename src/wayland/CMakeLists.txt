@@ -1,24 +1,16 @@
 find_package(PkgConfig REQUIRED)
+find_package(WaylandScanner REQUIRED)
 pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols)
-
-find_package(Qt6 REQUIRED COMPONENTS WaylandClient)
 
 # wayland protocols
 
-if (DEFINED ENV{QTWAYLANDSCANNER})
-	set(qtwaylandscanner $ENV{QTWAYLANDSCANNER})
-else()
-	find_program(qtwaylandscanner NAMES qtwaylandscanner)
+if(NOT TARGET Wayland::Scanner)
+	message(FATAL_ERROR "Wayland::Scanner target not found. You might be missing the WaylandScanner CMake package.")
 endif()
 
-if (qtwaylandscanner STREQUAL "qtwaylandscanner-NOTFOUND")
-	message(FATAL_ERROR "qtwaylandscanner not found. Set the QTWAYLANDSCANNER environment variable to specify its path explicity.")
+if(NOT TARGET Qt6::qtwaylandscanner)
+	message(FATAL_ERROR "qtwaylandscanner executable not found. Most likely there is an issue with your Qt installation.")
 endif()
-
-message(STATUS "Found qtwaylandscanner at ${qtwaylandscanner}")
-
-find_program(waylandscanner NAMES wayland-scanner)
-message(STATUS "Found wayland-scanner at ${waylandscanner}")
 
 execute_process(
 	COMMAND pkg-config --variable=pkgdatadir wayland-protocols
@@ -32,14 +24,38 @@ function (wl_proto target name path)
 	set(PROTO_BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/wl-proto/${name})
 	make_directory(${PROTO_BUILD_PATH})
 
-	execute_process(COMMAND ${waylandscanner} client-header ${path} ${PROTO_BUILD_PATH}/wayland-${name}-client-protocol.h)
-	execute_process(COMMAND ${waylandscanner} private-code ${path} ${PROTO_BUILD_PATH}/wayland-${name}.c)
-	execute_process(COMMAND ${qtwaylandscanner} client-header ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.h)
-	execute_process(COMMAND ${qtwaylandscanner} client-code ${path} OUTPUT_FILE ${PROTO_BUILD_PATH}/qwayland-${name}.cpp)
+	set(WS_CLIENT_HEADER "${PROTO_BUILD_PATH}/wayland-${name}-client-protocol.h")
+	set(WS_CLIENT_CODE "${PROTO_BUILD_PATH}/wayland-${name}.c")
+	set(QWS_CLIENT_HEADER "${PROTO_BUILD_PATH}/qwayland-${name}.h")
+	set(QWS_CLIENT_CODE "${PROTO_BUILD_PATH}/qwayland-${name}.cpp")
+
+	add_custom_command(
+		OUTPUT "${WS_CLIENT_HEADER}"
+		COMMAND Wayland::Scanner client-header "${path}" "${WS_CLIENT_HEADER}"
+		DEPENDS Wayland::Scanner "${path}"
+	)
+
+	add_custom_command(
+		OUTPUT "${WS_CLIENT_CODE}"
+		COMMAND Wayland::Scanner private-code "${path}" "${WS_CLIENT_CODE}"
+		DEPENDS Wayland::Scanner "${path}"
+	)
+
+	add_custom_command(
+		OUTPUT "${QWS_CLIENT_HEADER}"
+		COMMAND Qt6::qtwaylandscanner client-header "${path}" > "${QWS_CLIENT_HEADER}"
+		DEPENDS Qt6::qtwaylandscanner "${path}"
+	)
+
+	add_custom_command(
+		OUTPUT "${QWS_CLIENT_CODE}"
+		COMMAND Qt6::qtwaylandscanner client-code "${path}" > "${QWS_CLIENT_CODE}"
+		DEPENDS Qt6::qtwaylandscanner "${path}"
+	)
 
 	add_library(wl-proto-${name}
-		${PROTO_BUILD_PATH}/wayland-${name}.c
-		${PROTO_BUILD_PATH}/qwayland-${name}.cpp
+		${WS_CLIENT_HEADER} ${WS_CLIENT_CODE}
+		${QWS_CLIENT_HEADER} ${QWS_CLIENT_CODE}
 	)
 
 	target_include_directories(wl-proto-${name} INTERFACE ${PROTO_BUILD_PATH})

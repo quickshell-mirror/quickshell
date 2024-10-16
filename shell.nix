@@ -21,7 +21,6 @@ in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
   ];
 
   TIDYFOX = "${tidyfox}/lib/libtidyfox.so";
-  QTWAYLANDSCANNER = quickshell.QTWAYLANDSCANNER;
 
   shellHook = ''
     export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)

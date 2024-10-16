@@ -65,8 +65,6 @@
   ++ lib.optional withPam pam
   ++ lib.optional withPipewire pipewire;
 
-  QTWAYLANDSCANNER = lib.optionalString withWayland "${qt6.qtwayland}/libexec/qtwaylandscanner";
-
   cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
   cmakeFlags = [
