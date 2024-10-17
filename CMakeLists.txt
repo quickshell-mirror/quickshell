@@ -172,6 +172,6 @@ install(
 install(CODE "
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink \
-		${CMAKE_INSTALL_FULL_BINDIR}/quickshell ${CMAKE_INSTALL_FULL_BINDIR}/qs
+		${CMAKE_INSTALL_FULL_BINDIR}/quickshell \$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/qs
 	)
 ")
