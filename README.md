@@ -67,6 +67,11 @@ It is not managed by us and should be looked over before use.
 
 [AUR package]: https://aur.archlinux.org/packages/quickshell
 
+> [!CAUTION]
+> The AUR provides no way to force the quickshell package to rebuild when the Qt version changes.
+> If you experience crashes after updating Qt, please try rebuilding Quickshell against the
+> current Qt version before opening an issue.
+
 ## Fedora (COPR)
 Quickshell has a third party [Fedora COPR package] available under the same name.
 It is not managed by us and should be looked over before use.

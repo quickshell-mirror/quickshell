@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 #include <string>
 #include <vector>
@@ -176,6 +177,7 @@ struct CommandState {
 	} subcommand;
 
 	struct {
+		bool checkCompat = false;
 		bool printVersion = false;
 		bool killAll = false;
 		bool noDuplicate = false;
@@ -290,6 +292,8 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	addDebugOptions(&cli);
 
 	{
+		cli.add_option_group("")->add_flag("--private-check-compat", state.misc.checkCompat);
+
 		cli.add_flag("-V,--version", state.misc.printVersion)
 		    ->description("Print quickshell's version and exit.");
 
@@ -378,6 +382,18 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 
 	CLI11_PARSE(cli, argc, argv);
 
+	if (state.misc.checkCompat) {
+		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
+			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
+			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
+			                    << " without rebuilding the package. This is likely to cause crashes, so "
+			                       "you must rebuild the quickshell package.\n";
+			return 1;
+		}
+
+		return 0;
+	}
+
 	// Has to happen before extra threads are spawned.
 	if (state.misc.daemonize) {
 		auto closepipes = std::array<int, 2>();
@@ -451,6 +467,13 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	} else if (*state.subcommand.msg) {
 		return msgInstance(state);
 	} else {
+		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
+			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR
+			           << "but the system has updated to Qt" << qVersion()
+			           << "without rebuilding the package. This is likely to cause crashes, so "
+			              "the quickshell package must be rebuilt.\n";
+		}
+
 		return launchFromCommand(state, coreApplication);
 	}
 

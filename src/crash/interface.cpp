@@ -1,8 +1,10 @@
 #include "interface.hpp"
+#include <cstring>
 #include <utility>
 
 #include <qapplication.h>
 #include <qboxlayout.h>
+#include <qconfig.h>
 #include <qdesktopservices.h>
 #include <qfont.h>
 #include <qfontinfo.h>
@@ -10,6 +12,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpushbutton.h>
+#include <qtversion.h>
 #include <qwidget.h>
 
 #include "build.hpp"
@@ -37,20 +40,40 @@ CrashReporterGui::CrashReporterGui(QString reportFolder, int pid)
 
 	auto* mainLayout = new QVBoxLayout(this);
 
-	mainLayout->addWidget(new QLabel(
-	    "<u>Quickshell has crashed. Please submit a bug report to help us fix it.</u>",
-	    this
-	));
+	auto qtVersionMatches = strcmp(qVersion(), QT_VERSION_STR) == 0;
+	if (qtVersionMatches) {
+		mainLayout->addWidget(new QLabel(
+		    "<u>Quickshell has crashed. Please submit a bug report to help us fix it.</u>",
+		    this
+		));
+	} else {
+		mainLayout->addWidget(
+		    new QLabel("<u>Quickshell has crashed, likely due to a Qt version mismatch.</u>", this)
+		);
+	}
 
 	mainLayout->addSpacing(textHeight);
 
 	mainLayout->addWidget(new QLabel("General information", this));
 	mainLayout->addWidget(new ReportLabel("Git Revision:", GIT_REVISION, this));
+	mainLayout->addWidget(new QLabel(
+	    QString::fromLatin1("Runtime Qt version: ") % qVersion() % ", Buildtime Qt version: "
+	        % QT_VERSION_STR,
+	    this
+	));
 	mainLayout->addWidget(new ReportLabel("Crashed process ID:", QString::number(pid), this));
 	mainLayout->addWidget(new ReportLabel("Crash report folder:", this->reportFolder, this));
 	mainLayout->addSpacing(textHeight);
 
-	mainLayout->addWidget(new QLabel("Please open a bug report for this issue via github or email."));
+	if (qtVersionMatches) {
+		mainLayout->addWidget(new QLabel("Please open a bug report for this issue via github or email.")
+		);
+	} else {
+		mainLayout->addWidget(new QLabel(
+		    "Please rebuild Quickshell against the current Qt version.\n"
+		    "If this does not solve the problem, please open a bug report via github or email."
+		));
+	}
 
 	mainLayout->addWidget(new ReportLabel(
 	    "Github:",

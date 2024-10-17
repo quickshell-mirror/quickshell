@@ -4,6 +4,7 @@
 
 #include <qapplication.h>
 #include <qconfig.h>
+#include <qcoreapplication.h>
 #include <qdatastream.h>
 #include <qdir.h>
 #include <qfile.h>
@@ -12,7 +13,6 @@
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
 #include <qtversion.h>
-#include <qversiontagging.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
 
