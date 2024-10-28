@@ -7,9 +7,9 @@
 #include <qtmetamacros.h>
 #include <qwindow.h>
 
-#include "proxywindow.hpp"
+#include "../window/proxywindow.hpp"
+#include "../window/windowinterface.hpp"
 #include "types.hpp"
-#include "windowinterface.hpp"
 
 bool PopupAnchorState::operator==(const PopupAnchorState& other) const {
 	return this->rect == other.rect && this->edges == other.edges && this->gravity == other.gravity

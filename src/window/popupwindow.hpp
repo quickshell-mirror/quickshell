@@ -6,10 +6,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "doc.hpp"
-#include "popupanchor.hpp"
+#include "../core/doc.hpp"
+#include "../core/popupanchor.hpp"
+#include "../core/qmlscreen.hpp"
 #include "proxywindow.hpp"
-#include "qmlscreen.hpp"
 #include "windowinterface.hpp"
 
 ///! Popup window.

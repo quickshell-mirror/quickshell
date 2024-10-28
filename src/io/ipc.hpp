@@ -4,7 +4,7 @@
 #include <qobjectdefs.h>
 #include <qtclasshelpermacros.h>
 
-#include "../core/ipc.hpp"
+#include "../ipc/ipc.hpp"
 
 namespace qs::io::ipc {
 

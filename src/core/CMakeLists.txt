@@ -1,22 +1,16 @@
 find_package(CLI11 CONFIG REQUIRED)
 
 qt_add_library(quickshell-core STATIC
-	main.cpp
 	plugin.cpp
 	shell.cpp
 	variants.cpp
 	rootwrapper.cpp
-	proxywindow.cpp
 	reload.cpp
 	rootwrapper.cpp
 	qmlglobal.cpp
 	qmlscreen.cpp
 	region.cpp
 	persistentprops.cpp
-	windowinterface.cpp
-	floatingwindow.cpp
-	panelinterface.cpp
-	popupwindow.cpp
 	singleton.cpp
 	generation.cpp
 	scan.cpp
@@ -43,32 +37,20 @@ qt_add_library(quickshell-core STATIC
 	paths.cpp
 	instanceinfo.cpp
 	common.cpp
-	ipc.cpp
 )
 
-if (CRASH_REPORTER)
-	set(CRASH_REPORTER_DEF 1)
-else()
-	set(CRASH_REPORTER_DEF 0)
-endif()
-
-if (DISTRIBUTOR_DEBUGINFO_AVAILABLE)
-	set(DEBUGINFO_AVAILABLE 1)
-else()
-	set(DEBUGINFO_AVAILABLE 0)
-endif()
-
-add_library(quickshell-build INTERFACE)
-
-configure_file(build.hpp.in build.hpp @ONLY ESCAPE_QUOTES)
-
-target_include_directories(quickshell-build INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(quickshell-core PRIVATE quickshell-build)
 
-qt_add_qml_module(quickshell-core URI Quickshell VERSION 0.1)
+qt_add_qml_module(quickshell-core
+	URI Quickshell
+	VERSION 0.1
+	IMPORTS Quickshell._Window
+)
 
-target_link_libraries(quickshell-core PRIVATE ${QT_DEPS} Qt6::QuickPrivate CLI11::CLI11)
+target_link_libraries(quickshell-core PRIVATE ${QT_DEPS} CLI11::CLI11)
+
 qs_pch(quickshell-core)
+qs_pch(quickshell-coreplugin)
 
 target_link_libraries(quickshell PRIVATE quickshell-coreplugin)
 

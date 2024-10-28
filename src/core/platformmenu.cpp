@@ -17,11 +17,11 @@
 #include <qtmetamacros.h>
 #include <qwindow.h>
 
+#include "../window/proxywindow.hpp"
+#include "../window/windowinterface.hpp"
 #include "generation.hpp"
 #include "popupanchor.hpp"
-#include "proxywindow.hpp"
 #include "qsmenu.hpp"
-#include "windowinterface.hpp"
 
 namespace qs::menu::platform {
 

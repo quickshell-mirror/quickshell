@@ -9,9 +9,9 @@
 #include <qtypes.h>
 
 #include "../core/generation.hpp"
-#include "../core/ipc.hpp"
-#include "../core/ipccommand.hpp"
 #include "../core/logging.hpp"
+#include "../ipc/ipc.hpp"
+#include "../ipc/ipccommand.hpp"
 #include "ipc.hpp"
 #include "ipchandler.hpp"
 

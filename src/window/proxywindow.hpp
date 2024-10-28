@@ -12,10 +12,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "qmlglobal.hpp"
-#include "qmlscreen.hpp"
-#include "region.hpp"
-#include "reload.hpp"
+#include "../core/qmlscreen.hpp"
+#include "../core/region.hpp"
+#include "../core/reload.hpp"
 #include "windowinterface.hpp"
 
 // Proxy to an actual window exposing a limited property set with the ability to

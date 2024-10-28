@@ -9,9 +9,9 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 
-#include "generation.hpp"
+#include "../core/generation.hpp"
+#include "../core/paths.hpp"
 #include "ipccommand.hpp"
-#include "paths.hpp"
 
 namespace qs::ipc {
 

@@ -14,7 +14,7 @@
 #include <qtypes.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
-#include "../../core/panelinterface.hpp"
+#include "../../window/panelinterface.hpp"
 #include "shell_integration.hpp"
 #include "window.hpp"
 

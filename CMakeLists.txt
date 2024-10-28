@@ -64,15 +64,6 @@ boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 
-if (NOT DEFINED GIT_REVISION)
-	execute_process(
-		COMMAND git rev-parse HEAD
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE GIT_REVISION
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-endif()
-
 add_compile_options(-Wall -Wextra)
 
 if (FRAME_POINTERS)

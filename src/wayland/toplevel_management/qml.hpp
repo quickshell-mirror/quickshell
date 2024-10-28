@@ -5,9 +5,9 @@
 #include <qtmetamacros.h>
 
 #include "../../core/model.hpp"
-#include "../../core/proxywindow.hpp"
 #include "../../core/qmlscreen.hpp"
 #include "../../core/util.hpp"
+#include "../../window/proxywindow.hpp"
 
 namespace qs::wayland::toplevel_management {
 

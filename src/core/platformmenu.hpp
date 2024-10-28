@@ -13,7 +13,7 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
-#include "popupanchor.hpp"
+#include "../core/popupanchor.hpp"
 #include "qsmenu.hpp"
 
 namespace qs::menu::platform {

@@ -13,8 +13,8 @@
 #include <qtmetamacros.h>
 #include <qwindow.h>
 
+#include "../window/proxywindow.hpp"
 #include "doc.hpp"
-#include "proxywindow.hpp"
 #include "types.hpp"
 
 ///! Adjustment strategy for popups that do not fit on screen.

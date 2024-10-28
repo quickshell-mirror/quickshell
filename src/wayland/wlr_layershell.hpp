@@ -8,8 +8,8 @@
 #include <qtypes.h>
 
 #include "../core/doc.hpp"
-#include "../core/panelinterface.hpp"
-#include "../core/proxywindow.hpp"
+#include "../window/panelinterface.hpp"
+#include "../window/proxywindow.hpp"
 #include "wlr_layershell/window.hpp"
 
 ///! Wlroots layershell window

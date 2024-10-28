@@ -14,11 +14,11 @@
 #include <qvariant.h>
 #include <qwindow.h>
 
-#include "generation.hpp"
-#include "qmlglobal.hpp"
-#include "qmlscreen.hpp"
-#include "region.hpp"
-#include "reload.hpp"
+#include "../core/generation.hpp"
+#include "../core/qmlglobal.hpp"
+#include "../core/qmlscreen.hpp"
+#include "../core/region.hpp"
+#include "../core/reload.hpp"
 #include "windowinterface.hpp"
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)

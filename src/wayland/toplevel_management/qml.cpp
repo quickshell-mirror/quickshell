@@ -3,11 +3,11 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
-#include "../../core/util.hpp"
 #include "../../core/model.hpp"
-#include "../../core/proxywindow.hpp"
 #include "../../core/qmlscreen.hpp"
-#include "../../core/windowinterface.hpp"
+#include "../../core/util.hpp"
+#include "../../window/proxywindow.hpp"
+#include "../../window/windowinterface.hpp"
 #include "handle.hpp"
 #include "manager.hpp"
 

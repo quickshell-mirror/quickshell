@@ -8,8 +8,8 @@
 #include <qtmetamacros.h>
 
 #include "../core/doc.hpp"
-#include "../core/panelinterface.hpp"
-#include "../core/proxywindow.hpp"
+#include "../window/panelinterface.hpp"
+#include "../window/proxywindow.hpp"
 
 class XPanelStack;
 

@@ -9,9 +9,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/panelinterface.hpp"
-#include "../core/proxywindow.hpp"
 #include "../core/qmlscreen.hpp"
+#include "../window/panelinterface.hpp"
+#include "../window/proxywindow.hpp"
 #include "wlr_layershell/window.hpp"
 
 WlrLayershell::WlrLayershell(QObject* parent)

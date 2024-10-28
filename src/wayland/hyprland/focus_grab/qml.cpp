@@ -8,8 +8,8 @@
 #include <qtmetamacros.h>
 #include <qwindow.h>
 
-#include "../../../core/proxywindow.hpp"
-#include "../../../core/windowinterface.hpp"
+#include "../../../window/proxywindow.hpp"
+#include "../../../window/windowinterface.hpp"
 #include "grab.hpp"
 #include "manager.hpp"
 

@@ -17,9 +17,9 @@
 #include <xcb/xproto.h>
 
 #include "../core/generation.hpp"
-#include "../core/panelinterface.hpp"
-#include "../core/proxywindow.hpp"
 #include "../core/qmlscreen.hpp"
+#include "../window/panelinterface.hpp"
+#include "../window/proxywindow.hpp"
 #include "util.hpp"
 
 class XPanelStack {

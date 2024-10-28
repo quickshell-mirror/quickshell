@@ -3,7 +3,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
-#include "doc.hpp"
+#include "../core/doc.hpp"
 #include "windowinterface.hpp"
 
 class Anchors {

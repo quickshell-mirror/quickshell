@@ -8,9 +8,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "qmlscreen.hpp"
-#include "region.hpp"
-#include "reload.hpp"
+#include "../core/qmlscreen.hpp"
+#include "../core/region.hpp"
+#include "../core/reload.hpp"
 
 class ProxyWindowBase;
 class QsWindowAttached;

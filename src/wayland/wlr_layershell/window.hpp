@@ -7,7 +7,7 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
-#include "../../core/panelinterface.hpp"
+#include "../../window/panelinterface.hpp"
 
 ///! WlrLayershell layer.
 /// See @@WlrLayershell.layer.

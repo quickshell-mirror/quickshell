@@ -7,9 +7,8 @@
 #include <qtypes.h>
 #include <qwindow.h>
 
-#include "popupanchor.hpp"
-#include "proxywindow.hpp"
-#include "qmlscreen.hpp"
+#include "../core/popupanchor.hpp"
+#include "../core/qmlscreen.hpp"
 #include "windowinterface.hpp"
 
 ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {

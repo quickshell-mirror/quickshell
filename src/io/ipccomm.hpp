@@ -3,7 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qflags.h>
 
-#include "../core/ipc.hpp"
+#include "../ipc/ipc.hpp"
 
 namespace qs::io::ipc::comm {
 
