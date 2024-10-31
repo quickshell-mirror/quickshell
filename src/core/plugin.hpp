@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qfunctionpointer.h>
+#include <qlist.h>
 
 class EngineGeneration;
 
@@ -14,6 +15,8 @@ public:
 	void operator=(QuickshellPlugin&&) = delete;
 	void operator=(const QuickshellPlugin&) = delete;
 
+	virtual QString name() { return QString(); }
+	virtual QList<QString> dependencies() { return {}; }
 	virtual bool applies() { return true; }
 	virtual void init() {}
 	virtual void registerTypes() {}

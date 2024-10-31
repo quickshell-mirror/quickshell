@@ -1,4 +1,5 @@
 #include <qguiapplication.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qqml.h>
 #include <qtenvironmentvariables.h>
@@ -15,6 +16,8 @@ void installPopupPositioner();
 namespace {
 
 class WaylandPlugin: public QuickshellPlugin {
+	QList<QString> dependencies() override { return {"window"}; }
+
 	bool applies() override {
 		auto isWayland = QGuiApplication::platformName() == "wayland";
 

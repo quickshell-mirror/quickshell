@@ -19,6 +19,10 @@ void QuickshellPlugin::initPlugins() {
 	    plugins.end()
 	);
 
+	std::sort(plugins.begin(), plugins.end(), [](QuickshellPlugin* a, QuickshellPlugin* b) {
+		return b->dependencies().contains(a->name());
+	});
+
 	for (QuickshellPlugin* plugin: plugins) {
 		plugin->init();
 	}

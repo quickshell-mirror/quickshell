@@ -128,7 +128,9 @@ class PanelWindowInterface: public WindowInterface {
 	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
 	Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
-	QSDOC_NAMED_ELEMENT(PanelWindow);
+	QML_NAMED_ELEMENT(PanelWindow);
+	QML_UNCREATABLE("No PanelWindow backend loaded.");
+	QSDOC_CREATABLE;
 
 public:
 	explicit PanelWindowInterface(QObject* parent = nullptr): WindowInterface(parent) {}

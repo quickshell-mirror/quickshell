@@ -10,6 +10,9 @@
 #define QSDOC_ELEMENT
 #define QSDOC_NAMED_ELEMENT(name)
 
+// unmark uncreatable (will be overlayed by other types)
+#define QSDOC_CREATABLE
+
 // change the cname used for this type
 #define QSDOC_CNAME(name)
 
