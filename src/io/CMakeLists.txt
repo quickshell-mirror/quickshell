@@ -16,6 +16,7 @@ endif()
 qt_add_qml_module(quickshell-io
 	URI Quickshell.Io
 	VERSION 0.1
+	DEPENDENCIES QtQml
 	QML_FILES
 		FileView.qml
 )

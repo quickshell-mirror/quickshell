@@ -6,6 +6,7 @@ qt_add_library(quickshell-service-greetd STATIC
 qt_add_qml_module(quickshell-service-greetd
 	URI Quickshell.Services.Greetd
 	VERSION 0.1
+	DEPENDENCIES QtQml
 )
 
 target_link_libraries(quickshell-service-greetd PRIVATE ${QT_DEPS})

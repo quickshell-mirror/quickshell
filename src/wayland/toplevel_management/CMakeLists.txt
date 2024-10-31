@@ -7,6 +7,7 @@ qt_add_library(quickshell-wayland-toplevel-management STATIC
 qt_add_qml_module(quickshell-wayland-toplevel-management
 	URI Quickshell.Wayland._ToplevelManagement
 	VERSION 0.1
+	DEPENDENCIES QtQml Quickshell Quickshell.Wayland
 )
 
 wl_proto(quickshell-wayland-toplevel-management

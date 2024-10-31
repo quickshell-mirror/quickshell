@@ -7,6 +7,7 @@ qt_add_library(quickshell-hyprland-focus-grab STATIC
 qt_add_qml_module(quickshell-hyprland-focus-grab
 	URI Quickshell.Hyprland._FocusGrab
 	VERSION 0.1
+	DEPENDENCIES QtQml Quickshell
 )
 
 wl_proto(quickshell-hyprland-focus-grab

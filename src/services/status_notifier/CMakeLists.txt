@@ -41,6 +41,7 @@ target_include_directories(quickshell-service-statusnotifier PRIVATE ${CMAKE_CUR
 qt_add_qml_module(quickshell-service-statusnotifier
   URI Quickshell.Services.SystemTray
   VERSION 0.1
+	DEPENDENCIES QtQml Quickshell Quickshell.DBusMenu
 )
 
 target_link_libraries(quickshell-service-statusnotifier PRIVATE ${QT_DEPS} quickshell-dbus quickshell-dbusmenuplugin)

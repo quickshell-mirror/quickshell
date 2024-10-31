@@ -14,7 +14,11 @@ qt_add_library(quickshell-dbusmenu STATIC
 	${DBUS_INTERFACES}
 )
 
-qt_add_qml_module(quickshell-dbusmenu URI Quickshell.DBusMenu VERSION 0.1)
+qt_add_qml_module(quickshell-dbusmenu
+	URI Quickshell.DBusMenu
+	VERSION 0.1
+	DEPENDENCIES QtQml Quickshell
+)
 
 # dbus headers
 target_include_directories(quickshell-dbusmenu PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

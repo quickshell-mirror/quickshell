@@ -9,6 +9,7 @@ qt_add_library(quickshell-window STATIC
 qt_add_qml_module(quickshell-window
 	URI Quickshell._Window
 	VERSION 0.1
+	DEPENDENCIES QtQuick Quickshell
 )
 
 add_library(quickshell-window-init OBJECT init.cpp)

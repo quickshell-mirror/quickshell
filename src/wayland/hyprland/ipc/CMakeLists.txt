@@ -8,6 +8,7 @@ qt_add_library(quickshell-hyprland-ipc STATIC
 qt_add_qml_module(quickshell-hyprland-ipc
 	URI Quickshell.Hyprland._Ipc
 	VERSION 0.1
+	DEPENDENCIES QtQml Quickshell
 )
 
 target_link_libraries(quickshell-hyprland-ipc PRIVATE ${QT_DEPS})

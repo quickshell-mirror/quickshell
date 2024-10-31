@@ -30,6 +30,7 @@ target_include_directories(quickshell-service-mpris PRIVATE ${CMAKE_CURRENT_BINA
 qt_add_qml_module(quickshell-service-mpris
 	URI Quickshell.Services.Mpris
   VERSION 0.1
+	DEPENDENCIES QtQml Quickshell
 )
 
 target_link_libraries(quickshell-service-mpris PRIVATE ${QT_DEPS} quickshell-dbus)

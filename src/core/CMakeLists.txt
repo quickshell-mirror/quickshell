@@ -44,6 +44,7 @@ target_link_libraries(quickshell-core PRIVATE quickshell-build)
 qt_add_qml_module(quickshell-core
 	URI Quickshell
 	VERSION 0.1
+	DEPENDENCIES QtQuick
 	OPTIONAL_IMPORTS Quickshell._Window
 	DEFAULT_IMPORTS Quickshell._Window
 )

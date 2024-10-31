@@ -106,6 +106,7 @@ target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
 qt_add_qml_module(quickshell-wayland
 	URI Quickshell.Wayland
 	VERSION 0.1
+	DEPENDENCIES QtQuick Quickshell
 	IMPORTS ${WAYLAND_MODULES}
 )
 

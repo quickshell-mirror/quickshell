@@ -7,6 +7,7 @@ qt_add_library(quickshell-hyprland-global-shortcuts STATIC
 qt_add_qml_module(quickshell-hyprland-global-shortcuts
 	URI Quickshell.Hyprland._GlobalShortcuts
 	VERSION 0.1
+	DEPENDENCIES QtQml
 )
 
 wl_proto(quickshell-hyprland-global-shortcuts

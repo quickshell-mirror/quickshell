@@ -8,6 +8,7 @@ qt_add_library(quickshell-service-pam STATIC
 qt_add_qml_module(quickshell-service-pam
 	URI Quickshell.Services.Pam
 	VERSION 0.1
+	DEPENDENCIES QtQml
 )
 
 target_link_libraries(quickshell-service-pam PRIVATE ${QT_DEPS} pam ${PAM_LIBRARIES})
