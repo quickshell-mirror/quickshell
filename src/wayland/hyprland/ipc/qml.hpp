@@ -5,6 +5,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+#include "../../../core/doc.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "connection.hpp"
@@ -22,9 +23,11 @@ class HyprlandIpcQml: public QObject {
 	/// The currently focused hyprland monitor. May be null.
 	Q_PROPERTY(qs::hyprland::ipc::HyprlandMonitor* focusedMonitor READ focusedMonitor NOTIFY focusedMonitorChanged);
 	/// All hyprland monitors.
-	Q_PROPERTY(ObjectModel<qs::hyprland::ipc::HyprlandMonitor>* monitors READ monitors CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandMonitor>*);
+	Q_PROPERTY(UntypedObjectModel* monitors READ monitors CONSTANT);
 	/// All hyprland workspaces.
-	Q_PROPERTY(ObjectModel<qs::hyprland::ipc::HyprlandWorkspace>* workspaces READ workspaces CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandWorkspace>*);
+	Q_PROPERTY(UntypedObjectModel* workspaces READ workspaces CONSTANT);
 	// clang-format on
 	QML_NAMED_ELEMENT(Hyprland);
 	QML_SINGLETON;

@@ -7,6 +7,7 @@
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_service.h"
@@ -60,7 +61,8 @@ class UPowerQml: public QObject {
 	/// It is typically the device that is used for displaying information in desktop environments.
 	Q_PROPERTY(qs::service::upower::UPowerDevice* displayDevice READ displayDevice NOTIFY displayDeviceChanged);
 	/// All connected UPower devices.
-	Q_PROPERTY(ObjectModel<qs::service::upower::UPowerDevice>* devices READ devices CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::upower::UPowerDevice>*);
+	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	/// If the system is currently running on battery power, or discharging.
 	Q_PROPERTY(bool onBattery READ onBattery NOTIFY onBatteryChanged);
 	// clang-format on

@@ -9,6 +9,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+#include "doc.hpp"
 #include "model.hpp"
 
 class DesktopAction;
@@ -139,7 +140,8 @@ private:
 class DesktopEntries: public QObject {
 	Q_OBJECT;
 	/// All desktop entries of type Application that are not Hidden or NoDisplay.
-	Q_PROPERTY(ObjectModel<DesktopEntry>* applications READ applications CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<DesktopEntry>*);
+	Q_PROPERTY(UntypedObjectModel* applications READ applications CONSTANT);
 	QML_ELEMENT;
 	QML_SINGLETON;
 

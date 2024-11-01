@@ -5,6 +5,7 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "item.hpp"
 
@@ -125,7 +126,8 @@ signals:
 class SystemTray: public QObject {
 	Q_OBJECT;
 	/// List of all system tray icons.
-	Q_PROPERTY(ObjectModel<SystemTrayItem>* items READ items CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<SystemTrayItem>*);
+	Q_PROPERTY(UntypedObjectModel* items READ items CONSTANT);
 	QML_ELEMENT;
 	QML_SINGLETON;
 

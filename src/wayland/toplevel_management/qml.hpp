@@ -4,6 +4,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "../../core/qmlscreen.hpp"
 #include "../../core/util.hpp"
@@ -143,7 +144,8 @@ class ToplevelManagerQml: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// All toplevel windows exposed by the compositor.
-	Q_PROPERTY(ObjectModel<qs::wayland::toplevel_management::Toplevel>* toplevels READ toplevels CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::wayland::toplevel_management::Toplevel>*);
+	Q_PROPERTY(UntypedObjectModel* toplevels READ toplevels CONSTANT);
 	/// Active toplevel or null.
 	///
 	/// > [!INFO] If multiple are active, this will be the most recently activated one.

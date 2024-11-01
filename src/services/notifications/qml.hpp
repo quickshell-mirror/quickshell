@@ -6,6 +6,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "../../core/reload.hpp"
 #include "notification.hpp"
@@ -67,7 +68,8 @@ class NotificationServerQml
 	/// If the notification server should advertise that it supports images. Defaults to false.
 	Q_PROPERTY(bool imageSupported READ imageSupported WRITE setImageSupported NOTIFY imageSupportedChanged);
 	/// All notifications currently tracked by the server.
-	Q_PROPERTY(ObjectModel<qs::service::notifications::Notification>* trackedNotifications READ trackedNotifications NOTIFY trackedNotificationsChanged);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::notifications::Notification>*);
+	Q_PROPERTY(UntypedObjectModel* trackedNotifications READ trackedNotifications NOTIFY trackedNotificationsChanged);
 	/// Extra hints to expose to notification clients.
 	Q_PROPERTY(QVector<QString> extraHints READ extraHints WRITE setExtraHints NOTIFY extraHintsChanged);
 	// clang-format on

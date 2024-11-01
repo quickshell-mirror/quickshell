@@ -8,6 +8,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "link.hpp"
 #include "node.hpp"
@@ -59,7 +60,8 @@ class Pipewire: public QObject {
 	/// - @@PwNode.isStream - if the node is an application or hardware device.
 	/// - @@PwNode.isSink - if the node is a sink or source.
 	/// - @@PwNode.audio - if non null the node is an audio node.
-	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwNodeIface>* nodes READ nodes CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::pipewire::PwNodeIface>*);
+	Q_PROPERTY(UntypedObjectModel* nodes READ nodes CONSTANT);
 	/// All links present in pipewire.
 	///
 	/// Links connect pipewire nodes to each other, and can be used to determine
@@ -70,14 +72,16 @@ class Pipewire: public QObject {
 	///
 	/// > [!INFO] Multiple links may exist between the same nodes. See @@linkGroups
 	/// > for a deduplicated list containing only one entry per link between nodes.
-	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwLinkIface>* links READ links CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::pipewire::PwLinkIface>*);
+	Q_PROPERTY(UntypedObjectModel* links READ links CONSTANT);
 	/// All link groups present in pipewire.
 	///
 	/// The same as @@links but deduplicated.
 	///
 	/// If you already have a node you want to check for connections to,
 	/// use @@PwNodeLinkTracker instead of filtering this list.
-	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::pipewire::PwLinkGroupIface>*);
+	Q_PROPERTY(UntypedObjectModel* linkGroups READ linkGroups CONSTANT);
 	/// The default audio sink (output) or `null`.
 	///
 	/// This is the default sink currently in use by pipewire, and the one applications

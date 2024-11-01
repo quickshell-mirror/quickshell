@@ -10,6 +10,7 @@
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "player.hpp"
 
@@ -46,7 +47,8 @@ class MprisQml: public QObject {
 	QML_NAMED_ELEMENT(Mpris);
 	QML_SINGLETON;
 	/// All connected MPRIS players.
-	Q_PROPERTY(ObjectModel<qs::service::mpris::MprisPlayer>* players READ players CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::mpris::MprisPlayer>*);
+	Q_PROPERTY(UntypedObjectModel* players READ players CONSTANT);
 
 public:
 	explicit MprisQml(QObject* parent = nullptr): QObject(parent) {};

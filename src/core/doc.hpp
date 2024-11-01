@@ -18,3 +18,6 @@
 
 // overridden properties
 #define QSDOC_PROPERTY_OVERRIDE(...)
+
+// override types of properties for docs
+#define QSDOC_TYPE_OVERRIDE(type)
