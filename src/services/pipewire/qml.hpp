@@ -59,7 +59,7 @@ class Pipewire: public QObject {
 	/// - @@PwNode.isStream - if the node is an application or hardware device.
 	/// - @@PwNode.isSink - if the node is a sink or source.
 	/// - @@PwNode.audio - if non null the node is an audio node.
-	Q_PROPERTY(ObjectModel<PwNodeIface>* nodes READ nodes CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwNodeIface>* nodes READ nodes CONSTANT);
 	/// All links present in pipewire.
 	///
 	/// Links connect pipewire nodes to each other, and can be used to determine
@@ -70,14 +70,14 @@ class Pipewire: public QObject {
 	///
 	/// > [!INFO] Multiple links may exist between the same nodes. See @@linkGroups
 	/// > for a deduplicated list containing only one entry per link between nodes.
-	Q_PROPERTY(ObjectModel<PwLinkIface>* links READ links CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwLinkIface>* links READ links CONSTANT);
 	/// All link groups present in pipewire.
 	///
 	/// The same as @@links but deduplicated.
 	///
 	/// If you already have a node you want to check for connections to,
 	/// use @@PwNodeLinkTracker instead of filtering this list.
-	Q_PROPERTY(ObjectModel<PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::service::pipewire::PwLinkGroupIface>* linkGroups READ linkGroups CONSTANT);
 	/// The default audio sink (output) or `null`.
 	///
 	/// This is the default sink currently in use by pipewire, and the one applications
@@ -87,7 +87,7 @@ class Pipewire: public QObject {
 	///
 	/// > [!INFO] When the default sink changes, this property may breifly become null.
 	/// > This depends on your hardware.
-	Q_PROPERTY(PwNodeIface* defaultAudioSink READ defaultAudioSink NOTIFY defaultAudioSinkChanged);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* defaultAudioSink READ defaultAudioSink NOTIFY defaultAudioSinkChanged);
 	/// The default audio source (input) or `null`.
 	///
 	/// This is the default source currently in use by pipewire, and the one applications
@@ -97,21 +97,21 @@ class Pipewire: public QObject {
 	///
 	/// > [!INFO] When the default source changes, this property may breifly become null.
 	/// > This depends on your hardware.
-	Q_PROPERTY(PwNodeIface* defaultAudioSource READ defaultAudioSource NOTIFY defaultAudioSourceChanged);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* defaultAudioSource READ defaultAudioSource NOTIFY defaultAudioSourceChanged);
 	/// The preferred default audio sink (output) or `null`.
 	///
 	/// This is a hint to pipewire telling it which sink should be the default when possible.
 	/// @@defaultAudioSink may differ when it is not possible for pipewire to pick this node.
 	///
 	/// See @@defaultAudioSink for the current default sink, regardless of preference.
-	Q_PROPERTY(PwNodeIface* preferredDefaultAudioSink READ defaultConfiguredAudioSink WRITE setDefaultConfiguredAudioSink NOTIFY defaultConfiguredAudioSinkChanged);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* preferredDefaultAudioSink READ defaultConfiguredAudioSink WRITE setDefaultConfiguredAudioSink NOTIFY defaultConfiguredAudioSinkChanged);
 	/// The preferred default audio source (input) or `null`.
 	///
 	/// This is a hint to pipewire telling it which source should be the default when possible.
 	/// @@defaultAudioSource may differ when it is not possible for pipewire to pick this node.
 	///
 	/// See @@defaultAudioSource for the current default source, regardless of preference.
-	Q_PROPERTY(PwNodeIface* preferredDefaultAudioSource READ defaultConfiguredAudioSource WRITE setDefaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* preferredDefaultAudioSource READ defaultConfiguredAudioSource WRITE setDefaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
 	// clang-format on
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -158,12 +158,12 @@ class PwNodeLinkTracker: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The node to track connections to.
-	Q_PROPERTY(PwNodeIface* node READ node WRITE setNode NOTIFY nodeChanged);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* node READ node WRITE setNode NOTIFY nodeChanged);
 	/// Link groups connected to the given node.
 	///
 	/// If the node is a sink, links which target the node will be tracked.
 	/// If the node is a source, links which source the node will be tracked.
-	Q_PROPERTY(QQmlListProperty<PwLinkGroupIface> linkGroups READ linkGroups NOTIFY linkGroupsChanged);
+	Q_PROPERTY(QQmlListProperty<qs::service::pipewire::PwLinkGroupIface> linkGroups READ linkGroups NOTIFY linkGroupsChanged);
 	// clang-format on
 	QML_ELEMENT;
 
@@ -201,6 +201,7 @@ private:
 /// See @@PwNode.audio.
 class PwNodeAudioIface: public QObject {
 	Q_OBJECT;
+	// clang-format off
 	/// If the node is currently muted. Setting this property changes the mute state.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
@@ -213,13 +214,14 @@ class PwNodeAudioIface: public QObject {
 	/// The audio channels present on the node.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
-	Q_PROPERTY(QVector<PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
+	Q_PROPERTY(QVector<qs::service::pipewire::PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
 	/// The volumes of each audio channel individually. Each entry corrosponds to
 	/// the volume of the channel at the same index in @@channels. @@volumes and @@channels
 	/// will always be the same length.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
 	Q_PROPERTY(QVector<float> volumes READ volumes WRITE setVolumes NOTIFY volumesChanged);
+	// clang-format on
 	QML_NAMED_ELEMENT(PwNodeAudio);
 	QML_UNCREATABLE("PwNodeAudio cannot be created directly");
 
@@ -287,7 +289,7 @@ class PwNodeIface: public PwObjectIface {
 	///
 	/// The presence or absence of this property can be used to determine if a node
 	/// manages audio, regardless of if it is bound. If non null, the node is an audio node.
-	Q_PROPERTY(PwNodeAudioIface* audio READ audio CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeAudioIface* audio READ audio CONSTANT);
 	QML_NAMED_ELEMENT(PwNode);
 	QML_UNCREATABLE("PwNodes cannot be created directly");
 
@@ -325,9 +327,9 @@ class PwLinkIface: public PwObjectIface {
 	/// with `pw-cli i <id>`.
 	Q_PROPERTY(quint32 id READ id CONSTANT);
 	/// The node that is *receiving* information. (the sink)
-	Q_PROPERTY(PwNodeIface* target READ target CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* target READ target CONSTANT);
 	/// The node that is *sending* information. (the source)
-	Q_PROPERTY(PwNodeIface* source READ source CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
@@ -360,13 +362,13 @@ class PwLinkGroupIface
     , public PwObjectRefIface {
 	Q_OBJECT;
 	/// The node that is *receiving* information. (the sink)
-	Q_PROPERTY(PwNodeIface* target READ target CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* target READ target CONSTANT);
 	/// The node that is *sending* information. (the source)
-	Q_PROPERTY(PwNodeIface* source READ source CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link group.
 	///
 	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
-	Q_PROPERTY(PwLinkState::Enum state READ state NOTIFY stateChanged);
+	Q_PROPERTY(qs::service::pipewire::PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLinkGroup);
 	QML_UNCREATABLE("PwLinkGroups cannot be created directly");
 

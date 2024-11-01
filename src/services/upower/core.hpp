@@ -53,15 +53,17 @@ class UPowerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(UPower);
 	QML_SINGLETON;
+	// clang-format off
 	/// UPower's DisplayDevice for your system. Can be `null`.
 	///
 	/// This is an aggregate device and not a physical one, meaning you will not find it in @@devices.
 	/// It is typically the device that is used for displaying information in desktop environments.
-	Q_PROPERTY(UPowerDevice* displayDevice READ displayDevice NOTIFY displayDeviceChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDevice* displayDevice READ displayDevice NOTIFY displayDeviceChanged);
 	/// All connected UPower devices.
-	Q_PROPERTY(ObjectModel<UPowerDevice>* devices READ devices CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::service::upower::UPowerDevice>* devices READ devices CONSTANT);
 	/// If the system is currently running on battery power, or discharging.
 	Q_PROPERTY(bool onBattery READ onBattery NOTIFY onBatteryChanged);
+	// clang-format on
 
 public:
 	explicit UPowerQml(QObject* parent = nullptr);

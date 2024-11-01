@@ -24,7 +24,7 @@ class Toplevel: public QObject {
 	Q_PROPERTY(QString appId READ appId NOTIFY appIdChanged);
 	Q_PROPERTY(QString title READ title NOTIFY titleChanged);
 	/// Parent toplevel if this toplevel is a modal/dialog, otherwise null.
-	Q_PROPERTY(Toplevel* parent READ parent NOTIFY parentChanged);
+	Q_PROPERTY(qs::wayland::toplevel_management::Toplevel* parent READ parent NOTIFY parentChanged);
 	/// If the window is currently activated or focused.
 	///
 	/// Activation can be requested with the @@activate() function.
@@ -141,13 +141,15 @@ private:
 /// wayland protocol.
 class ToplevelManagerQml: public QObject {
 	Q_OBJECT;
+	// clang-format off
 	/// All toplevel windows exposed by the compositor.
-	Q_PROPERTY(ObjectModel<Toplevel>* toplevels READ toplevels CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::wayland::toplevel_management::Toplevel>* toplevels READ toplevels CONSTANT);
 	/// Active toplevel or null.
 	///
 	/// > [!INFO] If multiple are active, this will be the most recently activated one.
 	/// > Usually compositors will not report more than one toplevel as active at a time.
-	Q_PROPERTY(Toplevel* activeToplevel READ activeToplevel NOTIFY activeToplevelChanged);
+	Q_PROPERTY(qs::wayland::toplevel_management::Toplevel* activeToplevel READ activeToplevel NOTIFY activeToplevelChanged);
+	// clang-format on
 	QML_NAMED_ELEMENT(ToplevelManager);
 	QML_SINGLETON;
 

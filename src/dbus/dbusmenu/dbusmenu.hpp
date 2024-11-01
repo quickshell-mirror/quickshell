@@ -36,7 +36,7 @@ class DBusMenuPngImage;
 class DBusMenuItem: public QsMenuEntry {
 	Q_OBJECT;
 	/// Handle to the root of this menu.
-	Q_PROPERTY(DBusMenu* menuHandle READ menuHandle CONSTANT);
+	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenu* menuHandle READ menuHandle CONSTANT);
 	QML_ELEMENT;
 	QML_UNCREATABLE("DBusMenus can only be acquired from a DBusMenuHandle");
 
@@ -108,7 +108,7 @@ QDebug operator<<(QDebug debug, DBusMenuItem* item);
 /// Handle to a menu tree provided by a remote process.
 class DBusMenu: public QObject {
 	Q_OBJECT;
-	Q_PROPERTY(DBusMenuItem* menu READ menu CONSTANT);
+	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenuItem* menu READ menu CONSTANT);
 	QML_NAMED_ELEMENT(DBusMenuHandle);
 	QML_UNCREATABLE("Menu handles cannot be directly created");
 

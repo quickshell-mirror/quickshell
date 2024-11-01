@@ -150,11 +150,11 @@ class MprisPlayer: public QObject {
 	/// - If @@canPause is false, you cannot assign the `Paused` state.
 	/// - If @@canControl is false, you cannot assign the `Stopped` state.
 	/// (or any of the others, though their repsective properties will also be false)
-	Q_PROPERTY(MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged);
+	Q_PROPERTY(qs::service::mpris::MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged);
 	/// The loop state of the media player, or `None` if @@loopSupported is false.
 	///
 	/// May only be written to if @@canControl and @@loopSupported are true.
-	Q_PROPERTY(MprisLoopState::Enum loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged);
+	Q_PROPERTY(qs::service::mpris::MprisLoopState::Enum loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged);
 	Q_PROPERTY(bool loopSupported READ loopSupported NOTIFY loopSupportedChanged);
 	/// The speed the song is playing at, as a multiplier.
 	///

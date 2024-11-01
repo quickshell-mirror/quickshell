@@ -46,7 +46,7 @@ class MprisQml: public QObject {
 	QML_NAMED_ELEMENT(Mpris);
 	QML_SINGLETON;
 	/// All connected MPRIS players.
-	Q_PROPERTY(ObjectModel<MprisPlayer>* players READ players CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::service::mpris::MprisPlayer>* players READ players CONSTANT);
 
 public:
 	explicit MprisQml(QObject* parent = nullptr): QObject(parent) {};

@@ -65,6 +65,7 @@ class Notification
     : public QObject
     , public Retainable {
 	Q_OBJECT;
+	// clang-format off
 	/// Id of the notification as given to the client.
 	Q_PROPERTY(quint32 id READ id CONSTANT);
 	/// If the notification is tracked by the notification server.
@@ -87,9 +88,9 @@ class Notification
 	/// The image associated with this notification, or "" if none.
 	Q_PROPERTY(QString summary READ summary NOTIFY summaryChanged);
 	Q_PROPERTY(QString body READ body NOTIFY bodyChanged);
-	Q_PROPERTY(NotificationUrgency::Enum urgency READ urgency NOTIFY urgencyChanged);
+	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ urgency NOTIFY urgencyChanged);
 	/// Actions that can be taken for this notification.
-	Q_PROPERTY(QVector<NotificationAction*> actions READ actions NOTIFY actionsChanged);
+	Q_PROPERTY(QVector<qs::service::notifications::NotificationAction*> actions READ actions NOTIFY actionsChanged);
 	/// If actions associated with this notification have icons available.
 	///
 	/// See @@NotificationAction.identifier for details.
@@ -107,6 +108,7 @@ class Notification
 	/// All hints sent by the client application as a javascript object.
 	/// Many common hints are exposed via other properties.
 	Q_PROPERTY(QVariantMap hints READ hints NOTIFY hintsChanged);
+	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("Notifications must be acquired from a NotificationServer");
 

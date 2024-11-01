@@ -13,6 +13,7 @@ namespace qs::hyprland::ipc {
 
 class HyprlandMonitor: public QObject {
 	Q_OBJECT;
+	// clang-format off
 	Q_PROPERTY(qint32 id READ id NOTIFY idChanged);
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
 	Q_PROPERTY(QString description READ description NOTIFY descriptionChanged);
@@ -28,7 +29,8 @@ class HyprlandMonitor: public QObject {
 	/// > property, run @@Hyprland.refreshMonitors() and wait for this property to update.
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
 	/// The currently active workspace on this monitor. May be null.
-	Q_PROPERTY(HyprlandWorkspace* activeWorkspace READ activeWorkspace NOTIFY activeWorkspaceChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* activeWorkspace READ activeWorkspace NOTIFY activeWorkspaceChanged);
+	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("HyprlandMonitors must be retrieved from the HyprlandIpc object.");
 

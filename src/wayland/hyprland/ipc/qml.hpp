@@ -14,16 +14,18 @@ namespace qs::hyprland::ipc {
 
 class HyprlandIpcQml: public QObject {
 	Q_OBJECT;
+	// clang-format off
 	/// Path to the request socket (.socket.sock)
 	Q_PROPERTY(QString requestSocketPath READ requestSocketPath CONSTANT);
 	/// Path to the event socket (.socket2.sock)
 	Q_PROPERTY(QString eventSocketPath READ eventSocketPath CONSTANT);
 	/// The currently focused hyprland monitor. May be null.
-	Q_PROPERTY(HyprlandMonitor* focusedMonitor READ focusedMonitor NOTIFY focusedMonitorChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandMonitor* focusedMonitor READ focusedMonitor NOTIFY focusedMonitorChanged);
 	/// All hyprland monitors.
-	Q_PROPERTY(ObjectModel<HyprlandMonitor>* monitors READ monitors CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::hyprland::ipc::HyprlandMonitor>* monitors READ monitors CONSTANT);
 	/// All hyprland workspaces.
-	Q_PROPERTY(ObjectModel<HyprlandWorkspace>* workspaces READ workspaces CONSTANT);
+	Q_PROPERTY(ObjectModel<qs::hyprland::ipc::HyprlandWorkspace>* workspaces READ workspaces CONSTANT);
+	// clang-format on
 	QML_NAMED_ELEMENT(Hyprland);
 	QML_SINGLETON;
 

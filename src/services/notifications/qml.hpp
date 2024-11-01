@@ -67,7 +67,7 @@ class NotificationServerQml
 	/// If the notification server should advertise that it supports images. Defaults to false.
 	Q_PROPERTY(bool imageSupported READ imageSupported WRITE setImageSupported NOTIFY imageSupportedChanged);
 	/// All notifications currently tracked by the server.
-	Q_PROPERTY(ObjectModel<Notification>* trackedNotifications READ trackedNotifications NOTIFY trackedNotificationsChanged);
+	Q_PROPERTY(ObjectModel<qs::service::notifications::Notification>* trackedNotifications READ trackedNotifications NOTIFY trackedNotificationsChanged);
 	/// Extra hints to expose to notification clients.
 	Q_PROPERTY(QVector<QString> extraHints READ extraHints WRITE setExtraHints NOTIFY extraHintsChanged);
 	// clang-format on

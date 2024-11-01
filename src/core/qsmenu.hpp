@@ -30,7 +30,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(QsMenuButtonType::Enum value);
+	Q_INVOKABLE static QString toString(qs::menu::QsMenuButtonType::Enum value);
 };
 
 class QsMenuEntry;
@@ -79,7 +79,7 @@ class QsMenuEntry: public QsMenuHandle {
 	/// ```
 	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged);
 	/// If this menu item has an associated checkbox or radiobutton.
-	Q_PROPERTY(QsMenuButtonType::Enum buttonType READ buttonType NOTIFY buttonTypeChanged);
+	Q_PROPERTY(qs::menu::QsMenuButtonType::Enum buttonType READ buttonType NOTIFY buttonTypeChanged);
 	/// The check state of the checkbox or radiobutton if applicable, as a
 	/// [Qt.CheckState](https://doc.qt.io/qt-6/qt.html#CheckState-enum).
 	Q_PROPERTY(Qt::CheckState checkState READ checkState NOTIFY checkStateChanged);
@@ -138,7 +138,7 @@ private:
 class QsMenuOpener: public QObject {
 	Q_OBJECT;
 	/// The menu to retrieve children from.
-	Q_PROPERTY(QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
+	Q_PROPERTY(qs::menu::QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
 	/// The children of the given menu.
 	Q_PROPERTY(QQmlListProperty<QsMenuEntry> children READ children NOTIFY childrenChanged);
 	QML_ELEMENT;

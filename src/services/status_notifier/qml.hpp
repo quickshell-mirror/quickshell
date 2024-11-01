@@ -72,7 +72,7 @@ class SystemTrayItem: public QObject {
 	/// A handle to the menu associated with this tray item, if any.
 	///
 	/// Can be displayed with @@Quickshell.QsMenuAnchor or @@Quickshell.QsMenuOpener.
-	Q_PROPERTY(QsMenuHandle* menu READ menu NOTIFY hasMenuChanged);
+	Q_PROPERTY(qs::menu::QsMenuHandle* menu READ menu NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
 	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
 	QML_ELEMENT;

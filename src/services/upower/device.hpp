@@ -85,7 +85,7 @@ class UPowerDevice: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The type of device.
-	Q_PROPERTY(UPowerDeviceType::Enum type READ type NOTIFY typeChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceType::Enum type READ type NOTIFY typeChanged);
 	/// If the device is a power supply for your computer and can provide charge.
 	Q_PROPERTY(bool powerSupply READ powerSupply NOTIFY powerSupplyChanged);
 	/// Current energy level of the device in watt-hours.
@@ -111,7 +111,7 @@ class UPowerDevice: public QObject {
 	/// If the device `type` is not `Battery`, then the property will be invalid.
 	Q_PROPERTY(bool isPresent READ isPresent NOTIFY isPresentChanged);
 	/// Current state of the device.
-	Q_PROPERTY(UPowerDeviceState::Enum state READ state NOTIFY stateChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceState::Enum state READ state NOTIFY stateChanged);
 	/// Health of the device as a percentage of its original health.
 	Q_PROPERTY(qreal healthPercentage READ healthPercentage NOTIFY healthPercentageChanged);
 	Q_PROPERTY(bool healthSupported READ healthSupported NOTIFY healthSupportedChanged);

@@ -36,7 +36,7 @@ class QsMenuAnchor: public QObject {
 	/// The menu that should be displayed on this anchor.
 	///
 	/// See also: @@Quickshell.Services.SystemTray.SystemTrayItem.menu.
-	Q_PROPERTY(QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
+	Q_PROPERTY(qs::menu::QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
 	/// If the menu is currently open and visible.
 	///
 	/// See also: @@open(), @@close().
