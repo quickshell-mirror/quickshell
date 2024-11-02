@@ -114,7 +114,7 @@ signals:
 	/// Sent when a notification is received by the server.
 	///
 	/// If this notification should not be discarded, set its `tracked` property to true.
-	void notification(Notification* notification);
+	void notification(qs::service::notifications::Notification* notification);
 
 	void keepOnReloadChanged();
 	void persistenceSupportedChanged();

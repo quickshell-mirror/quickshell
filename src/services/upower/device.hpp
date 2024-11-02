@@ -33,7 +33,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(UPowerDeviceState::Enum status);
+	Q_INVOKABLE static QString toString(qs::service::upower::UPowerDeviceState::Enum status);
 };
 
 ///! Type of a UPower device.
@@ -77,7 +77,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(UPowerDeviceType::Enum type);
+	Q_INVOKABLE static QString toString(qs::service::upower::UPowerDeviceType::Enum type);
 };
 
 ///! A device exposed through the UPower system service.

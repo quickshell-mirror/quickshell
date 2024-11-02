@@ -30,7 +30,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(NotificationUrgency::Enum value);
+	Q_INVOKABLE static QString toString(qs::service::notifications::NotificationUrgency::Enum value);
 };
 
 ///! The reason a Notification was closed.
@@ -51,7 +51,8 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(NotificationCloseReason::Enum value);
+	Q_INVOKABLE static QString
+	toString(qs::service::notifications::NotificationCloseReason::Enum value);
 };
 
 class NotificationAction;
@@ -149,7 +150,7 @@ signals:
 	/// Sent when a notification has been closed.
 	///
 	/// The notification object will be destroyed as soon as all signal handlers exit.
-	void closed(NotificationCloseReason::Enum reason);
+	void closed(qs::service::notifications::NotificationCloseReason::Enum reason);
 
 	void trackedChanged();
 	void expireTimeoutChanged();

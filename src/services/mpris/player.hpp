@@ -29,7 +29,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(MprisPlaybackState::Enum status);
+	Q_INVOKABLE static QString toString(qs::service::mpris::MprisPlaybackState::Enum status);
 };
 
 ///! Loop state of an MprisPlayer
@@ -47,7 +47,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(MprisLoopState::Enum status);
+	Q_INVOKABLE static QString toString(qs::service::mpris::MprisLoopState::Enum status);
 };
 
 ///! A media player exposed over MPRIS.

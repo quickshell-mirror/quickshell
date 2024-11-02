@@ -63,7 +63,7 @@ signals:
 	/// Emitted for every event that comes in through the hyprland event socket (socket2).
 	///
 	/// See [Hyprland Wiki: IPC](https://wiki.hyprland.org/IPC/) for a list of events.
-	void rawEvent(HyprlandIpcEvent* event);
+	void rawEvent(qs::hyprland::ipc::HyprlandIpcEvent* event);
 
 	void focusedMonitorChanged();
 };

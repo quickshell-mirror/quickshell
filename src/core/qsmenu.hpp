@@ -140,7 +140,7 @@ class QsMenuOpener: public QObject {
 	/// The menu to retrieve children from.
 	Q_PROPERTY(qs::menu::QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
 	/// The children of the given menu.
-	Q_PROPERTY(QQmlListProperty<QsMenuEntry> children READ children NOTIFY childrenChanged);
+	Q_PROPERTY(QQmlListProperty<qs::menu::QsMenuEntry> children READ children NOTIFY childrenChanged);
 	QML_ELEMENT;
 
 public:

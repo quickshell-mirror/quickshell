@@ -84,7 +84,7 @@ public:
 
 	/// Print a human readable representation of the given channel,
 	/// including aux and custom channel ranges.
-	Q_INVOKABLE static QString toString(PwAudioChannel::Enum value);
+	Q_INVOKABLE static QString toString(qs::service::pipewire::PwAudioChannel::Enum value);
 };
 
 enum class PwNodeType {

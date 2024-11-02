@@ -32,7 +32,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(PwLinkState::Enum value);
+	Q_INVOKABLE static QString toString(qs::service::pipewire::PwLinkState::Enum value);
 };
 
 constexpr const char TYPE_INTERFACE_Link[] = PW_TYPE_INTERFACE_Link;             // NOLINT
