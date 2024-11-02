@@ -11,6 +11,10 @@ qt_add_qml_module(quickshell-x11
 	DEPENDENCIES QtQuick
 )
 
+if(I3)
+	add_subdirectory(i3)
+endif()
+
 install_qml_module(quickshell-x11)
 
 add_library(quickshell-x11-init OBJECT init.cpp)

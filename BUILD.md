@@ -182,12 +182,22 @@ To disable: `-DHYPRLAND_GLOBAL_SHORTCUTS=OFF`
 [hyprland-global-shortcuts-v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-global-shortcuts-v1.xml
 
 #### Hyprland Focus Grab
-Enables windows to grab focus similarly to a context menu undr hyprland through the
+Enables windows to grab focus similarly to a context menu under hyprland through the
 [hyprland-focus-grab-v1] protocol. This feature has no extra dependencies.
 
 To disable: `-DHYPRLAND_FOCUS_GRAB=OFF`
 
 [hyprland-focus-grab-v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-focus-grab-v1.xml
+
+### i3/Sway
+Enables i3 and Sway specific features, does not have any dependency on Wayland or x11.
+
+To disable: `-DI3=OFF`
+
+#### i3/Sway IPC
+Enables interfacing with i3 and Sway's IPC.
+
+To disable: `-DI3_IPC=OFF`
 
 ## Building
 *For developers and prospective contributors: See [CONTRIBUTING.md](CONTRIBUTING.md).*
