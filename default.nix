@@ -69,6 +69,7 @@
 
   cmakeFlags = [
     (lib.cmakeFeature "DISTRIBUTOR" "Official-Nix-Flake")
+    (lib.cmakeFeature "INSTALL_QML_PREFIX" qt6.qtbase.qtQmlPrefix)
     (lib.cmakeBool "DISTRIBUTOR_DEBUGINFO_AVAILABLE" true)
     (lib.cmakeFeature "GIT_REVISION" gitRev)
     (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)

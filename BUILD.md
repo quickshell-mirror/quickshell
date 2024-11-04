@@ -25,6 +25,16 @@ If we cannot retrieve debug information, please set this to `NO` and
 
 In both cases you should build with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (then split or keep the debuginfo).
 
+### QML Module dir
+Currently all QML modules are statically linked to quickshell, but this is where
+tooling information will go.
+
+`-DINSTALL_QML_PREFIX="path/to/qml"`
+
+`-DINSTALL_QMLDIR="/full/path/to/qml"`
+
+`INSTALL_QML_PREFIX` works the same as `INSTALL_QMLDIR`, except it prepends `CMAKE_INSTALL_PREFIX`. You usually want this.
+
 ## Dependencies
 Quickshell has a set of base dependencies you will always need, names vary by distro:
 
