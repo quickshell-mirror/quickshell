@@ -64,8 +64,7 @@ boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 
-set(INSTALL_QMLDIR "" CACHE STRING "QML install dir")
-set(INSTALL_QML_PREFIX "" CACHE STRING "QML install prefix")
+include(cmake/install-qml-module.cmake)
 
 add_compile_options(-Wall -Wextra)
 
@@ -155,23 +154,6 @@ if (USE_JEMALLOC)
 	# IMPORTED_TARGET not working for some reason
 	pkg_check_modules(JEMALLOC REQUIRED jemalloc)
 	target_link_libraries(quickshell PRIVATE ${JEMALLOC_LIBRARIES})
-endif()
-
-if ("${INSTALL_QMLDIR}" STREQUAL "" AND "${INSTALL_QML_PREFIX}" STREQUAL "")
-	message(WARNING "Neither INSTALL_QMLDIR nor INSTALL_QML_PREFIX is set. QML modules will not be installed.")
-else()
-	if ("${INSTALL_QMLDIR}" STREQUAL "")
-		set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}/${INSTALL_QML_PREFIX}")
-	else()
-		set(INSTALLDIR "${INSTALL_QMLDIR}")
-	endif()
-
-	message(STATUS "QML install dir: ${INSTALLDIR}")
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules/
-		DESTINATION ${INSTALLDIR}
-		FILES_MATCHING PATTERN "*"
-	)
 endif()
 
 install(CODE "

@@ -11,6 +11,8 @@ qt_add_qml_module(quickshell-hyprland-ipc
 	DEPENDENCIES QtQml Quickshell
 )
 
+install_qml_module(quickshell-hyprland-ipc)
+
 target_link_libraries(quickshell-hyprland-ipc PRIVATE ${QT_DEPS})
 
 qs_pch(quickshell-hyprland-ipc)

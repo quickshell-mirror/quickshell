@@ -12,6 +12,8 @@ qt_add_qml_module(quickshell-wayland-layershell
 	DEPENDENCIES QtQuick Quickshell
 )
 
+install_qml_module(quickshell-wayland-layershell)
+
 wl_proto(quickshell-wayland-layershell wlr-layer-shell-unstable-v1 "${CMAKE_CURRENT_SOURCE_DIR}/wlr-layer-shell-unstable-v1.xml")
 target_link_libraries(quickshell-wayland-layershell PRIVATE ${QT_DEPS} wayland-client)
 

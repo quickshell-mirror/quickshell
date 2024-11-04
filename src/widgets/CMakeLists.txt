@@ -7,6 +7,8 @@ qt_add_qml_module(quickshell-widgets
 		IconImage.qml
 )
 
+install_qml_module(quickshell-widgets)
+
 qs_pch(quickshell-widgets)
 qs_pch(quickshell-widgetsplugin)
 

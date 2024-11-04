@@ -10,6 +10,8 @@ qt_add_qml_module(quickshell-hyprland-global-shortcuts
 	DEPENDENCIES QtQml
 )
 
+install_qml_module(quickshell-hyprland-global-shortcuts)
+
 wl_proto(quickshell-hyprland-global-shortcuts
 	hyprland-global-shortcuts-v1
 	"${CMAKE_CURRENT_SOURCE_DIR}/hyprland-global-shortcuts-v1.xml"

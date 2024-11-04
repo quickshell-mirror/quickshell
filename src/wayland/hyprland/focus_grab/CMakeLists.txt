@@ -10,6 +10,8 @@ qt_add_qml_module(quickshell-hyprland-focus-grab
 	DEPENDENCIES QtQml Quickshell
 )
 
+install_qml_module(quickshell-hyprland-focus-grab)
+
 wl_proto(quickshell-hyprland-focus-grab
 	hyprland-focus-grab-v1
 	"${CMAKE_CURRENT_SOURCE_DIR}/hyprland-focus-grab-v1.xml"

@@ -33,6 +33,8 @@ qt_add_qml_module(quickshell-service-mpris
 	DEPENDENCIES QtQml Quickshell
 )
 
+install_qml_module(quickshell-service-mpris)
+
 target_link_libraries(quickshell-service-mpris PRIVATE ${QT_DEPS} quickshell-dbus)
 target_link_libraries(quickshell PRIVATE quickshell-service-mprisplugin)
 

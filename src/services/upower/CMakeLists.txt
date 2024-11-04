@@ -33,6 +33,8 @@ qt_add_qml_module(quickshell-service-upower
 	DEPENDENCIES QtQml Quickshell
 )
 
+install_qml_module(quickshell-service-upower)
+
 target_link_libraries(quickshell-service-upower PRIVATE ${QT_DEPS} quickshell-dbus)
 target_link_libraries(quickshell PRIVATE quickshell-service-upowerplugin)
 

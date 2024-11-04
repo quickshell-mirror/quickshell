@@ -25,6 +25,8 @@ qt_add_qml_module(quickshell-hyprland
 	IMPORTS ${HYPRLAND_MODULES}
 )
 
+install_qml_module(quickshell-hyprland)
+
 qs_pch(quickshell-hyprland)
 qs_pch(quickshell-hyprlandplugin)
 

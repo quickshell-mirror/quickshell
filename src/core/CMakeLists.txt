@@ -49,6 +49,8 @@ qt_add_qml_module(quickshell-core
 	DEFAULT_IMPORTS Quickshell._Window
 )
 
+install_qml_module(quickshell-core)
+
 target_link_libraries(quickshell-core PRIVATE ${QT_DEPS} CLI11::CLI11)
 
 qs_pch(quickshell-core)

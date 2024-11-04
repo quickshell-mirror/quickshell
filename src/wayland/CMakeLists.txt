@@ -110,6 +110,8 @@ qt_add_qml_module(quickshell-wayland
 	IMPORTS ${WAYLAND_MODULES}
 )
 
+install_qml_module(quickshell-wayland)
+
 qs_pch(quickshell-wayland)
 qs_pch(quickshell-waylandplugin)
 qs_pch(quickshell-wayland-init)

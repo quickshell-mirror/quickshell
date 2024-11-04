@@ -10,6 +10,8 @@ qt_add_qml_module(quickshell-wayland-toplevel-management
 	DEPENDENCIES QtQml Quickshell Quickshell.Wayland
 )
 
+install_qml_module(quickshell-wayland-toplevel-management)
+
 wl_proto(quickshell-wayland-toplevel-management
 	wlr-foreign-toplevel-management-unstable-v1
 	"${CMAKE_CURRENT_SOURCE_DIR}/wlr-foreign-toplevel-management-unstable-v1.xml"

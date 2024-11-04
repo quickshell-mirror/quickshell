@@ -12,6 +12,8 @@ qt_add_qml_module(quickshell-window
 	DEPENDENCIES QtQuick Quickshell
 )
 
+install_qml_module(quickshell-window)
+
 add_library(quickshell-window-init OBJECT init.cpp)
 
 target_link_libraries(quickshell-window PRIVATE ${QT_DEPS} Qt6::QuickPrivate)

@@ -9,6 +9,8 @@ qt_add_qml_module(quickshell-service-greetd
 	DEPENDENCIES QtQml
 )
 
+install_qml_module(quickshell-service-greetd)
+
 target_link_libraries(quickshell-service-greetd PRIVATE ${QT_DEPS})
 
 qs_pch(quickshell-service-greetd)
