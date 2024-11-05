@@ -19,6 +19,7 @@ wl_proto(quickshell-hyprland-global-shortcuts
 
 target_link_libraries(quickshell-hyprland-global-shortcuts PRIVATE
 	Qt::Qml Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
+	Qt::Quick # pch
 )
 
 qs_module_pch(quickshell-hyprland-global-shortcuts)

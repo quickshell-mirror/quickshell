@@ -25,6 +25,7 @@ install_qml_module(quickshell-service-pipewire)
 
 target_link_libraries(quickshell-service-pipewire PRIVATE
 	Qt::Qml PkgConfig::pipewire
+	Qt::Quick # pch
 )
 
 qs_module_pch(quickshell-service-pipewire)

@@ -13,7 +13,10 @@ qt_add_qml_module(quickshell-service-pam
 
 install_qml_module(quickshell-service-pam)
 
-target_link_libraries(quickshell-service-pam PRIVATE Qt::Qml pam ${PAM_LIBRARIES})
+target_link_libraries(quickshell-service-pam PRIVATE
+	Qt::Qml pam ${PAM_LIBRARIES}
+	Qt::Quick # pch
+)
 
 qs_module_pch(quickshell-service-pam)
 
