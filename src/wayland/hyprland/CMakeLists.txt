@@ -27,7 +27,6 @@ qt_add_qml_module(quickshell-hyprland
 
 install_qml_module(quickshell-hyprland)
 
-qs_pch(quickshell-hyprland)
-qs_pch(quickshell-hyprlandplugin)
+# intentionally no pch as the module is empty
 
 target_link_libraries(quickshell PRIVATE quickshell-hyprlandplugin)

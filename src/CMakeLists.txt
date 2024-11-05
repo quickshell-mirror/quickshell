@@ -1,9 +1,8 @@
 qt_add_executable(quickshell main.cpp)
 
-target_link_libraries(quickshell PRIVATE ${QT_DEPS} quickshell-build)
-
 install(TARGETS quickshell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+add_subdirectory(launch)
 add_subdirectory(build)
 add_subdirectory(core)
 add_subdirectory(ipc)

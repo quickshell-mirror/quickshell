@@ -20,13 +20,13 @@ target_include_directories(quickshell-service-notifications PRIVATE ${CMAKE_CURR
 qt_add_qml_module(quickshell-service-notifications
 	URI Quickshell.Services.Notifications
 	VERSION 0.1
-	DEPENDENCIES QtQml Quickshell
 )
+
+qs_add_module_deps_light(quickshell-service-notifications Quickshell)
 
 install_qml_module(quickshell-service-notifications)
 
-target_link_libraries(quickshell-service-notifications PRIVATE ${QT_DEPS} quickshell-dbus)
+target_link_libraries(quickshell-service-notifications PRIVATE Qt::Quick Qt::DBus)
 target_link_libraries(quickshell PRIVATE quickshell-service-notificationsplugin)
 
-qs_pch(quickshell-service-notifications)
-qs_pch(quickshell-service-notificationsplugin)
+qs_module_pch(quickshell-service-notifications SET dbus)

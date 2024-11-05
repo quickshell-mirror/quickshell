@@ -19,7 +19,8 @@
 
 #include "../window/proxywindow.hpp"
 #include "../window/windowinterface.hpp"
-#include "generation.hpp"
+#include "iconprovider.hpp"
+#include "platformmenu_p.hpp"
 #include "popupanchor.hpp"
 #include "qsmenu.hpp"
 
@@ -174,8 +175,7 @@ void PlatformMenuEntry::relayout() {
 
 		auto icon = this->menu->icon();
 		if (!icon.isEmpty()) {
-			auto* generation = EngineGeneration::currentGeneration();
-			this->qmenu->setIcon(generation->iconByUrl(this->menu->icon()));
+			this->qmenu->setIcon(getCurrentEngineImageAsIcon(icon));
 		}
 
 		auto children = this->menu->children();
@@ -216,8 +216,7 @@ void PlatformMenuEntry::relayout() {
 
 		auto icon = this->menu->icon();
 		if (!icon.isEmpty()) {
-			auto* generation = EngineGeneration::currentGeneration();
-			this->qaction->setIcon(generation->iconByUrl(this->menu->icon()));
+			this->qaction->setIcon(getCurrentEngineImageAsIcon(icon));
 		}
 
 		this->qaction->setEnabled(this->menu->enabled());
@@ -272,8 +271,7 @@ void PlatformMenuEntry::onIconChanged() {
 	QIcon icon;
 
 	if (!iconName.isEmpty()) {
-		auto* generation = EngineGeneration::currentGeneration();
-		icon = generation->iconByUrl(iconName);
+		icon = getCurrentEngineImageAsIcon(iconName);
 	}
 
 	if (this->qmenu != nullptr) {

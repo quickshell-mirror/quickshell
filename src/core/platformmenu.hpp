@@ -5,9 +5,7 @@
 #include <qaction.h>
 #include <qactiongroup.h>
 #include <qcontainerfwd.h>
-#include <qmenu.h>
 #include <qobject.h>
-#include <qpoint.h>
 #include <qqmlintegration.h>
 #include <qqmllist.h>
 #include <qtclasshelpermacros.h>
@@ -18,17 +16,7 @@
 
 namespace qs::menu::platform {
 
-class PlatformMenuQMenu: public QMenu {
-public:
-	explicit PlatformMenuQMenu() = default;
-	~PlatformMenuQMenu() override;
-	Q_DISABLE_COPY_MOVE(PlatformMenuQMenu);
-
-	void setVisible(bool visible) override;
-
-	PlatformMenuQMenu* containingMenu = nullptr;
-	QPoint targetPosition;
-};
+class PlatformMenuQMenu;
 
 class PlatformMenuEntry: public QObject {
 	Q_OBJECT;

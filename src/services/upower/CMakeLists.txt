@@ -30,13 +30,14 @@ target_include_directories(quickshell-service-upower PRIVATE ${CMAKE_CURRENT_BIN
 qt_add_qml_module(quickshell-service-upower
 	URI Quickshell.Services.UPower
   VERSION 0.1
-	DEPENDENCIES QtQml Quickshell
+	DEPENDENCIES QtQml
 )
+
+qs_add_module_deps_light(quickshell-service-upower Quickshell)
 
 install_qml_module(quickshell-service-upower)
 
-target_link_libraries(quickshell-service-upower PRIVATE ${QT_DEPS} quickshell-dbus)
+target_link_libraries(quickshell-service-upower PRIVATE Qt::Qml Qt::DBus quickshell-dbus)
 target_link_libraries(quickshell PRIVATE quickshell-service-upowerplugin)
 
-qs_pch(quickshell-service-upower)
-qs_pch(quickshell-service-upowerplugin)
+qs_module_pch(quickshell-service-upower SET dbus)

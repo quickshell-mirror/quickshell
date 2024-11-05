@@ -16,14 +16,17 @@ qt_add_library(quickshell-service-pipewire STATIC
 qt_add_qml_module(quickshell-service-pipewire
 	URI Quickshell.Services.Pipewire
 	VERSION 0.1
-	DEPENDENCIES QtQml Quickshell
+	DEPENDENCIES QtQml
 )
+
+qs_add_module_deps_light(quickshell-service-pipewire Quickshell)
 
 install_qml_module(quickshell-service-pipewire)
 
-target_link_libraries(quickshell-service-pipewire PRIVATE ${QT_DEPS} PkgConfig::pipewire)
+target_link_libraries(quickshell-service-pipewire PRIVATE
+	Qt::Qml PkgConfig::pipewire
+)
 
-qs_pch(quickshell-service-pipewire)
-qs_pch(quickshell-service-pipewireplugin)
+qs_module_pch(quickshell-service-pipewire)
 
 target_link_libraries(quickshell PRIVATE quickshell-service-pipewireplugin)

@@ -17,9 +17,10 @@ wl_proto(quickshell-hyprland-global-shortcuts
 	"${CMAKE_CURRENT_SOURCE_DIR}/hyprland-global-shortcuts-v1.xml"
 )
 
-target_link_libraries(quickshell-hyprland-global-shortcuts PRIVATE ${QT_DEPS} wayland-client)
+target_link_libraries(quickshell-hyprland-global-shortcuts PRIVATE
+	Qt::Qml Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
+)
 
-qs_pch(quickshell-hyprland-global-shortcuts)
-qs_pch(quickshell-hyprland-global-shortcutsplugin)
+qs_module_pch(quickshell-hyprland-global-shortcuts)
 
 target_link_libraries(quickshell PRIVATE quickshell-hyprland-global-shortcutsplugin)

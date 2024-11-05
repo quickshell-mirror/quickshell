@@ -65,6 +65,7 @@ boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 
 include(cmake/install-qml-module.cmake)
+include(cmake/util.cmake)
 
 add_compile_options(-Wall -Wextra)
 
@@ -87,8 +88,9 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-set(QT_DEPS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets)
 set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets)
+
+include(cmake/pch.cmake)
 
 if (BUILD_TESTING)
 	enable_testing()
@@ -97,55 +99,26 @@ if (BUILD_TESTING)
 endif()
 
 if (SOCKETS)
-	list(APPEND QT_DEPS Qt6::Network)
 	list(APPEND QT_FPDEPS Network)
 endif()
 
 if (WAYLAND)
-	list(APPEND QT_DEPS Qt6::WaylandClient Qt6::WaylandClientPrivate)
 	list(APPEND QT_FPDEPS WaylandClient)
 endif()
 
-if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS)
+if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS)
 	set(DBUS ON)
 endif()
 
 if (DBUS)
-	list(APPEND QT_DEPS Qt6::DBus)
 	list(APPEND QT_FPDEPS DBus)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
+set(CMAKE_AUTOUIC OFF)
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
-
-# pch breaks clang-tidy..... somehow
-if (NOT NO_PCH)
-	file(GENERATE
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp
-		CONTENT "// intentionally empty"
-	)
-
-	add_library(qt-pch ${CMAKE_CURRENT_BINARY_DIR}/pchstub.cpp)
-	target_link_libraries(qt-pch PRIVATE ${QT_DEPS})
-	target_precompile_headers(qt-pch PUBLIC
-		<memory>
-		<qobject.h>
-		<qqmlengine.h>
-		<qlist.h>
-		<qcolor.h>
-		<qquickitem.h>
-		<qevent.h>
-	)
-endif()
-
-function (qs_pch target)
-	if (NOT NO_PCH)
-		target_precompile_headers(${target} REUSE_FROM qt-pch)
-		target_link_libraries(${target} PRIVATE ${QT_DEPS}) # required for gcc to accept the pch on plugin targets
-  endif()
-endfunction()
 
 add_subdirectory(src)
 

@@ -23,14 +23,12 @@ qt_add_qml_module(quickshell-io
 
 install_qml_module(quickshell-io)
 
-target_link_libraries(quickshell-io PRIVATE ${QT_DEPS})
-target_link_libraries(quickshell-io-init PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-io PRIVATE Qt::Quick)
+target_link_libraries(quickshell-io-init PRIVATE Qt::Qml)
 
 target_link_libraries(quickshell PRIVATE quickshell-ioplugin quickshell-io-init)
 
-qs_pch(quickshell-io)
-qs_pch(quickshell-ioplugin)
-qs_pch(quickshell-io-init)
+qs_module_pch(quickshell-io)
 
 if (BUILD_TESTING)
 	add_subdirectory(test)

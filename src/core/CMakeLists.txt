@@ -1,5 +1,3 @@
-find_package(CLI11 CONFIG REQUIRED)
-
 qt_add_library(quickshell-core STATIC
 	plugin.cpp
 	shell.cpp
@@ -37,9 +35,8 @@ qt_add_library(quickshell-core STATIC
 	paths.cpp
 	instanceinfo.cpp
 	common.cpp
+	iconprovider.cpp
 )
-
-target_link_libraries(quickshell-core PRIVATE quickshell-build)
 
 qt_add_qml_module(quickshell-core
 	URI Quickshell
@@ -51,10 +48,9 @@ qt_add_qml_module(quickshell-core
 
 install_qml_module(quickshell-core)
 
-target_link_libraries(quickshell-core PRIVATE ${QT_DEPS} CLI11::CLI11)
+target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::Widgets)
 
-qs_pch(quickshell-core)
-qs_pch(quickshell-coreplugin)
+qs_module_pch(quickshell-core SET large)
 
 target_link_libraries(quickshell PRIVATE quickshell-coreplugin)
 

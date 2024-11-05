@@ -16,7 +16,6 @@
 #include <qloggingcategory.h>
 #include <qmetatype.h>
 #include <qobject.h>
-#include <qpolygon.h>
 #include <qtmetamacros.h>
 #include <qvariant.h>
 

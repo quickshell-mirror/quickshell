@@ -17,15 +17,18 @@ qt_add_library(quickshell-dbusmenu STATIC
 qt_add_qml_module(quickshell-dbusmenu
 	URI Quickshell.DBusMenu
 	VERSION 0.1
-	DEPENDENCIES QtQml Quickshell
+	DEPENDENCIES QtQml
 )
+
+qs_add_module_deps_light(quickshell-dbusmenu Quickshell)
 
 install_qml_module(quickshell-dbusmenu)
 
 # dbus headers
 target_include_directories(quickshell-dbusmenu PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(quickshell-dbusmenu PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-dbusmenu PRIVATE Qt::Quick Qt::DBus quickshell-dbus)
 
-qs_pch(quickshell-dbusmenu)
-qs_pch(quickshell-dbusmenuplugin)
+qs_module_pch(quickshell-dbusmenu SET dbus)
+
+target_link_libraries(quickshell PRIVATE quickshell-dbusmenuplugin)

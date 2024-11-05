@@ -4,6 +4,7 @@
 #include <qobject.h>
 #include <qtimer.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "util.hpp"
 

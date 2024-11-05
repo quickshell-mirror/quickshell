@@ -20,6 +20,14 @@ execute_process(
 
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
 
+qs_add_pchset(wayland-protocol
+	DEPENDENCIES Qt::Core Qt::WaylandClient Qt::WaylandClientPrivate
+	HEADERS
+		<wayland-client.h>
+		<qbytearray.h>
+		<qstring.h>
+)
+
 function (wl_proto target name path)
 	set(PROTO_BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/wl-proto/${name})
 	make_directory(${PROTO_BUILD_PATH})
@@ -53,13 +61,12 @@ function (wl_proto target name path)
 		DEPENDS Qt6::qtwaylandscanner "${path}"
 	)
 
-	add_library(wl-proto-${name}
-		${WS_CLIENT_HEADER} ${WS_CLIENT_CODE}
-		${QWS_CLIENT_HEADER} ${QWS_CLIENT_CODE}
-	)
+	add_library(wl-proto-${name}-wl STATIC ${WS_CLIENT_HEADER} ${WS_CLIENT_CODE})
+	add_library(wl-proto-${name} STATIC ${QWS_CLIENT_HEADER} ${QWS_CLIENT_CODE})
 
 	target_include_directories(wl-proto-${name} INTERFACE ${PROTO_BUILD_PATH})
-	target_link_libraries(wl-proto-${name} Qt6::WaylandClient Qt6::WaylandClientPrivate)
+	target_link_libraries(wl-proto-${name} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
+	qs_pch(wl-proto-${name} SET wayland-protocol)
 
 	target_link_libraries(${target} PRIVATE wl-proto-${name})
 endfunction()
@@ -100,20 +107,24 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
-target_link_libraries(quickshell-wayland PRIVATE ${QT_DEPS})
-target_link_libraries(quickshell-wayland-init PRIVATE ${QT_DEPS})
+# widgets for qmenu
+target_link_libraries(quickshell-wayland PRIVATE
+	Qt::Quick Qt::Widgets Qt::WaylandClient Qt::WaylandClientPrivate
+)
+
+target_link_libraries(quickshell-wayland-init PRIVATE Qt::Quick)
 
 qt_add_qml_module(quickshell-wayland
 	URI Quickshell.Wayland
 	VERSION 0.1
-	DEPENDENCIES QtQuick Quickshell
+	DEPENDENCIES QtQuick
 	IMPORTS ${WAYLAND_MODULES}
 )
 
+qs_add_module_deps_light(quickshell-wayland Quickshell)
+
 install_qml_module(quickshell-wayland)
 
-qs_pch(quickshell-wayland)
-qs_pch(quickshell-waylandplugin)
-qs_pch(quickshell-wayland-init)
+qs_module_pch(quickshell-wayland SET large)
 
 target_link_libraries(quickshell PRIVATE quickshell-waylandplugin quickshell-wayland-init)

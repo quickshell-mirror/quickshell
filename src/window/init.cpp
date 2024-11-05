@@ -1,3 +1,6 @@
+#include <qqml.h>
+#include <qstring.h>
+
 #include "../core/plugin.hpp"
 
 namespace {

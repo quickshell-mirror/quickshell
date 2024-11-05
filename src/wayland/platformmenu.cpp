@@ -8,6 +8,7 @@
 #include <qwindow.h>
 
 #include "../core/platformmenu.hpp"
+#include "../core/platformmenu_p.hpp"
 
 using namespace qs::menu::platform;
 

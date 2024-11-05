@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include <QtQmlIntegration/qqmlintegration.h>
 #include <qflags.h>
 #include <qnamespace.h>
 #include <qobject.h>

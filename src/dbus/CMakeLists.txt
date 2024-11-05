@@ -16,8 +16,18 @@ qt_add_library(quickshell-dbus STATIC
 # dbus headers
 target_include_directories(quickshell-dbus PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(quickshell-dbus PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-dbus PRIVATE Qt::Core Qt::DBus)
+# todo: link dbus to quickshell here instead of in modules that use it directly
+# linker does not like this as is
 
-qs_pch(quickshell-dbus)
+qs_add_pchset(dbus
+	DEPENDENCIES Qt::DBus
+	HEADERS
+		<QtDBus>
+		<qdebug.h>
+		<qdbusargument.h>
+)
+
+qs_pch(quickshell-dbus SET dbus)
 
 add_subdirectory(dbusmenu)

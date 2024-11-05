@@ -9,7 +9,6 @@ qt_add_qml_module(quickshell-widgets
 
 install_qml_module(quickshell-widgets)
 
-qs_pch(quickshell-widgets)
-qs_pch(quickshell-widgetsplugin)
+qs_module_pch(quickshell-widgets)
 
 target_link_libraries(quickshell PRIVATE quickshell-widgetsplugin)
