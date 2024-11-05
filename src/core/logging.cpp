@@ -369,6 +369,7 @@ void ThreadLogging::initFs() {
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
 		    .l_len = 0,
+		    .l_pid = 0,
 		};
 
 		if (fcntl(detailedFile->handle(), F_SETLK, &lock) != 0) { // NOLINT
@@ -455,6 +456,8 @@ CompressedLogType compressedTypeOf(QtMsgType type) {
 	case QtCriticalMsg:
 	case QtFatalMsg: return CompressedLogType::Critical;
 	}
+
+	return CompressedLogType::Info; // unreachable under normal conditions
 }
 
 QtMsgType typeOfCompressed(CompressedLogType type) {
@@ -464,6 +467,8 @@ QtMsgType typeOfCompressed(CompressedLogType type) {
 	case CompressedLogType::Warn: return QtWarningMsg;
 	case CompressedLogType::Critical: return QtCriticalMsg;
 	}
+
+	return QtInfoMsg; // unreachable under normal conditions
 }
 
 void WriteBuffer::setDevice(QIODevice* device) { this->device = device; }
@@ -636,7 +641,7 @@ start:
 				if (!this->readVarInt(&secondDelta)) return false;
 			}
 
-			if (index < 0 || index >= this->recentMessages.size()) return false;
+			if (index >= this->recentMessages.size()) return false;
 			*slot = this->recentMessages.at(index);
 			this->lastMessageTime = this->lastMessageTime.addSecs(static_cast<qint64>(secondDelta));
 			slot->time = this->lastMessageTime;
@@ -858,6 +863,7 @@ void LogFollower::FcntlWaitThread::run() {
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,
 	    .l_len = 0,
+	    .l_pid = 0,
 	};
 
 	auto r = fcntl(this->follower->reader->file->handle(), F_SETLKW, &lock); // NOLINT

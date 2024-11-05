@@ -242,6 +242,7 @@ void QsPaths::createLock() {
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
 		    .l_len = 0,
+		    .l_pid = 0,
 		};
 
 		if (fcntl(file->handle(), F_SETLK, &lock) != 0) { // NOLINT
@@ -268,6 +269,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info) {
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,
 	    .l_len = 0,
+	    .l_pid = 0,
 	};
 
 	fcntl(file.handle(), F_GETLK, &lock); // NOLINT

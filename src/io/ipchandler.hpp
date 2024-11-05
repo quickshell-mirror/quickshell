@@ -172,12 +172,14 @@ private:
 	void updateRegistration(bool destroying = false);
 
 	struct RegistrationState {
+		explicit RegistrationState(bool enabled = false): enabled(enabled) {}
+
 		bool enabled = false;
 		QString target;
 	};
 
 	RegistrationState registeredState;
-	RegistrationState targetState {.enabled = true};
+	RegistrationState targetState {true};
 	bool complete = false;
 
 	QHash<QString, IpcFunction> functionMap;

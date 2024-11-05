@@ -429,7 +429,7 @@ void PwObjectTracker::setObjects(const QList<QObject*>& objects) {
 
 	// connect destroy
 	for (auto* object: objects) {
-		if (auto* pwObject = dynamic_cast<PwObjectRefIface*>(object)) {
+		if (dynamic_cast<PwObjectRefIface*>(object) != nullptr) {
 			QObject::connect(object, &QObject::destroyed, this, &PwObjectTracker::objectDestroyed);
 		}
 	}

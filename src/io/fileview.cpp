@@ -153,7 +153,7 @@ void FileView::loadSync() {
 		auto state = FileViewState();
 		this->updateState(state);
 	} else if (!this->blockUntilLoaded()) {
-		auto state = FileViewState {.path = this->targetPath};
+		auto state = FileViewState(this->targetPath);
 		FileViewReader::read(state, false);
 		this->updateState(state);
 	}

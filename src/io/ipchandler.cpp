@@ -247,7 +247,7 @@ void IpcHandlerRegistry::deregisterHandler(IpcHandler* handler) {
 		}
 	}
 
-	handler->registeredState = {.enabled = false, .target = ""};
+	handler->registeredState = IpcHandler::RegistrationState(false);
 }
 
 QString IpcHandler::listMembers(qsizetype indent) {

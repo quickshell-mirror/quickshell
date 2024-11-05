@@ -39,7 +39,7 @@ void FocusGrab::addWindow(QWindow* window) {
 	if (auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle())) {
 		tryAddWayland(waylandWindow);
 	} else {
-		QObject::connect(window, &QWindow::visibleChanged, this, [this, window, tryAddWayland]() {
+		QObject::connect(window, &QWindow::visibleChanged, this, [window, tryAddWayland]() {
 			if (window->isVisible()) {
 				if (window->handle() == nullptr) {
 					window->create();

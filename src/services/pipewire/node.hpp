@@ -156,8 +156,7 @@ private:
 	PwNode* node;
 };
 
-constexpr const char TYPE_INTERFACE_Node[] = PW_TYPE_INTERFACE_Node;             // NOLINT
-class PwNode: public PwBindable<pw_node, TYPE_INTERFACE_Node, PW_VERSION_NODE> { // NOLINT
+class PwNode: public PwBindable<pw_node, PW_TYPE_INTERFACE_Node, PW_VERSION_NODE> {
 	Q_OBJECT;
 
 public:

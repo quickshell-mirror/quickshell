@@ -1,9 +1,23 @@
 #pragma once
+#include <algorithm>
 #include <type_traits>
 
+#include <qlatin1stringview.h>
 #include <qobject.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+
+template <size_t Length>
+struct StringLiteral {
+	constexpr StringLiteral(const char (&str)[Length]) { // NOLINT
+		std::copy_n(str, Length, this->value);
+	}
+
+	constexpr operator const char*() const noexcept { return this->value; }
+	operator QLatin1StringView() const { return QLatin1String(this->value, Length); }
+
+	char value[Length]; // NOLINT
+};
 
 // NOLINTBEGIN
 #define DROP_EMIT(object, func)                                                                    \

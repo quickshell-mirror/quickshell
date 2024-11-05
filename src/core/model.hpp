@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bit>
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
 #include <qobject.h>
@@ -85,11 +86,11 @@ public:
 	explicit ObjectModel(QObject* parent): UntypedObjectModel(parent) {}
 
 	[[nodiscard]] QVector<T*>& valueList() {
-		return *reinterpret_cast<QVector<T*>*>(&this->valuesList); // NOLINT
+		return *std::bit_cast<QVector<T*>*>(&this->valuesList);
 	}
 
 	[[nodiscard]] const QVector<T*>& valueList() const {
-		return *reinterpret_cast<const QVector<T*>*>(&this->valuesList); // NOLINT
+		return *std::bit_cast<const QVector<T*>*>(&this->valuesList);
 	}
 
 	void insertObject(T* object, qsizetype index = -1) {

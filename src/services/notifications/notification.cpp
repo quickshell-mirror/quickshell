@@ -85,7 +85,7 @@ void Notification::updateProperties(
     qint32 expireTimeout
 ) {
 	auto urgency = hints.contains("urgency") ? hints.value("urgency").value<quint8>()
-	                                         : NotificationUrgency::Normal;
+	                                         : static_cast<quint8>(NotificationUrgency::Normal);
 
 	auto hasActionIcons = hints.value("action-icons").value<bool>();
 	auto resident = hints.value("resident").value<bool>();

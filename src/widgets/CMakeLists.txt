@@ -11,4 +11,5 @@ install_qml_module(quickshell-widgets)
 
 qs_module_pch(quickshell-widgets)
 
+target_link_libraries(quickshell-widgets PRIVATE Qt::Quick)
 target_link_libraries(quickshell PRIVATE quickshell-widgetsplugin)

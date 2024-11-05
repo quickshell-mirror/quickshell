@@ -11,9 +11,7 @@
 
 namespace qs::service::pipewire {
 
-constexpr const char TYPE_INTERFACE_Metadata[] = PW_TYPE_INTERFACE_Metadata; // NOLINT
-class PwMetadata
-    : public PwBindable<pw_metadata, TYPE_INTERFACE_Metadata, PW_VERSION_METADATA> { // NOLINT
+class PwMetadata: public PwBindable<pw_metadata, PW_TYPE_INTERFACE_Metadata, PW_VERSION_METADATA> {
 	Q_OBJECT;
 
 public:

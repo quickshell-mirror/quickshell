@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include <qlogging.h>
 #include <qmutex.h>
 #include <qobject.h>
@@ -15,6 +17,9 @@
 namespace qs::io {
 
 struct FileViewState {
+	FileViewState() = default;
+	explicit FileViewState(QString path): path(std::move(path)) {}
+
 	QString path;
 	QString text;
 	QByteArray data;

@@ -69,6 +69,9 @@ include(cmake/util.cmake)
 
 add_compile_options(-Wall -Wextra)
 
+# pipewire defines this, breaking PCH
+add_compile_definitions(_REENTRANT)
+
 if (FRAME_POINTERS)
 	add_compile_options(-fno-omit-frame-pointer)
 endif()

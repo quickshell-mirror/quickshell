@@ -35,8 +35,7 @@ public:
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwLinkState::Enum value);
 };
 
-constexpr const char TYPE_INTERFACE_Link[] = PW_TYPE_INTERFACE_Link;             // NOLINT
-class PwLink: public PwBindable<pw_link, TYPE_INTERFACE_Link, PW_VERSION_LINK> { // NOLINT
+class PwLink: public PwBindable<pw_link, PW_TYPE_INTERFACE_Link, PW_VERSION_LINK> {
 	Q_OBJECT;
 
 public:

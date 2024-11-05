@@ -12,6 +12,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/util.hpp"
 #include "core.hpp"
 
 namespace qs::service::pipewire {
@@ -50,6 +51,7 @@ signals:
 	void destroying(PwBindableObject* self);
 
 protected:
+	void registryBind(const char* interface, quint32 version);
 	virtual void bind();
 	void unbind();
 	virtual void bindHooks() {};
@@ -62,7 +64,7 @@ protected:
 
 QDebug operator<<(QDebug debug, const PwBindableObject* object);
 
-template <typename T, const char* INTERFACE, quint32 VERSION>
+template <typename T, StringLiteral INTERFACE, quint32 VERSION>
 class PwBindable: public PwBindableObject {
 public:
 	T* proxy() {
@@ -72,9 +74,7 @@ public:
 protected:
 	void bind() override {
 		if (this->object != nullptr) return;
-		auto* object =
-		    pw_registry_bind(this->registry->object, this->id, INTERFACE, VERSION, 0); // NOLINT
-		this->object = static_cast<pw_proxy*>(object);
+		this->registryBind(INTERFACE, VERSION);
 		this->PwBindableObject::bind();
 	}
 

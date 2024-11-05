@@ -17,8 +17,7 @@ namespace qs::service::pipewire {
 
 class PwDevice;
 
-constexpr const char TYPE_INTERFACE_Device[] = PW_TYPE_INTERFACE_Device; // NOLINT
-class PwDevice: public PwBindable<pw_device, TYPE_INTERFACE_Device, PW_VERSION_DEVICE> {
+class PwDevice: public PwBindable<pw_device, PW_TYPE_INTERFACE_Device, PW_VERSION_DEVICE> {
 	Q_OBJECT;
 
 public:
