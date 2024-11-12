@@ -179,7 +179,9 @@ void LazyLoader::incubateIfReady(bool overrideReloadCheck) {
 
 void LazyLoader::onIncubationCompleted() {
 	this->setItem(this->incubator->object());
-	delete this->incubator;
+	// The incubator is not necessarily inert at the time of this callback,
+	// so deleteLater is required.
+	this->incubator->deleteLater();
 	this->incubator = nullptr;
 	this->targetLoading = false;
 	emit this->loadingChanged();
