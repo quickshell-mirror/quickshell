@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <limits>
+#include <memory>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
@@ -90,30 +91,31 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		return group;
 	};
 
-	auto cli = CLI::App();
+	state.app = std::make_unique<CLI::App>();
+	auto* cli = state.app.get();
 
 	// Require 0-1 subcommands. Without this, positionals can be parsed as more subcommands.
-	cli.require_subcommand(0, 1);
+	cli->require_subcommand(0, 1);
 
-	addConfigSelection(&cli);
-	addLoggingOptions(&cli, false);
-	addDebugOptions(&cli);
+	addConfigSelection(cli);
+	addLoggingOptions(cli, false);
+	addDebugOptions(cli);
 
 	{
-		cli.add_option_group("")->add_flag("--private-check-compat", state.misc.checkCompat);
+		cli->add_option_group("")->add_flag("--private-check-compat", state.misc.checkCompat);
 
-		cli.add_flag("-V,--version", state.misc.printVersion)
+		cli->add_flag("-V,--version", state.misc.printVersion)
 		    ->description("Print quickshell's version and exit.");
 
-		cli.add_flag("-n,--no-duplicate", state.misc.noDuplicate)
+		cli->add_flag("-n,--no-duplicate", state.misc.noDuplicate)
 		    ->description("Exit immediately if another instance of the given config is running.");
 
-		cli.add_flag("-d,--daemonize", state.misc.daemonize)
+		cli->add_flag("-d,--daemonize", state.misc.daemonize)
 		    ->description("Detach from the controlling terminal.");
 	}
 
 	{
-		auto* sub = cli.add_subcommand("log", "Print quickshell logs.");
+		auto* sub = cli->add_subcommand("log", "Print quickshell logs.");
 
 		auto* file = sub->add_option("file", state.log.file, "Log file to read.");
 
@@ -135,7 +137,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli.add_subcommand("list", "List running quickshell instances.");
+		auto* sub = cli->add_subcommand("list", "List running quickshell instances.");
 
 		auto* all = sub->add_flag("-a,--all", state.instance.all)
 		                ->description("List all instances.\n"
@@ -151,7 +153,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli.add_subcommand("kill", "Kill quickshell instances.");
+		auto* sub = cli->add_subcommand("kill", "Kill quickshell instances.");
 		//sub->add_flag("-a,--all", "Kill all matching instances instead of just one.");
 		auto* instance = addInstanceSelection(sub);
 		addConfigSelection(sub)->excludes(instance);
@@ -161,7 +163,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli.add_subcommand("msg", "Send messages to IpcHandlers.")->require_option();
+		auto* sub = cli->add_subcommand("msg", "Send messages to IpcHandlers.")->require_option();
 
 		auto* target = sub->add_option("target", state.ipc.target, "The target to message.");
 
@@ -188,7 +190,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		state.subcommand.msg = sub;
 	}
 
-	CLI11_PARSE(cli, argc, argv);
+	CLI11_PARSE(*cli, argc, argv);
 
 	return 0;
 }

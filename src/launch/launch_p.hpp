@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <CLI/App.hpp>
@@ -26,6 +27,7 @@ private:
 };
 
 struct CommandState {
+	std::unique_ptr<CLI::App> app;
 	struct {
 		int argc = 0;
 		char** argv = nullptr;
