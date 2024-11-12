@@ -44,7 +44,7 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
 	// clang-format on
 }
 
-ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(); }
+ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(true); }
 
 void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->window = this->retrieveWindow(oldInstance);
@@ -90,9 +90,9 @@ void ProxyWindowBase::createWindow() {
 	emit this->windowConnected();
 }
 
-void ProxyWindowBase::deleteWindow() {
+void ProxyWindowBase::deleteWindow(bool keepItemOwnership) {
 	if (this->window != nullptr) emit this->windowDestroyed();
-	if (auto* window = this->disownWindow()) {
+	if (auto* window = this->disownWindow(keepItemOwnership)) {
 		if (auto* generation = EngineGeneration::findObjectGeneration(this)) {
 			generation->deregisterIncubationController(window->incubationController());
 		}
@@ -101,12 +101,14 @@ void ProxyWindowBase::deleteWindow() {
 	}
 }
 
-QQuickWindow* ProxyWindowBase::disownWindow() {
+QQuickWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
 	if (this->window == nullptr) return nullptr;
 
 	QObject::disconnect(this->window, nullptr, this, nullptr);
 
-	this->mContentItem->setParentItem(nullptr);
+	if (!keepItemOwnership) {
+		this->mContentItem->setParentItem(nullptr);
+	}
 
 	auto* window = this->window;
 	this->window = nullptr;
