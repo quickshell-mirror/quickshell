@@ -1,4 +1,5 @@
 #include "fileview.hpp"
+#include <array>
 #include <utility>
 
 #include <qfileinfo.h>
@@ -68,22 +69,37 @@ void FileViewReader::read(FileViewState& state, bool doStringConversion) {
 		}
 
 		auto& data = state.data;
-		data = QByteArray(file.size(), Qt::Uninitialized);
+		if (file.size() != 0) {
+			data = QByteArray(file.size(), Qt::Uninitialized);
+			qint64 i = 0;
 
-		qint64 i = 0;
+			while (true) {
+				auto r = file.read(data.data() + i, data.length() - i); // NOLINT
 
-		while (true) {
-			auto r = file.read(data.data() + i, data.length() - i); // NOLINT
+				if (r == -1) {
+					qCCritical(logFileView) << "Failed to read" << state.path;
+					goto error;
+				} else if (r == 0) {
+					data.resize(i);
+					break;
+				}
 
-			if (r == -1) {
-				qCCritical(logFileView) << "Failed to read" << state.path;
-				goto error;
-			} else if (r == 0) {
-				data.resize(i);
-				break;
+				i += r;
 			}
+		} else {
+			auto buf = std::array<char, 4096>();
 
-			i += r;
+			while (true) {
+				auto r = file.read(buf.data(), buf.size()); // NOLINT
+
+				if (r == -1) {
+					qCCritical(logFileView) << "Failed to read" << state.path;
+					goto error;
+				} else {
+					data.append(buf.data(), r);
+					if (r == 0) break;
+				}
+			}
 		}
 
 		if (doStringConversion) {
