@@ -12,6 +12,7 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
 
@@ -53,6 +54,16 @@ QList<QString> Process::command() const { return this->mCommand; }
 void Process::setCommand(QList<QString> command) {
 	if (this->mCommand == command) return;
 	this->mCommand = std::move(command);
+
+	auto& cmd = this->mCommand.first();
+	if (cmd.startsWith("file://")) {
+		cmd = cmd.sliced(7);
+	} else if (cmd.startsWith("root://")) {
+		cmd = cmd.sliced(7);
+		auto& root = EngineGeneration::findObjectGeneration(this)->rootPath;
+		cmd = root.filePath(cmd.startsWith('/') ? cmd.sliced(1) : cmd);
+	}
+
 	emit this->commandChanged();
 
 	this->startProcessIfReady();

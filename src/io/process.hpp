@@ -51,6 +51,14 @@ class Process: public QObject {
 	/// started process. If the property has been changed after starting a process it will
 	/// return the new value, not the one for the currently running process.
 	///
+	/// > [!WARNING] This does not run command in a shell. All arguments to the command
+	/// > must be in separate values in the list, e.g. `["echo", "hello"]`
+	/// > and not `["echo hello"]`.
+	/// >
+	/// > Additionally, shell scripts must be run by your shell,
+	/// > e.g. `["sh", "script.sh"]` instead of `["script.sh"]` unless the script
+	/// > has a shebang.
+	///
 	/// > [!INFO] You can use `["sh", "-c", <your command>]` to execute your command with
 	/// > the system shell.
 	Q_PROPERTY(QList<QString> command READ command WRITE setCommand NOTIFY commandChanged);
