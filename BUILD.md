@@ -44,6 +44,12 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `pkg-config`
 - `cli11`
 
+On some distros, private Qt headers are in separate packages which you may have to install.
+We currently require private headers for the following libraries:
+
+- `qt6declarative`
+- `qt6wayland`
+
 We recommend an implicit dependency on `qt6svg`. If it is not installed, svg images and
 svg icons will not work, including system ones.
 
