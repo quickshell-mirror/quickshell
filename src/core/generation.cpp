@@ -24,7 +24,7 @@
 #include "reload.hpp"
 #include "scan.hpp"
 
-static QHash<QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
+static QHash<const QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
 EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
     : rootPath(rootPath)
@@ -326,11 +326,13 @@ EngineGeneration* EngineGeneration::currentGeneration() {
 	} else return nullptr;
 }
 
-EngineGeneration* EngineGeneration::findEngineGeneration(QQmlEngine* engine) {
+EngineGeneration* EngineGeneration::findEngineGeneration(const QQmlEngine* engine) {
 	return g_generations.value(engine);
 }
 
-EngineGeneration* EngineGeneration::findObjectGeneration(QObject* object) {
+EngineGeneration* EngineGeneration::findObjectGeneration(const QObject* object) {
+	if (g_generations.size() == 1) return EngineGeneration::currentGeneration();
+
 	while (object != nullptr) {
 		auto* context = QQmlEngine::contextForObject(object);
 

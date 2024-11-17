@@ -45,8 +45,8 @@ public:
 	void registerExtension(const void* key, EngineGenerationExt* extension);
 	EngineGenerationExt* findExtension(const void* key);
 
-	static EngineGeneration* findEngineGeneration(QQmlEngine* engine);
-	static EngineGeneration* findObjectGeneration(QObject* object);
+	static EngineGeneration* findEngineGeneration(const QQmlEngine* engine);
+	static EngineGeneration* findObjectGeneration(const QObject* object);
 
 	// Returns the current generation if there is only one generation,
 	// otherwise null.
