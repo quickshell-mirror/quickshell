@@ -11,7 +11,9 @@
 QPixmap
 IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) {
 	QString iconName;
+	QString fallbackName;
 	QString path;
+
 	auto splitIdx = id.indexOf("?path=");
 	if (splitIdx != -1) {
 		iconName = id.sliced(0, splitIdx);
@@ -19,10 +21,17 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 		qWarning() << "Searching custom icon paths is not yet supported. Icon path will be ignored for"
 		           << id;
 	} else {
-		iconName = id;
+		splitIdx = id.indexOf("?fallback=");
+		if (splitIdx != -1) {
+			iconName = id.sliced(0, splitIdx);
+			fallbackName = id.sliced(splitIdx + 10);
+		} else {
+			iconName = id;
+		}
 	}
 
 	auto icon = QIcon::fromTheme(iconName);
+	if (icon.isNull()) icon = QIcon::fromTheme(fallbackName);
 
 	auto targetSize = requestedSize.isValid() ? requestedSize : QSize(100, 100);
 	if (targetSize.width() == 0 || targetSize.height() == 0) targetSize = QSize(2, 2);
@@ -55,11 +64,19 @@ QPixmap IconImageProvider::missingPixmap(const QSize& size) {
 	return pixmap;
 }
 
-QString IconImageProvider::requestString(const QString& icon, const QString& path) {
+QString IconImageProvider::requestString(
+    const QString& icon,
+    const QString& path,
+    const QString& fallback
+) {
 	auto req = "image://icon/" + icon;
 
 	if (!path.isEmpty()) {
 		req += "?path=" + path;
+	}
+
+	if (!fallback.isEmpty()) {
+		req += "?fallback=" + fallback;
 	}
 
 	return req;

@@ -137,6 +137,12 @@ public:
 	/// > at the top of your root config file or set the `QS_ICON_THEME` variable to the name
 	/// > of your icon theme.
 	Q_INVOKABLE static QString iconPath(const QString& icon);
+	/// Setting the `check` parameter of `iconPath` to true will return an empty string
+	/// if the icon does not exist, instead of an image showing a missing texture.
+	Q_INVOKABLE static QString iconPath(const QString& icon, bool check);
+	/// Setting the `fallback` parameter of `iconPath` will attempt to load the fallback
+	/// icon if the requested one could not be loaded.
+	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
 
 	[[nodiscard]] QString shellRoot() const;
 

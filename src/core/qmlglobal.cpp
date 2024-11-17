@@ -5,6 +5,7 @@
 #include <qcoreapplication.h>
 #include <qdir.h>
 #include <qguiapplication.h>
+#include <qicon.h>
 #include <qjsengine.h>
 #include <qlogging.h>
 #include <qobject.h>
@@ -196,7 +197,16 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 }
 
 QString QuickshellGlobal::iconPath(const QString& icon) {
-	return IconImageProvider::requestString(icon, "");
+	return IconImageProvider::requestString(icon);
+}
+
+QString QuickshellGlobal::iconPath(const QString& icon, bool check) {
+	if (check && QIcon::fromTheme(icon).isNull()) return "";
+	return IconImageProvider::requestString(icon);
+}
+
+QString QuickshellGlobal::iconPath(const QString& icon, const QString& fallback) {
+	return IconImageProvider::requestString(icon, "", fallback);
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {
