@@ -29,6 +29,7 @@ public:
 	[[nodiscard]] qint32 protocolVersion() const { return 0; } // NOLINT
 	[[nodiscard]] bool isHostRegistered() const;
 	[[nodiscard]] QList<QString> registeredItems() const;
+	[[nodiscard]] bool isRegistered() const;
 
 	// NOLINTBEGIN
 	void RegisterStatusNotifierHost(const QString& host);
@@ -54,6 +55,7 @@ private:
 	QDBusServiceWatcher serviceWatcher;
 	QList<QString> hosts;
 	QList<QString> items;
+	bool registered = false;
 };
 
 } // namespace qs::service::sni

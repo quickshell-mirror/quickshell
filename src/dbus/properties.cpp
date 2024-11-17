@@ -268,14 +268,15 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 			qCWarning(logDbusProperties).noquote()
 			    << "Error updating properties of" << this->toString() << "via GetAll";
 			qCWarning(logDbusProperties) << reply.error();
+			emit this->getAllFailed(reply.error());
 		} else {
 			qCDebug(logDbusProperties).noquote()
 			    << "Received GetAll property set for" << this->toString();
 			this->updatePropertySet(reply.value(), true);
+			emit this->getAllFinished();
 		}
 
 		delete call;
-		emit this->getAllFinished();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);

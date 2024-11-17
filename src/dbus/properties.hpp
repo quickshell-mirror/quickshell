@@ -135,6 +135,7 @@ public:
 
 signals:
 	void getAllFinished();
+	void getAllFailed(QDBusError error);
 
 private slots:
 	void onPropertiesChanged(

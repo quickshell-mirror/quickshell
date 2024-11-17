@@ -47,12 +47,15 @@ StatusNotifierWatcher::StatusNotifierWatcher(QObject* parent): QObject(parent) {
 	this->tryRegister();
 }
 
+bool StatusNotifierWatcher::isRegistered() const { return this->registered; }
+
 void StatusNotifierWatcher::tryRegister() { // NOLINT
 	auto bus = QDBusConnection::sessionBus();
 	auto success = bus.registerService("org.kde.StatusNotifierWatcher");
 
 	if (success) {
 		qCDebug(logStatusNotifierWatcher) << "Registered watcher at org.kde.StatusNotifierWatcher";
+		this->registered = true;
 	} else {
 		qCDebug(logStatusNotifierWatcher)
 		    << "Could not register watcher at org.kde.StatusNotifierWatcher, presumably because one is "
@@ -68,7 +71,6 @@ void StatusNotifierWatcher::onServiceUnregistered(const QString& service) {
 		    << "Active StatusNotifierWatcher unregistered, attempting registration";
 		this->tryRegister();
 		return;
-		;
 	} else {
 		QString qualifiedItem;
 		this->items.removeIf([&](const QString& item) {

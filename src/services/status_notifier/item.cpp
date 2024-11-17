@@ -26,6 +26,7 @@
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
 #include "host.hpp"
+#include "watcher.hpp"
 
 using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
@@ -76,6 +77,7 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 	QObject::connect(&this->overlayIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 
 	QObject::connect(&this->properties, &DBusPropertyGroup::getAllFinished, this, &StatusNotifierItem::onGetAllFinished);
+	QObject::connect(&this->properties, &DBusPropertyGroup::getAllFailed, this, &StatusNotifierItem::onGetAllFailed);
 	QObject::connect(&this->menuPath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::onMenuPathChanged);
 	// clang-format on
 
@@ -246,6 +248,19 @@ void StatusNotifierItem::onGetAllFinished() {
 	emit this->ready();
 }
 
+void StatusNotifierItem::onGetAllFailed() {
+	// Not changing the item to ready, as it is almost definitely broken.
+	if (!this->mReady) {
+		qWarning(logStatusNotifierItem) << "Failed to load tray item" << this->properties.toString();
+
+		if (!StatusNotifierWatcher::instance()->isRegistered()) {
+			qWarning(logStatusNotifierItem)
+			    << "Another StatusNotifier host seems to be running. Please disable it and check that "
+			       "the problem persists before reporting an issue.";
+		}
+	}
+}
+
 TrayImageHandle::TrayImageHandle(StatusNotifierItem* item)
     : QsImageHandle(QQmlImageProviderBase::Pixmap, item)
     , item(item) {}
@@ -257,6 +272,7 @@ TrayImageHandle::requestPixmap(const QString& /*unused*/, QSize* size, const QSi
 
 	auto pixmap = this->item->createPixmap(targetSize);
 	if (pixmap.isNull()) {
+		qCWarning(logStatusNotifierItem) << "Unable to create pixmap for tray icon" << this->item;
 		pixmap = IconImageProvider::missingPixmap(targetSize);
 	}
 
