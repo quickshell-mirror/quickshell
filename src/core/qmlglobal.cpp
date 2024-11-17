@@ -166,6 +166,12 @@ void QuickshellGlobal::reload(bool hard) {
 	root->reloadGraph(hard);
 }
 
+QString QuickshellGlobal::shellRoot() const {
+	auto* generation = EngineGeneration::findObjectGeneration(this);
+	// already canonical
+	return generation->rootPath.path();
+}
+
 QString QuickshellGlobal::workingDirectory() const { // NOLINT
 	return QuickshellSettings::instance()->workingDirectory();
 }

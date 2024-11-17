@@ -98,6 +98,11 @@ class QuickshellGlobal: public QObject {
 	/// This creates an instance of your window once on every screen.
 	/// As screens are added or removed your window will be created or destroyed on those screens.
 	Q_PROPERTY(QQmlListProperty<QuickshellScreenInfo> screens READ screens NOTIFY screensChanged);
+	/// The full path to the root directory of your shell.
+	///
+	/// The root directory is the folder containing the entrypoint to your shell, often referred
+	/// to as `shell.qml`.
+	Q_PROPERTY(QString shellRoot READ shellRoot CONSTANT);
 	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
 	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
 	/// If true then the configuration will be reloaded whenever any files change.
@@ -132,6 +137,8 @@ public:
 	/// > at the top of your root config file or set the `QS_ICON_THEME` variable to the name
 	/// > of your icon theme.
 	Q_INVOKABLE static QString iconPath(const QString& icon);
+
+	[[nodiscard]] QString shellRoot() const;
 
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(QString workingDirectory);
