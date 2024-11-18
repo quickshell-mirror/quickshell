@@ -75,7 +75,7 @@ signals:
 private slots:
 	void updateIcon();
 	void onGetAllFinished();
-	void onGetAllFailed();
+	void onGetAllFailed() const;
 	void onMenuPathChanged();
 
 private:

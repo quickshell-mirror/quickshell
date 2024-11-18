@@ -248,7 +248,7 @@ void StatusNotifierItem::onGetAllFinished() {
 	emit this->ready();
 }
 
-void StatusNotifierItem::onGetAllFailed() {
+void StatusNotifierItem::onGetAllFailed() const {
 	// Not changing the item to ready, as it is almost definitely broken.
 	if (!this->mReady) {
 		qWarning(logStatusNotifierItem) << "Failed to load tray item" << this->properties.toString();
