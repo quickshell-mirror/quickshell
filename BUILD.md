@@ -42,7 +42,8 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `qt6base`
 - `qt6declarative`
 - `qtshadertools` (build-time only)
-- `pkg-config`
+- `spirv-tools` (build-time only)
+- `pkg-config` (build-time only)
 - `cli11`
 
 On some distros, private Qt headers are in separate packages which you may have to install.
