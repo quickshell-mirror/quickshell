@@ -41,6 +41,7 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `cmake`
 - `qt6base`
 - `qt6declarative`
+- `qtshadertools` (build-time only)
 - `pkg-config`
 - `cli11`
 

@@ -91,7 +91,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets)
+set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets ShaderTools)
 
 include(cmake/pch.cmake)
 

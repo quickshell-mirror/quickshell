@@ -8,6 +8,7 @@
   cmake,
   ninja,
   qt6,
+  spirv-tools,
   cli11,
   breakpad,
   jemalloc,
@@ -45,6 +46,8 @@
   nativeBuildInputs = with pkgs; [
     cmake
     ninja
+    qt6.qtshadertools
+    spirv-tools
     qt6.wrapQtAppsHook
     pkg-config
   ] ++ (lib.optionals withWayland [
