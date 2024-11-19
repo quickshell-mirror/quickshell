@@ -20,6 +20,8 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 }
 
 void MarginWrapperManager::componentComplete() {
+	this->WrapperManager::componentComplete();
+
 	if (this->mWrapper) {
 		QObject::connect(
 		    this->mWrapper,
@@ -35,8 +37,6 @@ void MarginWrapperManager::componentComplete() {
 		    &MarginWrapperManager::onWrapperHeightChanged
 		);
 	}
-
-	this->WrapperManager::componentComplete();
 
 	if (!this->mChild) this->updateGeometry();
 }
@@ -97,12 +97,19 @@ qreal MarginWrapperManager::targetChildHeight() const {
 
 qreal MarginWrapperManager::targetChildX() const {
 	if (this->mResizeChild) return this->mMargin;
-	else return this->mWrapper->width() / 2 - this->mChild->implicitWidth() / 2;
+	else {
+		return std::max(this->mMargin, this->mWrapper->width() / 2 - this->mChild->implicitWidth() / 2);
+	}
 }
 
 qreal MarginWrapperManager::targetChildY() const {
 	if (this->mResizeChild) return this->mMargin;
-	else return this->mWrapper->height() / 2 - this->mChild->implicitHeight() / 2;
+	else {
+		return std::max(
+		    this->mMargin,
+		    this->mWrapper->height() / 2 - this->mChild->implicitHeight() / 2
+		);
+	}
 }
 
 void MarginWrapperManager::onWrapperWidthChanged() {
