@@ -1,9 +1,9 @@
 import QtQuick
-import Quickshell.Widgets
 
 ///! Rectangle that handles sizes and positioning for a single visual child.
 /// This component is useful for adding a border or background rectangle to
-/// a child item.
+/// a child item. If you need to clip the child item to the rectangle's
+/// border, see @@ClippingWrapperRectangle.
 ///
 /// > [!NOTE] WrapperRectangle is a @@MarginWrapperManager based component.
 /// > You should read its documentation as well.

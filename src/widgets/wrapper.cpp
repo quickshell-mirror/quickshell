@@ -11,7 +11,11 @@
 namespace qs::widgets {
 
 void WrapperManager::componentComplete() {
-	this->mWrapper = qobject_cast<QQuickItem*>(this->parent());
+	if (this->mAssignedWrapper) {
+		this->mWrapper = this->mAssignedWrapper;
+	} else {
+		this->mWrapper = qobject_cast<QQuickItem*>(this->parent());
+	}
 
 	if (!this->mWrapper) {
 		QString pstr;
@@ -116,6 +120,17 @@ void WrapperManager::onChildDestroyed() {
 	this->mChild = nullptr;
 	this->unsetChild();
 	emit this->childChanged();
+}
+
+QQuickItem* WrapperManager::wrapper() const { return this->mWrapper; }
+
+void WrapperManager::setWrapper(QQuickItem* wrapper) {
+	if (this->mWrapper) {
+		qmlWarning(this) << "Cannot set wrapper after WrapperManager initialization.";
+		return;
+	}
+
+	this->mAssignedWrapper = wrapper;
 }
 
 void WrapperManager::printChildCountWarning() const {

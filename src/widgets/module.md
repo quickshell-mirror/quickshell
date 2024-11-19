@@ -11,5 +11,6 @@ qml_files = [
 	"ClippingRectangle.qml",
 	"WrapperItem.qml",
 	"WrapperRectangle.qml",
+	"ClippingWrapperRectangle.qml",
 ]
 -----

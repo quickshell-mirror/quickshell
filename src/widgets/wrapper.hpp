@@ -98,6 +98,9 @@ class WrapperManager
 	/// When read, `child` will always return the (potentially null) selected child,
 	/// and not `undefined`.
 	Q_PROPERTY(QQuickItem* child READ child WRITE setProspectiveChild RESET unsetChild NOTIFY childChanged FINAL);
+	/// The wrapper managed by this manager. Defaults to the manager's parent.
+	/// This property may not be changed after Component.onCompleted.
+	Q_PROPERTY(QQuickItem* wrapper READ wrapper WRITE setWrapper NOTIFY wrapperChanged FINAL);
 	// clang-format on
 	QML_ELEMENT;
 
@@ -112,8 +115,12 @@ public:
 	void setProspectiveChild(QQuickItem* child);
 	void unsetChild();
 
+	[[nodiscard]] QQuickItem* wrapper() const;
+	void setWrapper(QQuickItem* wrapper);
+
 signals:
 	void childChanged();
+	void wrapperChanged();
 	QSDOC_HIDE void initializedChildChanged();
 
 private slots:
@@ -131,6 +138,7 @@ protected:
 	void updateGeometry();
 
 	QQuickItem* mWrapper = nullptr;
+	QQuickItem* mAssignedWrapper = nullptr;
 	QPointer<QQuickItem> mDefaultChild;
 	QQuickItem* mChild = nullptr;
 	Flags flags;

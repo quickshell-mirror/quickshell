@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell.Widgets
 
 ///! Item that handles sizes and positioning for a single visual child.
 /// This component is useful when you need to wrap a single component in

@@ -12,6 +12,7 @@ qt_add_qml_module(quickshell-widgets
 		ClippingRectangle.qml
 		WrapperItem.qml
 		WrapperRectangle.qml
+		ClippingWrapperRectangle.qml
 )
 
 qt6_add_shaders(quickshell-widgets "widgets-cliprect"
