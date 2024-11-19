@@ -19,6 +19,7 @@
 #include "../core/qmlscreen.hpp"
 #include "../core/region.hpp"
 #include "../core/reload.hpp"
+#include "../debug/lint.hpp"
 #include "windowinterface.hpp"
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
@@ -214,6 +215,11 @@ void ProxyWindowBase::polishItems() {
 	// This hack manually polishes the item tree right before showing the window so it will
 	// always be created with the correct size.
 	QQuickWindowPrivate::get(this->window)->polishItems();
+
+	if (!this->ranLints) {
+		qs::debug::lintItemTree(this->mContentItem);
+		this->ranLints = true;
+	}
 }
 
 qint32 ProxyWindowBase::x() const {

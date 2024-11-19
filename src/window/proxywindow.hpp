@@ -130,6 +130,7 @@ protected:
 	QQuickWindow* window = nullptr;
 	QQuickItem* mContentItem = nullptr;
 	bool reloadComplete = false;
+	bool ranLints = false;
 
 private:
 	void polishItems();

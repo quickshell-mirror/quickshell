@@ -22,6 +22,8 @@ target_link_libraries(quickshell-window PRIVATE
 	Qt::Core Qt::Gui Qt::Quick Qt6::QuickPrivate
 )
 
+qs_add_link_dependencies(quickshell-window quickshell-debug)
+
 target_link_libraries(quickshell-window-init PRIVATE Qt::Qml)
 
 qs_module_pch(quickshell-window SET large)
