@@ -77,9 +77,18 @@ class PopupAnchor: public QObject {
 	/// determined by the @@edges, @@gravity, and @@adjustment.
 	///
 	/// If you leave @@edges, @@gravity and @@adjustment at their default values,
-	/// setting more than `x` and `y` does not matter.
+	/// setting more than `x` and `y` does not matter. The anchor rect cannot
+	/// be smaller than 1x1 pixels.
 	///
-	/// > [!INFO] The anchor rect cannot be smaller than 1x1 pixels.
+	/// > [!INFO] To position a popup relative to an item inside a window,
+	/// > you can use [coordinate mapping functions] (note the warning below).
+	///
+	/// > [!WARNING] Using [coordinate mapping functions] in a binding to
+	/// > this property will position the anchor incorrectly.
+	/// > If you want to use them, do so in @@anchoring(s), or use
+	/// > @@TransformWatcher if you need real-time updates to mapped coordinates.
+	///
+	/// [coordinate mapping functions]: https://doc.qt.io/qt-6/qml-qtquick-item.html#mapFromItem-method
 	Q_PROPERTY(Box rect READ rect WRITE setRect NOTIFY rectChanged);
 	/// The point on the anchor rectangle the popup should anchor to.
 	/// Opposing edges suchs as `Edges.Left | Edges.Right` are not allowed.
@@ -127,6 +136,12 @@ public:
 	void updatePlacement(const QPoint& anchorpoint, const QSize& size);
 
 signals:
+	/// Emitted when this anchor is about to be used. Mostly useful for modifying
+	/// the anchor @@rect using [coordinate mapping functions], which are not reactive.
+	///
+	/// [coordinate mapping functions]: https://doc.qt.io/qt-6/qml-qtquick-item.html#mapFromItem-method
+	void anchoring();
+
 	void windowChanged();
 	QSDOC_HIDE void backingWindowVisibilityChanged();
 	void rectChanged();

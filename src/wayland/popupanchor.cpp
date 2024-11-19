@@ -41,6 +41,8 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 
 		positioner.set_constraint_adjustment(anchor->adjustment().toInt());
 
+		emit anchor->anchoring();
+
 		auto anchorRect = anchor->rect();
 
 		if (auto* p = window->transientParent()) {
@@ -101,6 +103,7 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 bool WaylandPopupPositioner::shouldRepositionOnMove() const { return true; }
 
 void WaylandPopupPositioner::setFlags(PopupAnchor* anchor, QWindow* window) {
+	emit anchor->anchoring();
 	auto anchorRect = anchor->rect();
 
 	if (auto* p = window->transientParent()) {
