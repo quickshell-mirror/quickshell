@@ -38,6 +38,7 @@ qs_add_module_deps_light(quickshell-service-mpris Quickshell)
 install_qml_module(quickshell-service-mpris)
 
 target_link_libraries(quickshell-service-mpris PRIVATE Qt::Qml Qt::DBus)
+qs_add_link_dependencies(quickshell-service-mpris quickshell-dbus)
 
 qs_module_pch(quickshell-service-mpris SET dbus)
 

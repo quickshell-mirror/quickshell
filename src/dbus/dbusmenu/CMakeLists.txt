@@ -27,7 +27,8 @@ install_qml_module(quickshell-dbusmenu)
 # dbus headers
 target_include_directories(quickshell-dbusmenu PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(quickshell-dbusmenu PRIVATE Qt::Quick Qt::DBus quickshell-dbus)
+target_link_libraries(quickshell-dbusmenu PRIVATE Qt::Quick Qt::DBus)
+qs_add_link_dependencies(quickshell-dbusmenu quickshell-dbus)
 
 qs_module_pch(quickshell-dbusmenu SET dbus)
 

@@ -1,3 +1,12 @@
+# Adds a dependency hint to the link order, but does not block build on the dependency.
+function (qs_add_link_dependencies target)
+	set_property(
+		TARGET ${target}
+		APPEND PROPERTY INTERFACE_LINK_LIBRARIES
+		${ARGN}
+	)
+endfunction()
+
 function (qs_append_qmldir target text)
 	get_property(qmldir_content TARGET ${target} PROPERTY _qt_internal_qmldir_content)
 

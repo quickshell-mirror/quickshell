@@ -2,8 +2,8 @@ qt_add_executable(quickshell main.cpp)
 
 install(TARGETS quickshell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_subdirectory(launch)
 add_subdirectory(build)
+add_subdirectory(launch)
 add_subdirectory(core)
 add_subdirectory(ipc)
 add_subdirectory(window)

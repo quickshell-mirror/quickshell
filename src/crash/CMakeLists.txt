@@ -14,4 +14,4 @@ target_link_libraries(quickshell-crash PRIVATE PkgConfig::breakpad -lbreakpad_cl
 # quick linked for pch compat
 target_link_libraries(quickshell-crash PRIVATE quickshell-build Qt::Quick Qt::Widgets)
 
-target_link_libraries(quickshell-core PRIVATE quickshell-crash)
+target_link_libraries(quickshell PRIVATE quickshell-crash)
