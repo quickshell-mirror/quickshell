@@ -1,5 +1,7 @@
 qt_add_library(quickshell-widgets STATIC
 	cliprect.cpp
+	wrapper.cpp
+	marginwrapper.cpp
 )
 
 qt_add_qml_module(quickshell-widgets
@@ -8,6 +10,8 @@ qt_add_qml_module(quickshell-widgets
 	QML_FILES
 		IconImage.qml
 		ClippingRectangle.qml
+		WrapperItem.qml
+		WrapperRectangle.qml
 )
 
 qt6_add_shaders(quickshell-widgets "widgets-cliprect"
