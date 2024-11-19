@@ -18,7 +18,7 @@ WlrLayershell::WlrLayershell(QObject* parent)
     : ProxyWindowBase(parent)
     , ext(new LayershellWindowExtension(this)) {}
 
-QQuickWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
+ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	auto* old = qobject_cast<WlrLayershell*>(oldInstance);
 	auto* window = old == nullptr ? nullptr : old->disownWindow();
 
@@ -33,8 +33,8 @@ QQuickWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	return this->createQQuickWindow();
 }
 
-QQuickWindow* WlrLayershell::createQQuickWindow() {
-	auto* window = new QQuickWindow();
+ProxiedWindow* WlrLayershell::createQQuickWindow() {
+	auto* window = this->ProxyWindowBase::createQQuickWindow();
 
 	if (!this->ext->attach(window)) {
 		qWarning() << "Could not attach Layershell extension to new QQuickWindow. Layer will not "

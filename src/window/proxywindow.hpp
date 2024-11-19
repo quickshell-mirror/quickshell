@@ -11,11 +11,14 @@
 #include <qquickwindow.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qwindow.h>
 
 #include "../core/qmlscreen.hpp"
 #include "../core/region.hpp"
 #include "../core/reload.hpp"
 #include "windowinterface.hpp"
+
+class ProxiedWindow;
 
 // Proxy to an actual window exposing a limited property set with the ability to
 // transfer it to a new window.
@@ -60,10 +63,10 @@ public:
 	void deleteWindow(bool keepItemOwnership = false);
 
 	// Disown the backing window and delete all its children.
-	virtual QQuickWindow* disownWindow(bool keepItemOwnership = false);
+	virtual ProxiedWindow* disownWindow(bool keepItemOwnership = false);
 
-	virtual QQuickWindow* retrieveWindow(QObject* oldInstance);
-	virtual QQuickWindow* createQQuickWindow();
+	virtual ProxiedWindow* retrieveWindow(QObject* oldInstance);
+	virtual ProxiedWindow* createQQuickWindow();
 	virtual void connectWindow();
 	virtual void completeWindow();
 	virtual void postCompleteWindow();
@@ -119,6 +122,7 @@ protected slots:
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
+	void onWindowExposeEvent();
 
 protected:
 	bool mVisible = true;
@@ -127,7 +131,7 @@ protected:
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
-	QQuickWindow* window = nullptr;
+	ProxiedWindow* window = nullptr;
 	QQuickItem* mContentItem = nullptr;
 	bool reloadComplete = false;
 	bool ranLints = false;
@@ -150,4 +154,17 @@ public:
 
 private:
 	ProxyWindowBase* mWindow;
+};
+
+class ProxiedWindow: public QQuickWindow {
+	Q_OBJECT;
+
+public:
+	explicit ProxiedWindow(QWindow* parent = nullptr): QQuickWindow(parent) {}
+
+signals:
+	void exposed();
+
+protected:
+	void exposeEvent(QExposeEvent* event) override;
 };

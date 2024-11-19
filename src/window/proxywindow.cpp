@@ -1,6 +1,7 @@
 #include "proxywindow.hpp"
 
 #include <private/qquickwindow_p.h>
+#include <qevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
@@ -80,7 +81,7 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 void ProxyWindowBase::postCompleteWindow() { this->setVisible(this->mVisible); }
 
-QQuickWindow* ProxyWindowBase::createQQuickWindow() { return new QQuickWindow(); }
+ProxiedWindow* ProxyWindowBase::createQQuickWindow() { return new ProxiedWindow(); }
 
 void ProxyWindowBase::createWindow() {
 	if (this->window != nullptr) return;
@@ -102,7 +103,7 @@ void ProxyWindowBase::deleteWindow(bool keepItemOwnership) {
 	}
 }
 
-QQuickWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
+ProxiedWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
 	if (this->window == nullptr) return nullptr;
 
 	QObject::disconnect(this->window, nullptr, this, nullptr);
@@ -116,7 +117,7 @@ QQuickWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
 	return window;
 }
 
-QQuickWindow* ProxyWindowBase::retrieveWindow(QObject* oldInstance) {
+ProxiedWindow* ProxyWindowBase::retrieveWindow(QObject* oldInstance) {
 	auto* old = qobject_cast<ProxyWindowBase*>(oldInstance);
 	return old == nullptr ? nullptr : old->disownWindow();
 }
@@ -136,6 +137,7 @@ void ProxyWindowBase::connectWindow() {
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
+	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::onWindowExposeEvent);
 	// clang-format on
 }
 
@@ -215,7 +217,9 @@ void ProxyWindowBase::polishItems() {
 	// This hack manually polishes the item tree right before showing the window so it will
 	// always be created with the correct size.
 	QQuickWindowPrivate::get(this->window)->polishItems();
+}
 
+void ProxyWindowBase::onWindowExposeEvent() {
 	if (!this->ranLints) {
 		qs::debug::lintItemTree(this->mContentItem);
 		this->ranLints = true;
@@ -368,3 +372,8 @@ void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->he
 
 QObject* ProxyWindowAttached::window() const { return this->mWindow; }
 QQuickItem* ProxyWindowAttached::contentItem() const { return this->mWindow->contentItem(); }
+
+void ProxiedWindow::exposeEvent(QExposeEvent* event) {
+	this->QQuickWindow::exposeEvent(event);
+	emit this->exposed();
+}

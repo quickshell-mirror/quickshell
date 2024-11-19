@@ -64,8 +64,8 @@ class WlrLayershell: public ProxyWindowBase {
 public:
 	explicit WlrLayershell(QObject* parent = nullptr);
 
-	QQuickWindow* retrieveWindow(QObject* oldInstance) override;
-	QQuickWindow* createQQuickWindow() override;
+	ProxiedWindow* retrieveWindow(QObject* oldInstance) override;
+	ProxiedWindow* createQQuickWindow() override;
 	void connectWindow() override;
 	[[nodiscard]] bool deleteOnInvisible() const override;
 
