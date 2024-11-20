@@ -6,6 +6,7 @@
 #include <private/wayland-xdg-shell-client-protocol.h>
 #include <qvariant.h>
 #include <qwindow.h>
+#include <qtmetamacros.h>
 
 #include "../core/popupanchor.hpp"
 #include "../core/types.hpp"

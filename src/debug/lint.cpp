@@ -7,10 +7,7 @@
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
-#include <qquickframebufferobject.h>
 #include <qquickitem.h>
-#include <qquickpainteditem.h>
-#include <qquickrhiitem.h>
 #include <qquickwindow.h>
 #include <qstringliteral.h>
 

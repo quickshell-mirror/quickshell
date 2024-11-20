@@ -3,7 +3,7 @@
 #include <qlogging.h>
 #include <qnamespace.h>
 #include <qobject.h>
-#include <qquickwindow.h>
+#include <qqmlinfo.h>
 #include <qtypes.h>
 #include <qwindow.h>
 
@@ -38,12 +38,11 @@ void ProxyPopupWindow::completeWindow() {
 void ProxyPopupWindow::postCompleteWindow() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::setParentWindow(QObject* parent) {
-	qWarning() << "PopupWindow.parentWindow is deprecated. Use PopupWindow.anchor.window.";
+	qmlWarning(this) << "PopupWindow.parentWindow is deprecated. Use PopupWindow.anchor.window.";
 	this->mAnchor.setWindow(parent);
 }
 
 QObject* ProxyPopupWindow::parentWindow() const {
-	qWarning() << "PopupWindow.parentWindow is deprecated. Use PopupWindow.anchor.window.";
 	return this->mAnchor.window();
 }
 
@@ -71,7 +70,7 @@ void ProxyPopupWindow::updateTransientParent() {
 void ProxyPopupWindow::onParentUpdated() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::setScreen(QuickshellScreenInfo* /*unused*/) {
-	qWarning() << "Cannot set screen of popup window, as that is controlled by the parent window";
+	qmlWarning(this) << "Cannot set screen of popup window, as that is controlled by the parent window";
 }
 
 void ProxyPopupWindow::setVisible(bool visible) {
@@ -101,7 +100,7 @@ void ProxyPopupWindow::onVisibleChanged() {
 }
 
 void ProxyPopupWindow::setRelativeX(qint32 x) {
-	qWarning() << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
+	qmlWarning(this) << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
 	auto rect = this->mAnchor.rect();
 	if (x == rect.x) return;
 	rect.x = x;
@@ -109,12 +108,12 @@ void ProxyPopupWindow::setRelativeX(qint32 x) {
 }
 
 qint32 ProxyPopupWindow::relativeX() const {
-	qWarning() << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
+	qmlWarning(this) << "PopupWindow.relativeX is deprecated. Use PopupWindow.anchor.rect.x.";
 	return this->mAnchor.rect().x;
 }
 
 void ProxyPopupWindow::setRelativeY(qint32 y) {
-	qWarning() << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
+	qmlWarning(this) << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
 	auto rect = this->mAnchor.rect();
 	if (y == rect.y) return;
 	rect.y = y;
@@ -122,7 +121,7 @@ void ProxyPopupWindow::setRelativeY(qint32 y) {
 }
 
 qint32 ProxyPopupWindow::relativeY() const {
-	qWarning() << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
+	qmlWarning(this) << "PopupWindow.relativeY is deprecated. Use PopupWindow.anchor.rect.y.";
 	return this->mAnchor.rect().y;
 }
 
