@@ -7,6 +7,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -256,18 +257,12 @@ void MprisPlayer::setVolume(qreal volume) {
 	this->pVolume.write();
 }
 
-const QVariantMap& MprisPlayer::metadata() const { return this->pMetadata.get(); }
-
 void MprisPlayer::onMetadataChanged() {
-	emit this->metadataChanged();
-
 	auto lengthVariant = this->pMetadata.get().value("mpris:length");
 	qlonglong length = -1;
 	if (lengthVariant.isValid() && lengthVariant.canConvert<qlonglong>()) {
 		length = lengthVariant.value<qlonglong>();
 	}
-
-	auto lengthChanged = this->setLength(length);
 
 	auto trackChanged = false;
 
@@ -297,46 +292,42 @@ void MprisPlayer::onMetadataChanged() {
 		}
 	}
 
-	auto trackTitle = this->pMetadata.get().value("xesam:title").toString();
-	auto trackTitleChanged = this->setTrackTitle(trackTitle.isNull() ? "Unknown Track" : trackTitle);
-
-	auto trackArtists = this->pMetadata.get().value("xesam:artist").value<QVector<QString>>();
-	auto trackArtistsChanged = this->setTrackArtists(trackArtists.join(", "));
-
-	auto trackAlbum = this->pMetadata.get().value("xesam:album").toString();
-	auto trackAlbumChanged = this->setTrackAlbum(trackAlbum.isNull() ? "Unknown Album" : trackAlbum);
-
-	auto trackAlbumArtist = this->pMetadata.get().value("xesam:albumArtist").toString();
-	auto trackAlbumArtistChanged = this->setTrackAlbumArtist(trackAlbumArtist);
-
-	auto trackArtUrl = this->pMetadata.get().value("mpris:artUrl").toString();
-	auto trackArtUrlChanged = this->setTrackArtUrl(trackArtUrl);
-
 	if (trackChanged) {
-		this->mUniqueId++;
-		// Some players don't seem to send position updates or seeks on track change.
-		this->pPosition.update();
 		emit this->trackChanged();
 	}
 
-	DropEmitter::call(
-	    trackTitleChanged,
-	    trackArtistsChanged,
-	    trackAlbumChanged,
-	    trackAlbumArtistChanged,
-	    trackArtUrlChanged,
-	    lengthChanged
-	);
+	Qt::beginPropertyUpdateGroup();
+
+	this->bMetadata = this->pMetadata.get();
+
+	auto trackTitle = this->pMetadata.get().value("xesam:title").toString();
+	this->bTrackTitle = trackTitle.isNull() ? "Unknown Track" : trackTitle;
+
+	auto trackArtist = this->pMetadata.get().value("xesam:artist").value<QVector<QString>>();
+	this->bTrackArtist = trackArtist.join(", ");
+
+	auto trackAlbum = this->pMetadata.get().value("xesam:album").toString();
+	this->bTrackAlbum = trackAlbum.isNull() ? "Unknown Album" : trackAlbum;
+
+	this->bTrackAlbumArtist = this->pMetadata.get().value("xesam:albumArtist").toString();
+	this->bTrackArtUrl = this->pMetadata.get().value("mpris:artUrl").toString();
+
+	if (trackChanged) {
+		emit this->trackChanged();
+		this->bUniqueId = this->bUniqueId + 1;
+
+		// Some players don't seem to send position updates or seeks on track change.
+		this->pPosition.update();
+	}
+
+	Qt::endPropertyUpdateGroup();
+
+	this->setLength(length);
+
+	emit this->postTrackChanged();
 }
 
-DEFINE_MEMBER_GET(MprisPlayer, uniqueId);
 DEFINE_MEMBER_SET(MprisPlayer, length, setLength);
-
-DEFINE_MEMBER_GETSET(MprisPlayer, trackTitle, setTrackTitle);
-DEFINE_MEMBER_GETSET(MprisPlayer, trackArtists, setTrackArtists);
-DEFINE_MEMBER_GETSET(MprisPlayer, trackAlbum, setTrackAlbum);
-DEFINE_MEMBER_GETSET(MprisPlayer, trackAlbumArtist, setTrackAlbumArtist);
-DEFINE_MEMBER_GETSET(MprisPlayer, trackArtUrl, setTrackArtUrl);
 
 MprisPlaybackState::Enum MprisPlayer::playbackState() const { return this->mPlaybackState; }
 

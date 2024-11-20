@@ -1,6 +1,5 @@
 #include "popupwindow.hpp"
 
-#include <qlogging.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlinfo.h>
@@ -42,9 +41,7 @@ void ProxyPopupWindow::setParentWindow(QObject* parent) {
 	this->mAnchor.setWindow(parent);
 }
 
-QObject* ProxyPopupWindow::parentWindow() const {
-	return this->mAnchor.window();
-}
+QObject* ProxyPopupWindow::parentWindow() const { return this->mAnchor.window(); }
 
 void ProxyPopupWindow::updateTransientParent() {
 	auto* bw = this->mAnchor.backingWindow();
@@ -70,7 +67,8 @@ void ProxyPopupWindow::updateTransientParent() {
 void ProxyPopupWindow::onParentUpdated() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::setScreen(QuickshellScreenInfo* /*unused*/) {
-	qmlWarning(this) << "Cannot set screen of popup window, as that is controlled by the parent window";
+	qmlWarning(this
+	) << "Cannot set screen of popup window, as that is controlled by the parent window";
 }
 
 void ProxyPopupWindow::setVisible(bool visible) {

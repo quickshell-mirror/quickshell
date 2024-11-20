@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -125,25 +126,27 @@ class MprisPlayer: public QObject {
 	/// A map of common properties is available [here](https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata).
 	/// Do not count on any of them actually being present.
 	///
-	/// Note that the @@trackTitle, @@trackAlbum, @@trackAlbumArtist, @@trackArtists and @@trackArtUrl
+	/// Note that the @@trackTitle, @@trackAlbum, @@trackAlbumArtist, @@trackArtist and @@trackArtUrl
 	/// properties have extra logic to guard against bad players sending weird metadata, and should
 	/// be used over grabbing the properties directly from the metadata.
-	Q_PROPERTY(QVariantMap metadata READ metadata NOTIFY metadataChanged);
+	Q_PROPERTY(QVariantMap metadata READ metadata NOTIFY metadataChanged BINDABLE bindableMetadata);
 	/// An opaque identifier for the current track unique within the current player.
 	///
 	/// > [!WARNING] This is NOT `mpris:trackid` as that is sometimes missing or nonunique
 	/// > in some players.
-	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY trackChanged);
+	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY trackChanged BINDABLE bindableUniqueId);
 	/// The title of the current track, or "Unknown Track" if none was provided.
-	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged);
+	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged BINDABLE bindableTrackTitle);
+	/// The current track's artist, or an empty string if none was provided.
+	Q_PROPERTY(QString trackArtist READ trackArtist NOTIFY trackArtistChanged BINDABLE bindableTrackArtist);
+	/// > [!ERROR] deprecated in favor of @@trackArtist.
+	Q_PROPERTY(QString trackArtists READ trackArtist NOTIFY trackArtistChanged BINDABLE bindableTrackArtist);
 	/// The current track's album, or "Unknown Album" if none was provided.
-	Q_PROPERTY(QString trackAlbum READ trackAlbum NOTIFY trackAlbumChanged);
+	Q_PROPERTY(QString trackAlbum READ trackAlbum NOTIFY trackAlbumChanged BINDABLE bindableTrackAlbum);
 	/// The current track's album artist, or "Unknown Artist" if none was provided.
-	Q_PROPERTY(QString trackAlbumArtist READ trackAlbumArtist NOTIFY trackAlbumArtistChanged);
-	/// The current track's artists, or an empty list if none were provided.
-	Q_PROPERTY(QString trackArtists READ trackArtists NOTIFY trackArtistsChanged);
+	Q_PROPERTY(QString trackAlbumArtist READ trackAlbumArtist NOTIFY trackAlbumArtistChanged BINDABLE bindableTrackAlbumArtist);
 	/// The current track's art url, or `""` if none was provided.
-	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged);
+	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged BINDABLE bindableTrackArtUrl);
 	/// The playback state of the media player.
 	///
 	/// - If @@canPlay is false, you cannot assign the `Playing` state.
@@ -254,7 +257,13 @@ public:
 	[[nodiscard]] bool volumeSupported() const;
 	void setVolume(qreal volume);
 
-	[[nodiscard]] const QVariantMap& metadata() const;
+	QS_BINDABLE_GETTER(quint32, bUniqueId, uniqueId, bindableUniqueId);
+	QS_BINDABLE_GETTER(QVariantMap, bMetadata, metadata, bindableMetadata);
+	QS_BINDABLE_GETTER(QString, bTrackTitle, trackTitle, bindableTrackTitle);
+	QS_BINDABLE_GETTER(QString, bTrackAlbum, trackAlbum, bindableTrackAlbum);
+	QS_BINDABLE_GETTER(QString, bTrackAlbumArtist, trackAlbumArtist, bindableTrackAlbumArtist);
+	QS_BINDABLE_GETTER(QString, bTrackArtist, trackArtist, bindableTrackArtist);
+	QS_BINDABLE_GETTER(QString, bTrackArtUrl, trackArtUrl, bindableTrackArtUrl);
 
 	[[nodiscard]] MprisPlaybackState::Enum playbackState() const;
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
@@ -281,9 +290,22 @@ public:
 signals:
 	/// The track has changed.
 	///
-	/// All track info change signalss will fire immediately after if applicable,
-	/// but their values will be updated before the signal fires.
+	/// All track information properties that were sent by the player
+	/// will be updated immediately following this signal. @@postTrackChanged
+	/// will be sent after they update.
+	///
+	/// Track information properties: @@uniqueId, @@metadata, @@trackTitle,
+	/// @@trackArtist, @@trackAlbum, @@trackAlbumArtist, @@trackArtUrl
+	///
+	/// > [!WARNING] Some particularly poorly behaved players will update metadata
+	/// > *before* indicating the track has changed.
 	void trackChanged();
+	/// Sent after track info related properties have been updated, following @@trackChanged.
+	///
+	/// > [!WARNING] It is not safe to assume all track information is up to date after
+	/// > this signal is emitted. A large number of players will update track information,
+	/// > particularly @@trackArtUrl, slightly after this signal.
+	void postTrackChanged();
 
 	QSDOC_HIDE void ready();
 	void canControlChanged();
@@ -306,9 +328,9 @@ signals:
 	void volumeSupportedChanged();
 	void metadataChanged();
 	void trackTitleChanged();
+	void trackArtistChanged();
 	void trackAlbumChanged();
 	void trackAlbumArtistChanged();
-	void trackArtistsChanged();
 	void trackArtUrlChanged();
 	void playbackStateChanged();
 	void loopStateChanged();
@@ -369,30 +391,21 @@ private:
 
 	DBusMprisPlayerApp* app = nullptr;
 	DBusMprisPlayer* player = nullptr;
-	quint32 mUniqueId = 0;
 	QString mTrackId;
 	QString mTrackUrl;
-	QString mTrackTitle;
-	QString mTrackArtists;
-	QString mTrackAlbum;
-	QString mTrackAlbumArtist;
-	QString mTrackArtUrl;
-
-	DECLARE_MEMBER_NS(MprisPlayer, uniqueId, mUniqueId);
 
 	DECLARE_MEMBER(MprisPlayer, length, mLength, lengthChanged);
 	DECLARE_MEMBER_SET(length, setLength);
 
 	// clang-format off
-	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackTitle, setTrackTitle, mTrackTitle, trackTitleChanged);
-	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackArtists, setTrackArtists, mTrackArtists, trackArtistsChanged);
-	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackAlbum, setTrackAlbum, mTrackAlbum, trackAlbumChanged);
-	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackAlbumArtist, setTrackAlbumArtist, mTrackAlbumArtist, trackAlbumArtistChanged);
-	DECLARE_PRIVATE_MEMBER(MprisPlayer, trackArtUrl, setTrackArtUrl, mTrackArtUrl, trackArtUrlChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, quint32, bUniqueId);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QVariantMap, bMetadata, &MprisPlayer::metadataChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtist, &MprisPlayer::trackArtistChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackTitle, &MprisPlayer::trackTitleChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbum, &MprisPlayer::trackAlbumChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbumArtist, &MprisPlayer::trackAlbumArtistChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtUrl, &MprisPlayer::trackArtUrlChanged);
 	// clang-format on
-
-public:
-	DECLARE_MEMBER_GET(uniqueId);
 };
 
 } // namespace qs::service::mpris

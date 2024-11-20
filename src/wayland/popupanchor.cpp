@@ -4,9 +4,9 @@
 #include <private/qwayland-xdg-shell.h>
 #include <private/qwaylandwindow_p.h>
 #include <private/wayland-xdg-shell-client-protocol.h>
+#include <qtmetamacros.h>
 #include <qvariant.h>
 #include <qwindow.h>
-#include <qtmetamacros.h>
 
 #include "../core/popupanchor.hpp"
 #include "../core/types.hpp"
