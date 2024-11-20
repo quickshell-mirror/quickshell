@@ -110,100 +110,25 @@ void asyncReadPropertyInternal(
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, &interface, responseCallback);
 }
 
-void AbstractDBusProperty::tryUpdate(const QVariant& variant) {
-	this->mExists = true;
-
-	auto error = this->read(variant);
-	if (error.isValid()) {
-		qCWarning(logDbusProperties).noquote()
-		    << "Error demarshalling property update for" << this->toString();
-		qCWarning(logDbusProperties) << error;
-	} else {
-		qCDebug(logDbusProperties).noquote()
-		    << "Updated property" << this->toString() << "to" << this->valueString();
-	}
-}
-
 void AbstractDBusProperty::update() {
 	if (this->group == nullptr) {
-		qFatal(logDbusProperties) << "Tried to update dbus property" << this->name
+		qFatal(logDbusProperties) << "Tried to update dbus property" << this->nameRef()
 		                          << "which is not attached to a group";
 	} else {
-		const QString propStr = this->toString();
-
-		if (this->group->interface == nullptr) {
-			qFatal(logDbusProperties).noquote()
-			    << "Tried to update property" << propStr << "of a disconnected interface";
-		}
-
-		qCDebug(logDbusProperties).noquote() << "Updating property" << propStr;
-
-		auto pendingCall =
-		    this->group->propertyInterface->Get(this->group->interface->interface(), this->name);
-
-		auto* call = new QDBusPendingCallWatcher(pendingCall, this);
-
-		auto responseCallback = [this, propStr](QDBusPendingCallWatcher* call) {
-			const QDBusPendingReply<QDBusVariant> reply = *call;
-
-			if (reply.isError()) {
-				qCWarning(logDbusProperties).noquote() << "Error updating property" << propStr;
-				qCWarning(logDbusProperties) << reply.error();
-			} else {
-				this->tryUpdate(reply.value().variant());
-			}
-
-			delete call;
-		};
-
-		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+		this->group->requestPropertyUpdate(this);
 	}
 }
 
 void AbstractDBusProperty::write() {
 	if (this->group == nullptr) {
-		qFatal(logDbusProperties) << "Tried to write dbus property" << this->name
+		qFatal(logDbusProperties) << "Tried to write dbus property" << this->nameRef()
 		                          << "which is not attached to a group";
 	} else {
-		const QString propStr = this->toString();
-
-		if (this->group->interface == nullptr) {
-			qFatal(logDbusProperties).noquote()
-			    << "Tried to write property" << propStr << "of a disconnected interface";
-		}
-
-		qCDebug(logDbusProperties).noquote() << "Writing property" << propStr;
-
-		auto pendingCall = this->group->propertyInterface->Set(
-		    this->group->interface->interface(),
-		    this->name,
-		    QDBusVariant(this->serialize())
-		);
-
-		auto* call = new QDBusPendingCallWatcher(pendingCall, this);
-
-		auto responseCallback = [propStr](QDBusPendingCallWatcher* call) {
-			const QDBusPendingReply<> reply = *call;
-
-			if (reply.isError()) {
-				qCWarning(logDbusProperties).noquote() << "Error writing property" << propStr;
-				qCWarning(logDbusProperties) << reply.error();
-			}
-			delete call;
-		};
-
-		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+		this->group->pushPropertyUpdate(this);
 	}
 }
 
-bool AbstractDBusProperty::exists() const { return this->mExists; }
-
-QString AbstractDBusProperty::toString() const {
-	const QString group = this->group == nullptr ? "{ NO GROUP }" : this->group->toString();
-	return group + ':' + this->name;
-}
-
-DBusPropertyGroup::DBusPropertyGroup(QVector<AbstractDBusProperty*> properties, QObject* parent)
+DBusPropertyGroup::DBusPropertyGroup(QVector<DBusPropertyCore*> properties, QObject* parent)
     : QObject(parent)
     , properties(std::move(properties)) {}
 
@@ -246,7 +171,7 @@ void DBusPropertyGroup::updateAllDirect() {
 	}
 
 	for (auto* property: this->properties) {
-		property->update();
+		this->requestPropertyUpdate(property);
 	}
 }
 
@@ -287,25 +212,100 @@ void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties, bool co
 		auto prop = std::find_if(
 		    this->properties.begin(),
 		    this->properties.end(),
-		    [&name](AbstractDBusProperty* prop) { return prop->name == name; }
+		    [&name](DBusPropertyCore* prop) { return prop->nameRef() == name; }
 		);
 
 		if (prop == this->properties.end()) {
 			qCDebug(logDbusProperties) << "Ignoring untracked property update" << name << "for"
 			                           << this->toString();
 		} else {
-			(*prop)->tryUpdate(value);
+			this->tryUpdateProperty(*prop, value);
 		}
 	}
 
 	if (complainMissing) {
 		for (const auto* prop: this->properties) {
-			if (prop->required && !properties.contains(prop->name)) {
+			if (prop->isRequired() && !properties.contains(prop->name())) {
 				qCWarning(logDbusProperties)
-				    << prop->name << "missing from property set for" << this->toString();
+				    << prop->nameRef() << "missing from property set for" << this->toString();
 			}
 		}
 	}
+}
+
+void DBusPropertyGroup::tryUpdateProperty(DBusPropertyCore* property, const QVariant& variant)
+    const {
+	property->mExists = true;
+
+	auto error = property->store(variant);
+	if (error.isValid()) {
+		qCWarning(logDbusProperties).noquote()
+		    << "Error demarshalling property update for" << this->propertyString(property);
+		qCWarning(logDbusProperties) << error;
+	} else {
+		qCDebug(logDbusProperties).noquote()
+		    << "Updated property" << this->propertyString(property) << "to" << property->valueString();
+	}
+}
+
+void DBusPropertyGroup::requestPropertyUpdate(DBusPropertyCore* property) {
+	const QString propStr = this->propertyString(property);
+
+	if (this->interface == nullptr) {
+		qFatal(logDbusProperties).noquote()
+		    << "Tried to update property" << propStr << "of a disconnected interface";
+	}
+
+	qCDebug(logDbusProperties).noquote() << "Updating property" << propStr;
+
+	auto pendingCall = this->propertyInterface->Get(this->interface->interface(), property->name());
+	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
+
+	auto responseCallback = [this, propStr, property](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<QDBusVariant> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logDbusProperties).noquote() << "Error updating property" << propStr;
+			qCWarning(logDbusProperties) << reply.error();
+		} else {
+			this->tryUpdateProperty(property, reply.value().variant());
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void DBusPropertyGroup::pushPropertyUpdate(DBusPropertyCore* property) {
+	const QString propStr = this->propertyString(property);
+
+	if (this->interface == nullptr) {
+		qFatal(logDbusProperties).noquote()
+		    << "Tried to write property" << propStr << "of a disconnected interface";
+	}
+
+	qCDebug(logDbusProperties).noquote() << "Writing property" << propStr;
+
+	auto pendingCall = this->propertyInterface->Set(
+	    this->interface->interface(),
+	    property->name(),
+	    QDBusVariant(property->serialize())
+	);
+
+	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
+
+	auto responseCallback = [propStr](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logDbusProperties).noquote() << "Error writing property" << propStr;
+			qCWarning(logDbusProperties) << reply.error();
+		}
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
 QString DBusPropertyGroup::toString() const {
@@ -316,6 +316,12 @@ QString DBusPropertyGroup::toString() const {
 		     + this->interface->interface();
 	}
 }
+
+QString DBusPropertyGroup::propertyString(const DBusPropertyCore* property) const {
+	return this->toString() % ':' % property->nameRef();
+}
+
+QString AbstractDBusProperty::toString() const { return this->group->propertyString(this); }
 
 void DBusPropertyGroup::onPropertiesChanged(
     const QString& interfaceName,
@@ -330,14 +336,14 @@ void DBusPropertyGroup::onPropertiesChanged(
 		auto prop = std::find_if(
 		    this->properties.begin(),
 		    this->properties.end(),
-		    [&name](AbstractDBusProperty* prop) { return prop->name == name; }
+		    [&name](DBusPropertyCore* prop) { return prop->nameRef() == name; }
 		);
 
 		if (prop == this->properties.end()) {
 			qCDebug(logDbusProperties) << "Ignoring untracked property invalidation" << name << "for"
 			                           << this;
 		} else {
-			(*prop)->update();
+			this->requestPropertyUpdate(*prop);
 		}
 	}
 

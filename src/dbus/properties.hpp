@@ -14,6 +14,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qvariant.h>
 
@@ -75,24 +76,44 @@ void asyncReadProperty(
 
 class DBusPropertyGroup;
 
-class AbstractDBusProperty: public QObject {
+class DBusPropertyCore {
+public:
+	DBusPropertyCore() = default;
+	virtual ~DBusPropertyCore() = default;
+	Q_DISABLE_COPY_MOVE(DBusPropertyCore);
+
+	[[nodiscard]] virtual QString name() const = 0;
+	[[nodiscard]] virtual QStringView nameRef() const = 0;
+	[[nodiscard]] virtual QString valueString() = 0;
+	[[nodiscard]] virtual bool isRequired() const = 0;
+	[[nodiscard]] bool exists() const { return this->mExists; }
+
+protected:
+	virtual QDBusError store(const QVariant& variant) = 0;
+	[[nodiscard]] virtual QVariant serialize() = 0;
+
+private:
+	bool mExists : 1 = false;
+
+	friend class DBusPropertyGroup;
+};
+
+class AbstractDBusProperty
+    : public QObject
+    , public DBusPropertyCore {
 	Q_OBJECT;
 
 public:
-	explicit AbstractDBusProperty(
-	    QString name,
-	    const QMetaType& type,
-	    bool required,
-	    QObject* parent = nullptr
-	)
+	explicit AbstractDBusProperty(QString name, bool required, QObject* parent = nullptr)
 	    : QObject(parent)
-	    , name(std::move(name))
-	    , type(type)
-	    , required(required) {}
+	    , required(required)
+	    , mName(std::move(name)) {}
 
-	[[nodiscard]] bool exists() const;
+	[[nodiscard]] QString name() const override { return this->mName; };
+	[[nodiscard]] QStringView nameRef() const override { return this->mName; };
+	[[nodiscard]] bool isRequired() const override { return this->required; };
+
 	[[nodiscard]] QString toString() const;
-	[[nodiscard]] virtual QString valueString() = 0;
 
 public slots:
 	void update();
@@ -101,19 +122,12 @@ public slots:
 signals:
 	void changed();
 
-protected:
-	virtual QDBusError read(const QVariant& variant) = 0;
-	virtual QVariant serialize() = 0;
-
 private:
-	void tryUpdate(const QVariant& variant);
+	bool required : 1;
+	bool mExists : 1 = false;
 
 	DBusPropertyGroup* group = nullptr;
-
-	QString name;
-	QMetaType type;
-	bool required;
-	bool mExists = false;
+	QString mName;
 
 	friend class DBusPropertyGroup;
 };
@@ -123,7 +137,7 @@ class DBusPropertyGroup: public QObject {
 
 public:
 	explicit DBusPropertyGroup(
-	    QVector<AbstractDBusProperty*> properties = QVector<AbstractDBusProperty*>(),
+	    QVector<DBusPropertyCore*> properties = QVector<DBusPropertyCore*>(),
 	    QObject* parent = nullptr
 	);
 
@@ -146,10 +160,14 @@ private slots:
 
 private:
 	void updatePropertySet(const QVariantMap& properties, bool complainMissing);
+	void requestPropertyUpdate(DBusPropertyCore* property);
+	void pushPropertyUpdate(DBusPropertyCore* property);
+	void tryUpdateProperty(DBusPropertyCore* property, const QVariant& variant) const;
+	[[nodiscard]] QString propertyString(const DBusPropertyCore* property) const;
 
 	DBusPropertiesInterface* propertyInterface = nullptr;
 	QDBusAbstractInterface* interface = nullptr;
-	QVector<AbstractDBusProperty*> properties;
+	QVector<DBusPropertyCore*> properties;
 
 	friend class AbstractDBusProperty;
 };
@@ -163,7 +181,7 @@ public:
 	    bool required = true,
 	    QObject* parent = nullptr
 	)
-	    : AbstractDBusProperty(std::move(name), QMetaType::fromType<T>(), required, parent)
+	    : AbstractDBusProperty(std::move(name), required, parent)
 	    , value(std::move(value)) {}
 
 	explicit DBusProperty(
@@ -191,7 +209,7 @@ public:
 	}
 
 protected:
-	QDBusError read(const QVariant& variant) override {
+	QDBusError store(const QVariant& variant) override {
 		auto result = demarshallVariant<T>(variant);
 
 		if (result.isValid()) {
