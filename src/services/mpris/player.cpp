@@ -301,7 +301,7 @@ void MprisPlayer::onMetadataChanged() {
 	auto trackTitleChanged = this->setTrackTitle(trackTitle.isNull() ? "Unknown Track" : trackTitle);
 
 	auto trackArtists = this->pMetadata.get().value("xesam:artist").value<QVector<QString>>();
-	auto trackArtistsChanged = this->setTrackArtists(trackArtists);
+	auto trackArtistsChanged = this->setTrackArtists(trackArtists.join(", "));
 
 	auto trackAlbum = this->pMetadata.get().value("xesam:album").toString();
 	auto trackAlbumChanged = this->setTrackAlbum(trackAlbum.isNull() ? "Unknown Album" : trackAlbum);

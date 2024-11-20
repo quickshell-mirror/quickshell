@@ -141,7 +141,7 @@ class MprisPlayer: public QObject {
 	/// The current track's album artist, or "Unknown Artist" if none was provided.
 	Q_PROPERTY(QString trackAlbumArtist READ trackAlbumArtist NOTIFY trackAlbumArtistChanged);
 	/// The current track's artists, or an empty list if none were provided.
-	Q_PROPERTY(QVector<QString> trackArtists READ trackArtists NOTIFY trackArtistsChanged);
+	Q_PROPERTY(QString trackArtists READ trackArtists NOTIFY trackArtistsChanged);
 	/// The current track's art url, or `""` if none was provided.
 	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged);
 	/// The playback state of the media player.
@@ -373,7 +373,7 @@ private:
 	QString mTrackId;
 	QString mTrackUrl;
 	QString mTrackTitle;
-	QVector<QString> mTrackArtists;
+	QString mTrackArtists;
 	QString mTrackAlbum;
 	QString mTrackAlbumArtist;
 	QString mTrackArtUrl;
