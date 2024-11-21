@@ -74,25 +74,18 @@ UPowerDevice::UPowerDevice(const QString& path, QObject* parent): QObject(parent
 		return;
 	}
 
-	// clang-format off
-	QObject::connect(&this->pType, &AbstractDBusProperty::changed, this, &UPowerDevice::typeChanged);
-	QObject::connect(&this->pPowerSupply, &AbstractDBusProperty::changed, this, &UPowerDevice::powerSupplyChanged);
-	QObject::connect(&this->pEnergy, &AbstractDBusProperty::changed, this, &UPowerDevice::energyChanged);
-	QObject::connect(&this->pEnergyCapacity, &AbstractDBusProperty::changed, this, &UPowerDevice::energyCapacityChanged);
-	QObject::connect(&this->pChangeRate, &AbstractDBusProperty::changed, this, &UPowerDevice::changeRateChanged);
-	QObject::connect(&this->pTimeToEmpty, &AbstractDBusProperty::changed, this, &UPowerDevice::timeToEmptyChanged);
-	QObject::connect(&this->pTimeToFull, &AbstractDBusProperty::changed, this, &UPowerDevice::timeToFullChanged);
-	QObject::connect(&this->pPercentage, &AbstractDBusProperty::changed, this, &UPowerDevice::percentageChanged);
-	QObject::connect(&this->pIsPresent, &AbstractDBusProperty::changed, this, &UPowerDevice::isPresentChanged);
-	QObject::connect(&this->pState, &AbstractDBusProperty::changed, this, &UPowerDevice::stateChanged);
-	QObject::connect(&this->pHealthPercentage, &AbstractDBusProperty::changed, this, &UPowerDevice::healthPercentageChanged);
-	QObject::connect(&this->pHealthPercentage, &AbstractDBusProperty::changed, this, &UPowerDevice::healthSupportedChanged);
-	QObject::connect(&this->pIconName, &AbstractDBusProperty::changed, this, &UPowerDevice::iconNameChanged);
-	QObject::connect(&this->pType, &AbstractDBusProperty::changed, this, &UPowerDevice::isLaptopBatteryChanged);
-	QObject::connect(&this->pNativePath, &AbstractDBusProperty::changed, this, &UPowerDevice::nativePathChanged);
+	this->bIsLaptopBattery.setBinding([this]() {
+		return this->bType == UPowerDeviceType::Battery && this->bPowerSupply;
+	});
 
-	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, &UPowerDevice::ready);
-	// clang-format on
+	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage != 0; });
+
+	QObject::connect(
+	    &this->deviceProperties,
+	    &DBusPropertyGroup::getAllFinished,
+	    this,
+	    &UPowerDevice::ready
+	);
 
 	this->deviceProperties.setInterface(this->device);
 	this->deviceProperties.updateAllViaGetAll();
@@ -102,33 +95,48 @@ bool UPowerDevice::isValid() const { return this->device->isValid(); }
 QString UPowerDevice::address() const { return this->device->service(); }
 QString UPowerDevice::path() const { return this->device->path(); }
 
-UPowerDeviceType::Enum UPowerDevice::type() const {
-	return static_cast<UPowerDeviceType::Enum>(this->pType.get());
-}
-
-bool UPowerDevice::powerSupply() const { return this->pPowerSupply.get(); }
-qreal UPowerDevice::energy() const { return this->pEnergy.get(); }
-qreal UPowerDevice::energyCapacity() const { return this->pEnergyCapacity.get(); }
-qreal UPowerDevice::changeRate() const { return this->pChangeRate.get(); }
-qlonglong UPowerDevice::timeToEmpty() const { return this->pTimeToEmpty.get(); }
-qlonglong UPowerDevice::timeToFull() const { return this->pTimeToFull.get(); }
-qreal UPowerDevice::percentage() const { return this->pPercentage.get() / 100; }
-bool UPowerDevice::isPresent() const { return this->pIsPresent.get(); }
-
-UPowerDeviceState::Enum UPowerDevice::state() const {
-	return static_cast<UPowerDeviceState::Enum>(this->pState.get());
-}
-
-qreal UPowerDevice::healthPercentage() const { return this->pHealthPercentage.get(); }
-
-bool UPowerDevice::healthSupported() const { return this->healthPercentage() != 0; }
-
-QString UPowerDevice::iconName() const { return this->pIconName.get(); }
-
-bool UPowerDevice::isLaptopBattery() const {
-	return this->pType.get() == UPowerDeviceType::Battery && this->pPowerSupply.get();
-}
-
-QString UPowerDevice::nativePath() const { return this->pNativePath.get(); }
-
 } // namespace qs::service::upower
+
+namespace qs::dbus {
+
+using namespace qs::service::upower;
+
+DBusResult<qreal> DBusDataTransform<PowerPercentage>::fromWire(qreal wire) {
+	return DBusResult(wire * 0.01);
+}
+
+qreal DBusDataTransform<PowerPercentage>::toWire(const qreal& value) { return value * 100; }
+
+DBusResult<UPowerDeviceState::Enum>
+DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
+	if (wire != UPowerDeviceType::Battery && wire >= UPowerDeviceState::Unknown
+	    && wire <= UPowerDeviceState::PendingDischarge)
+	{
+		return DBusResult(static_cast<UPowerDeviceState::Enum>(wire));
+	}
+
+	return DBusResult<UPowerDeviceState::Enum>(
+	    QDBusError(QDBusError::InvalidArgs, QString("Invalid UPowerDeviceState: %1").arg(wire))
+	);
+}
+
+quint32 DBusDataTransform<UPowerDeviceState::Enum>::toWire(const UPowerDeviceState::Enum& value) {
+	return static_cast<quint32>(value);
+}
+
+DBusResult<UPowerDeviceType::Enum> DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire
+) {
+	if (wire >= UPowerDeviceType::Unknown && wire <= UPowerDeviceType::BluetoothGeneric) {
+		return DBusResult(static_cast<UPowerDeviceType::Enum>(wire));
+	}
+
+	return DBusResult<UPowerDeviceType::Enum>(
+	    QDBusError(QDBusError::InvalidArgs, QString("Invalid UPowerDeviceType: %1").arg(wire))
+	);
+}
+
+quint32 DBusDataTransform<UPowerDeviceType::Enum>::toWire(const UPowerDeviceType::Enum& value) {
+	return static_cast<quint32>(value);
+}
+
+} // namespace qs::dbus

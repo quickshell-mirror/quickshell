@@ -53,13 +53,6 @@ UPower::UPower() {
 }
 
 void UPower::init() {
-	QObject::connect(
-	    &this->pOnBattery,
-	    &dbus::AbstractDBusProperty::changed,
-	    this,
-	    &UPower::onBatteryChanged
-	);
-
 	this->serviceProperties.setInterface(this->service);
 	this->serviceProperties.updateAllViaGetAll();
 
@@ -143,8 +136,6 @@ UPowerDevice* UPower::displayDevice() { return this->mDisplayDevice; }
 
 ObjectModel<UPowerDevice>* UPower::devices() { return &this->readyDevices; }
 
-bool UPower::onBattery() const { return this->pOnBattery.get(); }
-
 UPower* UPower::instance() {
 	static UPower* instance = new UPower(); // NOLINT
 	return instance;
@@ -172,7 +163,5 @@ UPowerDevice* UPowerQml::displayDevice() { // NOLINT
 ObjectModel<UPowerDevice>* UPowerQml::devices() { // NOLINT
 	return UPower::instance()->devices();
 }
-
-bool UPowerQml::onBattery() { return UPower::instance()->onBattery(); }
 
 } // namespace qs::service::upower

@@ -80,49 +80,83 @@ public:
 	Q_INVOKABLE static QString toString(qs::service::upower::UPowerDeviceType::Enum type);
 };
 
+struct PowerPercentage;
+
+} // namespace qs::service::upower
+
+namespace qs::dbus {
+
+template <>
+struct DBusDataTransform<qs::service::upower::UPowerDeviceState::Enum> {
+	using Wire = quint32;
+	using Data = qs::service::upower::UPowerDeviceState::Enum;
+	static DBusResult<Data> fromWire(Wire wire);
+	static Wire toWire(const Data& value);
+};
+
+template <>
+struct DBusDataTransform<qs::service::upower::UPowerDeviceType::Enum> {
+	using Wire = quint32;
+	using Data = qs::service::upower::UPowerDeviceType::Enum;
+	static DBusResult<Data> fromWire(Wire wire);
+	static Wire toWire(const Data& value);
+};
+
+template <>
+struct DBusDataTransform<qs::service::upower::PowerPercentage> {
+	using Wire = qreal;
+	using Data = qreal;
+	static DBusResult<Data> fromWire(Wire wire);
+	static Wire toWire(const Data& value);
+};
+
+} // namespace qs::dbus
+
+namespace qs::service::upower {
+
 ///! A device exposed through the UPower system service.
 class UPowerDevice: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The type of device.
-	Q_PROPERTY(qs::service::upower::UPowerDeviceType::Enum type READ type NOTIFY typeChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceType::Enum type READ type NOTIFY typeChanged BINDABLE bindableType);
 	/// If the device is a power supply for your computer and can provide charge.
-	Q_PROPERTY(bool powerSupply READ powerSupply NOTIFY powerSupplyChanged);
+	Q_PROPERTY(bool powerSupply READ powerSupply NOTIFY powerSupplyChanged BINDABLE bindablePowerSupply);
 	/// Current energy level of the device in watt-hours.
-	Q_PROPERTY(qreal energy READ energy NOTIFY energyChanged);
+	Q_PROPERTY(qreal energy READ energy NOTIFY energyChanged BINDABLE bindableEnergy);
 	/// Maximum energy capacity of the device in watt-hours
-	Q_PROPERTY(qreal energyCapacity READ energyCapacity NOTIFY energyCapacityChanged);
+	Q_PROPERTY(qreal energyCapacity READ energyCapacity NOTIFY energyCapacityChanged BINDABLE bindableEnergyCapacity);
 	/// Rate of energy change in watts (positive when charging, negative when discharging).
-	Q_PROPERTY(qreal changeRate READ changeRate NOTIFY changeRateChanged);
+	Q_PROPERTY(qreal changeRate READ changeRate NOTIFY changeRateChanged BINDABLE bindableChangeRate);
 	/// Estimated time until the device is fully discharged, in seconds.
 	///
 	/// Will be set to `0` if charging.
-	Q_PROPERTY(qreal timeToEmpty READ timeToEmpty NOTIFY timeToEmptyChanged);
+	Q_PROPERTY(qreal timeToEmpty READ timeToEmpty NOTIFY timeToEmptyChanged BINDABLE bindableTimeToEmpty);
 	/// Estimated time until the device is fully charged, in seconds.
 	///
 	/// Will be set to `0` if discharging.
-	Q_PROPERTY(qreal timeToFull READ timeToFull NOTIFY timeToFullChanged);
+	Q_PROPERTY(qreal timeToFull READ timeToFull NOTIFY timeToFullChanged BINDABLE bindableTimeToFull);
 	/// Current charge level as a percentage.
 	///
 	/// This would be equivalent to @@energy / @@energyCapacity.
-	Q_PROPERTY(qreal percentage READ percentage NOTIFY percentageChanged);
+	Q_PROPERTY(qreal percentage READ percentage NOTIFY percentageChanged BINDABLE bindablePercentage);
 	/// If the power source is present in the bay or slot, useful for hot-removable batteries.
 	///
 	/// If the device `type` is not `Battery`, then the property will be invalid.
-	Q_PROPERTY(bool isPresent READ isPresent NOTIFY isPresentChanged);
+	Q_PROPERTY(bool isPresent READ isPresent NOTIFY isPresentChanged BINDABLE bindableIsPresent);
 	/// Current state of the device.
-	Q_PROPERTY(qs::service::upower::UPowerDeviceState::Enum state READ state NOTIFY stateChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceState::Enum state READ state NOTIFY stateChanged BINDABLE bindableState);
 	/// Health of the device as a percentage of its original health.
-	Q_PROPERTY(qreal healthPercentage READ healthPercentage NOTIFY healthPercentageChanged);
-	Q_PROPERTY(bool healthSupported READ healthSupported NOTIFY healthSupportedChanged);
+	Q_PROPERTY(qreal healthPercentage READ healthPercentage NOTIFY healthPercentageChanged BINDABLE bindableHealthPercentage);
+	Q_PROPERTY(bool healthSupported READ healthSupported NOTIFY healthSupportedChanged BINDABLE bindableHealthSupported);
 	/// Name of the icon representing the current state of the device, or an empty string if not provided.
-	Q_PROPERTY(QString iconName READ iconName NOTIFY iconNameChanged);
+	Q_PROPERTY(QString iconName READ iconName NOTIFY iconNameChanged BINDABLE bindableIconName);
 	/// If the device is a laptop battery or not. Use this to check if your device is a valid battery.
 	///
 	/// This will be equivalent to @@type == Battery && @@powerSupply == true.
- 	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged);
+	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged BINDABLE bindableIsLaptopBattery);
 	/// Native path of the device specific to your OS.
-	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged);
+	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged BINDABLE bindableNativePath);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("UPowerDevices can only be acquired from UPower");
@@ -134,21 +168,21 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QString path() const;
 
-	[[nodiscard]] UPowerDeviceType::Enum type() const;
-	[[nodiscard]] bool powerSupply() const;
-	[[nodiscard]] qreal energy() const;
-	[[nodiscard]] qreal energyCapacity() const;
-	[[nodiscard]] qreal changeRate() const;
-	[[nodiscard]] qlonglong timeToEmpty() const;
-	[[nodiscard]] qlonglong timeToFull() const;
-	[[nodiscard]] qreal percentage() const;
-	[[nodiscard]] bool isPresent() const;
-	[[nodiscard]] UPowerDeviceState::Enum state() const;
-	[[nodiscard]] qreal healthPercentage() const;
-	[[nodiscard]] bool healthSupported() const;
-	[[nodiscard]] QString iconName() const;
-	[[nodiscard]] bool isLaptopBattery() const;
-	[[nodiscard]] QString nativePath() const;
+	QS_BINDABLE_GETTER(UPowerDeviceType::Enum, bType, type, bindableType);
+	QS_BINDABLE_GETTER(bool, bPowerSupply, powerSupply, bindablePowerSupply);
+	QS_BINDABLE_GETTER(qreal, bEnergy, energy, bindableEnergy);
+	QS_BINDABLE_GETTER(qreal, bEnergyCapacity, energyCapacity, bindableEnergyCapacity);
+	QS_BINDABLE_GETTER(qreal, bChangeRate, changeRate, bindableChangeRate);
+	QS_BINDABLE_GETTER(qlonglong, bTimeToEmpty, timeToEmpty, bindableTimeToEmpty);
+	QS_BINDABLE_GETTER(qlonglong, bTimeToFull, timeToFull, bindableTimeToFull);
+	QS_BINDABLE_GETTER(qreal, bPercentage, percentage, bindablePercentage);
+	QS_BINDABLE_GETTER(bool, bIsPresent, isPresent, bindableIsPresent);
+	QS_BINDABLE_GETTER(UPowerDeviceState::Enum, bState, state, bindableState);
+	QS_BINDABLE_GETTER(qreal, bHealthPercentage, healthPercentage, bindableHealthPercentage);
+	QS_BINDABLE_GETTER(bool, bHealthSupported, healthSupported, bindableHealthSupported);
+	QS_BINDABLE_GETTER(QString, bIconName, iconName, bindableIconName);
+	QS_BINDABLE_GETTER(bool, bIsLaptopBattery, isLaptopBattery, bindableIsLaptopBattery);
+	QS_BINDABLE_GETTER(QString, bNativePath, nativePath, bindableNativePath);
 
 signals:
 	QSDOC_HIDE void ready();
@@ -170,20 +204,38 @@ signals:
 	void nativePathChanged();
 
 private:
-	dbus::DBusPropertyGroup deviceProperties;
-	dbus::DBusProperty<quint32> pType {this->deviceProperties, "Type"};
-	dbus::DBusProperty<bool> pPowerSupply {this->deviceProperties, "PowerSupply"};
-	dbus::DBusProperty<qreal> pEnergy {this->deviceProperties, "Energy"};
-	dbus::DBusProperty<qreal> pEnergyCapacity {this->deviceProperties, "EnergyFull"};
-	dbus::DBusProperty<qreal> pChangeRate {this->deviceProperties, "EnergyRate"};
-	dbus::DBusProperty<qlonglong> pTimeToEmpty {this->deviceProperties, "TimeToEmpty"};
-	dbus::DBusProperty<qlonglong> pTimeToFull {this->deviceProperties, "TimeToFull"};
-	dbus::DBusProperty<qreal> pPercentage {this->deviceProperties, "Percentage"};
-	dbus::DBusProperty<bool> pIsPresent {this->deviceProperties, "IsPresent"};
-	dbus::DBusProperty<quint32> pState {this->deviceProperties, "State"};
-	dbus::DBusProperty<qreal> pHealthPercentage {this->deviceProperties, "Capacity"};
-	dbus::DBusProperty<QString> pIconName {this->deviceProperties, "IconName"};
-	dbus::DBusProperty<QString> pNativePath {this->deviceProperties, "NativePath"};
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, UPowerDeviceType::Enum, bType, &UPowerDevice::typeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bPowerSupply, &UPowerDevice::powerSupplyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qreal, bEnergy, &UPowerDevice::energyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qreal, bEnergyCapacity, &UPowerDevice::energyCapacityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qreal, bChangeRate, &UPowerDevice::changeRateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qlonglong, bTimeToEmpty, &UPowerDevice::timeToEmptyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qlonglong, bTimeToFull, &UPowerDevice::timeToFullChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qreal, bPercentage, &UPowerDevice::percentageChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bIsPresent, &UPowerDevice::isPresentChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, UPowerDeviceState::Enum, bState, &UPowerDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, qreal, bHealthPercentage, &UPowerDevice::healthPercentageChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bHealthSupported, &UPowerDevice::healthSupportedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bIconName, &UPowerDevice::iconNameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bIsLaptopBattery, &UPowerDevice::isLaptopBatteryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bNativePath, &UPowerDevice::nativePathChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(UPowerDevice, deviceProperties);
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pType, bType, deviceProperties, "Type");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pPowerSupply, bPowerSupply, deviceProperties, "PowerSupply");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pEnergy, bEnergy, deviceProperties, "Energy");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pEnergyCapacity, bEnergyCapacity, deviceProperties, "EnergyFull");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pChangeRate, bChangeRate, deviceProperties, "EnergyRate");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pTimeToEmpty, bTimeToEmpty, deviceProperties, "TimeToEmpty");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pTimeToFull, bTimeToFull, deviceProperties, "TimeToFull");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, PowerPercentage, pPercentage, bPercentage, deviceProperties, "Percentage", true);
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pIsPresent, bIsPresent, deviceProperties, "IsPresent");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pState, bState, deviceProperties, "State");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pHealthPercentage, bHealthPercentage, deviceProperties, "Capacity");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pIconName, bIconName, deviceProperties, "IconName");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pNativePath, bNativePath, deviceProperties, "NativePath");
+	// clang-format on
 
 	DBusUPowerDevice* device = nullptr;
 };

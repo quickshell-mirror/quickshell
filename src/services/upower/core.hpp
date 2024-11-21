@@ -21,7 +21,7 @@ class UPower: public QObject {
 public:
 	[[nodiscard]] UPowerDevice* displayDevice();
 	[[nodiscard]] ObjectModel<UPowerDevice>* devices();
-	[[nodiscard]] bool onBattery() const;
+	QS_BINDABLE_GETTER(bool, bOnBattery, onBattery, bindableOnBattery);
 
 	static UPower* instance();
 
@@ -44,8 +44,10 @@ private:
 	QHash<QString, UPowerDevice*> mDevices;
 	ObjectModel<UPowerDevice> readyDevices {this};
 
-	dbus::DBusPropertyGroup serviceProperties;
-	dbus::DBusProperty<bool> pOnBattery {this->serviceProperties, "OnBattery"};
+	Q_OBJECT_BINDABLE_PROPERTY(UPower, bool, bOnBattery, &UPower::onBatteryChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(UPower, serviceProperties);
+	QS_DBUS_PROPERTY_BINDING(UPower, pOnBattery, bOnBattery, serviceProperties, "OnBattery");
 
 	DBusUPowerService* service = nullptr;
 };
@@ -64,7 +66,7 @@ class UPowerQml: public QObject {
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::upower::UPowerDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	/// If the system is currently running on battery power, or discharging.
-	Q_PROPERTY(bool onBattery READ onBattery NOTIFY onBatteryChanged);
+	Q_PROPERTY(bool onBattery READ onBattery NOTIFY onBatteryChanged BINDABLE bindableOnBattery);
 	// clang-format on
 
 public:
@@ -72,7 +74,11 @@ public:
 
 	[[nodiscard]] UPowerDevice* displayDevice();
 	[[nodiscard]] ObjectModel<UPowerDevice>* devices();
-	[[nodiscard]] static bool onBattery();
+	[[nodiscard]] static bool onBattery() { return UPower::instance()->onBattery(); }
+
+	[[nodiscard]] static QBindable<bool> bindableOnBattery() {
+		return UPower::instance()->bindableOnBattery();
+	}
 
 signals:
 	void displayDeviceChanged();
