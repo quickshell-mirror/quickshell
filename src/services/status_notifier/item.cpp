@@ -21,6 +21,7 @@
 
 #include "../../core/iconimageprovider.hpp"
 #include "../../core/imageprovider.hpp"
+#include "../../core/platformmenu.hpp"
 #include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
@@ -30,6 +31,7 @@
 
 using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
+using namespace qs::menu::platform;
 
 Q_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
 Q_LOGGING_CATEGORY(logSniMenu, "quickshell.service.sni.item.menu", QtWarningMsg);
@@ -56,34 +58,34 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 	}
 
 	// clang-format off
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewTitle, &this->title, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconName, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconPixmaps, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->iconThemePath, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->overlayIconName, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->overlayIconPixmaps, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->iconThemePath, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->attentionIconName, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->attentionIconPixmaps, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->iconThemePath, &AbstractDBusProperty::update);
-	QObject::connect(this->item, &DBusStatusNotifierItem::NewToolTip, &this->tooltip, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewTitle, &this->pTitle, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->pIconName, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->pIconPixmaps, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, &this->pIconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->pOverlayIconName, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->pOverlayIconPixmaps, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, &this->pIconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->pAttentionIconName, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->pAttentionIconPixmaps, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, &this->pIconThemePath, &AbstractDBusProperty::update);
+	QObject::connect(this->item, &DBusStatusNotifierItem::NewToolTip, &this->pTooltip, &AbstractDBusProperty::update);
 
-	QObject::connect(&this->iconThemePath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->iconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->attentionIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->overlayIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->iconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->attentionIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
-	QObject::connect(&this->overlayIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pIconThemePath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pAttentionIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pOverlayIconName, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pAttentionIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
+	QObject::connect(&this->pOverlayIconPixmaps, &AbstractDBusProperty::changed, this, &StatusNotifierItem::updateIcon);
 
 	QObject::connect(&this->properties, &DBusPropertyGroup::getAllFinished, this, &StatusNotifierItem::onGetAllFinished);
 	QObject::connect(&this->properties, &DBusPropertyGroup::getAllFailed, this, &StatusNotifierItem::onGetAllFailed);
-	QObject::connect(&this->menuPath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::onMenuPathChanged);
+	QObject::connect(&this->pMenuPath, &AbstractDBusProperty::changed, this, &StatusNotifierItem::onMenuPathChanged);
 	// clang-format on
 
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewStatus, this, [this](QString value) {
-		qCDebug(logStatusNotifierItem) << "Received update for" << this->status.toString() << value;
-		this->status.set(std::move(value));
+		qCDebug(logStatusNotifierItem) << "Received update for" << this->pStatus.toString() << value;
+		this->pStatus.set(std::move(value));
 	});
 
 	this->properties.setInterface(this->item);
@@ -94,21 +96,21 @@ bool StatusNotifierItem::isValid() const { return this->item->isValid(); }
 bool StatusNotifierItem::isReady() const { return this->mReady; }
 
 QString StatusNotifierItem::iconId() const {
-	if (this->status.get() == "NeedsAttention") {
-		auto name = this->attentionIconName.get();
-		if (!name.isEmpty()) return IconImageProvider::requestString(name, this->iconThemePath.get());
+	if (this->pStatus.get() == "NeedsAttention") {
+		auto name = this->pAttentionIconName.get();
+		if (!name.isEmpty()) return IconImageProvider::requestString(name, this->pIconThemePath.get());
 	} else {
-		auto name = this->iconName.get();
-		auto overlayName = this->overlayIconName.get();
+		auto name = this->pIconName.get();
+		auto overlayName = this->pOverlayIconName.get();
 		if (!name.isEmpty() && overlayName.isEmpty())
-			return IconImageProvider::requestString(name, this->iconThemePath.get());
+			return IconImageProvider::requestString(name, this->pIconThemePath.get());
 	}
 
 	return this->imageHandle.url() + "/" + QString::number(this->iconIndex);
 }
 
 QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
-	auto needsAttention = this->status.get() == "NeedsAttention";
+	auto needsAttention = this->pStatus.get() == "NeedsAttention";
 
 	auto closestPixmap = [](const QSize& size, const DBusSniIconPixmapList& pixmaps) {
 		const DBusSniIconPixmap* ret = nullptr;
@@ -133,11 +135,11 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 
 	QPixmap pixmap;
 	if (needsAttention) {
-		if (!this->attentionIconName.get().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->attentionIconName.get());
+		if (!this->pAttentionIconName.get().isEmpty()) {
+			auto icon = QIcon::fromTheme(this->pAttentionIconName.get());
 			pixmap = icon.pixmap(size.width(), size.height());
 		} else {
-			const auto* icon = closestPixmap(size, this->attentionIconPixmaps.get());
+			const auto* icon = closestPixmap(size, this->pAttentionIconPixmaps.get());
 
 			if (icon != nullptr) {
 				const auto image =
@@ -147,11 +149,11 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 			}
 		}
 	} else {
-		if (!this->iconName.get().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->iconName.get());
+		if (!this->pIconName.get().isEmpty()) {
+			auto icon = QIcon::fromTheme(this->pIconName.get());
 			pixmap = icon.pixmap(size.width(), size.height());
 		} else {
-			const auto* icon = closestPixmap(size, this->iconPixmaps.get());
+			const auto* icon = closestPixmap(size, this->pIconPixmaps.get());
 
 			if (icon != nullptr) {
 				const auto image =
@@ -162,11 +164,11 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 		}
 
 		QPixmap overlay;
-		if (!this->overlayIconName.get().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->overlayIconName.get());
+		if (!this->pOverlayIconName.get().isEmpty()) {
+			auto icon = QIcon::fromTheme(this->pOverlayIconName.get());
 			overlay = icon.pixmap(pixmap.width(), pixmap.height());
 		} else {
-			const auto* icon = closestPixmap(pixmap.size(), this->overlayIconPixmaps.get());
+			const auto* icon = closestPixmap(pixmap.size(), this->pOverlayIconPixmaps.get());
 
 			if (icon != nullptr) {
 				const auto image =
@@ -225,7 +227,7 @@ void StatusNotifierItem::secondaryActivate() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void StatusNotifierItem::scroll(qint32 delta, bool horizontal) {
+void StatusNotifierItem::scroll(qint32 delta, bool horizontal) const {
 	this->item->Scroll(delta, horizontal ? "horizontal" : "vertical");
 }
 
@@ -235,11 +237,11 @@ void StatusNotifierItem::updateIcon() {
 }
 
 DBusMenuHandle* StatusNotifierItem::menuHandle() {
-	return this->menuPath.get().path().isEmpty() ? nullptr : &this->mMenuHandle;
+	return this->pMenuPath.get().path().isEmpty() ? nullptr : &this->mMenuHandle;
 }
 
 void StatusNotifierItem::onMenuPathChanged() {
-	this->mMenuHandle.setAddress(this->item->service(), this->menuPath.get().path());
+	this->mMenuHandle.setAddress(this->item->service(), this->pMenuPath.get().path());
 }
 
 void StatusNotifierItem::onGetAllFinished() {
@@ -278,6 +280,75 @@ TrayImageHandle::requestPixmap(const QString& /*unused*/, QSize* size, const QSi
 
 	if (size != nullptr) *size = pixmap.size();
 	return pixmap;
+}
+
+QString StatusNotifierItem::id() const { return this->pId.get(); }
+QString StatusNotifierItem::title() const { return this->pTitle.get(); }
+
+Status::Enum StatusNotifierItem::status() const {
+	auto status = this->pStatus.get();
+
+	if (status == "Passive") return Status::Passive;
+	if (status == "Active") return Status::Active;
+	if (status == "NeedsAttention") return Status::NeedsAttention;
+
+	qCWarning(logStatusNotifierItem) << "Nonconformant StatusNotifierItem status" << status
+	                                 << "returned for" << this->properties.toString();
+
+	return Status::Passive;
+}
+
+Category::Enum StatusNotifierItem::category() const {
+	auto category = this->pCategory.get();
+
+	if (category == "ApplicationStatus") return Category::ApplicationStatus;
+	if (category == "SystemServices") return Category::SystemServices;
+	if (category == "Hardware") return Category::Hardware;
+
+	qCWarning(logStatusNotifierItem) << "Nonconformant StatusNotifierItem category" << category
+	                                 << "returned for" << this->properties.toString();
+
+	return Category::ApplicationStatus;
+}
+
+QString StatusNotifierItem::tooltipTitle() const { return this->pTooltip.get().title; }
+QString StatusNotifierItem::tooltipDescription() const { return this->pTooltip.get().description; }
+
+bool StatusNotifierItem::hasMenu() const { return !this->pMenuPath.get().path().isEmpty(); }
+bool StatusNotifierItem::onlyMenu() const { return this->pIsMenu.get(); }
+
+void StatusNotifierItem::display(QObject* parentWindow, qint32 relativeX, qint32 relativeY) {
+	if (!this->menuHandle()) {
+		qCritical() << "No menu present for" << this;
+		return;
+	}
+
+	auto* handle = this->menuHandle();
+
+	auto onMenuChanged = [this, parentWindow, relativeX, relativeY, handle]() {
+		QObject::disconnect(handle, nullptr, this, nullptr);
+
+		if (!handle->menu()) {
+			handle->unrefHandle();
+			return;
+		}
+
+		auto* platform = new PlatformMenuEntry(handle->menu());
+
+		// clang-format off
+		QObject::connect(platform, &PlatformMenuEntry::closed, this, [=]() { platform->deleteLater(); });
+		QObject::connect(platform, &QObject::destroyed, this, [=]() { handle->unrefHandle(); });
+		// clang-format on
+
+		auto success = platform->display(parentWindow, relativeX, relativeY);
+
+		// calls destroy which also unrefs
+		if (!success) delete platform;
+	};
+
+	if (handle->menu()) onMenuChanged();
+	QObject::connect(handle, &DBusMenuHandle::menuChanged, this, onMenuChanged);
+	handle->refHandle();
 }
 
 } // namespace qs::service::sni
