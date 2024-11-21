@@ -290,3 +290,24 @@ bool setSimpleObjectHandle(auto* parent, auto* value) {
 	[[nodiscard]] Type getter() { return this->member.value(); }                                     \
 	[[nodiscard]] QBindable<Type> bindable() { return &this->member; }
 // NOLINTEND
+
+template <auto methodPtr>
+class MethodFunctor {
+	using PtrMeta = MemberPointerTraits<decltype(methodPtr)>;
+	using Class = PtrMeta::Class;
+
+public:
+	MethodFunctor(Class* obj): obj(obj) {}
+
+	void operator()() { (this->obj->*methodPtr)(); }
+
+private:
+	Class* obj;
+};
+
+// NOLINTBEGIN
+#define QS_BINDING_SUBSCRIBE_METHOD(Class, bindable, method, strategy)                             \
+	QPropertyChangeHandler<MethodFunctor<&Class::method>>                                            \
+	    _qs_method_subscribe_##bindable##_##method =                                                 \
+	        (bindable).strategy(MethodFunctor<&Class::method>(this));
+// NOLINTEND

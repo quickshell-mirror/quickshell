@@ -63,20 +63,20 @@ public:
 class MprisPlayer: public QObject {
 	Q_OBJECT;
 	// clang-format off
-	Q_PROPERTY(bool canControl READ canControl NOTIFY canControlChanged);
-	Q_PROPERTY(bool canPlay READ canPlay NOTIFY canPlayChanged);
-	Q_PROPERTY(bool canPause READ canPause NOTIFY canPauseChanged);
-	Q_PROPERTY(bool canTogglePlaying READ canTogglePlaying NOTIFY canTogglePlayingChanged);
-	Q_PROPERTY(bool canSeek READ canSeek NOTIFY canSeekChanged);
-	Q_PROPERTY(bool canGoNext READ canGoNext NOTIFY canGoNextChanged);
-	Q_PROPERTY(bool canGoPrevious READ canGoPrevious NOTIFY canGoPreviousChanged);
-	Q_PROPERTY(bool canQuit READ canQuit NOTIFY canQuitChanged);
-	Q_PROPERTY(bool canRaise READ canRaise NOTIFY canRaiseChanged);
-	Q_PROPERTY(bool canSetFullscreen READ canSetFullscreen NOTIFY canSetFullscreenChanged);
+	Q_PROPERTY(bool canControl READ canControl NOTIFY canControlChanged BINDABLE bindableCanControl);
+	Q_PROPERTY(bool canPlay READ canPlay NOTIFY canPlayChanged BINDABLE bindableCanPlay);
+	Q_PROPERTY(bool canPause READ canPause NOTIFY canPauseChanged BINDABLE bindableCanPause);
+	Q_PROPERTY(bool canTogglePlaying READ canTogglePlaying NOTIFY canTogglePlayingChanged BINDABLE bindableCanTogglePlaying);
+	Q_PROPERTY(bool canSeek READ canSeek NOTIFY canSeekChanged BINDABLE bindableCanSeek);
+	Q_PROPERTY(bool canGoNext READ canGoNext NOTIFY canGoNextChanged BINDABLE bindableCanGoNext);
+	Q_PROPERTY(bool canGoPrevious READ canGoPrevious NOTIFY canGoPreviousChanged BINDABLE bindableCanGoPrevious);
+	Q_PROPERTY(bool canQuit READ canQuit NOTIFY canQuitChanged BINDABLE bindableCanQuit BINDABLE bindableCanQuit);
+	Q_PROPERTY(bool canRaise READ canRaise NOTIFY canRaiseChanged BINDABLE bindableCanRaise BINDABLE bindableCanRaise);
+	Q_PROPERTY(bool canSetFullscreen READ canSetFullscreen NOTIFY canSetFullscreenChanged BINDABLE bindableCanSetFullscreen);
 	/// The human readable name of the media player.
-	Q_PROPERTY(QString identity READ identity NOTIFY identityChanged);
+	Q_PROPERTY(QString identity READ identity NOTIFY identityChanged BINDABLE bindableIdentity);
 	/// The name of the desktop entry for the media player, or an empty string if not provided.
-	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged);
+	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged BINDABLE bindableDesktopEntry);
 	/// The current position in the playing track, as seconds, with millisecond precision,
 	/// or `0` if @@positionSupported is false.
 	///
@@ -119,7 +119,7 @@ class MprisPlayer: public QObject {
 	/// The volume of the playing track from 0.0 to 1.0, or 1.0 if @@volumeSupported is false.
 	///
 	/// May only be written to if @@canControl and @@volumeSupported are true.
-	Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged);
+	Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged BINDABLE bindableVolume);
 	Q_PROPERTY(bool volumeSupported READ volumeSupported NOTIFY volumeSupportedChanged);
 	/// Metadata of the current track.
 	///
@@ -134,7 +134,7 @@ class MprisPlayer: public QObject {
 	///
 	/// > [!WARNING] This is NOT `mpris:trackid` as that is sometimes missing or nonunique
 	/// > in some players.
-	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY trackChanged BINDABLE bindableUniqueId);
+	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY uniqueIdChanged BINDABLE bindableUniqueId);
 	/// The title of the current track, or "Unknown Track" if none was provided.
 	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged BINDABLE bindableTrackTitle);
 	/// The current track's artist, or an empty string if none was provided.
@@ -153,11 +153,11 @@ class MprisPlayer: public QObject {
 	/// - If @@canPause is false, you cannot assign the `Paused` state.
 	/// - If @@canControl is false, you cannot assign the `Stopped` state.
 	/// (or any of the others, though their repsective properties will also be false)
-	Q_PROPERTY(qs::service::mpris::MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged);
+	Q_PROPERTY(qs::service::mpris::MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged BINDABLE bindablePlaybackState);
 	/// The loop state of the media player, or `None` if @@loopSupported is false.
 	///
 	/// May only be written to if @@canControl and @@loopSupported are true.
-	Q_PROPERTY(qs::service::mpris::MprisLoopState::Enum loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged);
+	Q_PROPERTY(qs::service::mpris::MprisLoopState::Enum loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged BINDABLE bindableLoopState);
 	Q_PROPERTY(bool loopSupported READ loopSupported NOTIFY loopSupportedChanged);
 	/// The speed the song is playing at, as a multiplier.
 	///
@@ -165,22 +165,22 @@ class MprisPlayer: public QObject {
 	/// Additionally, It is recommended that you only write common values such as `0.25`, `0.5`, `1.0`, `2.0`
 	/// to the property, as media players are free to ignore the value, and are more likely to
 	/// accept common ones.
-	Q_PROPERTY(qreal rate READ rate WRITE setRate NOTIFY rateChanged);
-	Q_PROPERTY(qreal minRate READ minRate NOTIFY minRateChanged);
-	Q_PROPERTY(qreal maxRate READ maxRate NOTIFY maxRateChanged);
+	Q_PROPERTY(qreal rate READ rate WRITE setRate NOTIFY rateChanged BINDABLE bindableRate);
+	Q_PROPERTY(qreal minRate READ minRate NOTIFY minRateChanged BINDABLE bindableMinRate);
+	Q_PROPERTY(qreal maxRate READ maxRate NOTIFY maxRateChanged BINDABLE bindableMaxRate);
 	/// If the play queue is currently being shuffled, or false if @@shuffleSupported is false.
 	///
 	/// May only be written if @@canControl and @@shuffleSupported are true.
-	Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY shuffleChanged);
+	Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY shuffleChanged BINDABLE bindableShuffle);
 	Q_PROPERTY(bool shuffleSupported READ shuffleSupported NOTIFY shuffleSupportedChanged);
 	/// If the player is currently shown in fullscreen.
 	///
 	/// May only be written to if @@canSetFullscreen is true.
-	Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged);
+	Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged BINDABLE bindableFullscreen);
 	/// Uri schemes supported by @@openUri().
-	Q_PROPERTY(QList<QString> supportedUriSchemes READ supportedUriSchemes NOTIFY supportedUriSchemesChanged);
+	Q_PROPERTY(QList<QString> supportedUriSchemes READ supportedUriSchemes NOTIFY supportedUriSchemesChanged BINDABLE bindableSupportedUriSchemes);
 	/// Mime types supported by @@openUri().
-	Q_PROPERTY(QList<QString> supportedMimeTypes READ supportedMimeTypes NOTIFY supportedMimeTypesChanged);
+	Q_PROPERTY(QList<QString> supportedMimeTypes READ supportedMimeTypes NOTIFY supportedMimeTypesChanged BINDABLE bindableSupportedMimeTypes);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("MprisPlayers can only be acquired from Mpris");
@@ -231,19 +231,19 @@ public:
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString address() const;
 
-	[[nodiscard]] bool canControl() const;
-	[[nodiscard]] bool canSeek() const;
-	[[nodiscard]] bool canGoNext() const;
-	[[nodiscard]] bool canGoPrevious() const;
-	[[nodiscard]] bool canPlay() const;
-	[[nodiscard]] bool canPause() const;
-	[[nodiscard]] bool canTogglePlaying() const;
-	[[nodiscard]] bool canQuit() const;
-	[[nodiscard]] bool canRaise() const;
-	[[nodiscard]] bool canSetFullscreen() const;
+	QS_BINDABLE_GETTER(bool, bCanControl, canControl, bindableCanControl);
+	QS_BINDABLE_GETTER(bool, bCanSeek, canSeek, bindableCanSeek);
+	QS_BINDABLE_GETTER(bool, bCanGoNext, canGoNext, bindableCanGoNext);
+	QS_BINDABLE_GETTER(bool, bCanGoPrevious, canGoPrevious, bindableCanGoPrevious);
+	QS_BINDABLE_GETTER(bool, bCanPlay, canPlay, bindableCanPlay);
+	QS_BINDABLE_GETTER(bool, bCanPause, canPause, bindableCanPause);
+	QS_BINDABLE_GETTER(bool, bCanTogglePlaying, canTogglePlaying, bindableCanTogglePlaying);
+	QS_BINDABLE_GETTER(bool, bCanQuit, canQuit, bindableCanQuit);
+	QS_BINDABLE_GETTER(bool, bCanRaise, canRaise, bindableCanRaise);
+	QS_BINDABLE_GETTER(bool, bCanSetFullscreen, canSetFullscreen, bindableCanSetFullscreen);
 
-	[[nodiscard]] const QString& identity() const;
-	[[nodiscard]] const QString& desktopEntry() const;
+	QS_BINDABLE_GETTER(QString, bIdentity, identity, bindableIdentity);
+	QS_BINDABLE_GETTER(QString, bDesktopEntry, desktopEntry, bindableDesktopEntry);
 
 	[[nodiscard]] qlonglong positionMs() const;
 	[[nodiscard]] qreal position() const;
@@ -253,7 +253,7 @@ public:
 	[[nodiscard]] qreal length() const;
 	[[nodiscard]] bool lengthSupported() const;
 
-	[[nodiscard]] qreal volume() const;
+	QS_BINDABLE_GETTER(qreal, bVolume, volume, bindableVolume);
 	[[nodiscard]] bool volumeSupported() const;
 	void setVolume(qreal volume);
 
@@ -265,27 +265,44 @@ public:
 	QS_BINDABLE_GETTER(QString, bTrackArtist, trackArtist, bindableTrackArtist);
 	QS_BINDABLE_GETTER(QString, bTrackArtUrl, trackArtUrl, bindableTrackArtUrl);
 
-	[[nodiscard]] MprisPlaybackState::Enum playbackState() const;
+	QS_BINDABLE_GETTER(
+	    MprisPlaybackState::Enum,
+	    bPlaybackState,
+	    playbackState,
+	    bindablePlaybackState
+	);
+
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
 
-	[[nodiscard]] MprisLoopState::Enum loopState() const;
+	QS_BINDABLE_GETTER(MprisLoopState::Enum, bLoopState, loopState, bindableLoopState);
 	[[nodiscard]] bool loopSupported() const;
 	void setLoopState(MprisLoopState::Enum loopState);
 
-	[[nodiscard]] qreal rate() const;
-	[[nodiscard]] qreal minRate() const;
-	[[nodiscard]] qreal maxRate() const;
+	QS_BINDABLE_GETTER(qreal, bRate, rate, bindableRate);
+	QS_BINDABLE_GETTER(qreal, bRate, minRate, bindableMinRate);
+	QS_BINDABLE_GETTER(qreal, bRate, maxRate, bindableMaxRate);
 	void setRate(qreal rate);
 
-	[[nodiscard]] bool shuffle() const;
+	QS_BINDABLE_GETTER(bool, bShuffle, shuffle, bindableShuffle);
 	[[nodiscard]] bool shuffleSupported() const;
 	void setShuffle(bool shuffle);
 
-	[[nodiscard]] bool fullscreen() const;
+	QS_BINDABLE_GETTER(bool, bFullscreen, fullscreen, bindableFullscreen);
 	void setFullscreen(bool fullscreen);
 
-	[[nodiscard]] QList<QString> supportedUriSchemes() const;
-	[[nodiscard]] QList<QString> supportedMimeTypes() const;
+	QS_BINDABLE_GETTER(
+	    QList<QString>,
+	    bSupportedUriSchemes,
+	    supportedUriSchemes,
+	    bindableSupportedUriSchemes
+	);
+
+	QS_BINDABLE_GETTER(
+	    QList<QString>,
+	    bSupportedMimeTypes,
+	    supportedMimeTypes,
+	    bindableSupportedMimeTypes
+	);
 
 signals:
 	/// The track has changed.
@@ -327,6 +344,7 @@ signals:
 	void volumeChanged();
 	void volumeSupportedChanged();
 	void metadataChanged();
+	void uniqueIdChanged();
 	void trackTitleChanged();
 	void trackArtistChanged();
 	void trackAlbumChanged();
@@ -346,66 +364,95 @@ signals:
 
 private slots:
 	void onGetAllFinished();
-	void onPositionChanged();
 	void onExportedPositionChanged();
 	void onSeek(qlonglong time);
-	void onMetadataChanged();
-	void onPlaybackStatusChanged();
-	void onLoopStatusChanged();
 
 private:
-	// clang-format off
-	dbus::DBusPropertyGroup appProperties;
-	dbus::DBusProperty<QString> pIdentity {this->appProperties, "Identity"};
-	dbus::DBusProperty<QString> pDesktopEntry {this->appProperties, "DesktopEntry", "", false};
-	dbus::DBusProperty<bool> pCanQuit {this->appProperties, "CanQuit"};
-	dbus::DBusProperty<bool> pCanRaise {this->appProperties, "CanRaise"};
-	dbus::DBusProperty<bool> pFullscreen {this->appProperties, "Fullscreen", false, false};
-	dbus::DBusProperty<bool> pCanSetFullscreen {this->appProperties, "CanSetFullscreen", false, false};
-	dbus::DBusProperty<QList<QString>> pSupportedUriSchemes {this->appProperties, "SupportedUriSchemes"};
-	dbus::DBusProperty<QList<QString>> pSupportedMimeTypes {this->appProperties, "SupportedMimeTypes"};
+	void onMetadataChanged();
+	void onPositionUpdated();
+	void requestPositionUpdate() { this->pPosition.requestUpdate(); };
 
-	dbus::DBusPropertyGroup playerProperties;
-	dbus::DBusProperty<bool> pCanControl {this->playerProperties, "CanControl"};
-	dbus::DBusProperty<bool> pCanPlay {this->playerProperties, "CanPlay"};
-	dbus::DBusProperty<bool> pCanPause {this->playerProperties, "CanPause"};
-	dbus::DBusProperty<bool> pCanSeek {this->playerProperties, "CanSeek"};
-	dbus::DBusProperty<bool> pCanGoNext {this->playerProperties, "CanGoNext"};
-	dbus::DBusProperty<bool> pCanGoPrevious {this->playerProperties, "CanGoPrevious"};
-	dbus::DBusProperty<qlonglong> pPosition {this->playerProperties, "Position", 0, false}; // "required"
-	dbus::DBusProperty<double> pVolume {this->playerProperties, "Volume", 1, false}; // "required"
-	dbus::DBusProperty<QVariantMap> pMetadata {this->playerProperties, "Metadata"};
-	dbus::DBusProperty<QString> pPlaybackStatus {this->playerProperties, "PlaybackStatus"};
-	dbus::DBusProperty<QString> pLoopStatus {this->playerProperties, "LoopStatus", "", false};
-	dbus::DBusProperty<double> pRate {this->playerProperties, "Rate", 1, false}; // "required"
-	dbus::DBusProperty<double> pMinRate {this->playerProperties, "MinimumRate", 1, false}; // "required"
-	dbus::DBusProperty<double> pMaxRate {this->playerProperties, "MaximumRate", 1, false}; // "required"
-	dbus::DBusProperty<bool> pShuffle {this->playerProperties, "Shuffle", false, false};
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bIdentity, &MprisPlayer::identityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bDesktopEntry, &MprisPlayer::desktopEntryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanQuit, &MprisPlayer::canQuitChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanRaise, &MprisPlayer::canRaiseChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bFullscreen, &MprisPlayer::fullscreenChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanSetFullscreen, &MprisPlayer::canSetFullscreenChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QList<QString>, bSupportedUriSchemes, &MprisPlayer::supportedUriSchemesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QList<QString>, bSupportedMimeTypes, &MprisPlayer::supportedMimeTypesChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(MprisPlayer, appProperties);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pIdentity, bIdentity, appProperties, "Identity");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pDesktopEntry, bDesktopEntry, appProperties, "DesktopEntry");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanQuit, bCanQuit, appProperties, "CanQuit");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanRaise, bCanRaise, appProperties, "CanRaise");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pFullscreen, bFullscreen, appProperties, "Fullscreen");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSetFullscreen, bCanSetFullscreen, appProperties, "CanSetFullscreen");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedUriSchemes, bSupportedUriSchemes, appProperties, "SupportedUriSchemes");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedMimeTypes, bSupportedMimeTypes, appProperties, "SupportedMimeTypes");
+
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanPlay);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanPause);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanSeek);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanGoNext);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanGoPrevious);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QVariantMap, bpMetadata);
+	QS_BINDING_SUBSCRIBE_METHOD(MprisPlayer, bpMetadata, onMetadataChanged, onValueChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qlonglong, bpPosition, -1, &MprisPlayer::positionChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bpPlaybackStatus);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bpLoopStatus);
+
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanControl, &MprisPlayer::canControlChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanPlay, &MprisPlayer::canPlayChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanPause, &MprisPlayer::canPauseChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanTogglePlaying, &MprisPlayer::canTogglePlayingChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanSeek, &MprisPlayer::canSeekChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanGoNext, &MprisPlayer::canGoNextChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanGoPrevious, &MprisPlayer::canGoPreviousChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bVolume, 1, &MprisPlayer::volumeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, MprisPlaybackState::Enum, bPlaybackState, &MprisPlayer::playbackStateChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(MprisPlayer, bPlaybackState, requestPositionUpdate, onValueChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, MprisLoopState::Enum, bLoopState, &MprisPlayer::loopStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bRate, 1, &MprisPlayer::rateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bMinRate, 1, &MprisPlayer::minRateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bMaxRate, 1, &MprisPlayer::maxRateChanged);
+
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QVariantMap, bMetadata, &MprisPlayer::metadataChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, quint32, bUniqueId, &MprisPlayer::uniqueIdChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackTitle, &MprisPlayer::trackTitleChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtist, &MprisPlayer::trackArtistChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbum, &MprisPlayer::trackAlbumChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbumArtist, &MprisPlayer::trackAlbumArtistChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtUrl, &MprisPlayer::trackArtUrlChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, qlonglong, bInternalLength, &MprisPlayer::lengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bShuffle, &MprisPlayer::shuffleChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(MprisPlayer, playerProperties);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanControl, bCanControl, playerProperties, "CanControl");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanPlay, bpCanPlay, playerProperties, "CanPlay");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanPause, bpCanPause, playerProperties, "CanPause");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSeek, bpCanSeek, playerProperties, "CanSeek");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanGoNext, bpCanGoNext, playerProperties, "CanGoNext");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanGoPrevious, bpCanGoPrevious, playerProperties, "CanGoPrevious");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pPosition, bpPosition, onPositionUpdated, playerProperties, "Position", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pVolume, bVolume, playerProperties, "Volume", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMetadata, bpMetadata, playerProperties, "Metadata");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pPlaybackStatus, bpPlaybackStatus, playerProperties, "PlaybackStatus");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pLoopStatus, bpLoopStatus, playerProperties, "LoopStatus", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pRate, bRate, playerProperties, "Rate", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMinRate, bMinRate, playerProperties, "MinimumRate", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMaxRate, bMaxRate, playerProperties, "MaximumRate", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pShuffle, bShuffle, playerProperties, "Shuffle", false);
 	// clang-format on
 
-	MprisPlaybackState::Enum mPlaybackState = MprisPlaybackState::Stopped;
-	MprisLoopState::Enum mLoopState = MprisLoopState::None;
 	QDateTime lastPositionTimestamp;
 	QDateTime pausedTime;
-	qlonglong mLength = -1;
 
 	DBusMprisPlayerApp* app = nullptr;
 	DBusMprisPlayer* player = nullptr;
 	QString mTrackId;
 	QString mTrackUrl;
-
-	DECLARE_MEMBER(MprisPlayer, length, mLength, lengthChanged);
-	DECLARE_MEMBER_SET(length, setLength);
-
-	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, quint32, bUniqueId);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QVariantMap, bMetadata, &MprisPlayer::metadataChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtist, &MprisPlayer::trackArtistChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackTitle, &MprisPlayer::trackTitleChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbum, &MprisPlayer::trackAlbumChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbumArtist, &MprisPlayer::trackAlbumArtistChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtUrl, &MprisPlayer::trackArtUrlChanged);
-	// clang-format on
 };
 
 } // namespace qs::service::mpris
