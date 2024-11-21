@@ -154,6 +154,11 @@ class MprisPlayer: public QObject {
 	/// - If @@canControl is false, you cannot assign the `Stopped` state.
 	/// (or any of the others, though their repsective properties will also be false)
 	Q_PROPERTY(qs::service::mpris::MprisPlaybackState::Enum playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged BINDABLE bindablePlaybackState);
+	/// True if @@playbackState == `MprisPlaybackState.Playing`.
+	///
+	/// Setting this property is equivalent to calling @@play() or @@pause().
+	/// You cannot set this property if @@canTogglePlaying is false.
+	Q_PROPERTY(bool isPlaying READ isPlaying WRITE setPlaying NOTIFY isPlayingChanged BINDABLE bindableIsPlaying);
 	/// The loop state of the media player, or `None` if @@loopSupported is false.
 	///
 	/// May only be written to if @@canControl and @@loopSupported are true.
@@ -274,6 +279,9 @@ public:
 
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
 
+	QS_BINDABLE_GETTER(bool, bIsPlaying, isPlaying, bindableIsPlaying);
+	void setPlaying(bool playing);
+
 	QS_BINDABLE_GETTER(MprisLoopState::Enum, bLoopState, loopState, bindableLoopState);
 	[[nodiscard]] bool loopSupported() const;
 	void setLoopState(MprisLoopState::Enum loopState);
@@ -351,6 +359,7 @@ signals:
 	void trackAlbumArtistChanged();
 	void trackArtUrlChanged();
 	void playbackStateChanged();
+	void isPlayingChanged();
 	void loopStateChanged();
 	void loopSupportedChanged();
 	void rateChanged();
@@ -412,6 +421,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanGoPrevious, &MprisPlayer::canGoPreviousChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bVolume, 1, &MprisPlayer::volumeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, MprisPlaybackState::Enum, bPlaybackState, &MprisPlayer::playbackStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bIsPlaying, &MprisPlayer::isPlayingChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(MprisPlayer, bPlaybackState, requestPositionUpdate, onValueChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, MprisLoopState::Enum, bLoopState, &MprisPlayer::loopStateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qreal, bRate, 1, &MprisPlayer::rateChanged);

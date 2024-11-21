@@ -65,8 +65,7 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 	this->bCanGoPrevious.setBinding([this]() { return this->bCanControl && this->bpCanGoPrevious; });
 
 	this->bCanTogglePlaying.setBinding([this]() {
-		return this->bPlaybackState == MprisPlaybackState::Playing ? this->bCanPause.value()
-		                                                           : this->bCanPlay.value();
+		return this->bIsPlaying ? this->bCanPause.value() : this->bCanPlay.value();
 	});
 
 	this->bTrackTitle.setBinding([this]() {
@@ -114,6 +113,10 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 			qWarning() << "Received unexpected PlaybackStatus for" << this << status;
 			return MprisPlaybackState::Stopped;
 		}
+	});
+
+	this->bIsPlaying.setBinding([this]() {
+		return this->bPlaybackState == MprisPlaybackState::Playing;
 	});
 
 	this->bLoopState.setBinding([this]() {
@@ -368,11 +371,16 @@ void MprisPlayer::pause() { this->setPlaybackState(MprisPlaybackState::Paused); 
 void MprisPlayer::stop() { this->setPlaybackState(MprisPlaybackState::Stopped); }
 
 void MprisPlayer::togglePlaying() {
-	if (this->bPlaybackState == MprisPlaybackState::Playing) {
+	if (this->bIsPlaying) {
 		this->pause();
 	} else {
 		this->play();
 	}
+}
+
+void MprisPlayer::setPlaying(bool playing) {
+	if (playing == this->bIsPlaying) return;
+	this->togglePlaying();
 }
 
 bool MprisPlayer::loopSupported() const { return this->pLoopStatus.exists(); }
