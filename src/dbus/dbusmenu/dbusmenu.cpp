@@ -41,12 +41,7 @@ DBusMenuItem::DBusMenuItem(qint32 id, DBusMenu* menu, DBusMenuItem* parentMenu)
 	QObject::connect(this, &QsMenuEntry::closed, this, &DBusMenuItem::sendClosed);
 	QObject::connect(this, &QsMenuEntry::triggered, this, &DBusMenuItem::sendTriggered);
 
-	QObject::connect(
-	    &this->menu->iconThemePath,
-	    &AbstractDBusProperty::changed,
-	    this,
-	    &DBusMenuItem::iconChanged
-	);
+	QObject::connect(this->menu, &DBusMenu::iconThemePathChanged, this, &DBusMenuItem::iconChanged);
 }
 
 void DBusMenuItem::sendOpened() const { this->menu->sendEvent(this->id, "opened"); }
@@ -61,7 +56,7 @@ QString DBusMenuItem::icon() const {
 	if (!this->iconName.isEmpty()) {
 		return IconImageProvider::requestString(
 		    this->iconName,
-		    this->menu->iconThemePath.get().join(':')
+		    this->menu->iconThemePath.value().join(':')
 		);
 	} else if (this->image != nullptr) {
 		return this->image->url();

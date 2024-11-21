@@ -13,6 +13,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/doc.hpp"
 #include "../../core/imageprovider.hpp"
 #include "../../core/qsmenu.hpp"
 #include "../properties.hpp"
@@ -115,11 +116,16 @@ class DBusMenu: public QObject {
 public:
 	explicit DBusMenu(const QString& service, const QString& path, QObject* parent = nullptr);
 
-	dbus::DBusPropertyGroup properties;
-	dbus::DBusProperty<quint32> version {this->properties, "Version"};
-	dbus::DBusProperty<QString> textDirection {this->properties, "TextDirection", "", false};
-	dbus::DBusProperty<QString> status {this->properties, "Status"};
-	dbus::DBusProperty<QStringList> iconThemePath {this->properties, "IconThemePath", {}, false};
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(DBusMenu, properties);
+
+signals:
+	QSDOC_HIDE void iconThemePathChanged();
+
+public:
+	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, quint32, version);
+	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QString, textDirection);
+	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QString, status);
+	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QStringList, iconThemePath, &DBusMenu::iconThemePathChanged);
 
 	void prepareToShow(qint32 item, qint32 depth);
 	void updateLayout(qint32 parent, qint32 depth);
@@ -140,6 +146,11 @@ private slots:
 
 private:
 	void updateLayoutRecursive(const DBusMenuLayout& layout, DBusMenuItem* parent, qint32 depth);
+
+	QS_DBUS_PROPERTY_BINDING(DBusMenu, pVersion, version, properties, "Version");
+	QS_DBUS_PROPERTY_BINDING(DBusMenu, pTextDirection, textDirection, properties, "TextDirection");
+	QS_DBUS_PROPERTY_BINDING(DBusMenu, pStatus, status, properties, "Status");
+	QS_DBUS_PROPERTY_BINDING(DBusMenu, pIconThemePath, iconThemePath, properties, "IconThemePath");
 
 	DBusMenuInterface* interface = nullptr;
 };
