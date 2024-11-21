@@ -3,14 +3,16 @@
 
 #include <qcontainerfwd.h>
 #include <qdbusargument.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "../../core/desktopentry.hpp"
 #include "../../core/iconimageprovider.hpp"
-#include "../../core/util.hpp"
 #include "dbusimage.hpp"
 #include "server.hpp"
 
@@ -84,34 +86,51 @@ void Notification::updateProperties(
     QVariantMap hints,
     qint32 expireTimeout
 ) {
-	auto urgency = hints.contains("urgency") ? hints.value("urgency").value<quint8>()
-	                                         : static_cast<quint8>(NotificationUrgency::Normal);
+	Qt::beginPropertyUpdateGroup();
 
-	auto hasActionIcons = hints.value("action-icons").value<bool>();
-	auto resident = hints.value("resident").value<bool>();
-	auto transient = hints.value("transient").value<bool>();
-	auto desktopEntry = hints.value("desktop-entry").value<QString>();
+	this->bExpireTimeout = expireTimeout;
+	this->bAppName = appName;
+	this->bSummary = summary;
+	this->bBody = body;
+	this->bHasActionIcons = hints.value("action-icons").toBool();
+	this->bResident = hints.value("resident").toBool();
+	this->bTransient = hints.value("transient").toBool();
+	this->bDesktopEntry = hints.value("desktop-entry").toString();
+
+	this->bUrgency = hints.contains("urgency")
+	                   ? hints.value("urgency").value<NotificationUrgency::Enum>()
+	                   : NotificationUrgency::Normal;
+
+	if (appIcon.isEmpty() && !this->bDesktopEntry.value().isEmpty()) {
+		if (auto* entry = DesktopEntryManager::instance()->byId(this->bDesktopEntry.value())) {
+			appIcon = entry->mIcon;
+		}
+	}
+
+	this->bAppIcon = appIcon;
 
 	QString imageDataName;
 	if (hints.contains("image-data")) imageDataName = "image-data";
 	else if (hints.contains("image_data")) imageDataName = "image_data";
 	else if (hints.contains("icon_data")) imageDataName = "icon_data";
 
-	NotificationImage* imagePixmap = nullptr;
+	QString imagePath;
+
 	if (!imageDataName.isEmpty()) {
 		auto value = hints.value(imageDataName).value<QDBusArgument>();
 		DBusNotificationImage image;
 		value >> image;
-		imagePixmap = new NotificationImage(std::move(image), this);
+		if (this->mImagePixmap) this->mImagePixmap->deleteLater();
+		this->mImagePixmap = new NotificationImage(std::move(image), this);
+		imagePath = this->mImagePixmap->url();
 	}
 
-	// don't store giant byte arrays more than necessary
+	// don't store giant byte arrays longer than necessary
 	hints.remove("image-data");
 	hints.remove("image_data");
 	hints.remove("icon_data");
 
-	QString imagePath;
-	if (!imagePixmap) {
+	if (!this->mImagePixmap) {
 		QString imagePathName;
 		if (hints.contains("image-path")) imagePathName = "image-path";
 		else if (hints.contains("image_path")) imagePathName = "image_path";
@@ -125,32 +144,10 @@ void Notification::updateProperties(
 		}
 	}
 
-	if (appIcon.isEmpty() && !desktopEntry.isEmpty()) {
-		if (auto* entry = DesktopEntryManager::instance()->byId(desktopEntry)) {
-			appIcon = entry->mIcon;
-		}
-	}
+	this->bImage = imagePath;
+	this->bHints = hints;
 
-	auto expireTimeoutChanged = this->setExpireTimeout(expireTimeout);
-	auto appNameChanged = this->setAppName(appName);
-	auto appIconChanged = this->setAppIcon(appIcon);
-	auto summaryChanged = this->setSummary(summary);
-	auto bodyChanged = this->setBody(body);
-	auto urgencyChanged = this->setUrgency(static_cast<NotificationUrgency::Enum>(urgency));
-	auto hasActionIconsChanged = this->setHasActionIcons(hasActionIcons);
-	auto residentChanged = this->setResident(resident);
-	auto transientChanged = this->setTransient(transient);
-	auto desktopEntryChanged = this->setDesktopEntry(desktopEntry);
-	DEFINE_DROP_EMIT_IF(imagePixmap || imagePath != this->mImagePath, this, imageChanged);
-	auto hintsChanged = this->setHints(hints);
-
-	NotificationImage* oldImage = nullptr;
-
-	if (imageChanged) {
-		oldImage = this->mImagePixmap;
-		this->mImagePixmap = imagePixmap;
-		this->mImagePath = imagePath;
-	}
+	Qt::endPropertyUpdateGroup();
 
 	bool actionsChanged = false;
 	auto deletedActions = QVector<NotificationAction*>();
@@ -191,32 +188,16 @@ void Notification::updateProperties(
 		                            << "sent an action set of an invalid length.";
 	}
 
-	DropEmitter::call(
-	    expireTimeoutChanged,
-	    appNameChanged,
-	    appIconChanged,
-	    summaryChanged,
-	    bodyChanged,
-	    urgencyChanged,
-	    hasActionIconsChanged,
-	    residentChanged,
-	    transientChanged,
-	    desktopEntryChanged,
-	    imageChanged,
-	    hintsChanged
-	);
-
 	if (actionsChanged) emit this->actionsChanged();
 
 	for (auto* action: deletedActions) {
 		delete action;
 	}
-
-	delete oldImage;
 }
 
 quint32 Notification::id() const { return this->mId; }
 bool Notification::isTracked() const { return this->mCloseReason == 0; }
+QList<NotificationAction*> Notification::actions() const { return this->mActions; }
 NotificationCloseReason::Enum Notification::closeReason() const { return this->mCloseReason; }
 
 void Notification::setTracked(bool tracked) {
@@ -227,27 +208,5 @@ void Notification::setTracked(bool tracked) {
 
 bool Notification::isLastGeneration() const { return this->mLastGeneration; }
 void Notification::setLastGeneration() { this->mLastGeneration = true; }
-
-DEFINE_MEMBER_GETSET(Notification, expireTimeout, setExpireTimeout);
-DEFINE_MEMBER_GETSET(Notification, appName, setAppName);
-DEFINE_MEMBER_GETSET(Notification, appIcon, setAppIcon);
-DEFINE_MEMBER_GETSET(Notification, summary, setSummary);
-DEFINE_MEMBER_GETSET(Notification, body, setBody);
-DEFINE_MEMBER_GETSET(Notification, urgency, setUrgency);
-DEFINE_MEMBER_GET(Notification, actions);
-DEFINE_MEMBER_GETSET(Notification, hasActionIcons, setHasActionIcons);
-DEFINE_MEMBER_GETSET(Notification, resident, setResident);
-DEFINE_MEMBER_GETSET(Notification, transient, setTransient);
-DEFINE_MEMBER_GETSET(Notification, desktopEntry, setDesktopEntry);
-
-QString Notification::image() const {
-	if (this->mImagePixmap) {
-		return this->mImagePixmap->url();
-	} else {
-		return this->mImagePath;
-	}
-}
-
-DEFINE_MEMBER_GETSET(Notification, hints, setHints);
 
 } // namespace qs::service::notifications

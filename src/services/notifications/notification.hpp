@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <qcontainerfwd.h>
+#include <qlist.h>
 #include <qmap.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
@@ -80,18 +81,18 @@ class Notification
 	/// if @@NotificationServer.keepOnReload is true.
 	Q_PROPERTY(bool lastGeneration READ isLastGeneration CONSTANT);
 	/// Time in seconds the notification should be valid for
-	Q_PROPERTY(qreal expireTimeout READ expireTimeout NOTIFY expireTimeoutChanged);
+	Q_PROPERTY(qreal expireTimeout READ expireTimeout NOTIFY expireTimeoutChanged BINDABLE bindableExpireTimeout);
 	/// The sending application's name.
-	Q_PROPERTY(QString appName READ appName NOTIFY appNameChanged);
+	Q_PROPERTY(QString appName READ appName NOTIFY appNameChanged BINDABLE bindableAppName);
 	/// The sending application's icon. If none was provided, then the icon from an associated
 	/// desktop entry will be retrieved. If none was found then "".
-	Q_PROPERTY(QString appIcon READ appIcon NOTIFY appIconChanged);
+	Q_PROPERTY(QString appIcon READ appIcon NOTIFY appIconChanged BINDABLE bindableAppIcon);
 	/// The image associated with this notification, or "" if none.
-	Q_PROPERTY(QString summary READ summary NOTIFY summaryChanged);
-	Q_PROPERTY(QString body READ body NOTIFY bodyChanged);
-	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ urgency NOTIFY urgencyChanged);
+	Q_PROPERTY(QString summary READ summary NOTIFY summaryChanged BINDABLE bindableSummary);
+	Q_PROPERTY(QString body READ body NOTIFY bodyChanged BINDABLE bindableBody);
+	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ urgency NOTIFY urgencyChanged BINDABLE bindableUrgency);
 	/// Actions that can be taken for this notification.
-	Q_PROPERTY(QVector<qs::service::notifications::NotificationAction*> actions READ actions NOTIFY actionsChanged);
+	Q_PROPERTY(QList<qs::service::notifications::NotificationAction*> actions READ actions NOTIFY actionsChanged);
 	/// If actions associated with this notification have icons available.
 	///
 	/// See @@NotificationAction.identifier for details.
@@ -136,15 +137,29 @@ public:
 	void close(NotificationCloseReason::Enum reason);
 
 	[[nodiscard]] quint32 id() const;
-
 	[[nodiscard]] bool isTracked() const;
-	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;
-	void setTracked(bool tracked);
 
 	[[nodiscard]] bool isLastGeneration() const;
 	void setLastGeneration();
 
-	[[nodiscard]] QString image() const;
+	QS_BINDABLE_GETTER(qreal, bExpireTimeout, expireTimeout, bindableExpireTimeout);
+	QS_BINDABLE_GETTER(QString, bAppName, appName, bindableAppName);
+	QS_BINDABLE_GETTER(QString, bAppIcon, appIcon, bindableAppIcon);
+	QS_BINDABLE_GETTER(QString, bSummary, summary, bindableSummary);
+	QS_BINDABLE_GETTER(QString, bBody, body, bindableBody);
+	QS_BINDABLE_GETTER(NotificationUrgency::Enum, bUrgency, urgency, bindableUrgency);
+
+	[[nodiscard]] QList<NotificationAction*> actions() const;
+
+	QS_BINDABLE_GETTER(bool, bHasActionIcons, hasActionIcons, bindableHasActionIcons);
+	QS_BINDABLE_GETTER(bool, bResident, resident, bindableResident);
+	QS_BINDABLE_GETTER(bool, bTransient, transient, bindableTransient);
+	QS_BINDABLE_GETTER(QString, bDesktopEntry, desktopEntry, bindableDesktopEntry);
+	QS_BINDABLE_GETTER(QString, bImage, image, bindableImage);
+	QS_BINDABLE_GETTER(QVariantMap, bHints, hints, bindableHints);
+
+	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;
+	void setTracked(bool tracked);
 
 signals:
 	/// Sent when a notification has been closed.
@@ -171,35 +186,30 @@ private:
 	quint32 mId;
 	NotificationCloseReason::Enum mCloseReason = NotificationCloseReason::Dismissed;
 	bool mLastGeneration = false;
-	qreal mExpireTimeout = 0;
-	QString mAppName;
-	QString mAppIcon;
-	QString mSummary;
-	QString mBody;
-	NotificationUrgency::Enum mUrgency = NotificationUrgency::Normal;
-	QVector<NotificationAction*> mActions;
-	bool mHasActionIcons = false;
-	bool mResident = false;
-	bool mTransient = false;
-	QString mImagePath;
 	NotificationImage* mImagePixmap = nullptr;
-	QString mDesktopEntry;
-	QVariantMap mHints;
+	QList<NotificationAction*> mActions;
 
 	// clang-format off
-	DECLARE_PRIVATE_MEMBER(Notification, expireTimeout, setExpireTimeout, mExpireTimeout, expireTimeoutChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, appName, setAppName, mAppName, appNameChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, appIcon, setAppIcon, mAppIcon, appIconChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, summary, setSummary, mSummary, summaryChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, body, setBody, mBody, bodyChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, urgency, setUrgency, mUrgency, urgencyChanged);
-	DECLARE_MEMBER_WITH_GET(Notification, actions, mActions, actionsChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, hasActionIcons, setHasActionIcons, mHasActionIcons, hasActionIconsChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, resident, setResident, mResident, residentChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, transient, setTransient, mTransient, transientChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, desktopEntry, setDesktopEntry, mDesktopEntry, desktopEntryChanged);
-	DECLARE_PRIVATE_MEMBER(Notification, hints, setHints, mHints, hintsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, qreal, bExpireTimeout, &Notification::expireTimeoutChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bAppName, &Notification::appNameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bAppIcon, &Notification::appIconChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bSummary, &Notification::summaryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bBody, &Notification::bodyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, bool, bHasActionIcons, &Notification::hasActionIconsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, bool, bResident, &Notification::residentChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, bool, bTransient, &Notification::transientChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bDesktopEntry, &Notification::desktopEntryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bImage, &Notification::imageChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QVariantMap, bHints, &Notification::hintsChanged);
 	// clang-format on
+
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
+	    Notification,
+	    NotificationUrgency::Enum,
+	    bUrgency,
+	    NotificationUrgency::Normal,
+	    &Notification::urgencyChanged
+	);
 };
 
 ///! An action associated with a Notification.
