@@ -10,7 +10,6 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -69,23 +68,20 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 	});
 
 	this->bTrackTitle.setBinding([this]() {
-		const auto& title = this->bMetadata.value().value("xesam:title").toString();
-		return title.isNull() ? QStringLiteral("Unknown Track") : title;
+		return this->bMetadata.value().value("xesam:title").toString();
 	});
 
 	this->bTrackAlbum.setBinding([this]() {
-		const auto& album = this->bMetadata.value().value("xesam:album").toString();
-		return album.isNull() ? QStringLiteral("Unknown Album") : album;
+		return this->bMetadata.value().value("xesam:album").toString();
 	});
 
 	this->bTrackArtist.setBinding([this]() {
 		const auto& artist = this->bMetadata.value().value("xesam:artist").value<QList<QString>>();
-		return artist.isEmpty() ? QStringLiteral("Unknown Artist") : artist.join(", ");
+		return artist.isEmpty() ? QString() : artist.join(", ");
 	});
 
 	this->bTrackAlbumArtist.setBinding([this]() {
-		const auto& artist = this->bMetadata.value().value("xesam:albumArtist").toString();
-		return artist.isNull() ? QStringLiteral("Unknown Artist") : artist;
+		return this->bMetadata.value().value("xesam:albumArtist").toString();
 	});
 
 	this->bTrackArtUrl.setBinding([this]() {

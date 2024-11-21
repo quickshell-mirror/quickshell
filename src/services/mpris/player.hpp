@@ -135,15 +135,27 @@ class MprisPlayer: public QObject {
 	/// > [!WARNING] This is NOT `mpris:trackid` as that is sometimes missing or nonunique
 	/// > in some players.
 	Q_PROPERTY(quint32 uniqueId READ uniqueId NOTIFY uniqueIdChanged BINDABLE bindableUniqueId);
-	/// The title of the current track, or "Unknown Track" if none was provided.
+	/// The title of the current track, or `""` if none was provided.
+	///
+	/// > [!TIP] Use `player.trackTitle || "Unknown Title"` to provide a message
+	/// > when no title is available.
 	Q_PROPERTY(QString trackTitle READ trackTitle NOTIFY trackTitleChanged BINDABLE bindableTrackTitle);
-	/// The current track's artist, or an empty string if none was provided.
+	/// The current track's artist, or an `""` if none was provided.
+	///
+	/// > [!TIP] Use `player.trackArtist || "Unknown Artist"` to provide a message
+	/// > when no artist is available.
 	Q_PROPERTY(QString trackArtist READ trackArtist NOTIFY trackArtistChanged BINDABLE bindableTrackArtist);
 	/// > [!ERROR] deprecated in favor of @@trackArtist.
 	Q_PROPERTY(QString trackArtists READ trackArtist NOTIFY trackArtistChanged BINDABLE bindableTrackArtist);
-	/// The current track's album, or "Unknown Album" if none was provided.
+	/// The current track's album, or `""` if none was provided.
+	///
+	/// > [!TIP] Use `player.trackAlbum || "Unknown Album"` to provide a message
+	/// > when no album is available.
 	Q_PROPERTY(QString trackAlbum READ trackAlbum NOTIFY trackAlbumChanged BINDABLE bindableTrackAlbum);
-	/// The current track's album artist, or "Unknown Artist" if none was provided.
+	/// The current track's album artist, or `""` if none was provided.
+	///
+	/// > [!TIP] Use `player.trackAlbumArtist || "Unknown Album"` to provide a message
+	/// > when no album artist is available.
 	Q_PROPERTY(QString trackAlbumArtist READ trackAlbumArtist NOTIFY trackAlbumArtistChanged BINDABLE bindableTrackAlbumArtist);
 	/// The current track's art url, or `""` if none was provided.
 	Q_PROPERTY(QString trackArtUrl READ trackArtUrl NOTIFY trackArtUrlChanged BINDABLE bindableTrackArtUrl);
