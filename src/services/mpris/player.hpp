@@ -457,7 +457,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSeek, bpCanSeek, playerProperties, "CanSeek");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanGoNext, bpCanGoNext, playerProperties, "CanGoNext");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanGoPrevious, bpCanGoPrevious, playerProperties, "CanGoPrevious");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pPosition, bpPosition, onPositionUpdated, playerProperties, "Position", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, qlonglong, pPosition, bpPosition, onPositionUpdated, playerProperties, "Position", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pVolume, bVolume, playerProperties, "Volume", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMetadata, bpMetadata, playerProperties, "Metadata");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pPlaybackStatus, bpPlaybackStatus, playerProperties, "PlaybackStatus");

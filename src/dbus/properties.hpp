@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 #include <bit>
@@ -43,7 +44,7 @@ public:
 
 	bool isValid() { return !this->error.isValid(); }
 
-	T value;
+	T value {};
 	QDBusError error;
 };
 
@@ -137,6 +138,16 @@ private:
 	friend class DBusPropertyGroup;
 };
 
+// Default implementation with no transformation
+template <typename T>
+struct DBusDataTransform {
+	using Wire = T;
+	using Data = T;
+
+	static DBusResult<Data> fromWire(Wire&& wire) { return DBusResult<T>(std::move(wire)); }
+	static Wire toWire(const Data& value) { return value; }
+};
+
 namespace bindable_p {
 
 template <typename T>
@@ -149,9 +160,16 @@ struct BindableParams<B<C, T, O, S>> {
 	static constexpr size_t OFFSET = O;
 };
 
+template <typename Bindable>
+struct BindableType {
+	using Meta = BindableParams<Bindable>;
+	using Type = Meta::Type;
+};
+
 } // namespace bindable_p
 
 template <
+    typename T,
     auto offset,
     auto bindablePtr,
     auto updatedPtr,
@@ -160,10 +178,13 @@ template <
     bool required>
 class DBusBindableProperty: public DBusPropertyCore {
 	using PtrMeta = MemberPointerTraits<decltype(bindablePtr)>;
-	using Bindable = PtrMeta::Type;
 	using Owner = PtrMeta::Class;
-	using BindableMeta = bindable_p::BindableParams<Bindable>;
-	using DataType = BindableMeta::Type;
+	using Bindable = PtrMeta::Type;
+	using BindableType = bindable_p::BindableType<Bindable>::Type;
+	using BaseType = std::conditional_t<std::is_void_v<T>, BindableType, T>;
+	using Transform = DBusDataTransform<BaseType>;
+	using DataType = Transform::Data;
+	using WireType = Transform::Wire;
 
 public:
 	explicit DBusBindableProperty() { this->group()->attachProperty(this); }
@@ -183,20 +204,33 @@ public:
 
 protected:
 	QDBusError store(const QVariant& variant) override {
-		auto result = demarshallVariant<DataType>(variant);
+		DBusResult<DataType> result;
 
-		if (result.isValid()) {
-			this->bindable()->setValue(std::move(result.value));
-
-			if constexpr (updatedPtr != nullptr) {
-				(this->owner()->*updatedPtr)();
-			}
+		if constexpr (std::is_same_v<WireType, BaseType>) {
+			result = demarshallVariant<DataType>(variant);
+		} else {
+			auto wireResult = demarshallVariant<WireType>(variant);
+			if (!wireResult.isValid()) return wireResult.error;
+			result = Transform::fromWire(std::move(wireResult.value));
 		}
 
-		return result.error;
+		if (!result.isValid()) return result.error;
+		this->bindable()->setValue(std::move(result.value));
+
+		if constexpr (updatedPtr != nullptr) {
+			(this->owner()->*updatedPtr)();
+		}
+
+		return QDBusError();
 	}
 
-	QVariant serialize() override { return QVariant::fromValue(this->bindable()->value()); }
+	QVariant serialize() override {
+		if constexpr (std::is_same_v<WireType, BaseType>) {
+			return QVariant::fromValue(this->bindable()->value());
+		} else {
+			return QVariant::fromValue(Transform::toWire(this->bindable()->value()));
+		}
+	}
 
 private:
 	[[nodiscard]] constexpr Owner* owner() const {
@@ -308,10 +342,20 @@ private:
 // NOLINTBEGIN
 #define QS_DBUS_BINDABLE_PROPERTY_GROUP(Class, name) qs::dbus::DBusPropertyGroup name {this};
 
-#define QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, updated, group, name, required)      \
+#define QS_DBUS_PROPERTY_BINDING_P(                                                                \
+    Class,                                                                                         \
+    Type,                                                                                          \
+    property,                                                                                      \
+    bindable,                                                                                      \
+    updated,                                                                                       \
+    group,                                                                                         \
+    name,                                                                                          \
+    required                                                                                       \
+)                                                                                                  \
 	static constexpr size_t _qs_property_##property##_offset() { return offsetof(Class, property); } \
                                                                                                    \
 	qs::dbus::DBusBindableProperty<                                                                  \
+	    Type,                                                                                        \
 	    &Class::_qs_property_##property##_offset,                                                    \
 	    &Class::bindable,                                                                            \
 	    updated,                                                                                     \
@@ -320,11 +364,32 @@ private:
 	    required>                                                                                    \
 	    property;
 
-#define QS_DBUS_PROPERTY_BINDING_7(Class, property, bindable, updated, group, name, required)      \
-	QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, &Class::updated, group, name, required)
+#define QS_DBUS_PROPERTY_BINDING_8(                                                                \
+    Class,                                                                                         \
+    Type,                                                                                          \
+    property,                                                                                      \
+    bindable,                                                                                      \
+    updated,                                                                                       \
+    group,                                                                                         \
+    name,                                                                                          \
+    required                                                                                       \
+)                                                                                                  \
+	QS_DBUS_PROPERTY_BINDING_P(                                                                      \
+	    Class,                                                                                       \
+	    Type,                                                                                        \
+	    property,                                                                                    \
+	    bindable,                                                                                    \
+	    &Class::updated,                                                                             \
+	    group,                                                                                       \
+	    name,                                                                                        \
+	    required                                                                                     \
+	)
+
+#define QS_DBUS_PROPERTY_BINDING_7(Class, Type, property, bindable, group, name, required)         \
+	QS_DBUS_PROPERTY_BINDING_P(Class, Type, property, bindable, nullptr, group, name, required)
 
 #define QS_DBUS_PROPERTY_BINDING_6(Class, property, bindable, group, name, required)               \
-	QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, nullptr, group, name, required)
+	QS_DBUS_PROPERTY_BINDING_7(Class, void, property, bindable, group, name, required)
 
 #define QS_DBUS_PROPERTY_BINDING_5(Class, property, bindable, group, name)                         \
 	QS_DBUS_PROPERTY_BINDING_6(Class, property, bindable, group, name, true)
