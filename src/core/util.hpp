@@ -2,22 +2,45 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <bit>
 #include <qlatin1stringview.h>
 #include <qobject.h>
 #include <qproperty.h>
+#include <qstringview.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
-template <size_t Length>
+template <size_t length>
 struct StringLiteral {
-	constexpr StringLiteral(const char (&str)[Length]) { // NOLINT
-		std::copy_n(str, Length, this->value);
+	constexpr StringLiteral(const char (&str)[length]) { // NOLINT
+		std::copy_n(str, length, this->value);
 	}
 
 	constexpr operator const char*() const noexcept { return this->value; }
-	operator QLatin1StringView() const { return QLatin1String(this->value, Length); }
+	operator QLatin1StringView() const { return QLatin1String(this->value, length); }
 
-	char value[Length]; // NOLINT
+	char value[length]; // NOLINT
+};
+
+template <size_t length>
+struct StringLiteral16 {
+	constexpr StringLiteral16(const char16_t (&str)[length]) { // NOLINT
+		std::copy_n(str, length, this->value);
+	}
+
+	[[nodiscard]] constexpr const QChar* qCharPtr() const noexcept {
+		return std::bit_cast<const QChar*>(&this->value);
+	}
+
+	[[nodiscard]] Q_ALWAYS_INLINE operator QString() const noexcept {
+		return QString::fromRawData(this->qCharPtr(), static_cast<qsizetype>(length - 1));
+	}
+
+	[[nodiscard]] Q_ALWAYS_INLINE operator QStringView() const noexcept {
+		return QStringView(this->qCharPtr(), static_cast<qsizetype>(length - 1));
+	}
+
+	char16_t value[length]; // NOLINT
 };
 
 // NOLINTBEGIN
@@ -149,11 +172,10 @@ private:
 // NOLINTEND
 
 template <typename T>
-class MemberPointerTraits;
+struct MemberPointerTraits;
 
 template <typename T, typename C>
-class MemberPointerTraits<T C::*> {
-public:
+struct MemberPointerTraits<T C::*> {
 	using Class = C;
 	using Type = T;
 };

@@ -162,6 +162,10 @@ void DBusPropertyGroup::attachProperty(AbstractDBusProperty* property) {
 	property->group = this;
 }
 
+void DBusPropertyGroup::attachProperty(DBusPropertyCore* property) {
+	this->properties.append(property);
+}
+
 void DBusPropertyGroup::updateAllDirect() {
 	qCDebug(logDbusProperties).noquote()
 	    << "Updating all properties of" << this->toString() << "via individual queries";

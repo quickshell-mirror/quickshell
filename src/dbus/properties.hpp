@@ -3,6 +3,7 @@
 #include <functional>
 #include <utility>
 
+#include <bit>
 #include <qcontainerfwd.h>
 #include <qdbusabstractinterface.h>
 #include <qdbuserror.h>
@@ -14,9 +15,13 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qoverload.h>
+#include <qstringview.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qvariant.h>
+
+#include "../core/util.hpp"
 
 class DBusPropertiesInterface;
 
@@ -132,20 +137,93 @@ private:
 	friend class DBusPropertyGroup;
 };
 
+namespace bindable_p {
+
+template <typename T>
+struct BindableParams;
+
+template <template <typename, typename, auto, auto> class B, typename C, typename T, auto O, auto S>
+struct BindableParams<B<C, T, O, S>> {
+	using Class = C;
+	using Type = T;
+	static constexpr size_t OFFSET = O;
+};
+
+} // namespace bindable_p
+
+template <
+    auto offset,
+    auto bindablePtr,
+    auto updatedPtr,
+    auto groupPtr,
+    StringLiteral16 Name,
+    bool required>
+class DBusBindableProperty: public DBusPropertyCore {
+	using PtrMeta = MemberPointerTraits<decltype(bindablePtr)>;
+	using Bindable = PtrMeta::Type;
+	using Owner = PtrMeta::Class;
+	using BindableMeta = bindable_p::BindableParams<Bindable>;
+	using DataType = BindableMeta::Type;
+
+public:
+	explicit DBusBindableProperty() { this->group()->attachProperty(this); }
+
+	[[nodiscard]] QString name() const override { return Name; };
+	[[nodiscard]] QStringView nameRef() const override { return Name; };
+	[[nodiscard]] bool isRequired() const override { return required; };
+
+	[[nodiscard]] QString valueString() override {
+		QString str;
+		QDebug(&str) << this->bindable()->value();
+		return str;
+	}
+
+	void write() { this->group()->pushPropertyUpdate(this); }
+	void requestUpdate() { this->group()->requestPropertyUpdate(this); }
+
+protected:
+	QDBusError store(const QVariant& variant) override {
+		auto result = demarshallVariant<DataType>(variant);
+
+		if (result.isValid()) {
+			this->bindable()->setValue(std::move(result.value));
+
+			if constexpr (updatedPtr != nullptr) {
+				(this->owner()->*updatedPtr)();
+			}
+		}
+
+		return result.error;
+	}
+
+	QVariant serialize() override { return QVariant::fromValue(this->bindable()->value()); }
+
+private:
+	[[nodiscard]] constexpr Owner* owner() const {
+		auto* self = std::bit_cast<char*>(this);
+		return std::bit_cast<Owner*>(self - offset()); // NOLINT
+	}
+
+	[[nodiscard]] constexpr DBusPropertyGroup* group() const { return &(this->owner()->*groupPtr); }
+	[[nodiscard]] constexpr Bindable* bindable() const { return &(this->owner()->*bindablePtr); }
+};
+
 class DBusPropertyGroup: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit DBusPropertyGroup(
-	    QVector<DBusPropertyCore*> properties = QVector<DBusPropertyCore*>(),
-	    QObject* parent = nullptr
-	);
+	explicit DBusPropertyGroup(QVector<DBusPropertyCore*> properties = {}, QObject* parent = nullptr);
+	explicit DBusPropertyGroup(QObject* parent): DBusPropertyGroup({}, parent) {}
 
 	void setInterface(QDBusAbstractInterface* interface);
 	void attachProperty(AbstractDBusProperty* property);
+	void attachProperty(DBusPropertyCore* property);
 	void updateAllDirect();
 	void updateAllViaGetAll();
 	[[nodiscard]] QString toString() const;
+
+	void pushPropertyUpdate(DBusPropertyCore* property);
+	void requestPropertyUpdate(DBusPropertyCore* property);
 
 signals:
 	void getAllFinished();
@@ -160,8 +238,6 @@ private slots:
 
 private:
 	void updatePropertySet(const QVariantMap& properties, bool complainMissing);
-	void requestPropertyUpdate(DBusPropertyCore* property);
-	void pushPropertyUpdate(DBusPropertyCore* property);
 	void tryUpdateProperty(DBusPropertyCore* property, const QVariant& variant) const;
 	[[nodiscard]] QString propertyString(const DBusPropertyCore* property) const;
 
@@ -224,7 +300,41 @@ protected:
 private:
 	T value;
 
-	friend class DBusPropertyGroup;
+	friend class DBusPropertyCore;
 };
 
 } // namespace qs::dbus
+
+// NOLINTBEGIN
+#define QS_DBUS_BINDABLE_PROPERTY_GROUP(Class, name) qs::dbus::DBusPropertyGroup name {this};
+
+#define QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, updated, group, name, required)      \
+	static constexpr size_t _qs_property_##property##_offset() { return offsetof(Class, property); } \
+                                                                                                   \
+	qs::dbus::DBusBindableProperty<                                                                  \
+	    &Class::_qs_property_##property##_offset,                                                    \
+	    &Class::bindable,                                                                            \
+	    updated,                                                                                     \
+	    &Class::group,                                                                               \
+	    u##name,                                                                                     \
+	    required>                                                                                    \
+	    property;
+
+#define QS_DBUS_PROPERTY_BINDING_7(Class, property, bindable, updated, group, name, required)      \
+	QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, &Class::updated, group, name, required)
+
+#define QS_DBUS_PROPERTY_BINDING_6(Class, property, bindable, group, name, required)               \
+	QS_DBUS_PROPERTY_BINDING_P(Class, property, bindable, nullptr, group, name, required)
+
+#define QS_DBUS_PROPERTY_BINDING_5(Class, property, bindable, group, name)                         \
+	QS_DBUS_PROPERTY_BINDING_6(Class, property, bindable, group, name, true)
+
+// Q_OBJECT_BINDABLE_PROPERTY elides the warning for the exact same reason,
+// so we consider it safe to disable the warning.
+// clang-format off
+#define QS_DBUS_PROPERTY_BINDING(...) \
+	QT_WARNING_PUSH QT_WARNING_DISABLE_INVALID_OFFSETOF \
+	QT_OVERLOADED_MACRO(QS_DBUS_PROPERTY_BINDING, __VA_ARGS__) \
+	QT_WARNING_POP
+// clang-format on
+// NOLINTEND
