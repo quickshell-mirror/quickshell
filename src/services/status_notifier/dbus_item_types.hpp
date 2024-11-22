@@ -35,3 +35,7 @@ const QDBusArgument& operator<<(QDBusArgument& argument, const DBusSniTooltip& t
 
 QDebug operator<<(QDebug debug, const DBusSniIconPixmap& pixmap);
 QDebug operator<<(QDebug debug, const DBusSniTooltip& tooltip);
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+QDebug operator<<(QDebug debug, const QDBusObjectPath& path);
+#endif
