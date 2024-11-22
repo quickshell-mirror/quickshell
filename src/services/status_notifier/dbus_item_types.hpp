@@ -1,7 +1,6 @@
 #pragma once
 
 #include <qdbusargument.h>
-#include <qdbusextratypes.h>
 #include <qdebug.h>
 #include <qlist.h>
 
@@ -12,6 +11,8 @@ struct DBusSniIconPixmap {
 
 	// valid only for the lifetime of the pixmap
 	[[nodiscard]] QImage createImage() const;
+
+	bool operator==(const DBusSniIconPixmap& other) const;
 };
 
 using DBusSniIconPixmapList = QList<DBusSniIconPixmap>;
@@ -21,6 +22,8 @@ struct DBusSniTooltip {
 	DBusSniIconPixmapList iconPixmaps;
 	QString title;
 	QString description;
+
+	bool operator==(const DBusSniTooltip& other) const;
 };
 
 const QDBusArgument& operator>>(const QDBusArgument& argument, DBusSniIconPixmap& pixmap);
@@ -32,4 +35,3 @@ const QDBusArgument& operator<<(QDBusArgument& argument, const DBusSniTooltip& t
 
 QDebug operator<<(QDebug debug, const DBusSniIconPixmap& pixmap);
 QDebug operator<<(QDebug debug, const DBusSniTooltip& tooltip);
-QDebug operator<<(QDebug debug, const QDBusObjectPath& path);

@@ -1,7 +1,6 @@
 #include "dbus_item_types.hpp"
 
 #include <qdbusargument.h>
-#include <qdbusextratypes.h>
 #include <qdebug.h>
 #include <qendian.h>
 #include <qimage.h>
@@ -9,6 +8,15 @@
 #include <qmetatype.h>
 #include <qsysinfo.h>
 #include <qtypes.h>
+
+bool DBusSniIconPixmap::operator==(const DBusSniIconPixmap& other) const {
+	return this->width == other.width && this->height == other.height && this->data == other.data;
+}
+
+bool DBusSniTooltip::operator==(const DBusSniTooltip& other) const {
+	return this->icon == other.icon && this->title == other.title
+	    && this->description == other.description && this->iconPixmaps == other.iconPixmaps;
+}
 
 QImage DBusSniIconPixmap::createImage() const {
 	// fix byte order if on a little endian machine
@@ -110,12 +118,6 @@ QDebug operator<<(QDebug debug, const DBusSniTooltip& tooltip) {
 	debug.nospace() << "DBusSniTooltip(title=" << tooltip.title
 	                << ", description=" << tooltip.description << ", icon=" << tooltip.icon
 	                << ", iconPixmaps=" << tooltip.iconPixmaps << ")";
-
-	return debug;
-}
-
-QDebug operator<<(QDebug debug, const QDBusObjectPath& path) {
-	debug.nospace() << "QDBusObjectPath(" << path.path() << ")";
 
 	return debug;
 }

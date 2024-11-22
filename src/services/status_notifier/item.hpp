@@ -6,6 +6,7 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qpixmap.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -54,6 +55,28 @@ enum Enum {
 Q_ENUM_NS(Enum);
 } // namespace Category
 
+} // namespace qs::service::sni
+
+namespace qs::dbus {
+
+template <>
+struct DBusDataTransform<qs::service::sni::Status::Enum> {
+	using Wire = QString;
+	using Data = qs::service::sni::Status::Enum;
+	static DBusResult<Data> fromWire(const QString& wire);
+};
+
+template <>
+struct DBusDataTransform<qs::service::sni::Category::Enum> {
+	using Wire = QString;
+	using Data = qs::service::sni::Category::Enum;
+	static DBusResult<Data> fromWire(const QString& wire);
+};
+
+} // namespace qs::dbus
+
+namespace qs::service::sni {
+
 class StatusNotifierItem;
 
 class TrayImageHandle: public QsImageHandle {
@@ -74,24 +97,26 @@ public:
 class StatusNotifierItem: public QObject {
 	Q_OBJECT;
 
+	// clang-format off
 	/// A name unique to the application, such as its name.
-	Q_PROPERTY(QString id READ id NOTIFY idChanged);
+	Q_PROPERTY(QString id READ id NOTIFY idChanged BINDABLE bindableId);
 	/// Text that describes the application.
-	Q_PROPERTY(QString title READ title NOTIFY titleChanged);
-	Q_PROPERTY(qs::service::sni::Status::Enum status READ status NOTIFY statusChanged);
-	Q_PROPERTY(qs::service::sni::Category::Enum category READ category NOTIFY categoryChanged);
+	Q_PROPERTY(QString title READ title NOTIFY titleChanged BINDABLE bindableTitle);
+	Q_PROPERTY(qs::service::sni::Status::Enum status READ status NOTIFY statusChanged BINDABLE bindableStatus);
+	Q_PROPERTY(qs::service::sni::Category::Enum category READ category NOTIFY categoryChanged BINDABLE bindableCategory);
 	/// Icon source string, usable as an Image source.
-	Q_PROPERTY(QString icon READ iconId NOTIFY iconChanged);
+	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged BINDABLE bindableIcon);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
 	/// If this tray item has an associated menu accessible via @@display() or @@menu.
-	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged);
+	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged BINDABLE bindableHasMenu);
 	/// A handle to the menu associated with this tray item, if any.
 	///
 	/// Can be displayed with @@Quickshell.QsMenuAnchor or @@Quickshell.QsMenuOpener.
 	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenuHandle* menu READ menuHandle NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
-	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged);
+	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged BINDABLE bindableOnlyMenu);
+	// clang-format on
 	QML_NAMED_ELEMENT(SystemTrayItem);
 	QML_UNCREATABLE("SystemTrayItems can only be acquired from SystemTray");
 
@@ -100,7 +125,7 @@ public:
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] bool isReady() const;
-	[[nodiscard]] QString iconId() const;
+	QS_BINDABLE_GETTER(QString, bIcon, icon, bindableIcon);
 	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
 
 	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
@@ -114,21 +139,21 @@ public:
 	/// Display a platform menu at the given location relative to the parent window.
 	void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
 
-	[[nodiscard]] QString id() const;
-	[[nodiscard]] QString title() const;
-	[[nodiscard]] Status::Enum status() const;
-	[[nodiscard]] Category::Enum category() const;
-	[[nodiscard]] QString tooltipTitle() const;
-	[[nodiscard]] QString tooltipDescription() const;
-	[[nodiscard]] bool hasMenu() const;
-	[[nodiscard]] bool onlyMenu() const;
+	QS_BINDABLE_GETTER(QString, bId, id, bindableId);
+	QS_BINDABLE_GETTER(QString, bTitle, title, bindableTitle);
+	QS_BINDABLE_GETTER(Status::Enum, bStatus, status, bindableStatus);
+	QS_BINDABLE_GETTER(Category::Enum, bCategory, category, bindableCategory);
+	[[nodiscard]] QString tooltipTitle() const { return this->bTooltip.value().title; };
+	[[nodiscard]] QString tooltipDescription() const { return this->bTooltip.value().description; };
+	QS_BINDABLE_GETTER(bool, bHasMenu, hasMenu, bindableHasMenu);
+	QS_BINDABLE_GETTER(bool, bIsMenu, onlyMenu, bindableOnlyMenu);
 
 signals:
-	void iconChanged();
 	void ready();
 
 	void idChanged();
 	void titleChanged();
+	void iconChanged();
 	void statusChanged();
 	void categoryChanged();
 	void tooltipTitleChanged();
@@ -137,13 +162,13 @@ signals:
 	void onlyMenuChanged();
 
 private slots:
-	void updateIcon();
 	void onGetAllFinished();
 	void onGetAllFailed() const;
-	void onMenuPathChanged();
 
 private:
 	void updateMenuState();
+	void updatePixmapIndex();
+	void onMenuPathChanged();
 
 	DBusStatusNotifierItem* item = nullptr;
 	TrayImageHandle imageHandle {this};
@@ -151,28 +176,53 @@ private:
 
 	dbus::dbusmenu::DBusMenuHandle mMenuHandle {this};
 
-	// bumped to inhibit caching
-	quint32 iconIndex = 0;
 	QString watcherId;
 
 	// clang-format off
-	dbus::DBusPropertyGroup properties;
-	dbus::DBusProperty<QString> pId {this->properties, "Id"};
-	dbus::DBusProperty<QString> pTitle {this->properties, "Title"};
-	dbus::DBusProperty<QString> pStatus {this->properties, "Status"};
-	dbus::DBusProperty<QString> pCategory {this->properties, "Category"};
-	dbus::DBusProperty<quint32> pWindowId {this->properties, "WindowId"};
-	dbus::DBusProperty<QString> pIconThemePath {this->properties, "IconThemePath", "", false};
-	dbus::DBusProperty<QString> pIconName {this->properties, "IconName", "", false}; // IconPixmap may be set
-	dbus::DBusProperty<DBusSniIconPixmapList> pIconPixmaps {this->properties, "IconPixmap", {}, false}; // IconName may be set
-	dbus::DBusProperty<QString> pOverlayIconName {this->properties, "OverlayIconName"};
-	dbus::DBusProperty<DBusSniIconPixmapList> pOverlayIconPixmaps {this->properties, "OverlayIconPixmap"};
-	dbus::DBusProperty<QString> pAttentionIconName {this->properties, "AttentionIconName"};
-	dbus::DBusProperty<DBusSniIconPixmapList> pAttentionIconPixmaps {this->properties, "AttentionIconPixmap"};
-	dbus::DBusProperty<QString> pAttentionMovieName {this->properties, "AttentionMovieName", "", false};
-	dbus::DBusProperty<DBusSniTooltip> pTooltip {this->properties, "ToolTip"};
-	dbus::DBusProperty<bool> pIsMenu {this->properties, "ItemIsMenu"};
-	dbus::DBusProperty<QDBusObjectPath> pMenuPath {this->properties, "Menu"};
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bId, &StatusNotifierItem::idChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bTitle, &StatusNotifierItem::titleChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, Status::Enum, bStatus, &StatusNotifierItem::statusChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, Category::Enum, bCategory, &StatusNotifierItem::categoryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bIconThemePath);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bIconName);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bOverlayIconName);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bAttentionIconName);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniIconPixmapList, bIconPixmaps);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniIconPixmapList, bOverlayIconPixmaps);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniIconPixmapList, bAttentionIconPixmaps);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bAttentionMovieName);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniTooltip, bTooltip);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, bool, bIsMenu);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QDBusObjectPath, bMenuPath);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, bool, bHasMenu, &StatusNotifierItem::hasMenuChanged);
+
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bIconThemePath, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bIconName, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bOverlayIconName, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bAttentionIconName, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bIconPixmaps, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bOverlayIconPixmaps, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bAttentionIconPixmaps, updatePixmapIndex, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bMenuPath, onMenuPathChanged, onValueChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, quint32, pixmapIndex);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bIcon, &StatusNotifierItem::iconChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(StatusNotifierItem, properties);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pId, bId, properties, "Id");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTitle, bTitle, properties, "Title");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pStatus, bStatus, properties, "Status");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pCategory, bCategory, properties, "Category");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconThemePath, bIconThemePath, properties, "IconThemePath", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconName, bIconName, properties, "IconName", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconPixmaps, bIconPixmaps, properties, "IconPixmap", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconName, bOverlayIconName, properties, "OverlayIconName");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconPixmaps, bOverlayIconPixmaps, properties, "OverlayIconPixmap");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconName, bAttentionIconName, properties, "AttentionIconName");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconPixmaps, bAttentionIconPixmaps, properties, "AttentionIconPixmap");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionMovieName, bAttentionMovieName, properties, "AttentionMovieName", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTooltip, bTooltip, properties, "ToolTip");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIsMenu, bIsMenu, properties, "ItemIsMenu");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pMenuPath, bMenuPath, properties, "Menu");
 	// clang-format on
 };
 
