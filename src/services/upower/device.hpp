@@ -91,7 +91,6 @@ struct DBusDataTransform<qs::service::upower::UPowerDeviceState::Enum> {
 	using Wire = quint32;
 	using Data = qs::service::upower::UPowerDeviceState::Enum;
 	static DBusResult<Data> fromWire(Wire wire);
-	static Wire toWire(const Data& value);
 };
 
 template <>
@@ -99,7 +98,6 @@ struct DBusDataTransform<qs::service::upower::UPowerDeviceType::Enum> {
 	using Wire = quint32;
 	using Data = qs::service::upower::UPowerDeviceType::Enum;
 	static DBusResult<Data> fromWire(Wire wire);
-	static Wire toWire(const Data& value);
 };
 
 template <>
@@ -107,7 +105,6 @@ struct DBusDataTransform<qs::service::upower::PowerPercentage> {
 	using Wire = qreal;
 	using Data = qreal;
 	static DBusResult<Data> fromWire(Wire wire);
-	static Wire toWire(const Data& value);
 };
 
 } // namespace qs::dbus

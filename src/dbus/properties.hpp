@@ -143,9 +143,6 @@ template <typename T>
 struct DBusDataTransform {
 	using Wire = T;
 	using Data = T;
-
-	static DBusResult<Data> fromWire(Wire&& wire) { return DBusResult<T>(std::move(wire)); }
-	static Wire toWire(const Data& value) { return value; }
 };
 
 namespace bindable_p {
@@ -165,6 +162,20 @@ struct BindableType {
 	using Meta = BindableParams<Bindable>;
 	using Type = Meta::Type;
 };
+
+template <typename T, typename = void>
+struct HasFromWire: std::false_type {};
+
+template <typename T>
+struct HasFromWire<T, std::void_t<decltype(T::fromWire(std::declval<typename T::Wire>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct HasToWire: std::false_type {};
+
+template <typename T>
+struct HasToWire<T, std::void_t<decltype(T::toWire(std::declval<typename T::Data>()))>>
+    : std::true_type {};
 
 } // namespace bindable_p
 
@@ -206,12 +217,14 @@ protected:
 	QDBusError store(const QVariant& variant) override {
 		DBusResult<DataType> result;
 
-		if constexpr (std::is_same_v<WireType, BaseType>) {
-			result = demarshallVariant<DataType>(variant);
-		} else {
+		if constexpr (bindable_p::HasFromWire<Transform>::value) {
 			auto wireResult = demarshallVariant<WireType>(variant);
 			if (!wireResult.isValid()) return wireResult.error;
 			result = Transform::fromWire(std::move(wireResult.value));
+		} else if constexpr (std::is_same_v<WireType, BaseType>) {
+			result = demarshallVariant<DataType>(variant);
+		} else {
+			return QDBusError(QDBusError::NotSupported, "This property cannot be deserialized");
 		}
 
 		if (!result.isValid()) return result.error;
@@ -225,10 +238,12 @@ protected:
 	}
 
 	QVariant serialize() override {
-		if constexpr (std::is_same_v<WireType, BaseType>) {
+		if constexpr (bindable_p::HasToWire<Transform>::value) {
+			return QVariant::fromValue(Transform::toWire(this->bindable()->value()));
+		} else if constexpr (std::is_same_v<WireType, BaseType>) {
 			return QVariant::fromValue(this->bindable()->value());
 		} else {
-			return QVariant::fromValue(Transform::toWire(this->bindable()->value()));
+			return QVariant();
 		}
 	}
 

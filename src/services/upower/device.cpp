@@ -105,8 +105,6 @@ DBusResult<qreal> DBusDataTransform<PowerPercentage>::fromWire(qreal wire) {
 	return DBusResult(wire * 0.01);
 }
 
-qreal DBusDataTransform<PowerPercentage>::toWire(const qreal& value) { return value * 100; }
-
 DBusResult<UPowerDeviceState::Enum>
 DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
 	if (wire != UPowerDeviceType::Battery && wire >= UPowerDeviceState::Unknown
@@ -120,10 +118,6 @@ DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
 	);
 }
 
-quint32 DBusDataTransform<UPowerDeviceState::Enum>::toWire(const UPowerDeviceState::Enum& value) {
-	return static_cast<quint32>(value);
-}
-
 DBusResult<UPowerDeviceType::Enum> DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire
 ) {
 	if (wire >= UPowerDeviceType::Unknown && wire <= UPowerDeviceType::BluetoothGeneric) {
@@ -133,10 +127,6 @@ DBusResult<UPowerDeviceType::Enum> DBusDataTransform<UPowerDeviceType::Enum>::fr
 	return DBusResult<UPowerDeviceType::Enum>(
 	    QDBusError(QDBusError::InvalidArgs, QString("Invalid UPowerDeviceType: %1").arg(wire))
 	);
-}
-
-quint32 DBusDataTransform<UPowerDeviceType::Enum>::toWire(const UPowerDeviceType::Enum& value) {
-	return static_cast<quint32>(value);
 }
 
 } // namespace qs::dbus
