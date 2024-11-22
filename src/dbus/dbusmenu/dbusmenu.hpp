@@ -122,9 +122,6 @@ signals:
 	QSDOC_HIDE void iconThemePathChanged();
 
 public:
-	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, quint32, version);
-	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QString, textDirection);
-	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QString, status);
 	Q_OBJECT_BINDABLE_PROPERTY(DBusMenu, QStringList, iconThemePath, &DBusMenu::iconThemePathChanged);
 
 	void prepareToShow(qint32 item, qint32 depth);
@@ -147,10 +144,14 @@ private slots:
 private:
 	void updateLayoutRecursive(const DBusMenuLayout& layout, DBusMenuItem* parent, qint32 depth);
 
-	QS_DBUS_PROPERTY_BINDING(DBusMenu, pVersion, version, properties, "Version");
-	QS_DBUS_PROPERTY_BINDING(DBusMenu, pTextDirection, textDirection, properties, "TextDirection");
-	QS_DBUS_PROPERTY_BINDING(DBusMenu, pStatus, status, properties, "Status");
-	QS_DBUS_PROPERTY_BINDING(DBusMenu, pIconThemePath, iconThemePath, properties, "IconThemePath");
+	QS_DBUS_PROPERTY_BINDING(
+	    DBusMenu,
+	    pIconThemePath,
+	    iconThemePath,
+	    properties,
+	    "IconThemePath",
+	    false
+	);
 
 	DBusMenuInterface* interface = nullptr;
 };

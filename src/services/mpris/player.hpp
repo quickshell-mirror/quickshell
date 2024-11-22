@@ -408,8 +408,8 @@ private:
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pDesktopEntry, bDesktopEntry, appProperties, "DesktopEntry");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanQuit, bCanQuit, appProperties, "CanQuit");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanRaise, bCanRaise, appProperties, "CanRaise");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pFullscreen, bFullscreen, appProperties, "Fullscreen");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSetFullscreen, bCanSetFullscreen, appProperties, "CanSetFullscreen");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pFullscreen, bFullscreen, appProperties, "Fullscreen", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSetFullscreen, bCanSetFullscreen, appProperties, "CanSetFullscreen", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedUriSchemes, bSupportedUriSchemes, appProperties, "SupportedUriSchemes");
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedMimeTypes, bSupportedMimeTypes, appProperties, "SupportedMimeTypes");
 
