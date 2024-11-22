@@ -104,40 +104,6 @@ private:
 	friend class DBusPropertyGroup;
 };
 
-class AbstractDBusProperty
-    : public QObject
-    , public DBusPropertyCore {
-	Q_OBJECT;
-
-public:
-	explicit AbstractDBusProperty(QString name, bool required, QObject* parent = nullptr)
-	    : QObject(parent)
-	    , required(required)
-	    , mName(std::move(name)) {}
-
-	[[nodiscard]] QString name() const override { return this->mName; };
-	[[nodiscard]] QStringView nameRef() const override { return this->mName; };
-	[[nodiscard]] bool isRequired() const override { return this->required; };
-
-	[[nodiscard]] QString toString() const;
-
-public slots:
-	void update();
-	void write();
-
-signals:
-	void changed();
-
-private:
-	bool required : 1;
-	bool mExists : 1 = false;
-
-	DBusPropertyGroup* group = nullptr;
-	QString mName;
-
-	friend class DBusPropertyGroup;
-};
-
 // Default implementation with no transformation
 template <typename T>
 struct DBusDataTransform {
@@ -265,7 +231,6 @@ public:
 	explicit DBusPropertyGroup(QObject* parent): DBusPropertyGroup({}, parent) {}
 
 	void setInterface(QDBusAbstractInterface* interface);
-	void attachProperty(AbstractDBusProperty* property);
 	void attachProperty(DBusPropertyCore* property);
 	void updateAllDirect();
 	void updateAllViaGetAll();
@@ -295,61 +260,6 @@ private:
 	QVector<DBusPropertyCore*> properties;
 
 	friend class AbstractDBusProperty;
-};
-
-template <typename T>
-class DBusProperty: public AbstractDBusProperty {
-public:
-	explicit DBusProperty(
-	    QString name,
-	    T value = T(),
-	    bool required = true,
-	    QObject* parent = nullptr
-	)
-	    : AbstractDBusProperty(std::move(name), required, parent)
-	    , value(std::move(value)) {}
-
-	explicit DBusProperty(
-	    DBusPropertyGroup& group,
-	    QString name,
-	    T value = T(),
-	    bool required = true,
-	    QObject* parent = nullptr
-	)
-	    : DBusProperty(std::move(name), std::move(value), required, parent) {
-		group.attachProperty(this);
-	}
-
-	[[nodiscard]] QString valueString() override {
-		QString str;
-		QDebug(&str) << this->value;
-		return str;
-	}
-
-	[[nodiscard]] const T& get() const { return this->value; }
-
-	void set(T value) {
-		this->value = std::move(value);
-		emit this->changed();
-	}
-
-protected:
-	QDBusError store(const QVariant& variant) override {
-		auto result = demarshallVariant<T>(variant);
-
-		if (result.isValid()) {
-			this->set(std::move(result.value));
-		}
-
-		return result.error;
-	}
-
-	QVariant serialize() override { return QVariant::fromValue(this->value); }
-
-private:
-	T value;
-
-	friend class DBusPropertyCore;
 };
 
 } // namespace qs::dbus

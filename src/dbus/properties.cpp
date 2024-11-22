@@ -110,24 +110,6 @@ void asyncReadPropertyInternal(
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, &interface, responseCallback);
 }
 
-void AbstractDBusProperty::update() {
-	if (this->group == nullptr) {
-		qFatal(logDbusProperties) << "Tried to update dbus property" << this->nameRef()
-		                          << "which is not attached to a group";
-	} else {
-		this->group->requestPropertyUpdate(this);
-	}
-}
-
-void AbstractDBusProperty::write() {
-	if (this->group == nullptr) {
-		qFatal(logDbusProperties) << "Tried to write dbus property" << this->nameRef()
-		                          << "which is not attached to a group";
-	} else {
-		this->group->pushPropertyUpdate(this);
-	}
-}
-
 DBusPropertyGroup::DBusPropertyGroup(QVector<DBusPropertyCore*> properties, QObject* parent)
     : QObject(parent)
     , properties(std::move(properties)) {}
@@ -155,11 +137,6 @@ void DBusPropertyGroup::setInterface(QDBusAbstractInterface* interface) {
 		    &DBusPropertyGroup::onPropertiesChanged
 		);
 	}
-}
-
-void DBusPropertyGroup::attachProperty(AbstractDBusProperty* property) {
-	this->properties.append(property);
-	property->group = this;
 }
 
 void DBusPropertyGroup::attachProperty(DBusPropertyCore* property) {
@@ -324,8 +301,6 @@ QString DBusPropertyGroup::toString() const {
 QString DBusPropertyGroup::propertyString(const DBusPropertyCore* property) const {
 	return this->toString() % ':' % property->nameRef();
 }
-
-QString AbstractDBusProperty::toString() const { return this->group->propertyString(this); }
 
 void DBusPropertyGroup::onPropertiesChanged(
     const QString& interfaceName,
