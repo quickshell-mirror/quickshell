@@ -154,9 +154,11 @@ void ProxyWindowBase::completeWindow() {
 	this->setColor(this->mColor);
 	this->updateMask();
 
-	// notify initial x and y positions
+	// notify initial / post-connection geometry
 	emit this->xChanged();
 	emit this->yChanged();
+	emit this->widthChanged();
+	emit this->heightChanged();
 
 	this->mContentItem->setParentItem(this->window->contentItem());
 	this->mContentItem->setWidth(this->width());
