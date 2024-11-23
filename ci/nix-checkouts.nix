@@ -22,8 +22,8 @@ in {
   };
 
   qt6_7_2 = byCommit {
-    commit = "22165c231d432826094b15062c207f236c5fa9e2";
-    sha256 = "0ndb6g21xk1wd7ivic5444mf3fnxqjb94b14y9r05431d8zamcf2";
+    commit = "841f166ff96fc2f3ecd1c0cc08072633033d41bf";
+    sha256 = "0d7p0cp7zjiadhpa6sdafxvrpw4lnmb1h673w17q615vm1yaasvy";
   };
 
   qt6_7_1 = byCommit {
