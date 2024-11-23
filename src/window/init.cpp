@@ -5,7 +5,7 @@
 
 namespace {
 
-class WindowPlugin: public QuickshellPlugin {
+class WindowPlugin: public QsEnginePlugin {
 	// _Window has to be registered before wayland or x11 modules, otherwise module overlays
 	// will apply in the wrong order.
 	QString name() override { return "window"; }

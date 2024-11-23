@@ -6,14 +6,14 @@
 
 class EngineGeneration;
 
-class QuickshellPlugin {
+class QsEnginePlugin {
 public:
-	QuickshellPlugin() = default;
-	virtual ~QuickshellPlugin() = default;
-	QuickshellPlugin(QuickshellPlugin&&) = delete;
-	QuickshellPlugin(const QuickshellPlugin&) = delete;
-	void operator=(QuickshellPlugin&&) = delete;
-	void operator=(const QuickshellPlugin&) = delete;
+	QsEnginePlugin() = default;
+	virtual ~QsEnginePlugin() = default;
+	QsEnginePlugin(QsEnginePlugin&&) = delete;
+	QsEnginePlugin(const QsEnginePlugin&) = delete;
+	void operator=(QsEnginePlugin&&) = delete;
+	void operator=(const QsEnginePlugin&) = delete;
 
 	virtual QString name() { return QString(); }
 	virtual QList<QString> dependencies() { return {}; }
@@ -23,7 +23,7 @@ public:
 	virtual void constructGeneration(EngineGeneration& /*unused*/) {} // NOLINT
 	virtual void onReload() {}
 
-	static void registerPlugin(QuickshellPlugin& plugin);
+	static void registerPlugin(QsEnginePlugin& plugin);
 	static void initPlugins();
 	static void runConstructGeneration(EngineGeneration& generation);
 	static void runOnReload();
@@ -33,6 +33,6 @@ public:
 #define QS_REGISTER_PLUGIN(clazz)                                                                  \
 	[[gnu::constructor]] void qsInitPlugin() {                                                       \
 		static clazz plugin;                                                                           \
-		QuickshellPlugin::registerPlugin(plugin);                                                      \
+		QsEnginePlugin::registerPlugin(plugin);                                                        \
 	}
 // NOLINTEND

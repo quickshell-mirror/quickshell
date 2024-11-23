@@ -5,41 +5,41 @@
 
 #include "generation.hpp"
 
-static QVector<QuickshellPlugin*> plugins; // NOLINT
+static QVector<QsEnginePlugin*> plugins; // NOLINT
 
-void QuickshellPlugin::registerPlugin(QuickshellPlugin& plugin) { plugins.push_back(&plugin); }
+void QsEnginePlugin::registerPlugin(QsEnginePlugin& plugin) { plugins.push_back(&plugin); }
 
-void QuickshellPlugin::initPlugins() {
+void QsEnginePlugin::initPlugins() {
 	plugins.erase(
 	    std::remove_if(
 	        plugins.begin(),
 	        plugins.end(),
-	        [](QuickshellPlugin* plugin) { return !plugin->applies(); }
+	        [](QsEnginePlugin* plugin) { return !plugin->applies(); }
 	    ),
 	    plugins.end()
 	);
 
-	std::sort(plugins.begin(), plugins.end(), [](QuickshellPlugin* a, QuickshellPlugin* b) {
+	std::sort(plugins.begin(), plugins.end(), [](QsEnginePlugin* a, QsEnginePlugin* b) {
 		return b->dependencies().contains(a->name());
 	});
 
-	for (QuickshellPlugin* plugin: plugins) {
+	for (QsEnginePlugin* plugin: plugins) {
 		plugin->init();
 	}
 
-	for (QuickshellPlugin* plugin: plugins) {
+	for (QsEnginePlugin* plugin: plugins) {
 		plugin->registerTypes();
 	}
 }
 
-void QuickshellPlugin::runConstructGeneration(EngineGeneration& generation) {
-	for (QuickshellPlugin* plugin: plugins) {
+void QsEnginePlugin::runConstructGeneration(EngineGeneration& generation) {
+	for (QsEnginePlugin* plugin: plugins) {
 		plugin->constructGeneration(generation);
 	}
 }
 
-void QuickshellPlugin::runOnReload() {
-	for (QuickshellPlugin* plugin: plugins) {
+void QsEnginePlugin::runOnReload() {
+	for (QsEnginePlugin* plugin: plugins) {
 		plugin->onReload();
 	}
 }

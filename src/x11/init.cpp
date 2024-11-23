@@ -9,7 +9,7 @@
 
 namespace {
 
-class X11Plugin: public QuickshellPlugin {
+class X11Plugin: public QsEnginePlugin {
 	QList<QString> dependencies() override { return {"window"}; }
 
 	bool applies() override { return QGuiApplication::platformName() == "xcb"; }

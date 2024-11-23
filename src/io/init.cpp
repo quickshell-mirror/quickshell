@@ -3,7 +3,7 @@
 
 namespace {
 
-class IoPlugin: public QuickshellPlugin {
+class IoPlugin: public QsEnginePlugin {
 	void onReload() override { DisownedProcessContext::destroyInstance(); }
 };
 

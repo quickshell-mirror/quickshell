@@ -42,7 +42,7 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	this->engine->addImageProvider("qsimage", new QsImageProvider());
 	this->engine->addImageProvider("qspixmap", new QsPixmapProvider());
 
-	QuickshellPlugin::runConstructGeneration(*this);
+	QsEnginePlugin::runConstructGeneration(*this);
 }
 
 EngineGeneration::~EngineGeneration() {
@@ -141,7 +141,7 @@ void EngineGeneration::postReload() {
 	// This can be called on a generation during its destruction.
 	if (this->engine == nullptr || this->root == nullptr) return;
 
-	QuickshellPlugin::runOnReload();
+	QsEnginePlugin::runOnReload();
 	PostReloadHook::postReloadTree(this->root);
 	this->singletonRegistry.onPostReload();
 }

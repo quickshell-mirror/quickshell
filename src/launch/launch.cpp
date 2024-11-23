@@ -212,7 +212,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		QQmlDebuggingEnabler::startTcpDebugServer(args.debugPort, wait);
 	}
 
-	QuickshellPlugin::initPlugins();
+	QsEnginePlugin::initPlugins();
 
 	// Base window transparency appears to be additive.
 	// Use a fully transparent window with a colored rect.
