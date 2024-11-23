@@ -3,7 +3,7 @@
   nix-gitignore,
   pkgs,
   keepDebugInfo,
-  buildStdenv ? pkgs.clang17Stdenv,
+  buildStdenv ? pkgs.clangStdenv,
 
   cmake,
   ninja,

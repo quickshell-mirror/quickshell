@@ -1,0 +1,21 @@
+name: Build (Nix)
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build (Nix)
+    strategy:
+      matrix:
+        qtver: [qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
+        compiler: [clang, gcc]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Use cachix action over detsys for testing with act.
+      # - uses: cachix/install-nix-action@v27
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - run: nix-build --no-out-link --expr "(import ./ci/matrix.nix) { qtver = \"$QTVER\"; compiler = \"$COMPILER\"; }"
+        env:
+          QTVER: ${{ matrix.qtver }}
+          COMPILER: ${{ matrix.compiler }}

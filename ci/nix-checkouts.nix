@@ -1,0 +1,58 @@
+let
+  byCommit = {
+    commit,
+    sha256,
+  }: import (builtins.fetchTarball {
+    name = "nixpkgs-${commit}";
+    url = "https://github.com/nixos/nixpkgs/archive/${commit}.tar.gz";
+    inherit sha256;
+  }) {};
+in {
+  # For old qt versions, grab the commit before the version bump that has all the patches
+  # instead of the bumped version.
+
+  qt6_8_0 = byCommit {
+    commit = "23e89b7da85c3640bbc2173fe04f4bd114342367";
+    sha256 = "1b2v6y3bja4br5ribh9lj6xzz2k81dggz708b2mib83rwb509wyb";
+  };
+
+  qt6_7_3 = byCommit {
+    commit = "273673e839189c26130d48993d849a84199523e6";
+    sha256 = "0aca369hdxb8j0vx9791anyzy4m65zckx0lriicqhp95kv9q6m7z";
+  };
+
+  qt6_7_2 = byCommit {
+    commit = "22165c231d432826094b15062c207f236c5fa9e2";
+    sha256 = "0ndb6g21xk1wd7ivic5444mf3fnxqjb94b14y9r05431d8zamcf2";
+  };
+
+  qt6_7_1 = byCommit {
+    commit = "69bee9866a4e2708b3153fdb61c1425e7857d6b8";
+    sha256 = "1an4sha4jsa29dvc4n9mqxbq8jjwg7frl0rhy085g73m7l1yx0lj";
+  };
+
+  qt6_7_0 = byCommit {
+    commit = "4fbbc17ccf11bc80002b19b31387c9c80276f076";
+    sha256 = "09lhgdqlx8j9a7vpdcf8sddlhbzjq0s208spfmxfjdn14fvx8k0j";
+  };
+
+  qt6_6_3 = byCommit {
+    commit = "8f1a3fbaa92f1d59b09f2d24af6a607b5a280071";
+    sha256 = "0322zwxvmg8v2wkm03xpk6mqmmbfjgrhc9prcx0zd36vjl6jmi18";
+  };
+
+  qt6_6_2 = byCommit {
+    commit = "0bb9cfbd69459488576a0ef3c0e0477bedc3a29e";
+    sha256 = "172ww486jm1mczk9id78s32p7ps9m9qgisml286flc8jffb6yad8";
+  };
+
+  qt6_6_1 = byCommit {
+    commit = "8eecc3342103c38eea666309a7c0d90d403a039a";
+    sha256 = "1lakc0immsgrpz3basaysdvd0sx01r0mcbyymx6id12fk0404z5r";
+  };
+
+  qt6_6_0 = byCommit {
+    commit = "1ded005f95a43953112ffc54b39593ea2f16409f";
+    sha256 = "1xvyd3lj81hak9j53mrhdsqx78x5v2ppv8m2s54qa2099anqgm0f";
+  };
+}
