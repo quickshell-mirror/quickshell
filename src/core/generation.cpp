@@ -124,7 +124,10 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	QObject::connect(this->engine, &QQmlEngine::quit, this, &EngineGeneration::quit);
 	QObject::connect(this->engine, &QQmlEngine::exit, this, &EngineGeneration::exit);
 
-	this->root->reload(old == nullptr ? nullptr : old->root);
+	if (auto* reloadable = qobject_cast<Reloadable*>(this->root)) {
+		reloadable->reload(old ? old->root : nullptr);
+	}
+
 	this->singletonRegistry.onReload(old == nullptr ? nullptr : &old->singletonRegistry);
 	this->reloadComplete = true;
 	emit this->reloadFinished();

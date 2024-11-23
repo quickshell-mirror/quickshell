@@ -13,7 +13,6 @@
 #include "incubator.hpp"
 #include "qsintercept.hpp"
 #include "scan.hpp"
-#include "shell.hpp"
 #include "singleton.hpp"
 
 class RootWrapper;
@@ -58,7 +57,7 @@ public:
 	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;
 	QQmlEngine* engine = nullptr;
-	ShellRoot* root = nullptr;
+	QObject* root = nullptr;
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
 	QVector<QString> deletedWatchedFiles;

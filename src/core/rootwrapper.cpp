@@ -14,7 +14,6 @@
 #include "generation.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
-#include "shell.hpp"
 
 RootWrapper::RootWrapper(QString rootPath, QString shellId)
     : QObject(nullptr)
@@ -60,25 +59,11 @@ void RootWrapper::reloadGraph(bool hard) {
 	url.setScheme("qsintercept");
 	auto component = QQmlComponent(generation->engine, url);
 
-	auto* obj = component.beginCreate(generation->engine->rootContext());
+	auto* newRoot = component.beginCreate(generation->engine->rootContext());
 
-	if (obj == nullptr) {
+	if (newRoot == nullptr) {
 		const QString error = "failed to create root component\n" + component.errorString();
 		qWarning().noquote() << error;
-		generation->destroy();
-
-		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
-			emit this->generation->qsgInstance->reloadFailed(error);
-		}
-
-		return;
-	}
-
-	auto* newRoot = qobject_cast<ShellRoot*>(obj);
-	if (newRoot == nullptr) {
-		const QString error = "root component was not a Quickshell.ShellRoot";
-		qWarning().noquote() << error;
-		delete obj;
 		generation->destroy();
 
 		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
