@@ -16,6 +16,9 @@ install_qml_module(quickshell-wayland-layershell)
 
 wl_proto(quickshell-wayland-layershell wlr-layer-shell-unstable-v1 "${CMAKE_CURRENT_SOURCE_DIR}/wlr-layer-shell-unstable-v1.xml")
 
+# link dependency of wlr-layer-shell's codegen
+wl_proto(quickshell-wayland-layershell xdg-shell "${WAYLAND_PROTOCOLS}/stable/xdg-shell/xdg-shell.xml")
+
 target_link_libraries(quickshell-wayland-layershell PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
 )
