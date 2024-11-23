@@ -76,7 +76,10 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 	emit this->windowConnected();
 	this->postCompleteWindow();
 
-	if (wasVisible && this->isVisibleDirect()) emit this->backerVisibilityChanged();
+	if (wasVisible && this->isVisibleDirect()) {
+		emit this->backerVisibilityChanged();
+		this->runLints();
+	}
 }
 
 void ProxyWindowBase::postCompleteWindow() { this->setVisible(this->mVisible); }
@@ -137,7 +140,7 @@ void ProxyWindowBase::connectWindow() {
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
-	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::onWindowExposeEvent);
+	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::runLints);
 	// clang-format on
 }
 
@@ -221,7 +224,7 @@ void ProxyWindowBase::polishItems() {
 	QQuickWindowPrivate::get(this->window)->polishItems();
 }
 
-void ProxyWindowBase::onWindowExposeEvent() {
+void ProxyWindowBase::runLints() {
 	if (!this->ranLints) {
 		qs::debug::lintItemTree(this->mContentItem);
 		this->ranLints = true;

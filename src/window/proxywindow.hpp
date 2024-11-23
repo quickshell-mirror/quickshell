@@ -122,7 +122,7 @@ protected slots:
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
-	void onWindowExposeEvent();
+	void runLints();
 
 protected:
 	bool mVisible = true;
