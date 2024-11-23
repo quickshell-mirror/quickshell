@@ -32,6 +32,7 @@ void WrapperManager::componentComplete() {
 
 	if (childItems.length() == 1) {
 		this->mDefaultChild = childItems.first();
+		if (!child) child = this->mDefaultChild;
 	} else if (childItems.length() != 0) {
 		this->flags.setFlag(WrapperManager::HasMultipleChildren);
 
