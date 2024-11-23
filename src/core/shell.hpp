@@ -8,7 +8,7 @@
 #include "qmlglobal.hpp"
 #include "reload.hpp"
 
-///! Root config element
+///! Optional root config element, allowing some settings to be specified inline.
 class ShellRoot: public ReloadPropagator {
 	Q_OBJECT;
 	Q_PROPERTY(QuickshellSettings* settings READ settings CONSTANT);

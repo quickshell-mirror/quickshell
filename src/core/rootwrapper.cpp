@@ -8,9 +8,11 @@
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
+#include <qquickitem.h>
 #include <qtmetamacros.h>
 #include <qurl.h>
 
+#include "../window/floatingwindow.hpp"
 #include "generation.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
@@ -71,6 +73,15 @@ void RootWrapper::reloadGraph(bool hard) {
 		}
 
 		return;
+	}
+
+	if (auto* item = qobject_cast<QQuickItem*>(newRoot)) {
+		auto* window = new FloatingWindowInterface();
+		item->setParent(window);
+		item->setParentItem(window->contentItem());
+		window->setWidth(static_cast<int>(item->width()));
+		window->setHeight(static_cast<int>(item->height()));
+		newRoot = window;
 	}
 
 	generation->root = newRoot;
