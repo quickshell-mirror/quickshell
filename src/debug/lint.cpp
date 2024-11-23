@@ -21,8 +21,6 @@ bool isRenderable(QQuickItem* item);
 void lintObjectTree(QObject* object) {
 	if (!logLint().isWarningEnabled()) return;
 
-	qCDebug(logLint) << "Walking children of object" << object;
-
 	for (auto* child: object->children()) {
 		if (child->isQuickItemType()) {
 			auto* item = static_cast<QQuickItem*>(child); // NOLINT;
@@ -36,10 +34,8 @@ void lintObjectTree(QObject* object) {
 void lintItemTree(QQuickItem* item) {
 	if (!logLint().isWarningEnabled()) return;
 
-	qCDebug(logLint) << "Running lints for item" << item;
 	lintZeroSized(item);
 
-	qCDebug(logLint) << "Walking visual children of item" << item;
 	for (auto* child: item->childItems()) {
 		lintItemTree(child);
 	}
