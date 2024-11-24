@@ -85,9 +85,7 @@ class ObjectModel: public UntypedObjectModel {
 public:
 	explicit ObjectModel(QObject* parent): UntypedObjectModel(parent) {}
 
-	[[nodiscard]] QVector<T*>& valueList() {
-		return *std::bit_cast<QVector<T*>*>(&this->valuesList);
-	}
+	[[nodiscard]] QVector<T*>& valueList() { return *std::bit_cast<QVector<T*>*>(&this->valuesList); }
 
 	[[nodiscard]] const QVector<T*>& valueList() const {
 		return *std::bit_cast<const QVector<T*>*>(&this->valuesList);

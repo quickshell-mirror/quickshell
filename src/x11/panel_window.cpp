@@ -366,7 +366,7 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 		{
 			side = anchors.mLeft ? 0 : anchors.mRight ? 1 : -1;
 		} else if (!anchors.verticalConstraint()
-						 && (anchors.horizontalConstraint() || (!anchors.mLeft && !anchors.mRight)))
+		           && (anchors.horizontalConstraint() || (!anchors.mLeft && !anchors.mRight)))
 		{
 			side = anchors.mTop ? 2 : anchors.mBottom ? 3 : -1;
 		}

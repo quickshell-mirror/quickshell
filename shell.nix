@@ -15,7 +15,7 @@ in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
 
   nativeBuildInputs = with pkgs; [
     just
-    clang-tools_17
+    clang-tools
     parallel
     makeWrapper
   ];

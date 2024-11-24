@@ -626,7 +626,8 @@ start:
 		if (next == EncodedLogOpcode::RegisterCategory) {
 			if (!this->registerCategory()) return false;
 			goto start;
-		} else if (next == EncodedLogOpcode::RecentMessageShort || next == EncodedLogOpcode::RecentMessageLong)
+		} else if (next == EncodedLogOpcode::RecentMessageShort
+		           || next == EncodedLogOpcode::RecentMessageLong)
 		{
 			quint8 index = 0;
 			quint32 secondDelta = 0;

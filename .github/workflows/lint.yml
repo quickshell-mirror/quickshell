@@ -1,0 +1,25 @@
+name: Lint
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Use cachix action over detsys for testing with act.
+      # - uses: cachix/install-nix-action@v27
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: nicknovitski/nix-develop@v1
+
+      - name: Check formatting
+        run: clang-format -Werror --dry-run src/**/*.{cpp,hpp}
+
+      # required for lint
+      - name: Build
+        run: |
+          just configure debug -DNO_PCH=ON -DBUILD_TESTING=ON
+          just build
+
+      - name: Run lints
+        run: just lint 2>&1

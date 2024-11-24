@@ -1,0 +1,55 @@
+name: Build
+on: [push, pull_request]
+
+jobs:
+  nix:
+    name: Nix
+    strategy:
+      matrix:
+        qtver: [qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
+        compiler: [clang, gcc]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Use cachix action over detsys for testing with act.
+      # - uses: cachix/install-nix-action@v27
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Download Dependencies
+        run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).inputDerivation'
+
+      - name: Build
+        run: nix-build --no-out-link --expr '(import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }'
+
+  archlinux:
+    name: Archlinux
+    runs-on: ubuntu-latest
+    container: archlinux
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Dependencies
+        run: |
+          pacman --noconfirm --noprogressbar -Syyu
+          pacman --noconfirm --noprogressbar -Sy \
+            base-devel \
+            cmake \
+            ninja \
+            pkgconf \
+            qt6-base \
+            qt6-declarative \
+            qt6-svg \
+            qt6-wayland \
+            qt6-shadertools \
+            wayland-protocols \
+            wayland \
+            libxcb \
+            libpipewire \
+            cli11 \
+            jemalloc
+
+      - name: Build
+        # breakpad is annoying to build in ci due to makepkg not running as root
+        run: |
+          cmake -GNinja -B build -DCRASH_REPORTER=OFF
+          cmake --build build
