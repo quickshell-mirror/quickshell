@@ -147,11 +147,11 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	auto parentGeometry = parentWindow->geometry();
 	auto windowGeometry = window->geometry();
 
+	emit anchor->anchoring();
 	anchor->updatePlacement(parentGeometry.topLeft(), windowGeometry.size());
+
 	if (onlyIfDirty && !anchor->isDirty()) return;
 	anchor->markClean();
-
-	emit anchor->anchoring();
 
 	auto adjustment = anchor->adjustment();
 	auto screenGeometry = parentWindow->screen()->geometry();

@@ -21,6 +21,8 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 	auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle());
 	auto* popupRole = waylandWindow ? waylandWindow->surfaceRole<::xdg_popup>() : nullptr;
 
+	emit anchor->anchoring();
+
 	// If a popup becomes invisble after creation ensure the _q properties will
 	// be set and not ignored because the rest is the same.
 	anchor->updatePlacement({popupRole != nullptr, 0}, {});
@@ -41,8 +43,6 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 		auto positioner = XdgPositioner(xdgWmBase->create_positioner());
 
 		positioner.set_constraint_adjustment(anchor->adjustment().toInt());
-
-		emit anchor->anchoring();
 
 		auto anchorRect = anchor->rect();
 
