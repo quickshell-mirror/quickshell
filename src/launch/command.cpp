@@ -65,14 +65,13 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 			                   << ": " << qt_error_string();
 		}
 
-		DAEMON_PIPE = closepipes[1];
-
 		pid_t pid = fork(); // NOLINT (include)
 
 		if (pid == -1) {
 			qFatal().nospace() << "Failed to fork daemon with error " << errno << ": "
 			                   << qt_error_string();
 		} else if (pid == 0) {
+			DAEMON_PIPE = closepipes[1];
 			close(closepipes[0]);
 
 			if (setsid() == -1) {
