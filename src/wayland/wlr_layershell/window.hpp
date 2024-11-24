@@ -15,7 +15,7 @@ namespace WlrLayer { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// Below bottom
 	Background = 0,
 	/// Above background, usually below windows
@@ -36,7 +36,7 @@ namespace WlrKeyboardFocus { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// No keyboard input will be accepted.
 	None = 0,
 	/// Exclusive access to the keyboard, locking out all other windows.

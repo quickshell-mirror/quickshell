@@ -10,6 +10,7 @@
 #include <qsize.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
@@ -26,7 +27,7 @@ namespace PopupAdjustment { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	None = 0,
 	/// If the X axis is constrained, the popup will slide along the X axis until it fits onscreen.
 	SlideX = 1,

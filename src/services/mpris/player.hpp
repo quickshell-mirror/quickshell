@@ -23,7 +23,7 @@ class MprisPlaybackState: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		Stopped = 0,
 		Playing = 1,
 		Paused = 2,
@@ -41,7 +41,7 @@ class MprisLoopState: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		None = 0,
 		Track = 1,
 		Playlist = 2,

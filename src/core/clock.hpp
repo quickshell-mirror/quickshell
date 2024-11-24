@@ -5,6 +5,7 @@
 #include <qqmlintegration.h>
 #include <qtimer.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "util.hpp"
 
@@ -27,7 +28,7 @@ class SystemClock: public QObject {
 
 public:
 	// must be named enum until docgen is ready to handle member enums better
-	enum Enum {
+	enum Enum : quint8 {
 		Hours = 1,
 		Minutes = 2,
 		Seconds = 3,

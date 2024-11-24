@@ -4,7 +4,10 @@ fmt:
     find src -type f \( -name "*.cpp" -o -name "*.hpp" \) -print0 | xargs -0 clang-format -i
 
 lint:
-	find src -type f -name "*.cpp" -print0 | parallel -q0 --bar clang-tidy --use-color --load={{ env_var("TIDYFOX") }}
+	find src -type f -name "*.cpp" -print0 | parallel -q0 --no-notice --will-cite --tty --bar clang-tidy --load={{ env_var("TIDYFOX") }}
+
+lint-ci:
+	find src -type f -name "*.cpp" -print0 | parallel -q0 --no-notice --will-cite --tty clang-tidy --load={{ env_var("TIDYFOX") }}
 
 configure target='debug' *FLAGS='':
 	cmake -GNinja -B {{builddir}} \

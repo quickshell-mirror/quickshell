@@ -1,13 +1,12 @@
 #pragma once
 
-#include <utility>
-
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qsocketnotifier.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "ipc.hpp"
 
@@ -21,7 +20,7 @@ class PamResult: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		/// Authentication was successful.
 		Success = 0,
 		/// Authentication failed.
@@ -44,7 +43,7 @@ class PamError: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		/// Failed to start the pam session.
 		StartFailed = 1,
 		/// Failed to try to authenticate the user.

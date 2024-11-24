@@ -2,6 +2,7 @@
 
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../core/doc.hpp"
 #include "windowinterface.hpp"
@@ -63,7 +64,7 @@ namespace ExclusionMode { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// Respect the exclusion zone of other shell layers and optionally set one
 	Normal = 0,
 	/// Ignore exclusion zones of other shell layers. You cannot set an exclusion zone in this mode.

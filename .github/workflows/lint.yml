@@ -1,5 +1,5 @@
 name: Lint
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   lint:
@@ -22,4 +22,4 @@ jobs:
           just build
 
       - name: Run lints
-        run: just lint 2>&1
+        run: just lint-ci

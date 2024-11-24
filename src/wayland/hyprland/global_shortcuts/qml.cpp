@@ -6,7 +6,6 @@
 #include <qtmetamacros.h>
 
 #include "manager.hpp"
-#include "shortcut.hpp"
 
 namespace qs::hyprland::global_shortcuts {
 using impl::GlobalShortcutManager;

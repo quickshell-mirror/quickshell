@@ -15,7 +15,7 @@ namespace RegionShape { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	Rect = 0,
 	Ellipse = 1,
 };
@@ -29,7 +29,7 @@ namespace Intersection { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// Combine this region, leaving a union of this and the other region. (opposite of `Subtract`)
 	Combine = 0,
 	/// Subtract this region, cutting this region out of the other. (opposite of `Combine`)

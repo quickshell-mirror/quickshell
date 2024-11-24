@@ -6,6 +6,7 @@
 #include <qqmlintegration.h>
 #include <qrect.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 class Box {
 	Q_GADGET;
@@ -53,7 +54,7 @@ namespace Edges { // NOLINT
 Q_NAMESPACE;
 QML_NAMED_ELEMENT(Edges);
 
-enum Enum {
+enum Enum : quint8 {
 	None = 0,
 	Top = Qt::TopEdge,
 	Left = Qt::LeftEdge,

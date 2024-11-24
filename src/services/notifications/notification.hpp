@@ -8,6 +8,7 @@
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../core/retainable.hpp"
 #include "../../core/util.hpp"
@@ -24,7 +25,7 @@ class NotificationUrgency: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		Low = 0,
 		Normal = 1,
 		Critical = 2,
@@ -42,7 +43,7 @@ class NotificationCloseReason: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		/// The notification expired due to a timeout.
 		Expired = 1,
 		/// The notification was explicitly dismissed by the user.

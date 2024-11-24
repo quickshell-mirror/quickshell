@@ -21,7 +21,7 @@ class PwLinkState: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : qint8 {
 		Error = PW_LINK_STATE_ERROR,
 		Unlinked = PW_LINK_STATE_UNLINKED,
 		Init = PW_LINK_STATE_INIT,

@@ -6,6 +6,7 @@
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 ///! State of the Greetd connection.
 /// See @@Greetd.state.
@@ -15,7 +16,7 @@ class GreetdState: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		Inactive = 0,
 		Authenticating = 1,
 		ReadyToLaunch = 2,

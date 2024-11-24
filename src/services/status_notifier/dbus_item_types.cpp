@@ -7,6 +7,7 @@
 #include <qlogging.h>
 #include <qmetatype.h>
 #include <qsysinfo.h>
+#include <qtversionchecks.h>
 #include <qtypes.h>
 
 bool DBusSniIconPixmap::operator==(const DBusSniIconPixmap& other) const {

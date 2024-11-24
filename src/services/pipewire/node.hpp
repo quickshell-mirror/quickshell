@@ -87,7 +87,7 @@ public:
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwAudioChannel::Enum value);
 };
 
-enum class PwNodeType {
+enum class PwNodeType : quint8 {
 	Untracked,
 	Audio,
 };

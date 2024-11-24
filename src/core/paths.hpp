@@ -1,6 +1,7 @@
 #pragma once
 #include <qdatetime.h>
 #include <qdir.h>
+#include <qtypes.h>
 
 #include "instanceinfo.hpp"
 
@@ -31,7 +32,7 @@ public:
 	void createLock();
 
 private:
-	enum class DirState {
+	enum class DirState : quint8 {
 		Unknown = 0,
 		Ready = 1,
 		Failed = 2,

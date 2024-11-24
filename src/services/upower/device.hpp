@@ -20,7 +20,7 @@ class UPowerDeviceState: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		Unknown = 0,
 		Charging = 1,
 		Discharging = 2,
@@ -44,7 +44,7 @@ class UPowerDeviceType: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		Unknown = 0,
 		LinePower = 1,
 		Battery = 2,

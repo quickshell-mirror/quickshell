@@ -20,7 +20,7 @@ class QsMenuButtonType: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum {
+	enum Enum : quint8 {
 		/// This menu item does not have a checkbox or a radiobutton associated with it.
 		None = 0,
 		/// This menu item should draw a checkbox.

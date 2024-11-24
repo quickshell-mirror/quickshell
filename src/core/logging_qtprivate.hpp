@@ -10,6 +10,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qstringview.h>
+#include <qtypes.h>
 
 namespace qs::log {
 Q_DECLARE_LOGGING_CATEGORY(logLogging);
@@ -22,7 +23,7 @@ public:
 	QLoggingRule(QStringView pattern, bool enabled);
 	[[nodiscard]] int pass(QLatin1StringView categoryName, QtMsgType type) const;
 
-	enum PatternFlag {
+	enum PatternFlag : quint8 {
 		FullText = 0x1,
 		LeftFilter = 0x2,
 		RightFilter = 0x4,

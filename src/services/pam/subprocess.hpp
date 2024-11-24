@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iostream>
+#include <iostream> // NOLINT std::cout
 
 #include <security/pam_appl.h>
 

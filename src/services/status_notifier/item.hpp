@@ -26,7 +26,7 @@ namespace Status { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// A passive item does not convey important information and can be considered idle. You may want to hide these.
 	Passive = 0,
 	/// An active item may have information more important than a passive one and you probably do not want to hide it.
@@ -43,7 +43,7 @@ namespace Category { // NOLINT
 Q_NAMESPACE;
 QML_ELEMENT;
 
-enum Enum {
+enum Enum : quint8 {
 	/// The fallback category for general applications or anything that does
 	/// not fit into a different category.
 	ApplicationStatus = 0,

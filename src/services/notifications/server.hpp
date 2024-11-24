@@ -63,7 +63,7 @@ signals:
 	// NOLINTEND
 
 private slots:
-	void onServiceUnregistered(const QString& service);
+	static void onServiceUnregistered(const QString& service);
 
 private:
 	explicit NotificationServer();

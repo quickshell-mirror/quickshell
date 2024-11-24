@@ -124,7 +124,7 @@ void NotificationServer::tryRegister() {
 }
 void NotificationServer::onServiceUnregistered(const QString& /*unused*/) {
 	qCDebug(logNotifications) << "Active notification server unregistered, attempting registration";
-	this->tryRegister();
+	NotificationServer::tryRegister();
 }
 
 void NotificationServer::CloseNotification(uint id) {
