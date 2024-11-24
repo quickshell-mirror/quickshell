@@ -173,6 +173,10 @@ QVector<QByteArrayView> HyprlandIpc::parseEventArgs(QByteArrayView event, quint1
 		args.push_back(event);
 	}
 
+	while (args.length() < count) {
+		args.push_back(QByteArrayView());
+	}
+
 	return args;
 }
 
