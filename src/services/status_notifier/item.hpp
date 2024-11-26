@@ -131,13 +131,13 @@ public:
 	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
 
 	/// Primary activation action, generally triggered via a left click.
-	void activate();
+	Q_INVOKABLE void activate();
 	/// Secondary activation action, generally triggered via a middle click.
-	void secondaryActivate();
+	Q_INVOKABLE void secondaryActivate();
 	/// Scroll action, such as changing volume on a mixer.
-	void scroll(qint32 delta, bool horizontal) const;
+	Q_INVOKABLE void scroll(qint32 delta, bool horizontal) const;
 	/// Display a platform menu at the given location relative to the parent window.
-	void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
+	Q_INVOKABLE void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
 
 	QS_BINDABLE_GETTER(QString, bId, id, bindableId);
 	QS_BINDABLE_GETTER(QString, bTitle, title, bindableTitle);
