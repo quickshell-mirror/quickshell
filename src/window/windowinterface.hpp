@@ -142,14 +142,20 @@ signals:
 
 class QsWindowAttached: public QObject {
 	Q_OBJECT;
-	Q_PROPERTY(QObject* window READ window CONSTANT);
-	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
+	Q_PROPERTY(QObject* window READ window NOTIFY windowChanged);
+	Q_PROPERTY(QQuickItem* contentItem READ contentItem NOTIFY windowChanged);
 	QML_ANONYMOUS;
 
 public:
 	[[nodiscard]] virtual QObject* window() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
 
+signals:
+	void windowChanged();
+
+protected slots:
+	virtual void updateWindow() = 0;
+
 protected:
-	explicit QsWindowAttached(QObject* parent): QObject(parent) {}
+	explicit QsWindowAttached(QQuickItem* parent);
 };

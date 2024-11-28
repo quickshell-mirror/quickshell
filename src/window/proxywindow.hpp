@@ -145,26 +145,36 @@ class ProxyWindowAttached: public QsWindowAttached {
 	Q_OBJECT;
 
 public:
-	explicit ProxyWindowAttached(ProxyWindowBase* window)
-	    : QsWindowAttached(window)
-	    , mWindow(window) {}
+	explicit ProxyWindowAttached(QQuickItem* parent);
 
 	[[nodiscard]] QObject* window() const override;
 	[[nodiscard]] QQuickItem* contentItem() const override;
 
+protected:
+	void updateWindow() override;
+
 private:
-	ProxyWindowBase* mWindow;
+	ProxyWindowBase* mWindow = nullptr;
+
+	void setWindow(ProxyWindowBase* window);
 };
 
 class ProxiedWindow: public QQuickWindow {
 	Q_OBJECT;
 
 public:
-	explicit ProxiedWindow(QWindow* parent = nullptr): QQuickWindow(parent) {}
+	explicit ProxiedWindow(ProxyWindowBase* proxy, QWindow* parent = nullptr)
+	    : QQuickWindow(parent)
+	    , mProxy(proxy) {}
+
+	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }
 
 signals:
 	void exposed();
 
 protected:
 	void exposeEvent(QExposeEvent* event) override;
+
+private:
+	ProxyWindowBase* mProxy;
 };

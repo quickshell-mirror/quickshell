@@ -28,7 +28,6 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
     , mContentItem(new QQuickItem()) {
 	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
-	this->mContentItem->setProperty("__qs_proxywindow", QVariant::fromValue(this));
 
 	// clang-format off
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
@@ -84,7 +83,7 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 void ProxyWindowBase::postCompleteWindow() { this->setVisible(this->mVisible); }
 
-ProxiedWindow* ProxyWindowBase::createQQuickWindow() { return new ProxiedWindow(); }
+ProxiedWindow* ProxyWindowBase::createQQuickWindow() { return new ProxiedWindow(this); }
 
 void ProxyWindowBase::createWindow() {
 	if (this->window != nullptr) return;
@@ -375,8 +374,28 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
 void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
 
+ProxyWindowAttached::ProxyWindowAttached(QQuickItem* parent): QsWindowAttached(parent) {
+	this->updateWindow();
+}
+
 QObject* ProxyWindowAttached::window() const { return this->mWindow; }
 QQuickItem* ProxyWindowAttached::contentItem() const { return this->mWindow->contentItem(); }
+
+void ProxyWindowAttached::updateWindow() {
+	auto* window = static_cast<QQuickItem*>(this->parent())->window(); // NOLINT
+
+	if (auto* proxy = qobject_cast<ProxiedWindow*>(window)) {
+		this->setWindow(proxy->proxy());
+	} else {
+		this->setWindow(nullptr);
+	}
+}
+
+void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
+	if (window == this->mWindow) return;
+	this->mWindow = window;
+	emit this->windowChanged();
+}
 
 void ProxiedWindow::exposeEvent(QExposeEvent* event) {
 	this->QQuickWindow::exposeEvent(event);

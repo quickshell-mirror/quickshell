@@ -5,3 +5,4 @@ function (qs_test name)
 endfunction()
 
 qs_test(popupwindow popupwindow.cpp)
+qs_test(windowattached windowattached.cpp)

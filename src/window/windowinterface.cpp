@@ -2,33 +2,19 @@
 
 #include <qobject.h>
 #include <qquickitem.h>
-#include <qvariant.h>
 
 #include "proxywindow.hpp"
 
+QsWindowAttached::QsWindowAttached(QQuickItem* parent): QObject(parent) {
+	QObject::connect(parent, &QQuickItem::windowChanged, this, &QsWindowAttached::updateWindow);
+}
+
 QsWindowAttached* WindowInterface::qmlAttachedProperties(QObject* object) {
-	auto* visualRoot = qobject_cast<QQuickItem*>(object);
-
-	ProxyWindowBase* proxy = nullptr;
-	while (visualRoot != nullptr) {
-		proxy = visualRoot->property("__qs_proxywindow").value<ProxyWindowBase*>();
-
-		if (proxy) break;
-		visualRoot = visualRoot->parentItem();
-	};
-
-	if (!proxy) return nullptr;
-
-	auto v = proxy->property("__qs_window_attached");
-	if (auto* attached = v.value<QsWindowAttached*>()) {
-		return attached;
+	while (object && !qobject_cast<QQuickItem*>(object)) {
+		object = object->parent();
 	}
 
-	auto* attached = new ProxyWindowAttached(proxy);
-
-	if (attached) {
-		proxy->setProperty("__qs_window_attached", QVariant::fromValue(attached));
-	}
-
-	return attached;
+	if (!object) return nullptr;
+	auto* item = static_cast<QQuickItem*>(object); // NOLINT
+	return new ProxyWindowAttached(item);
 }
