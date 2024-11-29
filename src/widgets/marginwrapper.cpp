@@ -27,14 +27,14 @@ void MarginWrapperManager::componentComplete() {
 		    this->mWrapper,
 		    &QQuickItem::widthChanged,
 		    this,
-		    &MarginWrapperManager::onWrapperWidthChanged
+		    &MarginWrapperManager::updateChildX
 		);
 
 		QObject::connect(
 		    this->mWrapper,
 		    &QQuickItem::heightChanged,
 		    this,
-		    &MarginWrapperManager::onWrapperHeightChanged
+		    &MarginWrapperManager::updateChildY
 		);
 	}
 
@@ -112,13 +112,13 @@ qreal MarginWrapperManager::targetChildY() const {
 	}
 }
 
-void MarginWrapperManager::onWrapperWidthChanged() {
+void MarginWrapperManager::updateChildX() {
 	if (!this->mChild || !this->mWrapper) return;
 	this->mChild->setX(this->targetChildX());
 	this->mChild->setWidth(this->targetChildWidth());
 }
 
-void MarginWrapperManager::onWrapperHeightChanged() {
+void MarginWrapperManager::updateChildY() {
 	if (!this->mChild || !this->mWrapper) return;
 	this->mChild->setY(this->targetChildY());
 	this->mChild->setHeight(this->targetChildHeight());
@@ -127,11 +127,19 @@ void MarginWrapperManager::onWrapperHeightChanged() {
 void MarginWrapperManager::onChildImplicitWidthChanged() {
 	if (!this->mChild || !this->mWrapper) return;
 	this->mWrapper->setImplicitWidth(this->mChild->implicitWidth() + this->mMargin * 2);
+
+	// If the implicit width change does not result in an actual width change,
+	// this will not be called anywhere else.
+	this->updateChildX();
 }
 
 void MarginWrapperManager::onChildImplicitHeightChanged() {
 	if (!this->mChild || !this->mWrapper) return;
 	this->mWrapper->setImplicitHeight(this->mChild->implicitHeight() + this->mMargin * 2);
+
+	// If the implicit height change does not result in an actual height change,
+	// this will not be called anywhere else.
+	this->updateChildY();
 }
 
 void MarginWrapperManager::updateGeometry() {

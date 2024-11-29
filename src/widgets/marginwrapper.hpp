@@ -55,8 +55,8 @@ signals:
 
 private slots:
 	void onChildChanged();
-	void onWrapperWidthChanged();
-	void onWrapperHeightChanged();
+	void updateChildX();
+	void updateChildY();
 	void onChildImplicitWidthChanged();
 	void onChildImplicitHeightChanged();
 
