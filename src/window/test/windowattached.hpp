@@ -9,6 +9,7 @@ class TestWindowAttachment: public QObject {
 private slots:
 	static void attachedAfterReload();
 	static void attachedBeforeReload();
+	static void earlyAttachReloaded();
 	static void owningWindowChanged();
 	static void nonItemParents();
 };

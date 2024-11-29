@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qquickitem.h>
+#include <qscopedpointer.h>
 #include <qsignalspy.h>
 #include <qtest.h>
 #include <qtestcase.h>
@@ -33,6 +34,33 @@ void TestWindowAttachment::attachedBeforeReload() {
 	window.reload(nullptr);
 
 	QCOMPARE(attached->window(), &window);
+	QCOMPARE(spy.length(), 1);
+}
+
+void TestWindowAttachment::earlyAttachReloaded() {
+	auto window1 = QScopedPointer(new ProxyWindowBase());
+	auto item1 = QScopedPointer(new QQuickItem());
+	item1->setParentItem(window1->contentItem());
+	window1->reload(nullptr);
+
+	auto window2 = ProxyWindowBase();
+	auto item2 = QQuickItem();
+	item2.setParentItem(window2.contentItem());
+
+	auto* attached = WindowInterface::qmlAttachedProperties(&item2);
+	QCOMPARE_NE(attached, nullptr);
+	QCOMPARE(attached->window(), nullptr);
+
+	auto spy = QSignalSpy(attached, &QsWindowAttached::windowChanged);
+	window2.reload(window1.get());
+
+	QCOMPARE(attached->window(), &window2);
+	QCOMPARE(spy.length(), 1);
+
+	item1.reset();
+	window1.reset();
+
+	QCOMPARE(attached->window(), &window2);
 	QCOMPARE(spy.length(), 1);
 }
 

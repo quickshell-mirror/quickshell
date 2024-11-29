@@ -168,6 +168,7 @@ public:
 	    , mProxy(proxy) {}
 
 	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }
+	void setProxy(ProxyWindowBase* proxy) { this->mProxy = proxy; }
 
 signals:
 	void exposed();

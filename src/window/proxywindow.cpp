@@ -131,6 +131,8 @@ void ProxyWindowBase::connectWindow() {
 		generation->registerIncubationController(this->window->incubationController());
 	}
 
+	this->window->setProxy(this);
+
 	// clang-format off
 	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
 	QObject::connect(this->window, &QWindow::xChanged, this, &ProxyWindowBase::xChanged);
