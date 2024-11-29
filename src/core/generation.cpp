@@ -117,7 +117,8 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 	if (old != nullptr) {
 		// if the old generation holds the window incubation controller as the
 		// new generation acquires it then incubators will hang intermittently
-		old->incubationControllers.clear();
+		qCDebug(logIncubator) << "Locking incubation controllers of old generation" << old;
+		old->incubationControllersLocked = true;
 		old->assignIncubationController();
 	}
 
@@ -200,27 +201,25 @@ void EngineGeneration::onDirectoryChanged() {
 }
 
 void EngineGeneration::registerIncubationController(QQmlIncubationController* controller) {
-	auto* obj = dynamic_cast<QObject*>(controller);
-
 	// We only want controllers that we can swap out if destroyed.
 	// This happens if the window owning the active controller dies.
-	if (obj == nullptr) {
-		qCDebug(logIncubator) << "Could not register incubation controller as it is not a QObject"
-		                      << controller;
+	if (auto* obj = dynamic_cast<QObject*>(controller)) {
+		QObject::connect(
+		    obj,
+		    &QObject::destroyed,
+		    this,
+		    &EngineGeneration::incubationControllerDestroyed
+		);
+	} else {
+		qCWarning(logIncubator) << "Could not register incubation controller as it is not a QObject"
+		                        << controller;
 
 		return;
 	}
 
-	this->incubationControllers.push_back({controller, obj});
-
-	QObject::connect(
-	    obj,
-	    &QObject::destroyed,
-	    this,
-	    &EngineGeneration::incubationControllerDestroyed
-	);
-
-	qCDebug(logIncubator) << "Registered incubation controller" << controller;
+	this->incubationControllers.push_back(controller);
+	qCDebug(logIncubator) << "Registered incubation controller" << controller << "to generation"
+	                      << this;
 
 	// This function can run during destruction.
 	if (this->engine == nullptr) return;
@@ -231,22 +230,20 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 }
 
 void EngineGeneration::deregisterIncubationController(QQmlIncubationController* controller) {
-	QObject* obj = nullptr;
-	this->incubationControllers.removeIf([&](QPair<QQmlIncubationController*, QObject*> other) {
-		if (controller == other.first) {
-			obj = other.second;
-			return true;
-		} else return false;
-	});
-
-	if (obj == nullptr) {
-		qCWarning(logIncubator) << "Failed to deregister incubation controller" << controller
-		                        << "as it was not registered to begin with";
-		qCWarning(logIncubator) << "Current registered incuabation controllers"
-		                        << this->incubationControllers;
-	} else {
+	if (auto* obj = dynamic_cast<QObject*>(controller)) {
 		QObject::disconnect(obj, nullptr, this, nullptr);
-		qCDebug(logIncubator) << "Deregistered incubation controller" << controller;
+	} else {
+		qCCritical(logIncubator) << "Deregistering incubation controller which is not a QObject, "
+		                            "however only QObject controllers should be registered.";
+	}
+
+	if (!this->incubationControllers.removeOne(controller)) {
+		qCCritical(logIncubator) << "Failed to deregister incubation controller" << controller << "from"
+		                         << this << "as it was not registered to begin with";
+		qCCritical(logIncubator) << "Current registered incuabation controllers"
+		                         << this->incubationControllers;
+	} else {
+		qCDebug(logIncubator) << "Deregistered incubation controller" << controller << "from" << this;
 	}
 
 	// This function can run during destruction.
@@ -261,22 +258,25 @@ void EngineGeneration::deregisterIncubationController(QQmlIncubationController* 
 
 void EngineGeneration::incubationControllerDestroyed() {
 	auto* sender = this->sender();
-	QQmlIncubationController* controller = nullptr;
-
-	this->incubationControllers.removeIf([&](QPair<QQmlIncubationController*, QObject*> other) {
-		if (sender == other.second) {
-			controller = other.first;
-			return true;
-		} else return false;
-	});
+	auto* controller = dynamic_cast<QQmlIncubationController*>(sender);
 
 	if (controller == nullptr) {
-		qCCritical(logIncubator) << "Destroyed incubation controller" << this->sender()
-		                         << "could not be identified, this may cause memory corruption";
+		qCCritical(logIncubator) << "Destroyed incubation controller" << sender << "is not known to"
+		                         << this << ", this may cause memory corruption";
 		qCCritical(logIncubator) << "Current registered incuabation controllers"
 		                         << this->incubationControllers;
+
+		return;
+	}
+
+	if (this->incubationControllers.removeOne(controller)) {
+		qCDebug(logIncubator) << "Destroyed incubation controller" << controller << "deregistered from"
+		                      << this;
 	} else {
-		qCDebug(logIncubator) << "Destroyed incubation controller" << controller << "deregistered";
+		qCCritical(logIncubator) << "Destroyed incubation controller" << controller
+		                         << "was not registered, but its destruction was observed by" << this;
+
+		return;
 	}
 
 	// This function can run during destruction.
@@ -314,10 +314,15 @@ void EngineGeneration::exit(int code) {
 
 void EngineGeneration::assignIncubationController() {
 	QQmlIncubationController* controller = nullptr;
-	if (this->incubationControllers.isEmpty()) controller = &this->delayedIncubationController;
-	else controller = this->incubationControllers.first().first;
 
-	qCDebug(logIncubator) << "Assigning incubation controller to engine:" << controller
+	if (this->incubationControllersLocked || this->incubationControllers.isEmpty()) {
+		controller = &this->delayedIncubationController;
+	} else {
+		controller = this->incubationControllers.first();
+	}
+
+	qCDebug(logIncubator) << "Assigning incubation controller" << controller << "to generation"
+	                      << this
 	                      << "fallback:" << (controller == &this->delayedIncubationController);
 
 	this->engine->setIncubationController(controller);
@@ -334,7 +339,8 @@ EngineGeneration* EngineGeneration::findEngineGeneration(const QQmlEngine* engin
 }
 
 EngineGeneration* EngineGeneration::findObjectGeneration(const QObject* object) {
-	if (g_generations.size() == 1) return EngineGeneration::currentGeneration();
+	// Objects can still attempt to find their generation after it has been destroyed.
+	// if (g_generations.size() == 1) return EngineGeneration::currentGeneration();
 
 	while (object != nullptr) {
 		auto* context = QQmlEngine::contextForObject(object);

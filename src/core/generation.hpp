@@ -5,7 +5,6 @@
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qobject.h>
-#include <qpair.h>
 #include <qqmlengine.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
@@ -84,7 +83,8 @@ private slots:
 private:
 	void postReload();
 	void assignIncubationController();
-	QVector<QPair<QQmlIncubationController*, QObject*>> incubationControllers;
+	QVector<QQmlIncubationController*> incubationControllers;
+	bool incubationControllersLocked = false;
 	QHash<const void*, EngineGenerationExt*> extensions;
 
 	bool destroying = false;
