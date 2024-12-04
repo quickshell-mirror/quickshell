@@ -36,7 +36,7 @@ Item {
 	/// Radius of the bottom left corner. Defaults to @@radius.
 	property /*real*/alias bottomLeftRadius: rectangle.bottomLeftRadius
 	/// Radius of the bottom right corner. Defaults to @@radius.
-	property /*real*/alias borromRightRadius: rectangle.bottomRightRadius
+	property /*real*/alias bottomRightRadius: rectangle.bottomRightRadius
 
 	/// Visual children of the ClippingRectangle's @@contentItem. (`list<Item>`).
 	///
