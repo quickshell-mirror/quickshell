@@ -10,7 +10,7 @@ lint-ci:
 	find src -type f -name "*.cpp" -print0 | parallel -q0 --no-notice --will-cite --tty clang-tidy --load={{ env_var("TIDYFOX") }}
 
 lint-changed:
-	git diff --name-only HEAD | grep "^.*\.cpp\$" |  parallel --no-notice --will-cite --eta clang-tidy --load={{ env_var("TIDYFOX") }}
+	git diff --name-only HEAD | grep "^.*\.cpp\$" |  parallel --no-notice --will-cite --tty --bar clang-tidy --load={{ env_var("TIDYFOX") }}
 
 configure target='debug' *FLAGS='':
 	cmake -GNinja -B {{builddir}} \
