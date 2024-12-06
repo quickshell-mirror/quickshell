@@ -78,8 +78,17 @@ void QsMenuAnchor::onClosed() {
 		this->platformMenu = nullptr;
 	}
 
-	QObject::disconnect(this->mMenu, &QsMenuHandle::menuChanged, this, &QsMenuAnchor::onMenuChanged);
-	this->mMenu->unrefHandle();
+	if (this->mMenu) {
+		QObject::disconnect(
+		    this->mMenu,
+		    &QsMenuHandle::menuChanged,
+		    this,
+		    &QsMenuAnchor::onMenuChanged
+		);
+
+		this->mMenu->unrefHandle();
+	}
+
 	emit this->closed();
 	emit this->visibleChanged();
 }
@@ -109,6 +118,7 @@ bool QsMenuAnchor::isVisible() const { return this->mOpen; }
 
 void QsMenuAnchor::onMenuDestroyed() {
 	this->mMenu = nullptr;
+	this->onClosed();
 	emit this->menuChanged();
 }
 
