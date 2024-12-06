@@ -4,11 +4,13 @@ FileViewInternal {
 	property bool preload: this.__preload;
 	property bool blockLoading: this.__blockLoading;
 	property bool blockAllReads: this.__blockAllReads;
+	property bool printErrors: this.__printErrors;
 	property string path: this.__path;
 
 	onPreloadChanged: this.__preload = preload;
 	onBlockLoadingChanged: this.__blockLoading = this.blockLoading;
 	onBlockAllReadsChanged: this.__blockAllReads = this.blockAllReads;
+	onPrintErrorsChanged: this.__printErrors = this.printErrors;
 
 	// Unfortunately path can't be kept as an empty string until the file loads
 	// without using QQmlPropertyValueInterceptor which is private. If we lean fully
@@ -16,6 +18,7 @@ FileViewInternal {
 
 	onPathChanged: {
 		if (!this.preload) this.__preload = false;
+		this.__printErrors = this.printErrors;
 		this.__path = this.path;
 		if (this.preload) this.__preload = true;
 	}
@@ -30,16 +33,18 @@ FileViewInternal {
 		if (!this.preload) this.__preload = false;
 		this.__blockLoading = this.blockLoading;
 		this.__blockAllReads = this.blockAllReads;
+		this.__printErrors = this.printErrors;
 		this.__path = this.path;
 		const text = this.__text;
 		if (this.preload) this.__preload = true;
 		return text;
 	}
 
-	function data(): string {
+	function data(): var {
 		if (!this.preload) this.__preload = false;
 		this.__blockLoading = this.blockLoading;
 		this.__blockAllReads = this.blockAllReads;
+		this.__printErrors = this.printErrors;
 		this.__path = this.path;
 		const data = this.__data;
 		if (this.preload) this.__preload = true;

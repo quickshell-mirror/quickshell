@@ -2,13 +2,17 @@
 
 #include <utility>
 
+#include <qatomic.h>
+#include <qdebug.h>
 #include <qlogging.h>
 #include <qmutex.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qqmlparserstatus.h>
 #include <qrunnable.h>
+#include <qstringview.h>
 #include <qtmetamacros.h>
 
 #include "../core/doc.hpp"
@@ -16,34 +20,74 @@
 
 namespace qs::io {
 
+class FileViewError: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		/// No error occured.
+		Success = 0,
+		/// An unknown error occured. Check the logs for details.
+		Unknown = 1,
+		/// The file to read does not exist.
+		FileNotFound = 2,
+		/// Permission to read/write the file was not granted, or permission
+		/// to create parent directories was not granted when writing the file.
+		PermissionDenied = 3,
+		/// The specified path to read/write exists and was not a file.
+		NotAFile = 4,
+	};
+	Q_ENUM(Enum);
+
+	Q_INVOKABLE static QString toString(qs::io::FileViewError::Enum value);
+};
+
+struct FileViewData {
+	FileViewData() = default;
+	FileViewData(QString text): text(std::move(text)) {}
+	FileViewData(QByteArray data): data(std::move(data)) {}
+
+	[[nodiscard]] bool operator==(const FileViewData& other) const;
+	[[nodiscard]] bool isEmpty() const;
+
+	operator const QString&() const;
+	operator const QByteArray&() const;
+
+private:
+	mutable QString text;
+	mutable QByteArray data;
+};
+
 struct FileViewState {
 	FileViewState() = default;
 	explicit FileViewState(QString path): path(std::move(path)) {}
 
 	QString path;
-	QString text;
-	QByteArray data;
-	bool textDirty = false;
+	FileViewData data;
 	bool exists = false;
-	bool error = false;
+	bool printErrors = true;
+	FileViewError::Enum error = FileViewError::Success;
 };
 
 class FileView;
 
-class FileViewReader
+class FileViewOperation
     : public QObject
     , public QRunnable {
 	Q_OBJECT;
 
 public:
-	explicit FileViewReader(QString path, bool doStringConversion);
+	explicit FileViewOperation(FileView* owner);
 
-	void run() override;
 	void block();
 
-	FileViewState state;
+	// Attempt to cancel the operation, which may or may not be possible.
+	// If possible, block() returns sooner.
+	void tryCancel();
 
-	static void read(FileViewState& state, bool doStringConversion);
+	FileViewState state;
 
 signals:
 	void done();
@@ -51,9 +95,48 @@ signals:
 private slots:
 	void finished();
 
-private:
-	bool doStringConversion;
+protected:
 	QMutex blockMutex;
+	QPointer<FileView> owner;
+	QAtomicInteger<bool> shouldCancel = false;
+
+	void finishRun();
+};
+
+class FileViewReader: public FileViewOperation {
+public:
+	explicit FileViewReader(FileView* owner, bool doStringConversion)
+	    : FileViewOperation(owner)
+	    , doStringConversion(doStringConversion) {}
+
+	void run() override;
+
+	static void read(
+	    FileView* view,
+	    FileViewState& state,
+	    bool doStringConversion,
+	    const QAtomicInteger<bool>& shouldCancel = false
+	);
+
+	bool doStringConversion;
+};
+
+class FileViewWriter: public FileViewOperation {
+public:
+	explicit FileViewWriter(FileView* owner, bool doAtomicWrite)
+	    : FileViewOperation(owner)
+	    , doAtomicWrite(doAtomicWrite) {}
+
+	void run() override;
+
+	static void write(
+	    FileView* view,
+	    FileViewState& state,
+	    bool doAtomicWrite,
+	    const QAtomicInteger<bool>& shouldCancel = false
+	);
+
+	bool doAtomicWrite;
 };
 
 ///! Simplified reader for small files.
@@ -104,6 +187,21 @@ class FileView: public QObject {
 	/// > [!WARNING] We cannot think of a valid use case for this.
 	/// > You almost definitely want @@blockLoading.
 	QSDOC_PROPERTY_OVERRIDE(bool blockAllReads READ blockAllReads WRITE setBlockAllReads NOTIFY blockAllReadsChanged);
+	/// If true (default false), all calls to @@setText or @@setData will block the
+	/// UI thread until the write succeeds or fails.
+	///
+	/// > [!WARNING] Blocking operations should be used carefully to avoid stutters and other performance
+	/// > degradations. Blocking means that your interface **WILL NOT FUNCTION** during the call.
+	Q_PROPERTY(bool blockWrites READ default WRITE default NOTIFY blockWritesChanged BINDABLE bindableBlockWrites);
+	/// If true (default), all calls to @@setText or @@setData will be performed atomically,
+	/// meaning if the write fails for any reason, the file will not be modified.
+	///
+	/// > [!NOTE] This works by creating another file with the desired content, and renaming
+	/// > it over the existing file if successful.
+	Q_PROPERTY(bool atomicWrites READ default WRITE default NOTIFY blockWritesChanged BINDABLE bindableAtomicWrites);
+	/// If true (default), read or write errors will be printed to the quickshell logs.
+	/// If false, all known errors will not be printed.
+	QSDOC_PROPERTY_OVERRIDE(bool printErrors READ default WRITE default NOTIFY printErrorsChanged);
 
 	QSDOC_HIDE Q_PROPERTY(QString __path READ path WRITE setPath NOTIFY pathChanged);
 	QSDOC_HIDE Q_PROPERTY(QString __text READ text NOTIFY internalTextChanged);
@@ -117,6 +215,7 @@ class FileView: public QObject {
 	Q_PROPERTY(bool loaded READ isLoadedOrAsync NOTIFY loadedOrAsyncChanged);
 	QSDOC_HIDE Q_PROPERTY(bool __blockLoading READ blockLoading WRITE setBlockLoading NOTIFY blockLoadingChanged);
 	QSDOC_HIDE Q_PROPERTY(bool __blockAllReads READ blockAllReads WRITE setBlockAllReads NOTIFY blockAllReadsChanged);
+	QSDOC_HIDE Q_PROPERTY(bool __printErrors READ default WRITE default NOTIFY printErrorsChanged BINDABLE bindablePrintErrors);
 	// clang-format on
 	QML_NAMED_ELEMENT(FileViewInternal);
 	QSDOC_NAMED_ELEMENT(FileView);
@@ -162,7 +261,7 @@ public:
 	/// Block all operations until the currently running load completes.
 	///
 	/// > [!WARNING] See @@blockLoading for an explanation and warning about blocking.
-	Q_INVOKABLE bool blockUntilLoaded();
+	Q_INVOKABLE bool waitForJob();
 	/// Unload the loaded file and reload it, usually in response to changes.
 	///
 	/// This will not block if @@blockLoading is set, only if @@blockAllReads is true.
@@ -175,9 +274,39 @@ public:
 	[[nodiscard]] QByteArray data();
 	[[nodiscard]] QString text();
 
+	// These generally should not be called prior to component completion, making it safe not to force
+	// property resolution.
+
+	/// Sets the content of the file specified by @@path as an [ArrayBuffer].
+	///
+	/// @@atomicWrites and @@blockWrites affect the behavior of this function.
+	///
+	/// @@saved() or @@saveFailed() will be emitted on completion.
+	Q_INVOKABLE void setData(const QByteArray& data);
+	/// Sets the content of the file specified by @@path as text.
+	///
+	/// @@atomicWrites and @@blockWrites affect the behavior of this function.
+	///
+	/// @@saved() or @@saveFailed() will be emitted on completion.
+	///
+	/// [ArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+	Q_INVOKABLE void setText(const QString& text);
+
+	// Const bindables functions silently do nothing on setValue.
+	[[nodiscard]] QBindable<bool> bindableBlockWrites() { return &this->bBlockWrites; }
+	[[nodiscard]] QBindable<bool> bindableAtomicWrites() { return &this->bAtomicWrites; }
+
+	[[nodiscard]] QBindable<bool> bindablePrintErrors() { return &this->bPrintErrors; }
+
 signals:
-	///! Fires if the file failed to load. A warning will be printed in the log.
-	void loadFailed();
+	/// Emitted if the file was loaded successfully.
+	void loaded();
+	/// Emitted if the file failed to load.
+	void loadFailed(qs::io::FileViewError::Enum error);
+	/// Emitted if the file was saved successfully.
+	void saved();
+	/// Emitted if the file failed to save.
+	void saveFailed(qs::io::FileViewError::Enum error);
 
 	void pathChanged();
 	QSDOC_HIDE void internalTextChanged();
@@ -188,22 +317,30 @@ signals:
 	void loadedOrAsyncChanged();
 	void blockLoadingChanged();
 	void blockAllReadsChanged();
+	void blockWritesChanged();
+	void atomicWritesChanged();
+	void printErrorsChanged();
 
 private slots:
-	void readerFinished();
+	void operationFinished();
 
 private:
 	void loadAsync(bool doStringConversion);
+	void saveAsync();
 	void cancelAsync();
 	void loadSync();
+	void saveSync();
 	void updateState(FileViewState& newState);
-	void textConversion();
 	void updatePath();
 
-	[[nodiscard]] bool shouldBlock() const;
+	[[nodiscard]] bool shouldBlockRead() const;
+	[[nodiscard]] FileViewReader* liveReader() const;
+	[[nodiscard]] FileViewWriter* liveWriter() const;
+	[[nodiscard]] const FileViewData& writeCmpData() const;
 
 	FileViewState state;
-	FileViewReader* reader = nullptr;
+	FileViewData writeData;
+	FileViewOperation* liveOperation = nullptr;
 	QString pathInFlight;
 
 	QString targetPath;
@@ -232,6 +369,12 @@ public:
 	DECLARE_MEMBER_WITH_GET(FileView, shouldPreload, mPreload, preloadChanged);
 	DECLARE_MEMBER_WITH_GET(FileView, blockLoading, mBlockLoading, blockLoadingChanged);
 	DECLARE_MEMBER_WITH_GET(FileView, blockAllReads, mBlockAllReads, blockAllReadsChanged);
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(FileView, bool, bBlockWrites, &FileView::blockWritesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(FileView, bool, bAtomicWrites, true, &FileView::atomicWritesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(FileView, bool, bPrintErrors, true, &FileView::printErrorsChanged);
+	// clang-format on
 
 	void setPreload(bool preload);
 	void setBlockLoading(bool blockLoading);
