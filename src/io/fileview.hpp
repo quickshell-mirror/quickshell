@@ -4,6 +4,7 @@
 
 #include <qatomic.h>
 #include <qdebug.h>
+#include <qfilesystemwatcher.h>
 #include <qlogging.h>
 #include <qmutex.h>
 #include <qobject.h>
@@ -187,13 +188,13 @@ class FileView: public QObject {
 	/// > [!WARNING] We cannot think of a valid use case for this.
 	/// > You almost definitely want @@blockLoading.
 	QSDOC_PROPERTY_OVERRIDE(bool blockAllReads READ blockAllReads WRITE setBlockAllReads NOTIFY blockAllReadsChanged);
-	/// If true (default false), all calls to @@setText or @@setData will block the
+	/// If true (default false), all calls to @@setText() or @@setData() will block the
 	/// UI thread until the write succeeds or fails.
 	///
 	/// > [!WARNING] Blocking operations should be used carefully to avoid stutters and other performance
 	/// > degradations. Blocking means that your interface **WILL NOT FUNCTION** during the call.
 	Q_PROPERTY(bool blockWrites READ default WRITE default NOTIFY blockWritesChanged BINDABLE bindableBlockWrites);
-	/// If true (default), all calls to @@setText or @@setData will be performed atomically,
+	/// If true (default), all calls to @@setText() or @@setData() will be performed atomically,
 	/// meaning if the write fails for any reason, the file will not be modified.
 	///
 	/// > [!NOTE] This works by creating another file with the desired content, and renaming
@@ -202,6 +203,18 @@ class FileView: public QObject {
 	/// If true (default), read or write errors will be printed to the quickshell logs.
 	/// If false, all known errors will not be printed.
 	QSDOC_PROPERTY_OVERRIDE(bool printErrors READ default WRITE default NOTIFY printErrorsChanged);
+	/// If true (defaule false), @@fileChanged() will be called whenever the content of the file
+	/// changes on disk, including when @@setText() or @@setData() are used.
+	///
+	/// > [!NOTE] You can reload the file's content whenever it changes on disk like so:
+	/// > ```qml
+	/// > FileView {
+	/// >   // ...
+	/// >   watchChanges: true
+	/// >   onFileChanged: this.reload()
+	/// > }
+	/// > ```
+	Q_PROPERTY(bool watchChanges READ default WRITE default NOTIFY watchChangesChanged BINDABLE bindableWatchChanges);
 
 	QSDOC_HIDE Q_PROPERTY(QString __path READ path WRITE setPath NOTIFY pathChanged);
 	QSDOC_HIDE Q_PROPERTY(QString __text READ text NOTIFY internalTextChanged);
@@ -297,6 +310,7 @@ public:
 	[[nodiscard]] QBindable<bool> bindableAtomicWrites() { return &this->bAtomicWrites; }
 
 	[[nodiscard]] QBindable<bool> bindablePrintErrors() { return &this->bPrintErrors; }
+	[[nodiscard]] QBindable<bool> bindableWatchChanges() { return &this->bWatchChanges; }
 
 signals:
 	/// Emitted if the file was loaded successfully.
@@ -307,6 +321,8 @@ signals:
 	void saved();
 	/// Emitted if the file failed to save.
 	void saveFailed(qs::io::FileViewError::Enum error);
+	/// Emitted if the file changes on disk and @@watchChanges is true.
+	void fileChanged();
 
 	void pathChanged();
 	QSDOC_HIDE void internalTextChanged();
@@ -320,6 +336,7 @@ signals:
 	void blockWritesChanged();
 	void atomicWritesChanged();
 	void printErrorsChanged();
+	void watchChangesChanged();
 
 private slots:
 	void operationFinished();
@@ -332,6 +349,9 @@ private:
 	void saveSync();
 	void updateState(FileViewState& newState);
 	void updatePath();
+	void updateWatchedFiles();
+	void onWatchedFileChanged();
+	void onWatchedDirectoryChanged();
 
 	[[nodiscard]] bool shouldBlockRead() const;
 	[[nodiscard]] FileViewReader* liveReader() const;
@@ -352,6 +372,8 @@ private:
 	bool mLoadedOrAsync = false;
 	bool mBlockLoading = false;
 	bool mBlockAllReads = false;
+
+	QFileSystemWatcher* watcher = nullptr;
 
 	GuardedEmitter<&FileView::internalTextChanged> textChangedEmitter;
 	GuardedEmitter<&FileView::internalDataChanged> dataChangedEmitter;
@@ -374,7 +396,10 @@ public:
 	Q_OBJECT_BINDABLE_PROPERTY(FileView, bool, bBlockWrites, &FileView::blockWritesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(FileView, bool, bAtomicWrites, true, &FileView::atomicWritesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(FileView, bool, bPrintErrors, true, &FileView::printErrorsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(FileView, bool, bWatchChanges, &FileView::watchChangesChanged);
 	// clang-format on
+
+	QS_BINDING_SUBSCRIBE_METHOD(FileView, bWatchChanges, updateWatchedFiles, onValueChanged);
 
 	void setPreload(bool preload);
 	void setBlockLoading(bool blockLoading);

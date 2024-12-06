@@ -6,6 +6,7 @@
 #include <qdir.h>
 #include <qfiledevice.h>
 #include <qfileinfo.h>
+#include <qfilesystemwatcher.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qmutex.h>
@@ -280,7 +281,6 @@ void FileViewWriter::write(
 	if (shouldCancel.loadAcquire()) return;
 
 	if (doAtomicWrite) {
-		qDebug() << "Atomic commit";
 		if (!reinterpret_cast<QSaveFile*>(file.get())->commit()) { // NOLINT
 			qmlWarning(view) << "Write of " << state.path << " failed: Atomic commit failed.";
 		}
@@ -476,6 +476,49 @@ void FileView::updatePath() {
 		this->loadAsync(true);
 	} else {
 		this->emitDataChanged();
+	}
+
+	this->updateWatchedFiles();
+}
+
+void FileView::updateWatchedFiles() {
+	delete this->watcher;
+
+	if (!this->targetPath.isEmpty() && this->bWatchChanges) {
+		qCDebug(logFileView) << "Creating watcher for" << this << "at" << this->targetPath;
+		this->watcher = new QFileSystemWatcher(this);
+		this->watcher->addPath(this->targetPath);
+		this->watcher->addPath(QDir(this->targetPath).dirName());
+
+		QObject::connect(
+		    this->watcher,
+		    &QFileSystemWatcher::fileChanged,
+		    this,
+		    &FileView::onWatchedFileChanged
+		);
+
+		QObject::connect(
+		    this->watcher,
+		    &QFileSystemWatcher::directoryChanged,
+		    this,
+		    &FileView::onWatchedDirectoryChanged
+		);
+	}
+}
+
+void FileView::onWatchedFileChanged() {
+	if (!this->watcher->files().contains(this->targetPath)) {
+		this->watcher->addPath(this->targetPath);
+	}
+
+	emit this->fileChanged();
+}
+
+void FileView::onWatchedDirectoryChanged() {
+	if (!this->watcher->files().contains(this->targetPath) && QFileInfo(this->targetPath).exists()) {
+		// the file was just created
+		this->watcher->addPath(this->targetPath);
+		emit this->fileChanged();
 	}
 }
 
