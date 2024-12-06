@@ -294,13 +294,13 @@ public:
 	///
 	/// @@atomicWrites and @@blockWrites affect the behavior of this function.
 	///
-	/// @@saved() or @@saveFailed() will be emitted on completion.
+	/// @@saved(s) or @@saveFailed(s) will be emitted on completion.
 	Q_INVOKABLE void setData(const QByteArray& data);
 	/// Sets the content of the file specified by @@path as text.
 	///
 	/// @@atomicWrites and @@blockWrites affect the behavior of this function.
 	///
-	/// @@saved() or @@saveFailed() will be emitted on completion.
+	/// @@saved(s) or @@saveFailed(s) will be emitted on completion.
 	///
 	/// [ArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
 	Q_INVOKABLE void setText(const QString& text);
