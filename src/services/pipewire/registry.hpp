@@ -67,9 +67,7 @@ QDebug operator<<(QDebug debug, const PwBindableObject* object);
 template <typename T, StringLiteral INTERFACE, quint32 VERSION>
 class PwBindable: public PwBindableObject {
 public:
-	T* proxy() {
-		return reinterpret_cast<T*>(this->object); // NOLINT
-	}
+	T* proxy() { return reinterpret_cast<T*>(this->object); }
 
 protected:
 	void bind() override {

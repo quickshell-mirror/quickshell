@@ -159,10 +159,7 @@ void GreetdConnection::onSocketError(QLocalSocket::LocalSocketError error) {
 void GreetdConnection::onSocketReady() {
 	qint32 length = 0;
 
-	this->socket.read(
-	    reinterpret_cast<char*>(&length), // NOLINT
-	    sizeof(qint32)
-	);
+	this->socket.read(reinterpret_cast<char*>(&length), sizeof(qint32));
 
 	auto text = this->socket.read(length);
 	auto json = QJsonDocument::fromJson(text).object();
@@ -248,10 +245,7 @@ void GreetdConnection::sendRequest(const QJsonObject& json) {
 		                             << QJsonDocument(debugJson).toJson(QJsonDocument::Compact);
 	}
 
-	this->socket.write(
-	    reinterpret_cast<char*>(&length), // NOLINT
-	    sizeof(qint32)
-	);
+	this->socket.write(reinterpret_cast<char*>(&length), sizeof(qint32));
 
 	this->socket.write(text);
 	this->socket.flush();

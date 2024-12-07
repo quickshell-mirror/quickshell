@@ -485,23 +485,21 @@ void WriteBuffer::writeBytes(const char* data, qsizetype length) {
 	this->buffer.append(data, length);
 }
 
-void WriteBuffer::writeU8(quint8 data) {
-	this->writeBytes(reinterpret_cast<char*>(&data), 1); // NOLINT
-}
+void WriteBuffer::writeU8(quint8 data) { this->writeBytes(reinterpret_cast<char*>(&data), 1); }
 
 void WriteBuffer::writeU16(quint16 data) {
 	data = qToLittleEndian(data);
-	this->writeBytes(reinterpret_cast<char*>(&data), 2); // NOLINT
+	this->writeBytes(reinterpret_cast<char*>(&data), 2);
 }
 
 void WriteBuffer::writeU32(quint32 data) {
 	data = qToLittleEndian(data);
-	this->writeBytes(reinterpret_cast<char*>(&data), 4); // NOLINT
+	this->writeBytes(reinterpret_cast<char*>(&data), 4);
 }
 
 void WriteBuffer::writeU64(quint64 data) {
 	data = qToLittleEndian(data);
-	this->writeBytes(reinterpret_cast<char*>(&data), 8); // NOLINT
+	this->writeBytes(reinterpret_cast<char*>(&data), 8);
 }
 
 void DeviceReader::setDevice(QIODevice* device) { this->device = device; }
@@ -518,19 +516,19 @@ qsizetype DeviceReader::peekBytes(char* data, qsizetype length) {
 bool DeviceReader::skip(qsizetype length) { return this->device->skip(length) == length; }
 
 bool DeviceReader::readU8(quint8* data) {
-	return this->readBytes(reinterpret_cast<char*>(data), 1); // NOLINT
+	return this->readBytes(reinterpret_cast<char*>(data), 1);
 }
 
 bool DeviceReader::readU16(quint16* data) {
-	return this->readBytes(reinterpret_cast<char*>(data), 2); // NOLINT
+	return this->readBytes(reinterpret_cast<char*>(data), 2);
 }
 
 bool DeviceReader::readU32(quint32* data) {
-	return this->readBytes(reinterpret_cast<char*>(data), 4); // NOLINT
+	return this->readBytes(reinterpret_cast<char*>(data), 4);
 }
 
 bool DeviceReader::readU64(quint64* data) {
-	return this->readBytes(reinterpret_cast<char*>(data), 8); // NOLINT
+	return this->readBytes(reinterpret_cast<char*>(data), 8);
 }
 
 void EncodedLogWriter::setDevice(QIODevice* target) { this->buffer.setDevice(target); }
@@ -712,18 +710,18 @@ void EncodedLogWriter::writeVarInt(quint32 n) {
 
 bool EncodedLogReader::readVarInt(quint32* slot) {
 	auto bytes = std::array<quint8, 7>();
-	auto readLength = this->reader.peekBytes(reinterpret_cast<char*>(bytes.data()), 7); // NOLINT
+	auto readLength = this->reader.peekBytes(reinterpret_cast<char*>(bytes.data()), 7);
 
 	if (bytes[0] != 0xff && readLength >= 1) {
-		auto n = *reinterpret_cast<quint8*>(bytes.data()); // NOLINT
+		auto n = *reinterpret_cast<quint8*>(bytes.data());
 		if (!this->reader.skip(1)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if ((bytes[1] != 0xff || bytes[2] != 0xff) && readLength >= 3) {
-		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1); // NOLINT
+		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1);
 		if (!this->reader.skip(3)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if (readLength == 7) {
-		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3); // NOLINT
+		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3);
 		if (!this->reader.skip(7)) return false;
 		*slot = qFromLittleEndian(n);
 	} else return false;

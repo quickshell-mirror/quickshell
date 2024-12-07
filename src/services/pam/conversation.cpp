@@ -79,20 +79,14 @@ void PamConversation::onMessage() {
 
 		auto type = PamIpcEvent::Exit;
 
-		auto ok = this->pipes.readBytes(
-		    reinterpret_cast<char*>(&type), // NOLINT
-		    sizeof(PamIpcEvent)
-		);
+		auto ok = this->pipes.readBytes(reinterpret_cast<char*>(&type), sizeof(PamIpcEvent));
 
 		if (!ok) goto fail;
 
 		if (type == PamIpcEvent::Exit) {
 			auto code = PamIpcExitCode::OtherError;
 
-			ok = this->pipes.readBytes(
-			    reinterpret_cast<char*>(&code), // NOLINT
-			    sizeof(PamIpcExitCode)
-			);
+			ok = this->pipes.readBytes(reinterpret_cast<char*>(&code), sizeof(PamIpcExitCode));
 
 			if (!ok) goto fail;
 
@@ -112,10 +106,7 @@ void PamConversation::onMessage() {
 		} else if (type == PamIpcEvent::Request) {
 			PamIpcRequestFlags flags {};
 
-			ok = this->pipes.readBytes(
-			    reinterpret_cast<char*>(&flags), // NOLINT
-			    sizeof(PamIpcRequestFlags)
-			);
+			ok = this->pipes.readBytes(reinterpret_cast<char*>(&flags), sizeof(PamIpcRequestFlags));
 
 			if (!ok) goto fail;
 

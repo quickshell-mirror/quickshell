@@ -126,17 +126,11 @@ PamIpcExitCode PamSubprocess::exec(const char* configDir, const char* config, co
 void PamSubprocess::sendCode(PamIpcExitCode code) {
 	{
 		auto eventType = PamIpcEvent::Exit;
-		auto ok = this->pipes.writeBytes(
-		    reinterpret_cast<char*>(&eventType), // NOLINT
-		    sizeof(PamIpcEvent)
-		);
+		auto ok = this->pipes.writeBytes(reinterpret_cast<char*>(&eventType), sizeof(PamIpcEvent));
 
 		if (!ok) goto fail;
 
-		ok = this->pipes.writeBytes(
-		    reinterpret_cast<char*>(&code), // NOLINT
-		    sizeof(PamIpcExitCode)
-		);
+		ok = this->pipes.writeBytes(reinterpret_cast<char*>(&code), sizeof(PamIpcExitCode));
 
 		if (!ok) goto fail;
 
@@ -175,17 +169,12 @@ int PamSubprocess::conversation(
 		                     << std::endl;
 
 		auto eventType = PamIpcEvent::Request;
-		auto ok = delegate->pipes.writeBytes(
-		    reinterpret_cast<char*>(&eventType), // NOLINT
-		    sizeof(PamIpcEvent)
-		);
+		auto ok = delegate->pipes.writeBytes(reinterpret_cast<char*>(&eventType), sizeof(PamIpcEvent));
 
 		if (!ok) goto fail;
 
-		ok = delegate->pipes.writeBytes(
-		    reinterpret_cast<const char*>(&req), // NOLINT
-		    sizeof(PamIpcRequestFlags)
-		);
+		ok =
+		    delegate->pipes.writeBytes(reinterpret_cast<const char*>(&req), sizeof(PamIpcRequestFlags));
 
 		if (!ok) goto fail;
 		if (!delegate->pipes.writeString(msgString)) goto fail;

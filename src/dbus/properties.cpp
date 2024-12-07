@@ -37,7 +37,7 @@ QDBusError demarshallVariant(const QVariant& variant, const QMetaType& type, voi
 
 	if (variant.metaType() == type) {
 		if (type.id() == QMetaType::QVariant) {
-			*reinterpret_cast<QVariant*>(slot) = variant; // NOLINT
+			*reinterpret_cast<QVariant*>(slot) = variant;
 		} else {
 			type.destruct(slot);
 			type.construct(slot, variant.constData());

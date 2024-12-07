@@ -42,9 +42,7 @@ template <typename T>
 class PwObject {
 public:
 	explicit PwObject(T* object = nullptr): object(object) {}
-	~PwObject() {
-		pw_proxy_destroy(reinterpret_cast<pw_proxy*>(this->object)); // NOLINT
-	}
+	~PwObject() { pw_proxy_destroy(reinterpret_cast<pw_proxy*>(this->object)); }
 
 	Q_DISABLE_COPY_MOVE(PwObject);
 

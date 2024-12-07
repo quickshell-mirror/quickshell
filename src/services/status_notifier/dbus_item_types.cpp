@@ -23,23 +23,23 @@ QImage DBusSniIconPixmap::createImage() const {
 	// fix byte order if on a little endian machine
 	if (QSysInfo::ByteOrder == QSysInfo::LittleEndian) {
 		auto* newbuf = new quint32[this->data.size()];
-		const auto* oldbuf = reinterpret_cast<const quint32*>(this->data.constData()); // NOLINT
+		const auto* oldbuf = reinterpret_cast<const quint32*>(this->data.constData());
 
 		for (uint i = 0; i < this->data.size() / sizeof(quint32); ++i) {
 			newbuf[i] = qFromBigEndian(oldbuf[i]); // NOLINT
 		}
 
 		return QImage(
-		    reinterpret_cast<const uchar*>(newbuf), // NOLINT
+		    reinterpret_cast<const uchar*>(newbuf),
 		    this->width,
 		    this->height,
 		    QImage::Format_ARGB32,
-		    [](void* ptr) { delete[] reinterpret_cast<quint32*>(ptr); }, // NOLINT
+		    [](void* ptr) { delete[] reinterpret_cast<quint32*>(ptr); },
 		    newbuf
 		);
 	} else {
 		return QImage(
-		    reinterpret_cast<const uchar*>(this->data.constData()), // NOLINT
+		    reinterpret_cast<const uchar*>(this->data.constData()),
 		    this->width,
 		    this->height,
 		    QImage::Format_ARGB32

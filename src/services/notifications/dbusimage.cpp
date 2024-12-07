@@ -15,7 +15,7 @@ QImage DBusNotificationImage::createImage() const {
 	auto format = this->hasAlpha ? QImage::Format_RGBA8888 : QImage::Format_RGB888;
 
 	return QImage(
-	    reinterpret_cast<const uchar*>(this->data.data()), // NOLINT
+	    reinterpret_cast<const uchar*>(this->data.data()),
 	    this->width,
 	    this->height,
 	    format

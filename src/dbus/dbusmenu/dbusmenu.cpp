@@ -105,11 +105,11 @@ QQmlListProperty<QsMenuEntry> DBusMenuItem::children() {
 }
 
 qsizetype DBusMenuItem::childrenCount(QQmlListProperty<QsMenuEntry>* property) {
-	return reinterpret_cast<DBusMenuItem*>(property->object)->enabledChildren.count(); // NOLINT
+	return reinterpret_cast<DBusMenuItem*>(property->object)->enabledChildren.count();
 }
 
 QsMenuEntry* DBusMenuItem::childAt(QQmlListProperty<QsMenuEntry>* property, qsizetype index) {
-	auto* item = reinterpret_cast<DBusMenuItem*>(property->object); // NOLINT
+	auto* item = reinterpret_cast<DBusMenuItem*>(property->object);
 	return item->menu->items.value(item->enabledChildren.at(index));
 }
 

@@ -65,7 +65,7 @@ public:
 	template <class O>
 	DropEmitter(O* object, void (*signal)(O*))
 	    : object(object)
-	    , signal(*reinterpret_cast<void (*)(void*)>(signal)) {} // NOLINT
+	    , signal(*reinterpret_cast<void (*)(void*)>(signal)) {}
 
 	DropEmitter() = default;
 

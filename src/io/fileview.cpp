@@ -281,7 +281,7 @@ void FileViewWriter::write(
 	if (shouldCancel.loadAcquire()) return;
 
 	if (doAtomicWrite) {
-		if (!reinterpret_cast<QSaveFile*>(file.get())->commit()) { // NOLINT
+		if (!reinterpret_cast<QSaveFile*>(file.get())->commit()) {
 			qmlWarning(view) << "Write of " << state.path << " failed: Atomic commit failed.";
 		}
 	}

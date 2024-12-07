@@ -45,7 +45,7 @@ std::string PamIpcPipes::readString(bool* ok) const {
 	if (ok != nullptr) *ok = false;
 
 	uint32_t length = 0;
-	if (!this->readBytes(reinterpret_cast<char*>(&length), sizeof(length))) { // NOLINT
+	if (!this->readBytes(reinterpret_cast<char*>(&length), sizeof(length))) {
 		return "";
 	}
 
@@ -61,7 +61,7 @@ std::string PamIpcPipes::readString(bool* ok) const {
 
 bool PamIpcPipes::writeString(const std::string& string) const {
 	uint32_t length = string.length();
-	if (!this->writeBytes(reinterpret_cast<char*>(&length), sizeof(length))) { // NOLINT
+	if (!this->writeBytes(reinterpret_cast<char*>(&length), sizeof(length))) {
 		return false;
 	}
 
