@@ -21,6 +21,7 @@
 #include <qvariant.h>
 
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/model.hpp"
 #include "../../core/qsmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_menu.h"
@@ -95,22 +96,8 @@ void DBusMenuItem::updateLayout() const {
 
 bool DBusMenuItem::hasChildren() const { return this->displayChildren || this->id == 0; }
 
-QQmlListProperty<QsMenuEntry> DBusMenuItem::children() {
-	return QQmlListProperty<QsMenuEntry>(
-	    this,
-	    nullptr,
-	    &DBusMenuItem::childrenCount,
-	    &DBusMenuItem::childAt
-	);
-}
-
-qsizetype DBusMenuItem::childrenCount(QQmlListProperty<QsMenuEntry>* property) {
-	return reinterpret_cast<DBusMenuItem*>(property->object)->enabledChildren.count();
-}
-
-QsMenuEntry* DBusMenuItem::childAt(QQmlListProperty<QsMenuEntry>* property, qsizetype index) {
-	auto* item = reinterpret_cast<DBusMenuItem*>(property->object);
-	return item->menu->items.value(item->enabledChildren.at(index));
+ObjectModel<QsMenuEntry>* DBusMenuItem::children() {
+	return reinterpret_cast<ObjectModel<QsMenuEntry>*>(&this->enabledChildren);
 }
 
 void DBusMenuItem::updateProperties(const QVariantMap& properties, const QStringList& removed) {
@@ -270,14 +257,13 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 }
 
 void DBusMenuItem::onChildrenUpdated() {
-	this->enabledChildren.clear();
-
+	QVector<DBusMenuItem*> children;
 	for (auto child: this->mChildren) {
 		auto* item = this->menu->items.value(child);
-		if (item->visible) this->enabledChildren.push_back(child);
+		if (item->visible) children.append(item);
 	}
 
-	emit this->childrenChanged();
+	this->enabledChildren.diffUpdate(children);
 }
 
 QDebug operator<<(QDebug debug, DBusMenuItem* item) {
@@ -388,7 +374,7 @@ void DBusMenu::updateLayoutRecursive(
 			    [&](const DBusMenuLayout& layout) { return layout.id == *iter; }
 			);
 
-			if (existing == layout.children.end()) {
+			if (!item->mShowChildren || existing == layout.children.end()) {
 				qCDebug(logDbusMenu) << "Removing missing layout item" << this->items.value(*iter) << "from"
 				                     << item;
 				this->removeRecursive(*iter);
@@ -402,7 +388,7 @@ void DBusMenu::updateLayoutRecursive(
 		for (const auto& child: layout.children) {
 			if (item->mShowChildren && !item->mChildren.contains(child.id)) {
 				qCDebug(logDbusMenu) << "Creating new layout item" << child.id << "in" << item;
-				item->mChildren.push_back(child.id);
+				// item->mChildren.push_back(child.id);
 				this->items.insert(child.id, nullptr);
 				childrenChanged = true;
 			}
@@ -410,7 +396,15 @@ void DBusMenu::updateLayoutRecursive(
 			this->updateLayoutRecursive(child, item, depth - 1);
 		}
 
-		if (childrenChanged) item->onChildrenUpdated();
+		if (childrenChanged) {
+			// reset to preserve order
+			item->mChildren.clear();
+			for (const auto& child: layout.children) {
+				item->mChildren.push_back(child.id);
+			}
+
+			item->onChildrenUpdated();
+		}
 	}
 
 	if (item->mShowChildren && !item->childrenLoaded) {
@@ -554,6 +548,7 @@ void DBusMenuHandle::onMenuPathChanged() {
 		this->mMenu->setParent(this);
 
 		QObject::connect(&this->mMenu->rootItem, &DBusMenuItem::layoutUpdated, this, [this]() {
+			QObject::disconnect(&this->mMenu->rootItem, &DBusMenuItem::layoutUpdated, this, nullptr);
 			this->loaded = true;
 			emit this->menuChanged();
 		});

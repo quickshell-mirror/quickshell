@@ -15,6 +15,7 @@
 
 #include "../../core/doc.hpp"
 #include "../../core/imageprovider.hpp"
+#include "../../core/model.hpp"
 #include "../../core/qsmenu.hpp"
 #include "../properties.hpp"
 #include "dbus_menu_types.hpp"
@@ -65,7 +66,7 @@ public:
 	[[nodiscard]] bool isShowingChildren() const;
 	void setShowChildrenRecursive(bool showChildren);
 
-	[[nodiscard]] QQmlListProperty<menu::QsMenuEntry> children() override;
+	[[nodiscard]] ObjectModel<QsMenuEntry>* children() override;
 
 	void updateProperties(const QVariantMap& properties, const QStringList& removed = {});
 	void onChildrenUpdated();
@@ -96,11 +97,8 @@ private:
 	menu::QsMenuButtonType::Enum mButtonType = menu::QsMenuButtonType::None;
 	Qt::CheckState mCheckState = Qt::Unchecked;
 	bool displayChildren = false;
-	QVector<qint32> enabledChildren;
+	ObjectModel<DBusMenuItem> enabledChildren {this};
 	DBusMenuItem* parentMenu = nullptr;
-
-	static qsizetype childrenCount(QQmlListProperty<menu::QsMenuEntry>* property);
-	static menu::QsMenuEntry* childAt(QQmlListProperty<menu::QsMenuEntry>* property, qsizetype index);
 };
 
 QDebug operator<<(QDebug debug, DBusMenuItem* item);

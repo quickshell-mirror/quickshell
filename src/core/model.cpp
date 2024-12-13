@@ -71,6 +71,22 @@ bool UntypedObjectModel::removeObject(const QObject* object) {
 	return true;
 }
 
+void UntypedObjectModel::diffUpdate(const QVector<QObject*>& newValues) {
+	for (qsizetype i = 0; i < this->valuesList.length();) {
+		if (newValues.contains(this->valuesList.at(i))) i++;
+		else this->removeAt(i);
+	}
+
+	qsizetype oi = 0;
+	for (auto* object: newValues) {
+		if (this->valuesList.length() == oi || this->valuesList.at(oi) != object) {
+			this->insertObject(object, oi);
+		}
+
+		oi++;
+	}
+}
+
 qsizetype UntypedObjectModel::indexOf(QObject* object) { return this->valuesList.indexOf(object); }
 
 UntypedObjectModel* UntypedObjectModel::emptyInstance() {

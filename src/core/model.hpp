@@ -73,6 +73,9 @@ protected:
 	void insertObject(QObject* object, qsizetype index = -1);
 	bool removeObject(const QObject* object);
 
+	// Assumes only one instance of a specific value
+	void diffUpdate(const QVector<QObject*>& newValues);
+
 	QVector<QObject*> valuesList;
 
 private:
@@ -96,6 +99,11 @@ public:
 	}
 
 	void removeObject(const T* object) { this->UntypedObjectModel::removeObject(object); }
+
+	// Assumes only one instance of a specific value
+	void diffUpdate(const QVector<T*>& newValues) {
+		this->UntypedObjectModel::diffUpdate(*std::bit_cast<const QVector<QObject*>*>(&newValues));
+	}
 
 	static ObjectModel<T>* emptyInstance() {
 		return static_cast<ObjectModel<T>*>(UntypedObjectModel::emptyInstance());

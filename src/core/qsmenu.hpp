@@ -9,6 +9,7 @@
 #include <qtypes.h>
 
 #include "doc.hpp"
+#include "model.hpp"
 
 namespace qs::menu {
 
@@ -107,9 +108,7 @@ public:
 	void ref();
 	void unref();
 
-	[[nodiscard]] virtual QQmlListProperty<QsMenuEntry> children();
-
-	static QQmlListProperty<QsMenuEntry> emptyChildren(QObject* parent);
+	[[nodiscard]] virtual ObjectModel<QsMenuEntry>* children();
 
 signals:
 	/// Send a trigger/click signal to the menu entry.
@@ -125,12 +124,8 @@ signals:
 	void buttonTypeChanged();
 	void checkStateChanged();
 	void hasChildrenChanged();
-	QSDOC_HIDE void childrenChanged();
 
 private:
-	static qsizetype childCount(QQmlListProperty<QsMenuEntry>* property);
-	static QsMenuEntry* childAt(QQmlListProperty<QsMenuEntry>* property, qsizetype index);
-
 	qsizetype refcount = 0;
 };
 
@@ -140,7 +135,8 @@ class QsMenuOpener: public QObject {
 	/// The menu to retrieve children from.
 	Q_PROPERTY(qs::menu::QsMenuHandle* menu READ menu WRITE setMenu NOTIFY menuChanged);
 	/// The children of the given menu.
-	Q_PROPERTY(QQmlListProperty<qs::menu::QsMenuEntry> children READ children NOTIFY childrenChanged);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::menu::QsMenuEntry>*);
+	Q_PROPERTY(UntypedObjectModel* children READ children NOTIFY childrenChanged);
 	QML_ELEMENT;
 
 public:
@@ -151,7 +147,7 @@ public:
 	[[nodiscard]] QsMenuHandle* menu() const;
 	void setMenu(QsMenuHandle* menu);
 
-	[[nodiscard]] QQmlListProperty<QsMenuEntry> children();
+	[[nodiscard]] ObjectModel<QsMenuEntry>* children();
 
 signals:
 	void menuChanged();

@@ -20,6 +20,7 @@
 #include "../window/proxywindow.hpp"
 #include "../window/windowinterface.hpp"
 #include "iconprovider.hpp"
+#include "model.hpp"
 #include "platformmenu_p.hpp"
 #include "popupanchor.hpp"
 #include "qsmenu.hpp"
@@ -61,6 +62,7 @@ PlatformMenuEntry::PlatformMenuEntry(QsMenuEntry* menu): QObject(menu), menu(men
 	QObject::connect(menu, &QsMenuEntry::buttonTypeChanged, this, &PlatformMenuEntry::onButtonTypeChanged);
 	QObject::connect(menu, &QsMenuEntry::checkStateChanged, this, &PlatformMenuEntry::onCheckStateChanged);
 	QObject::connect(menu, &QsMenuEntry::hasChildrenChanged, this, &PlatformMenuEntry::relayoutParent);
+	QObject::connect(menu->children(), &UntypedObjectModel::valuesChanged, this, &PlatformMenuEntry::relayout);
 	// clang-format on
 }
 
@@ -178,10 +180,10 @@ void PlatformMenuEntry::relayout() {
 			this->qmenu->setIcon(getCurrentEngineImageAsIcon(icon));
 		}
 
-		auto children = this->menu->children();
-		auto len = children.count(&children);
+		const auto& children = this->menu->children()->valueList();
+		auto len = children.count();
 		for (auto i = 0; i < len; i++) {
-			auto* child = children.at(&children, i);
+			auto* child = children.at(i);
 
 			auto* instance = new PlatformMenuEntry(child);
 			QObject::connect(instance, &QObject::destroyed, this, &PlatformMenuEntry::onChildDestroyed);

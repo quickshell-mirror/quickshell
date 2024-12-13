@@ -4,8 +4,8 @@
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 
+#include "model.hpp"
 #include "platformmenu.hpp"
 
 using namespace qs::menu::platform;
@@ -34,15 +34,6 @@ void QsMenuEntry::display(QObject* parentWindow, int relativeX, int relativeY) {
 	if (!success) delete platform;
 }
 
-QQmlListProperty<QsMenuEntry> QsMenuEntry::emptyChildren(QObject* parent) {
-	return QQmlListProperty<QsMenuEntry>(
-	    parent,
-	    nullptr,
-	    &QsMenuEntry::childCount,
-	    &QsMenuEntry::childAt
-	);
-}
-
 void QsMenuEntry::ref() {
 	this->refcount++;
 	if (this->refcount == 1) emit this->opened();
@@ -53,7 +44,9 @@ void QsMenuEntry::unref() {
 	if (this->refcount == 0) emit this->closed();
 }
 
-QQmlListProperty<QsMenuEntry> QsMenuEntry::children() { return QsMenuEntry::emptyChildren(this); }
+ObjectModel<QsMenuEntry>* QsMenuEntry::children() {
+	return ObjectModel<QsMenuEntry>::emptyInstance();
+}
 
 QsMenuOpener::~QsMenuOpener() {
 	if (this->mMenu) {
@@ -83,13 +76,6 @@ void QsMenuOpener::setMenu(QsMenuHandle* menu) {
 	if (menu != nullptr) {
 		auto onMenuChanged = [this, menu]() {
 			if (menu->menu()) {
-				QObject::connect(
-				    menu->menu(),
-				    &QsMenuEntry::childrenChanged,
-				    this,
-				    &QsMenuOpener::childrenChanged
-				);
-
 				menu->menu()->ref();
 			}
 
@@ -113,19 +99,12 @@ void QsMenuOpener::onMenuDestroyed() {
 	emit this->childrenChanged();
 }
 
-QQmlListProperty<QsMenuEntry> QsMenuOpener::children() {
+ObjectModel<QsMenuEntry>* QsMenuOpener::children() {
 	if (this->mMenu && this->mMenu->menu()) {
 		return this->mMenu->menu()->children();
 	} else {
-		return QsMenuEntry::emptyChildren(this);
+		return ObjectModel<QsMenuEntry>::emptyInstance();
 	}
-}
-
-qsizetype QsMenuEntry::childCount(QQmlListProperty<QsMenuEntry>* /*property*/) { return 0; }
-
-QsMenuEntry*
-QsMenuEntry::childAt(QQmlListProperty<QsMenuEntry>* /*property*/, qsizetype /*index*/) {
-	return nullptr;
 }
 
 } // namespace qs::menu
