@@ -324,7 +324,7 @@ void MprisPlayer::onMetadataChanged() {
 
 	Qt::endPropertyUpdateGroup();
 
-	emit this->postTrackChanged();
+	if (trackChanged) emit this->postTrackChanged();
 }
 
 void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
