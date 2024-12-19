@@ -151,6 +151,7 @@ void ProxyWindowBase::completeWindow() {
 		this->window->setScreen(this->mScreen);
 	} else if (this->mScreen == nullptr) {
 		this->mScreen = this->window->screen();
+		QObject::connect(this->mScreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
 	}
 
 	this->setWidth(this->mWidth);
@@ -267,15 +268,11 @@ void ProxyWindowBase::setHeight(qint32 height) {
 }
 
 void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
-	if (this->mScreen != nullptr) {
-		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
-	}
-
 	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
 	if (qscreen == this->mScreen) return;
 
-	if (qscreen != nullptr) {
-		QObject::connect(qscreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
+	if (this->mScreen != nullptr) {
+		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
 	}
 
 	if (this->window == nullptr) {
@@ -289,6 +286,8 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 
 	if (qscreen) this->mScreen = qscreen;
 	else this->mScreen = this->window->screen();
+
+	QObject::connect(this->mScreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
 }
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
