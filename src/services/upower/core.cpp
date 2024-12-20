@@ -11,7 +11,6 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmllist.h>
-#include <qtmetamacros.h>
 
 #include "../../core/model.hpp"
 #include "../../dbus/bus.hpp"
@@ -53,15 +52,23 @@ UPower::UPower() {
 }
 
 void UPower::init() {
+	QObject::connect(this->service, &DBusUPowerService::DeviceAdded, this, &UPower::onDeviceAdded);
+
+	QObject::connect(
+	    this->service,
+	    &DBusUPowerService::DeviceRemoved,
+	    this,
+	    &UPower::onDeviceRemoved
+	);
+
 	this->serviceProperties.setInterface(this->service);
 	this->serviceProperties.updateAllViaGetAll();
 
-	this->registerExisting();
+	this->registerDisplayDevice();
+	this->registerDevices();
 }
 
-void UPower::registerExisting() {
-	this->registerDevice("/org/freedesktop/UPower/devices/DisplayDevice");
-
+void UPower::registerDevices() {
 	auto pending = this->service->EnumerateDevices();
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
@@ -82,34 +89,46 @@ void UPower::registerExisting() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
+void UPower::registerDisplayDevice() {
+	auto pending = this->service->GetDisplayDevice();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<QDBusObjectPath> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logUPower) << "Failed to get default device:" << reply.error().message();
+		} else {
+			qCDebug(logUPower) << "UPower default device registered at" << reply.value().path();
+			this->mDisplayDevice.init(reply.value().path());
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void UPower::onDeviceAdded(const QDBusObjectPath& path) { this->registerDevice(path.path()); }
+
+void UPower::onDeviceRemoved(const QDBusObjectPath& path) {
+	auto iter = this->mDevices.find(path.path());
+
+	if (iter == this->mDevices.end()) {
+		qCWarning(logUPower) << "UPower service sent removal signal for" << path.path()
+		                     << "which is not registered.";
+	} else {
+		auto* device = iter.value();
+		this->mDevices.erase(iter);
+		this->readyDevices.removeObject(device);
+		qCDebug(logUPower) << "UPowerDevice" << device->path() << "removed.";
+	}
+}
+
 void UPower::onDeviceReady() {
 	auto* device = qobject_cast<UPowerDevice*>(this->sender());
 
-	if (device->path() == "/org/freedesktop/UPower/devices/DisplayDevice") {
-		this->mDisplayDevice = device;
-		emit this->displayDeviceChanged();
-		qCDebug(logUPower) << "Display UPowerDevice" << device->path() << "ready";
-		return;
-	}
-
 	this->readyDevices.insertObject(device);
-	qCDebug(logUPower) << "UPowerDevice" << device->path() << "ready";
-}
-
-void UPower::onDeviceDestroyed(QObject* object) {
-	auto* device = static_cast<UPowerDevice*>(object); // NOLINT
-
-	this->mDevices.remove(device->path());
-
-	if (device == this->mDisplayDevice) {
-		this->mDisplayDevice = nullptr;
-		emit this->displayDeviceChanged();
-		qCDebug(logUPower) << "Display UPowerDevice" << device->path() << "destroyed";
-		return;
-	}
-
-	this->readyDevices.removeObject(device);
-	qCDebug(logUPower) << "UPowerDevice" << device->path() << "destroyed";
 }
 
 void UPower::registerDevice(const QString& path) {
@@ -118,7 +137,9 @@ void UPower::registerDevice(const QString& path) {
 		return;
 	}
 
-	auto* device = new UPowerDevice(path, this);
+	auto* device = new UPowerDevice(this);
+	device->init(path);
+
 	if (!device->isValid()) {
 		qCWarning(logUPower) << "Ignoring invalid UPowerDevice registration of" << path;
 		delete device;
@@ -126,13 +147,12 @@ void UPower::registerDevice(const QString& path) {
 	}
 
 	this->mDevices.insert(path, device);
-	QObject::connect(device, &UPowerDevice::ready, this, &UPower::onDeviceReady);
-	QObject::connect(device, &QObject::destroyed, this, &UPower::onDeviceDestroyed);
+	QObject::connect(device, &UPowerDevice::readyChanged, this, &UPower::onDeviceReady);
 
 	qCDebug(logUPower) << "Registered UPowerDevice" << path;
 }
 
-UPowerDevice* UPower::displayDevice() { return this->mDisplayDevice; }
+UPowerDevice* UPower::displayDevice() { return &this->mDisplayDevice; }
 
 ObjectModel<UPowerDevice>* UPower::devices() { return &this->readyDevices; }
 
@@ -142,12 +162,6 @@ UPower* UPower::instance() {
 }
 
 UPowerQml::UPowerQml(QObject* parent): QObject(parent) {
-	QObject::connect(
-	    UPower::instance(),
-	    &UPower::displayDeviceChanged,
-	    this,
-	    &UPowerQml::displayDeviceChanged
-	);
 	QObject::connect(
 	    UPower::instance(),
 	    &UPower::onBatteryChanged,

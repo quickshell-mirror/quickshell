@@ -154,12 +154,18 @@ class UPowerDevice: public QObject {
 	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged BINDABLE bindableIsLaptopBattery);
 	/// Native path of the device specific to your OS.
 	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged BINDABLE bindableNativePath);
+	/// If device statistics have been queried for this device yet.
+  /// This will be true for all devices returned from @@UPower.devices, but not the default
+  /// device, which may be returned before it is ready to avoid returning null.
+	Q_PROPERTY(bool ready READ ready NOTIFY readyChanged BINDABLE bindableReady);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("UPowerDevices can only be acquired from UPower");
 
 public:
-	explicit UPowerDevice(const QString& path, QObject* parent = nullptr);
+	explicit UPowerDevice(QObject* parent = nullptr);
+
+	void init(const QString& path);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString address() const;
@@ -180,9 +186,10 @@ public:
 	QS_BINDABLE_GETTER(QString, bIconName, iconName, bindableIconName);
 	QS_BINDABLE_GETTER(bool, bIsLaptopBattery, isLaptopBattery, bindableIsLaptopBattery);
 	QS_BINDABLE_GETTER(QString, bNativePath, nativePath, bindableNativePath);
+	QS_BINDABLE_GETTER(bool, bReady, ready, bindableReady);
 
 signals:
-	QSDOC_HIDE void ready();
+	QSDOC_HIDE void readyChanged();
 
 	void typeChanged();
 	void powerSupplyChanged();
@@ -199,6 +206,9 @@ signals:
 	void iconNameChanged();
 	void isLaptopBatteryChanged();
 	void nativePathChanged();
+
+private slots:
+	void onGetAllFinished();
 
 private:
 	// clang-format off
@@ -217,6 +227,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bIconName, &UPowerDevice::iconNameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bIsLaptopBattery, &UPowerDevice::isLaptopBatteryChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bNativePath, &UPowerDevice::nativePathChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bReady, &UPowerDevice::readyChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(UPowerDevice, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pType, bType, deviceProperties, "Type");

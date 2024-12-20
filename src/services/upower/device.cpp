@@ -65,7 +65,15 @@ QString UPowerDeviceType::toString(UPowerDeviceType::Enum type) {
 	}
 }
 
-UPowerDevice::UPowerDevice(const QString& path, QObject* parent): QObject(parent) {
+UPowerDevice::UPowerDevice(QObject* parent): QObject(parent) {
+	this->bIsLaptopBattery.setBinding([this]() {
+		return this->bType == UPowerDeviceType::Battery && this->bPowerSupply;
+	});
+
+	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage != 0; });
+}
+
+void UPowerDevice::init(const QString& path) {
 	this->device =
 	    new DBusUPowerDevice("org.freedesktop.UPower", path, QDBusConnection::systemBus(), this);
 
@@ -74,26 +82,25 @@ UPowerDevice::UPowerDevice(const QString& path, QObject* parent): QObject(parent
 		return;
 	}
 
-	this->bIsLaptopBattery.setBinding([this]() {
-		return this->bType == UPowerDeviceType::Battery && this->bPowerSupply;
-	});
-
-	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage != 0; });
-
 	QObject::connect(
 	    &this->deviceProperties,
 	    &DBusPropertyGroup::getAllFinished,
 	    this,
-	    &UPowerDevice::ready
+	    &UPowerDevice::onGetAllFinished
 	);
 
 	this->deviceProperties.setInterface(this->device);
 	this->deviceProperties.updateAllViaGetAll();
 }
 
-bool UPowerDevice::isValid() const { return this->device->isValid(); }
-QString UPowerDevice::address() const { return this->device->service(); }
-QString UPowerDevice::path() const { return this->device->path(); }
+bool UPowerDevice::isValid() const { return this->device && this->device->isValid(); }
+QString UPowerDevice::address() const { return this->device ? this->device->service() : QString(); }
+QString UPowerDevice::path() const { return this->device ? this->device->path() : QString(); }
+
+void UPowerDevice::onGetAllFinished() {
+	qCDebug(logUPowerDevice) << "UPowerDevice" << device->path() << "ready.";
+	this->bReady = true;
+}
 
 } // namespace qs::service::upower
 

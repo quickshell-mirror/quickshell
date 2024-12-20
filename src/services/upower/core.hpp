@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qdbusextratypes.h>
 #include <qdbusservicewatcher.h>
 #include <qhash.h>
 #include <qobject.h>
@@ -26,21 +27,22 @@ public:
 	static UPower* instance();
 
 signals:
-	void displayDeviceChanged();
 	void onBatteryChanged();
 
 private slots:
+	void onDeviceAdded(const QDBusObjectPath& path);
+	void onDeviceRemoved(const QDBusObjectPath& path);
 	void onDeviceReady();
-	void onDeviceDestroyed(QObject* object);
 
 private:
 	explicit UPower();
 
 	void init();
-	void registerExisting();
+	void registerDevices();
+	void registerDisplayDevice();
 	void registerDevice(const QString& path);
 
-	UPowerDevice* mDisplayDevice = nullptr;
+	UPowerDevice mDisplayDevice {this};
 	QHash<QString, UPowerDevice*> mDevices;
 	ObjectModel<UPowerDevice> readyDevices {this};
 
@@ -57,11 +59,12 @@ class UPowerQml: public QObject {
 	QML_NAMED_ELEMENT(UPower);
 	QML_SINGLETON;
 	// clang-format off
-	/// UPower's DisplayDevice for your system. Can be `null`.
+	/// UPower's DisplayDevice for your system. Cannot be null,
+	/// but might not be initialized (check @@UPowerDevice.ready if you need to know).
 	///
 	/// This is an aggregate device and not a physical one, meaning you will not find it in @@devices.
 	/// It is typically the device that is used for displaying information in desktop environments.
-	Q_PROPERTY(qs::service::upower::UPowerDevice* displayDevice READ displayDevice NOTIFY displayDeviceChanged);
+	Q_PROPERTY(qs::service::upower::UPowerDevice* displayDevice READ displayDevice CONSTANT);
 	/// All connected UPower devices.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::upower::UPowerDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
@@ -81,7 +84,6 @@ public:
 	}
 
 signals:
-	void displayDeviceChanged();
 	void onBatteryChanged();
 };
 
