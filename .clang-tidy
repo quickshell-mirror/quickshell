@@ -18,6 +18,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-avoid-do-while,
   -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
   google-global-names-in-headers,
   google-readability-casting,
   google-runtime-int,

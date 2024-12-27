@@ -36,6 +36,7 @@ qt_add_library(quickshell-core STATIC
 	instanceinfo.cpp
 	common.cpp
 	iconprovider.cpp
+	scriptmodel.cpp
 )
 
 qt_add_qml_module(quickshell-core

@@ -6,3 +6,4 @@ endfunction()
 
 qs_test(transformwatcher transformwatcher.cpp)
 qs_test(ringbuffer ringbuf.cpp)
+qs_test(scriptmodel scriptmodel.cpp)

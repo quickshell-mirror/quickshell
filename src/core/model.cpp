@@ -2,6 +2,7 @@
 
 #include <qabstractitemmodel.h>
 #include <qhash.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
@@ -14,11 +15,13 @@ qint32 UntypedObjectModel::rowCount(const QModelIndex& parent) const {
 }
 
 QVariant UntypedObjectModel::data(const QModelIndex& index, qint32 role) const {
-	if (role != 0) return QVariant();
+	if (role != Qt::UserRole) return QVariant();
 	return QVariant::fromValue(this->valuesList.at(index.row()));
 }
 
-QHash<int, QByteArray> UntypedObjectModel::roleNames() const { return {{0, "modelData"}}; }
+QHash<int, QByteArray> UntypedObjectModel::roleNames() const {
+	return {{Qt::UserRole, "modelData"}};
+}
 
 QQmlListProperty<QObject> UntypedObjectModel::values() {
 	return QQmlListProperty<QObject>(
