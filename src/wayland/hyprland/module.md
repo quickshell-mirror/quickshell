@@ -7,5 +7,6 @@ headers = [
 	"ipc/qml.hpp",
 	"focus_grab/qml.hpp",
 	"global_shortcuts/qml.hpp",
+	"surface/qml.hpp",
 ]
 -----

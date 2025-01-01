@@ -19,6 +19,11 @@ if (HYPRLAND_GLOBAL_SHORTCUTS)
 	list(APPEND HYPRLAND_MODULES Quickshell.Hyprland._GlobalShortcuts)
 endif()
 
+if (HYPRLAND_SURFACE_EXTENSIONS)
+	add_subdirectory(surface)
+	list(APPEND HYPRLAND_MODULES Quickshell.Hyprland._SurfaceExtensions)
+endif()
+
 qt_add_qml_module(quickshell-hyprland
 	URI Quickshell.Hyprland
 	VERSION 0.1
