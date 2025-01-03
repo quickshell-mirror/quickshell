@@ -43,7 +43,7 @@ int locateConfigFile(CommandState& cmd, QString& path);
 
 int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	auto state = CommandState();
-	if (auto ret = parseCommand(argc, argv, state); ret != 0) return ret;
+	if (auto ret = parseCommand(argc, argv, state); ret != 65535) return ret;
 
 	if (state.misc.checkCompat) {
 		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {

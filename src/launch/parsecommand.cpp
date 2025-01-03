@@ -192,7 +192,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 
 	CLI11_PARSE(*cli, argc, argv);
 
-	return 0;
+	return 65535;
 }
 
 } // namespace qs::launch
