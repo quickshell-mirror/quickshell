@@ -21,6 +21,7 @@ qt_add_dbus_interface(DBUS_INTERFACES
 qt_add_library(quickshell-service-upower STATIC
 	core.cpp
 	device.cpp
+	powerprofiles.cpp
 	${DBUS_INTERFACES}
 )
 

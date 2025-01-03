@@ -36,8 +36,8 @@ template <typename T>
 class DBusResult {
 public:
 	explicit DBusResult() = default;
-	explicit DBusResult(T value): value(std::move(value)) {}
-	explicit DBusResult(QDBusError error): error(std::move(error)) {}
+	DBusResult(T value): value(std::move(value)) {}
+	DBusResult(QDBusError error): error(std::move(error)) {}
 	explicit DBusResult(T value, QDBusError error)
 	    : value(std::move(value))
 	    , error(std::move(error)) {}

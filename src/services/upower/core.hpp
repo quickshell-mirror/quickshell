@@ -54,6 +54,14 @@ private:
 	DBusUPowerService* service = nullptr;
 };
 
+///! Provides access to the UPower service.
+/// An interface to the [UPower daemon], which can be used to
+/// view battery and power statistics for your computer and
+/// connected devices.
+///
+/// > [!NOTE] The UPower daemon must be installed to use this service.
+///
+/// [UPower daemon]: https://upower.freedesktop.org
 class UPowerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(UPower);
