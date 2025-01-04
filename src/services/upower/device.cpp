@@ -114,9 +114,7 @@ DBusResult<qreal> DBusDataTransform<PowerPercentage>::fromWire(qreal wire) {
 
 DBusResult<UPowerDeviceState::Enum>
 DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
-	if (wire != UPowerDeviceType::Battery && wire >= UPowerDeviceState::Unknown
-	    && wire <= UPowerDeviceState::PendingDischarge)
-	{
+	if (wire >= UPowerDeviceState::Unknown && wire <= UPowerDeviceState::PendingDischarge) {
 		return DBusResult(static_cast<UPowerDeviceState::Enum>(wire));
 	}
 
