@@ -154,6 +154,8 @@ class UPowerDevice: public QObject {
 	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged BINDABLE bindableIsLaptopBattery);
 	/// Native path of the device specific to your OS.
 	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged BINDABLE bindableNativePath);
+	/// Model name of the device. Unlikely to be useful for internal devices.
+	Q_PROPERTY(QString model READ model NOTIFY modelChanged BINDABLE bindableModel);
 	/// If device statistics have been queried for this device yet.
   /// This will be true for all devices returned from @@UPower.devices, but not the default
   /// device, which may be returned before it is ready to avoid returning null.
@@ -186,6 +188,7 @@ public:
 	QS_BINDABLE_GETTER(QString, bIconName, iconName, bindableIconName);
 	QS_BINDABLE_GETTER(bool, bIsLaptopBattery, isLaptopBattery, bindableIsLaptopBattery);
 	QS_BINDABLE_GETTER(QString, bNativePath, nativePath, bindableNativePath);
+	QS_BINDABLE_GETTER(QString, bModel, model, bindableModel);
 	QS_BINDABLE_GETTER(bool, bReady, ready, bindableReady);
 
 signals:
@@ -206,6 +209,7 @@ signals:
 	void iconNameChanged();
 	void isLaptopBatteryChanged();
 	void nativePathChanged();
+	void modelChanged();
 
 private slots:
 	void onGetAllFinished();
@@ -227,6 +231,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bIconName, &UPowerDevice::iconNameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bIsLaptopBattery, &UPowerDevice::isLaptopBatteryChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bNativePath, &UPowerDevice::nativePathChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, QString, bModel, &UPowerDevice::modelChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(UPowerDevice, bool, bReady, &UPowerDevice::readyChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(UPowerDevice, deviceProperties);
@@ -243,6 +248,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pHealthPercentage, bHealthPercentage, deviceProperties, "Capacity");
 	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pIconName, bIconName, deviceProperties, "IconName");
 	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pNativePath, bNativePath, deviceProperties, "NativePath");
+	QS_DBUS_PROPERTY_BINDING(UPowerDevice, pModel, bModel, deviceProperties, "Model");
 	// clang-format on
 
 	DBusUPowerDevice* device = nullptr;
