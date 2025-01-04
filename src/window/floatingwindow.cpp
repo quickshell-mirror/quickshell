@@ -36,6 +36,7 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyWindowBase::windowTransformChanged, this, &FloatingWindowInterface::windowTransformChanged);
 	QObject::connect(this->window, &ProxyWindowBase::colorChanged, this, &FloatingWindowInterface::colorChanged);
 	QObject::connect(this->window, &ProxyWindowBase::maskChanged, this, &FloatingWindowInterface::maskChanged);
+	QObject::connect(this->window, &ProxyWindowBase::surfaceFormatChanged, this, &FloatingWindowInterface::surfaceFormatChanged);
 	// clang-format on
 }
 
@@ -64,6 +65,7 @@ proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);
 proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
+proxyPair(QsSurfaceFormat, surfaceFormat, setSurfaceFormat);
 
 #undef proxyPair
 // NOLINTEND

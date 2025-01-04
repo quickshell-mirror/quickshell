@@ -196,6 +196,7 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &ProxyWindowBase::windowTransformChanged, this, &WaylandPanelInterface::windowTransformChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::colorChanged, this, &WaylandPanelInterface::colorChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::maskChanged, this, &WaylandPanelInterface::maskChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::surfaceFormatChanged, this, &WaylandPanelInterface::surfaceFormatChanged);
 
 	// panel specific
 	QObject::connect(this->layer, &WlrLayershell::anchorsChanged, this, &WaylandPanelInterface::anchorsChanged);
@@ -232,6 +233,7 @@ proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);
 proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
+proxyPair(QsSurfaceFormat, surfaceFormat, setSurfaceFormat);
 
 // panel specific
 proxyPair(Anchors, anchors, setAnchors);

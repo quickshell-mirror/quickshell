@@ -155,6 +155,9 @@ public:
 	[[nodiscard]] PendingRegion* mask() const override;
 	void setMask(PendingRegion* mask) override;
 
+	[[nodiscard]] QsSurfaceFormat surfaceFormat() const override;
+	void setSurfaceFormat(QsSurfaceFormat mask) override;
+
 	[[nodiscard]] QQmlListProperty<QObject> data() override;
 
 	// panel specific

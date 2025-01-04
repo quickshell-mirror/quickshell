@@ -15,6 +15,26 @@
 class ProxyWindowBase;
 class QsWindowAttached;
 
+class QsSurfaceFormat {
+	Q_GADGET;
+	QML_VALUE_TYPE(surfaceFormat);
+	QML_STRUCTURED_VALUE;
+	Q_PROPERTY(bool opaque MEMBER opaque WRITE setOpaque);
+
+public:
+	bool opaque = false;
+	bool opaqueModified = false;
+
+	void setOpaque(bool opaque) {
+		this->opaque = opaque;
+		this->opaqueModified = true;
+	}
+
+	[[nodiscard]] bool operator==(const QsSurfaceFormat& other) const {
+		return other.opaqueModified == this->opaqueModified && other.opaque == this->opaque;
+	}
+};
+
 ///! Base class of Quickshell windows
 /// Base class of Quickshell windows
 /// ### Attached properties
@@ -46,6 +66,10 @@ class WindowInterface: public Reloadable {
 	/// along with map[To|From]Item (which is not reactive).
 	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
 	/// The background color of the window. Defaults to white.
+	///
+	/// > [!WARNING] If the window color is opaque before it is made visible,
+	/// > it will not be able to become transparent later unless @@surfaceFormat$.opaque
+	/// > is false.
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	/// The clickthrough mask. Defaults to null.
 	///
@@ -90,6 +114,16 @@ class WindowInterface: public Reloadable {
 	/// }
 	/// ```
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
+	/// Set the surface format to request from the system.
+	///
+	/// - `opaque` - If the requested surface should be opaque. Opaque windows allow
+	/// the operating system to avoid drawing things behind them, or blending the window
+	/// with those behind it, saving power and GPU load. If unset, this property defaults to
+	/// true if @@color is opaque, or false if not. *You should not need to modify this
+	/// property unless you create a surface that starts opaque and later becomes transparent.*
+	///
+	/// > [!NOTE] The surface format cannot be changed after the window is created.
+	Q_PROPERTY(QsSurfaceFormat surfaceFormat READ surfaceFormat WRITE setSurfaceFormat NOTIFY surfaceFormatChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
@@ -124,6 +158,9 @@ public:
 	[[nodiscard]] virtual PendingRegion* mask() const = 0;
 	virtual void setMask(PendingRegion* mask) = 0;
 
+	[[nodiscard]] virtual QsSurfaceFormat surfaceFormat() const = 0;
+	virtual void setSurfaceFormat(QsSurfaceFormat format) = 0;
+
 	[[nodiscard]] virtual QQmlListProperty<QObject> data() = 0;
 
 	static QsWindowAttached* qmlAttachedProperties(QObject* object);
@@ -138,6 +175,7 @@ signals:
 	void windowTransformChanged();
 	void colorChanged();
 	void maskChanged();
+	void surfaceFormatChanged();
 };
 
 class QsWindowAttached: public QObject {

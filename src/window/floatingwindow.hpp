@@ -4,6 +4,7 @@
 #include <qtmetamacros.h>
 
 #include "proxywindow.hpp"
+#include "windowinterface.hpp"
 
 class ProxyFloatingWindow: public ProxyWindowBase {
 	Q_OBJECT;
@@ -49,6 +50,9 @@ public:
 
 	[[nodiscard]] PendingRegion* mask() const override;
 	void setMask(PendingRegion* mask) override;
+
+	[[nodiscard]] QsSurfaceFormat surfaceFormat() const override;
+	void setSurfaceFormat(QsSurfaceFormat mask) override;
 
 	[[nodiscard]] QQmlListProperty<QObject> data() override;
 	// NOLINTEND

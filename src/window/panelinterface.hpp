@@ -13,7 +13,8 @@ class Anchors {
 	Q_PROPERTY(bool right MEMBER mRight);
 	Q_PROPERTY(bool top MEMBER mTop);
 	Q_PROPERTY(bool bottom MEMBER mBottom);
-	QML_VALUE_TYPE(anchors);
+	QML_VALUE_TYPE(panelAnchors);
+	QML_STRUCTURED_VALUE;
 
 public:
 	[[nodiscard]] bool horizontalConstraint() const noexcept { return this->mLeft && this->mRight; }
@@ -40,7 +41,8 @@ class Margins {
 	Q_PROPERTY(qint32 right MEMBER mRight);
 	Q_PROPERTY(qint32 top MEMBER mTop);
 	Q_PROPERTY(qint32 bottom MEMBER mBottom);
-	QML_VALUE_TYPE(margins);
+	QML_VALUE_TYPE(panelMargins);
+	QML_STRUCTURED_VALUE;
 
 public:
 	[[nodiscard]] bool operator==(const Margins& other) const noexcept {

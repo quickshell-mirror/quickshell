@@ -482,6 +482,7 @@ XPanelInterface::XPanelInterface(QObject* parent)
 	QObject::connect(this->panel, &ProxyWindowBase::windowTransformChanged, this, &XPanelInterface::windowTransformChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::colorChanged, this, &XPanelInterface::colorChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::maskChanged, this, &XPanelInterface::maskChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::surfaceFormatChanged, this, &XPanelInterface::surfaceFormatChanged);
 
 	// panel specific
 	QObject::connect(this->panel, &XPanelWindow::anchorsChanged, this, &XPanelInterface::anchorsChanged);
@@ -516,6 +517,7 @@ proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);
 proxyPair(QColor, color, setColor);
 proxyPair(PendingRegion*, mask, setMask);
+proxyPair(QsSurfaceFormat, surfaceFormat, setSurfaceFormat);
 
 // panel specific
 proxyPair(Anchors, anchors, setAnchors);

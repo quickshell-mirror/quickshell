@@ -6,10 +6,13 @@
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
+#include <qqmlinfo.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qregion.h>
+#include <qsurfaceformat.h>
+#include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -50,7 +53,7 @@ ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(true); }
 void ProxyWindowBase::onReload(QObject* oldInstance) {
 	this->window = this->retrieveWindow(oldInstance);
 	auto wasVisible = this->window != nullptr && this->window->isVisible();
-	if (this->window == nullptr) this->window = this->createQQuickWindow();
+	this->ensureQWindow();
 
 	// The qml engine will leave the WindowInterface as owner of everything
 	// nested in an item, so we have to make sure the interface's children
@@ -85,10 +88,55 @@ void ProxyWindowBase::postCompleteWindow() { this->setVisible(this->mVisible); }
 
 ProxiedWindow* ProxyWindowBase::createQQuickWindow() { return new ProxiedWindow(this); }
 
-void ProxyWindowBase::createWindow() {
-	if (this->window != nullptr) return;
-	this->window = this->createQQuickWindow();
+void ProxyWindowBase::ensureQWindow() {
+	auto format = QSurfaceFormat::defaultFormat();
 
+	{
+		// match QtQuick's default format, including env var controls
+		static const auto useDepth = qEnvironmentVariableIsEmpty("QSG_NO_DEPTH_BUFFER");
+		static const auto useStencil = qEnvironmentVariableIsEmpty("QSG_NO_STENCIL_BUFFER");
+		static const auto enableDebug = qEnvironmentVariableIsSet("QSG_OPENGL_DEBUG");
+		static const auto disableVSync = qEnvironmentVariableIsSet("QSG_NO_VSYNC");
+
+		if (useDepth && format.depthBufferSize() == -1) format.setDepthBufferSize(24);
+		else if (!useDepth) format.setDepthBufferSize(0);
+
+		if (useStencil && format.stencilBufferSize() == -1) format.setStencilBufferSize(8);
+		else if (!useStencil) format.setStencilBufferSize(0);
+
+		auto opaque = this->qsSurfaceFormat.opaqueModified ? this->qsSurfaceFormat.opaque
+		                                                   : this->mColor.alpha() >= 255;
+
+		if (opaque) format.setAlphaBufferSize(0);
+		else format.setAlphaBufferSize(8);
+
+		if (enableDebug) format.setOption(QSurfaceFormat::DebugContext);
+		if (disableVSync) format.setSwapInterval(0);
+
+		format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+		format.setRedBufferSize(8);
+		format.setGreenBufferSize(8);
+		format.setBlueBufferSize(8);
+	}
+
+	this->mSurfaceFormat = format;
+
+	auto useOldWindow = this->window != nullptr;
+
+	if (useOldWindow) {
+		if (this->window->requestedFormat() != format) {
+			useOldWindow = false;
+		}
+	}
+
+	if (useOldWindow) return;
+	delete this->window;
+	this->window = this->createQQuickWindow();
+	this->window->setFormat(format);
+}
+
+void ProxyWindowBase::createWindow() {
+	this->ensureQWindow();
 	this->connectWindow();
 	this->completeWindow();
 	emit this->windowConnected();
@@ -320,6 +368,8 @@ void ProxyWindowBase::setColor(QColor color) {
 		);
 
 		this->window->setColor(premultiplied);
+		// setColor also modifies the alpha buffer size of the surface format
+		this->window->setFormat(this->mSurfaceFormat);
 	}
 }
 
@@ -341,6 +391,17 @@ void ProxyWindowBase::setMask(PendingRegion* mask) {
 	}
 
 	emit this->maskChanged();
+}
+
+void ProxyWindowBase::setSurfaceFormat(QsSurfaceFormat format) {
+	if (format == this->qsSurfaceFormat) return;
+	if (this->window != nullptr) {
+		qmlWarning(this) << "Cannot set window surface format.";
+		return;
+	}
+
+	this->qsSurfaceFormat = format;
+	emit this->surfaceFormatChanged();
 }
 
 void ProxyWindowBase::onMaskChanged() {

@@ -9,6 +9,7 @@
 #include <qqmlparserstatus.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
+#include <qsurfaceformat.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
@@ -29,6 +30,7 @@ class ProxiedWindow;
 /// [FloatingWindow]: ../floatingwindow
 class ProxyWindowBase: public Reloadable {
 	Q_OBJECT;
+	// clang-format off
 	/// The QtQuick window backing this window.
 	///
 	/// > [!WARNING] Do not expect values set via this property to work correctly.
@@ -46,7 +48,9 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
 	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
 	Q_PROPERTY(bool backingWindowVisible READ isVisibleDirect NOTIFY backerVisibilityChanged);
+	Q_PROPERTY(QsSurfaceFormat surfaceFormat READ surfaceFormat WRITE setSurfaceFormat NOTIFY surfaceFormatChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
+	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
 
 public:
@@ -59,6 +63,7 @@ public:
 	void operator=(ProxyWindowBase&&) = delete;
 
 	void onReload(QObject* oldInstance) override;
+	void ensureQWindow();
 	void createWindow();
 	void deleteWindow(bool keepItemOwnership = false);
 
@@ -98,6 +103,9 @@ public:
 	[[nodiscard]] PendingRegion* mask() const;
 	virtual void setMask(PendingRegion* mask);
 
+	[[nodiscard]] QsSurfaceFormat surfaceFormat() const { return this->qsSurfaceFormat; }
+	void setSurfaceFormat(QsSurfaceFormat format);
+
 	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
 
 	[[nodiscard]] QQmlListProperty<QObject> data();
@@ -115,6 +123,7 @@ signals:
 	void screenChanged();
 	void colorChanged();
 	void maskChanged();
+	void surfaceFormatChanged();
 
 protected slots:
 	virtual void onWidthChanged();
@@ -135,6 +144,8 @@ protected:
 	QQuickItem* mContentItem = nullptr;
 	bool reloadComplete = false;
 	bool ranLints = false;
+	QsSurfaceFormat qsSurfaceFormat;
+	QSurfaceFormat mSurfaceFormat;
 
 private:
 	void polishItems();
