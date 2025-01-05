@@ -237,7 +237,7 @@ void MprisPlayer::setPosition(qreal position) {
 		this->player->Seek(target - pos);
 	}
 
-	this->bpPosition = target;
+	this->setPosition(target);
 }
 
 void MprisPlayer::onPositionUpdated() {
@@ -248,11 +248,16 @@ void MprisPlayer::onPositionUpdated() {
 	if (firstChange) emit this->positionSupportedChanged();
 }
 
+void MprisPlayer::setPosition(qlonglong position) {
+	this->bpPosition = position;
+	this->onPositionUpdated();
+}
+
 void MprisPlayer::onExportedPositionChanged() {
 	if (!this->lengthSupported()) emit this->lengthChanged();
 }
 
-void MprisPlayer::onSeek(qlonglong time) { this->bpPosition = time; }
+void MprisPlayer::onSeek(qlonglong time) { this->setPosition(time); }
 
 qreal MprisPlayer::length() const {
 	if (this->bInternalLength == -1) {
