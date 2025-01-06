@@ -28,7 +28,6 @@ HyprlandWindow* HyprlandWindow::qmlAttachedProperties(QObject* object) {
 		}
 	}
 
-	qDebug() << "hlwindow for" << proxyWindow;
 	if (!proxyWindow) return nullptr;
 	return new HyprlandWindow(proxyWindow);
 }
