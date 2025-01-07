@@ -10,16 +10,9 @@ static QVector<QsEnginePlugin*> plugins; // NOLINT
 void QsEnginePlugin::registerPlugin(QsEnginePlugin& plugin) { plugins.push_back(&plugin); }
 
 void QsEnginePlugin::initPlugins() {
-	plugins.erase(
-	    std::remove_if(
-	        plugins.begin(),
-	        plugins.end(),
-	        [](QsEnginePlugin* plugin) { return !plugin->applies(); }
-	    ),
-	    plugins.end()
-	);
+	plugins.removeIf([](QsEnginePlugin* plugin) { return !plugin->applies(); });
 
-	std::sort(plugins.begin(), plugins.end(), [](QsEnginePlugin* a, QsEnginePlugin* b) {
+	std::ranges::sort(plugins, [](QsEnginePlugin* a, QsEnginePlugin* b) {
 		return b->dependencies().contains(a->name());
 	});
 

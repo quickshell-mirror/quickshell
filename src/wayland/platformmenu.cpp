@@ -12,6 +12,8 @@
 
 using namespace qs::menu::platform;
 
+namespace {
+
 // fixes positioning of submenus when hitting screen edges
 void platformMenuHook(PlatformMenuQMenu* menu) {
 	auto* window = menu->windowHandle();
@@ -61,5 +63,7 @@ void platformMenuHook(PlatformMenuQMenu* menu) {
 
 	window->setProperty("_q_waylandPopupConstraintAdjustment", constraintAdjustment);
 }
+
+} // namespace
 
 void installPlatformMenuHook() { PlatformMenuEntry::registerCreationHook(&platformMenuHook); }

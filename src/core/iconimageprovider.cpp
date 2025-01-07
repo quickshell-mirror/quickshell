@@ -1,4 +1,5 @@
 #include "iconimageprovider.hpp"
+#include <algorithm>
 
 #include <qcolor.h>
 #include <qicon.h>
@@ -49,8 +50,8 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 QPixmap IconImageProvider::missingPixmap(const QSize& size) {
 	auto width = size.width() % 2 == 0 ? size.width() : size.width() + 1;
 	auto height = size.height() % 2 == 0 ? size.height() : size.height() + 1;
-	if (width < 2) width = 2;
-	if (height < 2) height = 2;
+	width = std::max(width, 2);
+	height = std::max(height, 2);
 
 	auto pixmap = QPixmap(width, height);
 	pixmap.fill(QColorConstants::Black);

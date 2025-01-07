@@ -32,6 +32,8 @@
 
 namespace qs::launch {
 
+namespace {
+
 template <typename T>
 QString base36Encode(T number) {
 	const QString digits = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -51,6 +53,8 @@ QString base36Encode(T number) {
 
 	return result;
 }
+
+} // namespace
 
 int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication) {
 	auto pathId = QCryptographicHash::hash(args.configPath.toUtf8(), QCryptographicHash::Md5).toHex();

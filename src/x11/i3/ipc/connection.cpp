@@ -28,10 +28,12 @@
 #include "monitor.hpp"
 #include "workspace.hpp"
 
+namespace qs::i3::ipc {
+
+namespace {
 Q_LOGGING_CATEGORY(logI3Ipc, "quickshell.I3.ipc", QtWarningMsg);
 Q_LOGGING_CATEGORY(logI3IpcEvents, "quickshell.I3.ipc.events", QtWarningMsg);
-
-namespace qs::i3::ipc {
+} // namespace
 
 void I3Ipc::makeRequest(const QByteArray& request) {
 	if (!this->valid) {
@@ -262,9 +264,8 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 		auto object = entry.toObject().toVariantMap();
 		auto name = object["name"].toString();
 
-		auto workspaceIter = std::find_if(mList.begin(), mList.end(), [name](const I3Workspace* m) {
-			return m->name() == name;
-		});
+		auto workspaceIter =
+		    std::ranges::find_if(mList, [name](const I3Workspace* m) { return m->name() == name; });
 
 		auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 		auto existed = workspace != nullptr;
@@ -319,9 +320,8 @@ void I3Ipc::handleGetOutputsEvent(I3IpcEvent* event) {
 		auto object = elem.toObject().toVariantMap();
 		auto name = object["name"].toString();
 
-		auto monitorIter = std::find_if(mList.begin(), mList.end(), [name](const I3Monitor* m) {
-			return m->name() == name;
-		});
+		auto monitorIter =
+		    std::ranges::find_if(mList, [name](const I3Monitor* m) { return m->name() == name; });
 
 		auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
 		auto existed = monitor != nullptr;
@@ -477,25 +477,23 @@ I3Monitor* I3Ipc::monitorFor(QuickshellScreenInfo* screen) {
 I3Workspace* I3Ipc::findWorkspaceByID(qint32 id) {
 	auto list = this->mWorkspaces.valueList();
 	auto workspaceIter =
-	    std::find_if(list.begin(), list.end(), [id](const I3Workspace* m) { return m->id() == id; });
+	    std::ranges::find_if(list, [id](const I3Workspace* m) { return m->id() == id; });
 
 	return workspaceIter == list.end() ? nullptr : *workspaceIter;
 }
 
 I3Workspace* I3Ipc::findWorkspaceByName(const QString& name) {
 	auto list = this->mWorkspaces.valueList();
-	auto workspaceIter = std::find_if(list.begin(), list.end(), [name](const I3Workspace* m) {
-		return m->name() == name;
-	});
+	auto workspaceIter =
+	    std::ranges::find_if(list, [name](const I3Workspace* m) { return m->name() == name; });
 
 	return workspaceIter == list.end() ? nullptr : *workspaceIter;
 }
 
 I3Monitor* I3Ipc::findMonitorByName(const QString& name) {
 	auto list = this->mMonitors.valueList();
-	auto monitorIter = std::find_if(list.begin(), list.end(), [name](const I3Monitor* m) {
-		return m->name() == name;
-	});
+	auto monitorIter =
+	    std::ranges::find_if(list, [name](const I3Monitor* m) { return m->name() == name; });
 
 	return monitorIter == list.end() ? nullptr : *monitorIter;
 }

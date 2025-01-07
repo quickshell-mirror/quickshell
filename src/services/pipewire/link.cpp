@@ -14,7 +14,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logLink, "quickshell.service.pipewire.link", QtWarningMsg);
+}
 
 QString PwLinkState::toString(Enum value) {
 	return QString(pw_link_state_as_string(static_cast<pw_link_state>(value)));

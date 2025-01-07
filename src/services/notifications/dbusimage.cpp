@@ -9,6 +9,7 @@
 
 namespace qs::service::notifications {
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 Q_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
 
 QImage DBusNotificationImage::createImage() const {

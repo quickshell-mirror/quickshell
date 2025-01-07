@@ -23,7 +23,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logDevice, "quickshell.service.pipewire.device", QtWarningMsg);
+}
 
 // https://github.com/PipeWire/wireplumber/blob/895c1c7286e8809fad869059179e53ab39c807e9/modules/module-mixer-api.c#L397
 // https://github.com/PipeWire/pipewire/blob/48c2e9516585ccc791335bc7baf4af6952ec54a0/src/modules/module-protocol-pulse/pulse-server.c#L2743-L2743

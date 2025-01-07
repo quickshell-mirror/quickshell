@@ -18,6 +18,7 @@
 
 namespace qs::service::notifications {
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 Q_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
 
 QString NotificationUrgency::toString(NotificationUrgency::Enum value) {

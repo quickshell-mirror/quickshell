@@ -22,36 +22,7 @@
 
 namespace qs::launch {
 
-void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication);
-
-int DAEMON_PIPE = -1; // NOLINT
-
-void exitDaemon(int code) {
-	if (DAEMON_PIPE == -1) return;
-
-	if (write(DAEMON_PIPE, &code, sizeof(int)) == -1) {
-		qCritical().nospace() << "Failed to write daemon exit command with error code " << errno << ": "
-		                      << qt_error_string();
-	}
-
-	close(DAEMON_PIPE);
-
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	if (open("/dev/null", O_RDONLY) != STDIN_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdin";
-	}
-
-	if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdout";
-	}
-
-	if (open("/dev/null", O_WRONLY) != STDERR_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stderr";
-	}
-}
+namespace {
 
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 #if CRASH_REPORTER
@@ -94,6 +65,37 @@ void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 		}
 	}
 #endif
+}
+
+} // namespace
+
+int DAEMON_PIPE = -1; // NOLINT
+
+void exitDaemon(int code) {
+	if (DAEMON_PIPE == -1) return;
+
+	if (write(DAEMON_PIPE, &code, sizeof(int)) == -1) {
+		qCritical().nospace() << "Failed to write daemon exit command with error code " << errno << ": "
+		                      << qt_error_string();
+	}
+
+	close(DAEMON_PIPE);
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
+	if (open("/dev/null", O_RDONLY) != STDIN_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stdin";
+	}
+
+	if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stdout";
+	}
+
+	if (open("/dev/null", O_WRONLY) != STDERR_FILENO) { // NOLINT
+		qFatal() << "Failed to open /dev/null on stderr";
+	}
 }
 
 int main(int argc, char** argv) {

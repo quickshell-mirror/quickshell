@@ -14,7 +14,9 @@
 
 namespace qs::dbus {
 
+namespace {
 Q_LOGGING_CATEGORY(logDbus, "quickshell.dbus", QtWarningMsg);
+}
 
 void tryLaunchService(
     QObject* parent,

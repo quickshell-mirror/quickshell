@@ -22,12 +22,51 @@
 #include <qpoint.h>
 #endif
 
-// clang-format off
-[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept;
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors) noexcept;
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::keyboard_interactivity toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept;
-[[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept;
-// clang-format on
+namespace {
+
+[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer
+) noexcept {
+	switch (layer) {
+	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
+	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
+	case WlrLayer::Top: return QtWayland::zwlr_layer_shell_v1::layer_top;
+	case WlrLayer::Overlay: return QtWayland::zwlr_layer_shell_v1::layer_overlay;
+	}
+
+	return QtWayland::zwlr_layer_shell_v1::layer_top;
+}
+
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors
+) noexcept {
+	quint32 wl = 0;
+	if (anchors.mLeft) wl |= QtWayland::zwlr_layer_surface_v1::anchor_left;
+	if (anchors.mRight) wl |= QtWayland::zwlr_layer_surface_v1::anchor_right;
+	if (anchors.mTop) wl |= QtWayland::zwlr_layer_surface_v1::anchor_top;
+	if (anchors.mBottom) wl |= QtWayland::zwlr_layer_surface_v1::anchor_bottom;
+	return static_cast<QtWayland::zwlr_layer_surface_v1::anchor>(wl);
+}
+
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::keyboard_interactivity
+toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
+	switch (focus) {
+	case WlrKeyboardFocus::None: return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
+	case WlrKeyboardFocus::Exclusive:
+		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_exclusive;
+	case WlrKeyboardFocus::OnDemand:
+		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_on_demand;
+	}
+
+	return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
+}
+
+[[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept {
+	return QSize(
+	    anchors.horizontalConstraint() ? 0 : size.width(),
+	    anchors.verticalConstraint() ? 0 : size.height()
+	);
+}
+
+} // namespace
 
 QSWaylandLayerSurface::QSWaylandLayerSurface(
     QSWaylandLayerShellIntegration* shell,
@@ -146,46 +185,6 @@ void QSWaylandLayerSurface::updateExclusiveZone() {
 void QSWaylandLayerSurface::updateKeyboardFocus() {
 	this->set_keyboard_interactivity(toWaylandKeyboardFocus(this->ext->mKeyboardFocus));
 	this->window()->waylandSurface()->commit();
-}
-
-QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
-	switch (layer) {
-	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
-	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
-	case WlrLayer::Top: return QtWayland::zwlr_layer_shell_v1::layer_top;
-	case WlrLayer::Overlay: return QtWayland::zwlr_layer_shell_v1::layer_overlay;
-	}
-
-	return QtWayland::zwlr_layer_shell_v1::layer_top;
-}
-
-QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors) noexcept {
-	quint32 wl = 0;
-	if (anchors.mLeft) wl |= QtWayland::zwlr_layer_surface_v1::anchor_left;
-	if (anchors.mRight) wl |= QtWayland::zwlr_layer_surface_v1::anchor_right;
-	if (anchors.mTop) wl |= QtWayland::zwlr_layer_surface_v1::anchor_top;
-	if (anchors.mBottom) wl |= QtWayland::zwlr_layer_surface_v1::anchor_bottom;
-	return static_cast<QtWayland::zwlr_layer_surface_v1::anchor>(wl);
-}
-
-QtWayland::zwlr_layer_surface_v1::keyboard_interactivity
-toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
-	switch (focus) {
-	case WlrKeyboardFocus::None: return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
-	case WlrKeyboardFocus::Exclusive:
-		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_exclusive;
-	case WlrKeyboardFocus::OnDemand:
-		return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_on_demand;
-	}
-
-	return QtWayland::zwlr_layer_surface_v1::keyboard_interactivity_none;
-}
-
-QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept {
-	return QSize(
-	    anchors.horizontalConstraint() ? 0 : size.width(),
-	    anchors.verticalConstraint() ? 0 : size.height()
-	);
 }
 
 void QSWaylandLayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {

@@ -20,8 +20,8 @@ class AwfulMap {
 public:
 	[[nodiscard]] bool contains(const K& key) const;
 	[[nodiscard]] V* get(const K& key);
-	void insert(K key, V value); // assumes no duplicates
-	bool remove(const K& key);   // returns true if anything was removed
+	void insert(const K& key, V value); // assumes no duplicates
+	bool remove(const K& key);          // returns true if anything was removed
 	QList<QPair<K, V>> values;
 };
 

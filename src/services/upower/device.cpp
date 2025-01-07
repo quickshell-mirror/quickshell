@@ -15,7 +15,9 @@ using namespace qs::dbus;
 
 namespace qs::service::upower {
 
+namespace {
 Q_LOGGING_CATEGORY(logUPowerDevice, "quickshell.service.upower.device", QtWarningMsg);
+}
 
 QString UPowerDeviceState::toString(UPowerDeviceState::Enum status) {
 	switch (status) {

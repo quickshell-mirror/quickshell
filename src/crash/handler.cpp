@@ -22,7 +22,9 @@ using namespace google_breakpad;
 
 namespace qs::crash {
 
+namespace {
 Q_LOGGING_CATEGORY(logCrashHandler, "quickshell.crashhandler", QtWarningMsg);
+}
 
 struct CrashHandlerPrivate {
 	ExceptionHandler* exceptionHandler = nullptr;

@@ -66,7 +66,7 @@ template <typename T>
 void asyncReadProperty(
     QDBusAbstractInterface& interface,
     const QString& property,
-    std::function<void(T, QDBusError)> callback
+    const std::function<void(T, QDBusError)>& callback
 ) {
 	asyncReadPropertyInternal(
 	    QMetaType::fromType<T>(),

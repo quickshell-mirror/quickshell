@@ -22,48 +22,9 @@
 #include "build.hpp"
 #include "interface.hpp"
 
+namespace {
+
 Q_LOGGING_CATEGORY(logCrashReporter, "quickshell.crashreporter", QtWarningMsg);
-
-void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance);
-
-void qsCheckCrash(int argc, char** argv) {
-	auto fd = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_FD");
-	if (fd.isEmpty()) return;
-	auto app = QApplication(argc, argv);
-
-	RelaunchInfo info;
-
-	auto crashProc = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
-
-	{
-		auto infoFd = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD").toInt();
-
-		QFile file;
-		file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
-		file.seek(0);
-
-		auto ds = QDataStream(&file);
-		ds >> info;
-	}
-
-	LogManager::init(
-	    !info.noColor,
-	    info.timestamp,
-	    info.sparseLogsOnly,
-	    info.defaultLogLevel,
-	    info.logRules
-	);
-
-	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
-
-	qCInfo(logCrashReporter) << "Starting crash reporter...";
-
-	recordCrashInfo(crashDir, info.instance);
-
-	auto gui = CrashReporterGui(crashDir.path(), crashProc);
-	gui.show();
-	exit(QApplication::exec()); // NOLINT
-}
 
 int tryDup(int fd, const QString& path) {
 	QFile sourceFile;
@@ -183,4 +144,45 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 	}
 
 	qCDebug(logCrashReporter) << "Recorded crash information.";
+}
+
+} // namespace
+
+void qsCheckCrash(int argc, char** argv) {
+	auto fd = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_FD");
+	if (fd.isEmpty()) return;
+	auto app = QApplication(argc, argv);
+
+	RelaunchInfo info;
+
+	auto crashProc = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
+
+	{
+		auto infoFd = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD").toInt();
+
+		QFile file;
+		file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		file.seek(0);
+
+		auto ds = QDataStream(&file);
+		ds >> info;
+	}
+
+	LogManager::init(
+	    !info.noColor,
+	    info.timestamp,
+	    info.sparseLogsOnly,
+	    info.defaultLogLevel,
+	    info.logRules
+	);
+
+	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
+
+	qCInfo(logCrashReporter) << "Starting crash reporter...";
+
+	recordCrashInfo(crashDir, info.instance);
+
+	auto gui = CrashReporterGui(crashDir.path(), crashProc);
+	gui.show();
+	exit(QApplication::exec()); // NOLINT
 }

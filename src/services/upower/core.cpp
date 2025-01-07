@@ -20,7 +20,9 @@
 
 namespace qs::service::upower {
 
+namespace {
 Q_LOGGING_CATEGORY(logUPower, "quickshell.service.upower", QtWarningMsg);
+}
 
 UPower::UPower() {
 	qCDebug(logUPower) << "Starting UPower Service";

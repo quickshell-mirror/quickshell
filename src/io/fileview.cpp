@@ -24,7 +24,9 @@
 
 namespace qs::io {
 
+namespace {
 Q_LOGGING_CATEGORY(logFileView, "quickshell.io.fileview", QtWarningMsg);
+}
 
 QString FileViewError::toString(FileViewError::Enum value) {
 	switch (value) {

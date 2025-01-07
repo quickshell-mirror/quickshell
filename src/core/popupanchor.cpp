@@ -1,4 +1,5 @@
 #include "popupanchor.hpp"
+#include <algorithm>
 
 #include <qcontainerfwd.h>
 #include <qlogging.h>
@@ -276,9 +277,7 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 			effectiveX = screenGeometry.right() - windowGeometry.width() + 1;
 		}
 
-		if (effectiveX < screenGeometry.left()) {
-			effectiveX = screenGeometry.left();
-		}
+		effectiveX = std::max(effectiveX, screenGeometry.left());
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::SlideY)) {
@@ -286,9 +285,7 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 			effectiveY = screenGeometry.bottom() - windowGeometry.height() + 1;
 		}
 
-		if (effectiveY < screenGeometry.top()) {
-			effectiveY = screenGeometry.top();
-		}
+		effectiveY = std::max(effectiveY, screenGeometry.top());
 	}
 
 	if (adjustment.testFlag(PopupAdjustment::ResizeX)) {

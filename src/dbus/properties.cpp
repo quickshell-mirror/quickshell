@@ -190,11 +190,9 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 
 void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties, bool complainMissing) {
 	for (const auto [name, value]: properties.asKeyValueRange()) {
-		auto prop = std::find_if(
-		    this->properties.begin(),
-		    this->properties.end(),
-		    [&name](DBusPropertyCore* prop) { return prop->nameRef() == name; }
-		);
+		auto prop = std::ranges::find_if(this->properties, [&name](DBusPropertyCore* prop) {
+			return prop->nameRef() == name;
+		});
 
 		if (prop == this->properties.end()) {
 			qCDebug(logDbusProperties) << "Ignoring untracked property update" << name << "for"
@@ -312,11 +310,9 @@ void DBusPropertyGroup::onPropertiesChanged(
 	    << "Received property change set and invalidations for" << this->toString();
 
 	for (const auto& name: invalidatedProperties) {
-		auto prop = std::find_if(
-		    this->properties.begin(),
-		    this->properties.end(),
-		    [&name](DBusPropertyCore* prop) { return prop->nameRef() == name; }
-		);
+		auto prop = std::ranges::find_if(this->properties, [&name](DBusPropertyCore* prop) {
+			return prop->nameRef() == name;
+		});
 
 		if (prop == this->properties.end()) {
 			qCDebug(logDbusProperties) << "Ignoring untracked property invalidation" << name << "for"

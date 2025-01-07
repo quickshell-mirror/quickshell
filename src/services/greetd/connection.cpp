@@ -15,7 +15,9 @@
 
 #include "../../core/generation.hpp"
 
+namespace {
 Q_LOGGING_CATEGORY(logGreetd, "quickshell.service.greetd");
+}
 
 QString GreetdState::toString(GreetdState::Enum value) {
 	switch (value) {

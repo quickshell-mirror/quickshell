@@ -22,6 +22,7 @@ bool ModelOperation::operator==(const ModelOperation& other) const {
 	    && other.length == this->length && other.destIndex == this->destIndex;
 }
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 QDebug& operator<<(QDebug& debug, const ModelOperation& op) {
 	auto saver = QDebugStateSaver(debug);
 	debug.nospace();
@@ -43,6 +44,7 @@ QDebug& operator<<(QDebug& debug, const ModelOperation& op) {
 	return debug;
 }
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 QDebug& operator<<(QDebug& debug, const QVariantList& list) {
 	auto str = QString();
 

@@ -15,7 +15,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logLoop, "quickshell.service.pipewire.loop", QtWarningMsg);
+}
 
 PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read) {
 	qCInfo(logLoop) << "Creating pipewire event loop.";

@@ -34,113 +34,7 @@ namespace qs::launch {
 
 using qs::ipc::IpcClient;
 
-int readLogFile(CommandState& cmd);
-int listInstances(CommandState& cmd);
-int killInstances(CommandState& cmd);
-int msgInstance(CommandState& cmd);
-int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication);
-int locateConfigFile(CommandState& cmd, QString& path);
-
-int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
-	auto state = CommandState();
-	if (auto ret = parseCommand(argc, argv, state); ret != 65535) return ret;
-
-	if (state.misc.checkCompat) {
-		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
-			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
-			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
-			                    << " without rebuilding the package. This is likely to cause crashes, so "
-			                       "you must rebuild the quickshell package.\n";
-			return 1;
-		}
-
-		return 0;
-	}
-
-	// Has to happen before extra threads are spawned.
-	if (state.misc.daemonize) {
-		auto closepipes = std::array<int, 2>();
-		if (pipe(closepipes.data()) == -1) {
-			qFatal().nospace() << "Failed to create messaging pipes for daemon with error " << errno
-			                   << ": " << qt_error_string();
-		}
-
-		pid_t pid = fork(); // NOLINT (include)
-
-		if (pid == -1) {
-			qFatal().nospace() << "Failed to fork daemon with error " << errno << ": "
-			                   << qt_error_string();
-		} else if (pid == 0) {
-			DAEMON_PIPE = closepipes[1];
-			close(closepipes[0]);
-
-			if (setsid() == -1) {
-				qFatal().nospace() << "Failed to setsid with error " << errno << ": " << qt_error_string();
-			}
-		} else {
-			close(closepipes[1]);
-
-			int ret = 0;
-			if (read(closepipes[0], &ret, sizeof(int)) == -1) {
-				qFatal() << "Failed to wait for daemon launch (it may have crashed)";
-			}
-
-			return ret;
-		}
-	}
-
-	{
-		auto level = state.log.verbosity == 0 ? QtWarningMsg
-		           : state.log.verbosity == 1 ? QtInfoMsg
-		                                      : QtDebugMsg;
-
-		LogManager::init(
-		    !state.log.noColor,
-		    state.log.timestamp,
-		    state.log.sparse,
-		    level,
-		    *state.log.rules,
-		    *state.subcommand.log ? "READER" : ""
-		);
-	}
-
-	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote().nospace() << "quickshell pre-release, revision " << GIT_REVISION
-		                                    << ", distributed by: " << DISTRIBUTOR;
-
-		if (state.log.verbosity > 1) {
-			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
-			qCInfo(logBare).noquote() << "Runtime Qt Version:" << qVersion();
-			qCInfo(logBare).noquote() << "Compiler:" << COMPILER;
-			qCInfo(logBare).noquote() << "Compile Flags:" << COMPILE_FLAGS;
-		}
-
-		if (state.log.verbosity > 0) {
-			qCInfo(logBare).noquote() << "\nBuild Type:" << BUILD_TYPE;
-			qCInfo(logBare).noquote() << "Build configuration:";
-			qCInfo(logBare).noquote().nospace() << BUILD_CONFIGURATION;
-		}
-	} else if (*state.subcommand.log) {
-		return readLogFile(state);
-	} else if (*state.subcommand.list) {
-		return listInstances(state);
-	} else if (*state.subcommand.kill) {
-		return killInstances(state);
-	} else if (*state.subcommand.msg) {
-		return msgInstance(state);
-	} else {
-		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
-			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR
-			           << "but the system has updated to Qt" << qVersion()
-			           << "without rebuilding the package. This is likely to cause crashes, so "
-			              "the quickshell package must be rebuilt.\n";
-		}
-
-		return launchFromCommand(state, coreApplication);
-	}
-
-	return 0;
-}
+namespace {
 
 int locateConfigFile(CommandState& cmd, QString& path) {
 	if (!cmd.config.path->isEmpty()) {
@@ -209,7 +103,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 }
 
 void sortInstances(QVector<InstanceLockInfo>& list) {
-	std::sort(list.begin(), list.end(), [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
+	std::ranges::sort(list, [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
 		return a.instance.launchTime < b.instance.launchTime;
 	});
 };
@@ -230,12 +124,9 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 		path = basePath->filePath("by-pid");
 		auto instances = QsPaths::collectInstances(path);
 
-		auto itr =
-		    std::remove_if(instances.begin(), instances.end(), [&](const InstanceLockInfo& info) {
-			    return !info.instance.instanceId.startsWith(*cmd.instance.id);
-		    });
-
-		instances.erase(itr, instances.end());
+		instances.removeIf([&](const InstanceLockInfo& info) {
+			return !info.instance.instanceId.startsWith(*cmd.instance.id);
+		});
 
 		if (instances.isEmpty()) {
 			qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
@@ -442,6 +333,109 @@ int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
 	    cmd.exec.argv,
 	    coreApplication
 	);
+}
+
+} // namespace
+
+int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
+	auto state = CommandState();
+	if (auto ret = parseCommand(argc, argv, state); ret != 65535) return ret;
+
+	if (state.misc.checkCompat) {
+		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
+			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
+			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
+			                    << " without rebuilding the package. This is likely to cause crashes, so "
+			                       "you must rebuild the quickshell package.\n";
+			return 1;
+		}
+
+		return 0;
+	}
+
+	// Has to happen before extra threads are spawned.
+	if (state.misc.daemonize) {
+		auto closepipes = std::array<int, 2>();
+		if (pipe(closepipes.data()) == -1) {
+			qFatal().nospace() << "Failed to create messaging pipes for daemon with error " << errno
+			                   << ": " << qt_error_string();
+		}
+
+		pid_t pid = fork(); // NOLINT (include)
+
+		if (pid == -1) {
+			qFatal().nospace() << "Failed to fork daemon with error " << errno << ": "
+			                   << qt_error_string();
+		} else if (pid == 0) {
+			DAEMON_PIPE = closepipes[1];
+			close(closepipes[0]);
+
+			if (setsid() == -1) {
+				qFatal().nospace() << "Failed to setsid with error " << errno << ": " << qt_error_string();
+			}
+		} else {
+			close(closepipes[1]);
+
+			int ret = 0;
+			if (read(closepipes[0], &ret, sizeof(int)) == -1) {
+				qFatal() << "Failed to wait for daemon launch (it may have crashed)";
+			}
+
+			return ret;
+		}
+	}
+
+	{
+		auto level = state.log.verbosity == 0 ? QtWarningMsg
+		           : state.log.verbosity == 1 ? QtInfoMsg
+		                                      : QtDebugMsg;
+
+		LogManager::init(
+		    !state.log.noColor,
+		    state.log.timestamp,
+		    state.log.sparse,
+		    level,
+		    *state.log.rules,
+		    *state.subcommand.log ? "READER" : ""
+		);
+	}
+
+	if (state.misc.printVersion) {
+		qCInfo(logBare).noquote().nospace() << "quickshell pre-release, revision " << GIT_REVISION
+		                                    << ", distributed by: " << DISTRIBUTOR;
+
+		if (state.log.verbosity > 1) {
+			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
+			qCInfo(logBare).noquote() << "Runtime Qt Version:" << qVersion();
+			qCInfo(logBare).noquote() << "Compiler:" << COMPILER;
+			qCInfo(logBare).noquote() << "Compile Flags:" << COMPILE_FLAGS;
+		}
+
+		if (state.log.verbosity > 0) {
+			qCInfo(logBare).noquote() << "\nBuild Type:" << BUILD_TYPE;
+			qCInfo(logBare).noquote() << "Build configuration:";
+			qCInfo(logBare).noquote().nospace() << BUILD_CONFIGURATION;
+		}
+	} else if (*state.subcommand.log) {
+		return readLogFile(state);
+	} else if (*state.subcommand.list) {
+		return listInstances(state);
+	} else if (*state.subcommand.kill) {
+		return killInstances(state);
+	} else if (*state.subcommand.msg) {
+		return msgInstance(state);
+	} else {
+		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
+			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR
+			           << "but the system has updated to Qt" << qVersion()
+			           << "without rebuilding the package. This is likely to cause crashes, so "
+			              "the quickshell package must be rebuilt.\n";
+		}
+
+		return launchFromCommand(state, coreApplication);
+	}
+
+	return 0;
 }
 
 } // namespace qs::launch

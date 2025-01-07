@@ -18,7 +18,9 @@
 
 #include "model.hpp"
 
+namespace {
 Q_LOGGING_CATEGORY(logDesktopEntry, "quickshell.desktopentry", QtWarningMsg);
+}
 
 struct Locale {
 	explicit Locale() = default;
@@ -78,6 +80,7 @@ struct Locale {
 	QString modifier;
 };
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 QDebug operator<<(QDebug debug, const Locale& locale) {
 	auto saver = QDebugStateSaver(debug);
 	debug.nospace() << "Locale(language=" << locale.language << ", territory=" << locale.territory

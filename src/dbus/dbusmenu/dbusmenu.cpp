@@ -368,11 +368,9 @@ void DBusMenu::updateLayoutRecursive(
 		auto childrenChanged = false;
 		auto iter = item->mChildren.begin();
 		while (iter != item->mChildren.end()) {
-			auto existing = std::find_if(
-			    layout.children.begin(),
-			    layout.children.end(),
-			    [&](const DBusMenuLayout& layout) { return layout.id == *iter; }
-			);
+			auto existing = std::ranges::find_if(layout.children, [&](const DBusMenuLayout& layout) {
+				return layout.id == *iter;
+			});
 
 			if (!item->mShowChildren || existing == layout.children.end()) {
 				qCDebug(logDbusMenu) << "Removing missing layout item" << this->items.value(*iter) << "from"

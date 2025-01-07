@@ -10,8 +10,8 @@
 #include "wlr_layershell.hpp"
 #endif
 
-void installPlatformMenuHook();
-void installPopupPositioner();
+void installPlatformMenuHook(); // NOLINT(misc-use-internal-linkage)
+void installPopupPositioner();  // NOLINT(misc-use-internal-linkage)
 
 namespace {
 

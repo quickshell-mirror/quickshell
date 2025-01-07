@@ -14,7 +14,9 @@
 
 namespace qs::service::mpris {
 
+namespace {
 Q_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mpris.watcher", QtWarningMsg);
+}
 
 MprisWatcher::MprisWatcher() {
 	qCDebug(logMprisWatcher) << "Starting MprisWatcher";

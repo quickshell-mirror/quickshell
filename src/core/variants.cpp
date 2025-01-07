@@ -196,7 +196,7 @@ V* AwfulMap<K, V>::get(const K& key) {
 }
 
 template <typename K, typename V>
-void AwfulMap<K, V>::insert(K key, V value) {
+void AwfulMap<K, V>::insert(const K& key, V value) {
 	this->values.push_back(QPair<K, V>(key, value));
 }
 

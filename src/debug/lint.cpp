@@ -13,10 +13,12 @@
 
 namespace qs::debug {
 
+namespace {
 Q_LOGGING_CATEGORY(logLint, "quickshell.linter", QtWarningMsg);
 
 void lintZeroSized(QQuickItem* item);
 bool isRenderable(QQuickItem* item);
+} // namespace
 
 void lintObjectTree(QObject* object) {
 	if (!logLint().isWarningEnabled()) return;
@@ -40,6 +42,8 @@ void lintItemTree(QQuickItem* item) {
 		lintItemTree(child);
 	}
 }
+
+namespace {
 
 void lintZeroSized(QQuickItem* item) {
 	if (!item->isEnabled() || !item->isVisible()) return;
@@ -70,5 +74,7 @@ bool isRenderable(QQuickItem* item) {
 
 	return std::ranges::any_of(item->childItems(), [](auto* item) { return isRenderable(item); });
 }
+
+} // namespace
 
 } // namespace qs::debug

@@ -21,7 +21,9 @@ using namespace qs::dbus;
 
 namespace qs::service::mpris {
 
+namespace {
 Q_LOGGING_CATEGORY(logMprisPlayer, "quickshell.service.mp.player", QtWarningMsg);
+}
 
 QString MprisPlaybackState::toString(MprisPlaybackState::Enum status) {
 	switch (status) {

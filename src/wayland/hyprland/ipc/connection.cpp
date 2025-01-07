@@ -26,8 +26,10 @@
 
 namespace qs::hyprland::ipc {
 
+namespace {
 Q_LOGGING_CATEGORY(logHyprlandIpc, "quickshell.hyprland.ipc", QtWarningMsg);
 Q_LOGGING_CATEGORY(logHyprlandIpcEvents, "quickshell.hyprland.ipc.events", QtWarningMsg);
+} // namespace
 
 HyprlandIpc::HyprlandIpc() {
 	auto his = qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE");
@@ -241,9 +243,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		const auto& mList = this->mMonitors.valueList();
 		auto name = QString::fromUtf8(event->data);
 
-		auto monitorIter = std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
-			return m->name() == name;
-		});
+		auto monitorIter =
+		    std::ranges::find_if(mList, [name](const HyprlandMonitor* m) { return m->name() == name; });
 
 		if (monitorIter == mList.end()) {
 			qCWarning(logHyprlandIpc) << "Got removal for monitor" << name
@@ -292,9 +293,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		const auto& mList = this->mWorkspaces.valueList();
 
-		auto workspaceIter = std::find_if(mList.begin(), mList.end(), [id](const HyprlandWorkspace* m) {
-			return m->id() == id;
-		});
+		auto workspaceIter =
+		    std::ranges::find_if(mList, [id](const HyprlandWorkspace* m) { return m->id() == id; });
 
 		if (workspaceIter == mList.end()) {
 			qCWarning(logHyprlandIpc) << "Got removal for workspace id" << id << "name" << name
@@ -359,9 +359,8 @@ HyprlandWorkspace*
 HyprlandIpc::findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id) {
 	const auto& mList = this->mWorkspaces.valueList();
 
-	auto workspaceIter = std::find_if(mList.begin(), mList.end(), [name](const HyprlandWorkspace* m) {
-		return m->name() == name;
-	});
+	auto workspaceIter =
+	    std::ranges::find_if(mList, [name](const HyprlandWorkspace* m) { return m->name() == name; });
 
 	if (workspaceIter != mList.end()) {
 		return *workspaceIter;
@@ -395,10 +394,9 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 			auto object = entry.toObject().toVariantMap();
 			auto name = object.value("name").toString();
 
-			auto workspaceIter =
-			    std::find_if(mList.begin(), mList.end(), [name](const HyprlandWorkspace* m) {
-				    return m->name() == name;
-			    });
+			auto workspaceIter = std::ranges::find_if(mList, [name](const HyprlandWorkspace* m) {
+				return m->name() == name;
+			});
 
 			auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 			auto existed = workspace != nullptr;
@@ -436,9 +434,8 @@ HyprlandMonitor*
 HyprlandIpc::findMonitorByName(const QString& name, bool createIfMissing, qint32 id) {
 	const auto& mList = this->mMonitors.valueList();
 
-	auto monitorIter = std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
-		return m->name() == name;
-	});
+	auto monitorIter =
+	    std::ranges::find_if(mList, [name](const HyprlandMonitor* m) { return m->name() == name; });
 
 	if (monitorIter != mList.end()) {
 		return *monitorIter;
@@ -506,7 +503,7 @@ void HyprlandIpc::refreshMonitors(bool canCreate) {
 			auto object = entry.toObject().toVariantMap();
 			auto name = object.value("name").toString();
 
-			auto monitorIter = std::find_if(mList.begin(), mList.end(), [name](const HyprlandMonitor* m) {
+			auto monitorIter = std::ranges::find_if(mList, [name](const HyprlandMonitor* m) {
 				return m->name() == name;
 			});
 

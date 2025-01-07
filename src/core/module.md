@@ -28,5 +28,6 @@ headers = [
 	"types.hpp",
 	"qsmenuanchor.hpp",
 	"clock.hpp",
+	"scriptmodel.hpp",
 ]
 -----

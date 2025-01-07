@@ -18,7 +18,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logDefaults, "quickshell.service.pipewire.defaults", QtWarningMsg);
+}
 
 PwDefaultTracker::PwDefaultTracker(PwRegistry* registry): registry(registry) {
 	QObject::connect(registry, &PwRegistry::metadataAdded, this, &PwDefaultTracker::onMetadataAdded);

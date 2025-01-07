@@ -35,7 +35,6 @@ using namespace qs::dbus::dbusmenu;
 using namespace qs::menu::platform;
 
 Q_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
-Q_LOGGING_CATEGORY(logSniMenu, "quickshell.service.sni.item.menu", QtWarningMsg);
 
 namespace qs::service::sni {
 

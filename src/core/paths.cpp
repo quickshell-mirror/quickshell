@@ -15,7 +15,9 @@
 
 #include "instanceinfo.hpp"
 
+namespace {
 Q_LOGGING_CATEGORY(logPaths, "quickshell.paths", QtWarningMsg);
+}
 
 QsPaths* QsPaths::instance() {
 	static auto* instance = new QsPaths(); // NOLINT

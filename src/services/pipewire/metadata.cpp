@@ -15,7 +15,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logMeta, "quickshell.service.pipewire.metadata", QtWarningMsg);
+}
 
 void PwMetadata::bindHooks() {
 	pw_metadata_add_listener(this->proxy(), &this->listener.hook, &PwMetadata::EVENTS, this);

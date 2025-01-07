@@ -19,6 +19,7 @@
 
 namespace qs::service::notifications {
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 Q_LOGGING_CATEGORY(logNotifications, "quickshell.service.notifications");
 
 NotificationServer::NotificationServer() {

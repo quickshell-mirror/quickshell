@@ -28,7 +28,9 @@
 
 namespace qs::service::pipewire {
 
+namespace {
 Q_LOGGING_CATEGORY(logNode, "quickshell.service.pipewire.node", QtWarningMsg);
+}
 
 QString PwAudioChannel::toString(Enum value) {
 	switch (value) {
