@@ -11,9 +11,14 @@ in {
   # For old qt versions, grab the commit before the version bump that has all the patches
   # instead of the bumped version.
 
+  qt6_8_1 = byCommit {
+    commit = "3df3c47c19dc90fec35359e89ffb52b34d2b0e94";
+    sha256 = "1lhlm7czhwwys5ak6ngb5li6bxddilb9479k9nkss502kw8hwjyz";
+  };
+
   qt6_8_0 = byCommit {
-    commit = "23e89b7da85c3640bbc2173fe04f4bd114342367";
-    sha256 = "1b2v6y3bja4br5ribh9lj6xzz2k81dggz708b2mib83rwb509wyb";
+    commit = "352f462ad9d2aa2cde75fdd8f1734e86402a3ff6";
+    sha256 = "02zfgkr9fpd6iwfh6dcr3m6fnx61jppm3v081f3brvkqwmmz7zq1";
   };
 
   qt6_7_3 = byCommit {
