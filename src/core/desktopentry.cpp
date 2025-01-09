@@ -309,7 +309,7 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 	auto entries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
 	for (auto& entry: entries) {
-		if (entry.isDir()) this->scanPath(entry.path(), prefix + dir.dirName() + "-");
+		if (entry.isDir()) this->scanPath(entry.absoluteFilePath(), prefix + dir.dirName() + "-");
 		else if (entry.isFile()) {
 			auto path = entry.filePath();
 			if (!path.endsWith(".desktop")) {
@@ -317,9 +317,8 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 				continue;
 			}
 
-			auto* file = new QFile(path);
-
-			if (!file->open(QFile::ReadOnly)) {
+			auto file = QFile(path);
+			if (!file.open(QFile::ReadOnly)) {
 				qCDebug(logDesktopEntry) << "Could not open file" << path;
 				continue;
 			}
@@ -327,7 +326,7 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 			auto id = prefix + entry.fileName().sliced(0, entry.fileName().length() - 8);
 			auto lowerId = id.toLower();
 
-			auto text = QString::fromUtf8(file->readAll());
+			auto text = QString::fromUtf8(file.readAll());
 			auto* dentry = new DesktopEntry(id, this);
 			dentry->parseEntry(text);
 
