@@ -6,10 +6,11 @@ qt_add_library(quickshell-wayland-sessionlock STATIC
 	session_lock.cpp
 )
 
-wl_proto(quickshell-wayland-sessionlock ext-session-lock-v1 "${WAYLAND_PROTOCOLS}/staging/ext-session-lock/ext-session-lock-v1.xml")
+wl_proto(wlp-session-lock ext-session-lock-v1 "${WAYLAND_PROTOCOLS}/staging/ext-session-lock")
 
 target_link_libraries(quickshell-wayland-sessionlock PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
+	wlp-session-lock
 )
 
 qs_pch(quickshell-wayland-sessionlock SET large)

@@ -28,7 +28,7 @@ qs_add_pchset(wayland-protocol
 		<qstring.h>
 )
 
-function (wl_proto target name path)
+function (wl_proto target name dir)
 	set(PROTO_BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/wl-proto/${name})
 	make_directory(${PROTO_BUILD_PATH})
 
@@ -36,39 +36,38 @@ function (wl_proto target name path)
 	set(WS_CLIENT_CODE "${PROTO_BUILD_PATH}/wayland-${name}.c")
 	set(QWS_CLIENT_HEADER "${PROTO_BUILD_PATH}/qwayland-${name}.h")
 	set(QWS_CLIENT_CODE "${PROTO_BUILD_PATH}/qwayland-${name}.cpp")
+	set(PATH "${dir}/${name}.xml")
 
 	add_custom_command(
 		OUTPUT "${WS_CLIENT_HEADER}"
-		COMMAND Wayland::Scanner client-header "${path}" "${WS_CLIENT_HEADER}"
-		DEPENDS Wayland::Scanner "${path}"
+		COMMAND Wayland::Scanner client-header "${PATH}" "${WS_CLIENT_HEADER}"
+		DEPENDS Wayland::Scanner "${PATH}"
 	)
 
 	add_custom_command(
 		OUTPUT "${WS_CLIENT_CODE}"
-		COMMAND Wayland::Scanner private-code "${path}" "${WS_CLIENT_CODE}"
-		DEPENDS Wayland::Scanner "${path}"
+		COMMAND Wayland::Scanner private-code "${PATH}" "${WS_CLIENT_CODE}"
+		DEPENDS Wayland::Scanner "${PATH}"
 	)
 
 	add_custom_command(
 		OUTPUT "${QWS_CLIENT_HEADER}"
-		COMMAND Qt6::qtwaylandscanner client-header "${path}" > "${QWS_CLIENT_HEADER}"
-		DEPENDS Qt6::qtwaylandscanner "${path}"
+		COMMAND Qt6::qtwaylandscanner client-header "${PATH}" > "${QWS_CLIENT_HEADER}"
+		DEPENDS Qt6::qtwaylandscanner "${PATH}"
 	)
 
 	add_custom_command(
 		OUTPUT "${QWS_CLIENT_CODE}"
-		COMMAND Qt6::qtwaylandscanner client-code "${path}" > "${QWS_CLIENT_CODE}"
-		DEPENDS Qt6::qtwaylandscanner "${path}"
+		COMMAND Qt6::qtwaylandscanner client-code "${PATH}" > "${QWS_CLIENT_CODE}"
+		DEPENDS Qt6::qtwaylandscanner "${PATH}"
 	)
 
 	add_library(wl-proto-${name}-wl STATIC ${WS_CLIENT_HEADER} ${WS_CLIENT_CODE})
-	add_library(wl-proto-${name} STATIC ${QWS_CLIENT_HEADER} ${QWS_CLIENT_CODE})
+	add_library(${target} STATIC ${QWS_CLIENT_HEADER} ${QWS_CLIENT_CODE})
 
-	target_include_directories(wl-proto-${name} INTERFACE ${PROTO_BUILD_PATH})
-	target_link_libraries(wl-proto-${name} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
-	qs_pch(wl-proto-${name} SET wayland-protocol)
-
-	target_link_libraries(${target} PRIVATE wl-proto-${name})
+	target_include_directories(${target} INTERFACE ${PROTO_BUILD_PATH})
+	target_link_libraries(${target} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
+	qs_pch(${target} SET wayland-protocol)
 endfunction()
 
 # -----

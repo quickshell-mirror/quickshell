@@ -14,13 +14,11 @@ qs_add_module_deps_light(quickshell-hyprland-focus-grab Quickshell)
 
 install_qml_module(quickshell-hyprland-focus-grab)
 
-wl_proto(quickshell-hyprland-focus-grab
-	hyprland-focus-grab-v1
-	"${CMAKE_CURRENT_SOURCE_DIR}/hyprland-focus-grab-v1.xml"
-)
+wl_proto(wlp-hyprland-focus-grab hyprland-focus-grab-v1 "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(quickshell-hyprland-focus-grab PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
+	wlp-hyprland-focus-grab
 )
 
 qs_module_pch(quickshell-hyprland-focus-grab SET large)
