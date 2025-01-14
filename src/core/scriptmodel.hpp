@@ -36,6 +36,8 @@
 ///   delegate: // ...
 /// }
 /// ```
+/// [QAbstractItemModel]: https://doc.qt.io/qt-6/qabstractitemmodel.html
+/// [Data Model]: https://doc.qt.io/qt-6/qtquick-modelviewsdata-modelview.html#qml-data-models
 class ScriptModel: public QAbstractListModel {
 	Q_OBJECT;
 	/// The list of values to reflect in the model.
@@ -51,8 +53,19 @@ class ScriptModel: public QAbstractListModel {
 	/// > }
 	/// > ```
 	/// >
-	/// > Note that we are using @@DesktopEntries.values because it will cause @@ScriptModel.values
+	/// > Note that we are using @@ObjectModel.values because it will cause @@ScriptModel.values
 	/// > to receive an update on change.
+	///
+	/// > [!TIP] Most lists exposed by Quickshell are read-only. Some operations like `sort()`
+	/// > act on a list in-place and cannot be used directly on a list exposed by Quickshell.
+	/// > You can copy a list using spread syntax: `[...variable]` instead of `variable`.
+	/// >
+	/// > For example:
+	/// > ```qml
+	/// > ScriptModel {
+	/// >   values: [...DesktopEntries.applications.values].sort(...)
+	/// > }
+	/// > ```
 	Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged);
 	QML_ELEMENT;
 
