@@ -43,6 +43,7 @@ jobs:
             qt6-shadertools \
             wayland-protocols \
             wayland \
+            libdrm \
             libxcb \
             libpipewire \
             cli11 \

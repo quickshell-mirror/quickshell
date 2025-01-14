@@ -1,0 +1,6 @@
+#pragma once
+// NOLINTBEGIN
+#cmakedefine01 SCREENCOPY_ICC
+#cmakedefine01 SCREENCOPY_WLR
+#cmakedefine01 SCREENCOPY_HYPRLAND_TOPLEVEL
+// NOLINTEND

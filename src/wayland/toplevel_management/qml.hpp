@@ -13,7 +13,7 @@
 namespace qs::wayland::toplevel_management {
 
 namespace impl {
-class ToplevelManager;
+class ToplevelManager; // NOLINT
 class ToplevelHandle;
 } // namespace impl
 
@@ -79,6 +79,8 @@ public:
 
 	[[nodiscard]] bool fullscreen() const;
 	void setFullscreen(bool fullscreen);
+
+	[[nodiscard]] impl::ToplevelHandle* implHandle() const { return this->handle; }
 
 signals:
 	void closed();

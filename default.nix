@@ -14,6 +14,8 @@
   jemalloc,
   wayland,
   wayland-protocols,
+  libdrm,
+  libgbm ? null,
   xorg,
   pipewire,
   pam,
@@ -64,7 +66,7 @@
   ++ lib.optional withCrashReporter breakpad
   ++ lib.optional withJemalloc jemalloc
   ++ lib.optional withQtSvg qt6.qtsvg
-  ++ lib.optionals withWayland [ qt6.qtwayland wayland ]
+  ++ lib.optionals withWayland ([ qt6.qtwayland wayland ] ++ (if libgbm != null then [ libdrm libgbm ] else []))
   ++ lib.optional withX11 xorg.libxcb
   ++ lib.optional withPam pam
   ++ lib.optional withPipewire pipewire;
@@ -79,6 +81,7 @@
     (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
     (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
     (lib.cmakeBool "WAYLAND" withWayland)
+    (lib.cmakeBool "SCREENCOPY" (libgbm != null))
     (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
     (lib.cmakeBool "SERVICE_PAM" withPam)
     (lib.cmakeBool "HYPRLAND" withHyprland)

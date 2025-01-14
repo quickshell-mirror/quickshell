@@ -130,6 +130,24 @@ which allows quickshell to be used as a session lock under compatible wayland co
 
 To disable: `-DWAYLAND_TOPLEVEL_MANAGEMENT=OFF`
 
+#### Screencopy
+Enables streaming video from monitors and toplevel windows through various protocols.
+
+To disable: `-DSCREENCOPY=OFF`
+
+Dependencies:
+- `libdrm`
+- `libgbm`
+
+Specific protocols can also be disabled:
+- `DSCREENCOPY_ICC=OFF` - Disable screencopy via [ext-image-copy-capture-v1]
+- `DSCREENCOPY_WLR=OFF` - Disable screencopy via [zwlr-screencopy-v1]
+- `DSCREENCOPY_HYPRLAND_TOPLEVEL=OFF` - Disable screencopy via [hyprland-toplevel-export-v1]
+
+[ext-image-copy-capture-v1]:https://wayland.app/protocols/ext-image-copy-capture-v1
+[zwlr-screencopy-v1]: https://wayland.app/protocols/wlr-screencopy-unstable-v1
+[hyprland-toplevel-export-v1]: https://wayland.app/protocols/hyprland-toplevel-export-v1
+
 ### X11
 This feature enables x11 support. Currently this implements panel windows for X11 similarly
 to the wlroots layershell above.

@@ -103,6 +103,13 @@ if (WAYLAND_TOPLEVEL_MANAGEMENT)
 	list(APPEND WAYLAND_MODULES Quickshell.Wayland._ToplevelManagement)
 endif()
 
+if (SCREENCOPY)
+	add_subdirectory(buffer)
+	add_subdirectory(screencopy)
+	list(APPEND WAYLAND_MODULES Quickshell.Wayland._Screencopy)
+endif()
+
+
 if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
