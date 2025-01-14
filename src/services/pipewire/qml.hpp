@@ -116,6 +116,13 @@ class Pipewire: public QObject {
 	///
 	/// See @@defaultAudioSource for the current default source, regardless of preference.
 	Q_PROPERTY(qs::service::pipewire::PwNodeIface* preferredDefaultAudioSource READ defaultConfiguredAudioSource WRITE setDefaultConfiguredAudioSource NOTIFY defaultConfiguredAudioSourceChanged);
+	/// This property is true if quickshell has completed its initial sync with
+	/// the pipewire server. If true, nodes, links and sync/source preferences will be
+	/// in a good state.
+	///
+	/// > [!NOTE] You can use the pipewire object before it is ready, but some nodes/links
+	/// > may be missing, and preference metadata may be null.
+	Q_PROPERTY(bool ready READ isReady NOTIFY readyChanged);
 	// clang-format on
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -136,12 +143,16 @@ public:
 	[[nodiscard]] PwNodeIface* defaultConfiguredAudioSource() const;
 	static void setDefaultConfiguredAudioSource(PwNodeIface* node);
 
+	[[nodiscard]] static bool isReady();
+
 signals:
 	void defaultAudioSinkChanged();
 	void defaultAudioSourceChanged();
 
 	void defaultConfiguredAudioSinkChanged();
 	void defaultConfiguredAudioSourceChanged();
+
+	void readyChanged();
 
 private slots:
 	void onNodeAdded(PwNode* node);
@@ -294,6 +305,11 @@ class PwNodeIface: public PwObjectIface {
 	/// The presence or absence of this property can be used to determine if a node
 	/// manages audio, regardless of if it is bound. If non null, the node is an audio node.
 	Q_PROPERTY(qs::service::pipewire::PwNodeAudioIface* audio READ audio CONSTANT);
+	/// True if the node is fully bound and ready to use.
+	///
+	/// > [!NOTE] The node may be used before it is fully bound, but some data
+	/// > may be missing or incorrect.
+	Q_PROPERTY(bool ready READ isReady NOTIFY readyChanged);
 	QML_NAMED_ELEMENT(PwNode);
 	QML_UNCREATABLE("PwNodes cannot be created directly");
 
@@ -307,6 +323,7 @@ public:
 	[[nodiscard]] QString nickname() const;
 	[[nodiscard]] bool isSink() const;
 	[[nodiscard]] bool isStream() const;
+	[[nodiscard]] bool isReady() const;
 	[[nodiscard]] QVariantMap properties() const;
 	[[nodiscard]] PwNodeAudioIface* audio() const;
 
@@ -314,6 +331,7 @@ public:
 
 signals:
 	void propertiesChanged();
+	void readyChanged();
 
 private:
 	PwNode* mNode;

@@ -24,6 +24,8 @@
 #include <spa/utils/keys.h>
 #include <spa/utils/type.h>
 
+#include "connection.hpp"
+#include "core.hpp"
 #include "device.hpp"
 
 namespace qs::service::pipewire {
@@ -92,6 +94,12 @@ void PwNode::bindHooks() {
 }
 
 void PwNode::unbindHooks() {
+	if (this->ready) {
+		this->ready = false;
+		emit this->readyChanged();
+	}
+
+	this->syncSeq = 0;
 	this->listener.remove();
 	this->routeDevice = -1;
 	this->properties.clear();
@@ -201,6 +209,20 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 	if (self->boundData != nullptr) {
 		self->boundData->onInfo(info);
 	}
+
+	if (!self->ready && !self->syncSeq) {
+		auto* core = PwConnection::instance()->registry.core;
+		QObject::connect(core, &PwCore::synced, self, &PwNode::onCoreSync);
+		self->syncSeq = core->sync(self->id);
+	}
+}
+
+void PwNode::onCoreSync(quint32 id, qint32 seq) {
+	if (id != this->id || seq != this->syncSeq) return;
+	qCInfo(logNode) << "Completed initial sync for" << this;
+	this->ready = true;
+	this->syncSeq = 0;
+	emit this->readyChanged();
 }
 
 void PwNode::onParam(

@@ -172,6 +172,7 @@ public:
 	PwNodeType type = PwNodeType::Untracked;
 	bool isSink = false;
 	bool isStream = false;
+	bool ready = false;
 
 	PwNodeBoundData* boundData = nullptr;
 
@@ -180,6 +181,10 @@ public:
 
 signals:
 	void propertiesChanged();
+	void readyChanged();
+
+private slots:
+	void onCoreSync(quint32 id, qint32 seq);
 
 private:
 	static const pw_node_events EVENTS;
@@ -187,6 +192,7 @@ private:
 	static void
 	onParam(void* data, qint32 seq, quint32 id, quint32 index, quint32 next, const spa_pod* param);
 
+	qint32 syncSeq = 0;
 	SpaHook listener;
 };
 

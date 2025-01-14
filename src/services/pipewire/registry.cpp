@@ -126,6 +126,29 @@ void PwRegistry::init(PwCore& core) {
 	this->core = &core;
 	this->object = pw_core_get_registry(core.core, PW_VERSION_REGISTRY, 0);
 	pw_registry_add_listener(this->object, &this->listener.hook, &PwRegistry::EVENTS, this);
+
+	QObject::connect(this->core, &PwCore::synced, this, &PwRegistry::onCoreSync);
+
+	qCDebug(logRegistry) << "Registry created. Sending core sync for initial object tracking.";
+	this->coreSyncSeq = this->core->sync(PW_ID_CORE);
+}
+
+void PwRegistry::onCoreSync(quint32 id, qint32 seq) {
+	if (id != PW_ID_CORE || seq != this->coreSyncSeq) return;
+
+	switch (this->initState) {
+	case InitState::SendingObjects:
+		qCDebug(logRegistry) << "Initial sync for objects received. Syncing for metadata binding.";
+		this->coreSyncSeq = this->core->sync(PW_ID_CORE);
+		this->initState = InitState::Binding;
+		break;
+	case InitState::Binding:
+		qCInfo(logRegistry) << "Initial state sync complete.";
+		this->initState = InitState::Done;
+		emit this->initialized();
+		break;
+	default: break;
+	}
 }
 
 const pw_registry_events PwRegistry::EVENTS = {

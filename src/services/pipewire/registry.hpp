@@ -116,6 +116,8 @@ class PwRegistry
 public:
 	void init(PwCore& core);
 
+	[[nodiscard]] bool isInitialized() const { return this->initState == InitState::Done; }
+
 	//QHash<quint32, PwClient*> clients;
 	QHash<quint32, PwMetadata*> metadata;
 	QHash<quint32, PwNode*> nodes;
@@ -132,9 +134,11 @@ signals:
 	void linkAdded(PwLink* link);
 	void linkGroupAdded(PwLinkGroup* group);
 	void metadataAdded(PwMetadata* metadata);
+	void initialized();
 
 private slots:
 	void onLinkGroupDestroyed(QObject* object);
+	void onCoreSync(quint32 id, qint32 seq);
 
 private:
 	static const pw_registry_events EVENTS;
@@ -152,6 +156,13 @@ private:
 
 	void addLinkToGroup(PwLink* link);
 
+	enum class InitState : quint8 {
+		SendingObjects,
+		Binding,
+		Done
+	} initState = InitState::SendingObjects;
+
+	qint32 coreSyncSeq = 0;
 	SpaHook listener;
 };
 

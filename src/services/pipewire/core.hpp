@@ -14,6 +14,14 @@
 
 namespace qs::service::pipewire {
 
+class SpaHook {
+public:
+	explicit SpaHook();
+
+	void remove();
+	spa_hook hook;
+};
+
 class PwCore: public QObject {
 	Q_OBJECT;
 
@@ -23,6 +31,7 @@ public:
 	Q_DISABLE_COPY_MOVE(PwCore);
 
 	[[nodiscard]] bool isValid() const;
+	[[nodiscard]] qint32 sync(quint32 id) const;
 
 	pw_loop* loop = nullptr;
 	pw_context* context = nullptr;
@@ -30,12 +39,18 @@ public:
 
 signals:
 	void polled();
+	void synced(quint32 id, qint32 seq);
 
 private slots:
 	void poll();
 
 private:
+	static const pw_core_events EVENTS;
+
+	static void onSync(void* data, quint32 id, qint32 seq);
+
 	QSocketNotifier notifier;
+	SpaHook listener;
 };
 
 template <typename T>
@@ -47,14 +62,6 @@ public:
 	Q_DISABLE_COPY_MOVE(PwObject);
 
 	T* object;
-};
-
-class SpaHook {
-public:
-	explicit SpaHook();
-
-	void remove();
-	spa_hook hook;
 };
 
 } // namespace qs::service::pipewire

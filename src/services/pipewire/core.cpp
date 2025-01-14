@@ -10,6 +10,7 @@
 #include <qobject.h>
 #include <qsocketnotifier.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <spa/utils/defs.h>
 #include <spa/utils/hook.h>
 
@@ -18,6 +19,19 @@ namespace qs::service::pipewire {
 namespace {
 Q_LOGGING_CATEGORY(logLoop, "quickshell.service.pipewire.loop", QtWarningMsg);
 }
+
+const pw_core_events PwCore::EVENTS = {
+    .version = PW_VERSION_CORE_EVENTS,
+    .info = nullptr,
+    .done = &PwCore::onSync,
+    .ping = nullptr,
+    .error = nullptr,
+    .remove_id = nullptr,
+    .bound_id = nullptr,
+    .add_mem = nullptr,
+    .remove_mem = nullptr,
+    .bound_props = nullptr,
+};
 
 PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read) {
 	qCInfo(logLoop) << "Creating pipewire event loop.";
@@ -41,6 +55,8 @@ PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read
 		qCCritical(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
 		return;
 	}
+
+	pw_core_add_listener(this->core, &this->listener.hook, &PwCore::EVENTS, this);
 
 	qCInfo(logLoop) << "Linking pipewire event loop.";
 	// Tie the pw event loop into qt.
@@ -77,6 +93,16 @@ void PwCore::poll() {
 	pw_loop_iterate(this->loop, 0);
 	qCDebug(logLoop) << "Done iterating pipewire event loop.";
 	emit this->polled();
+}
+
+qint32 PwCore::sync(quint32 id) const {
+	// Seq param doesn't seem to do anything. Seq is instead the returned value.
+	return pw_core_sync(this->core, id, 0);
+}
+
+void PwCore::onSync(void* data, quint32 id, qint32 seq) {
+	auto* self = static_cast<PwCore*>(data);
+	emit self->synced(id, seq);
 }
 
 SpaHook::SpaHook() { // NOLINT

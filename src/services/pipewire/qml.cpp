@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qlist.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
@@ -87,6 +88,16 @@ Pipewire::Pipewire(QObject* parent): QObject(parent) {
 	    this,
 	    &Pipewire::defaultConfiguredAudioSourceChanged
 	);
+
+	if (!connection->registry.isInitialized()) {
+		QObject::connect(
+		    &connection->registry,
+		    &PwRegistry::initialized,
+		    this,
+		    &Pipewire::readyChanged,
+		    Qt::SingleShotConnection
+		);
+	}
 }
 
 ObjectModel<PwNodeIface>* Pipewire::nodes() { return &this->mNodes; }
@@ -155,6 +166,8 @@ PwNodeIface* Pipewire::defaultConfiguredAudioSource() const { // NOLINT
 void Pipewire::setDefaultConfiguredAudioSource(PwNodeIface* node) {
 	PwConnection::instance()->defaults.changeConfiguredSource(node ? node->node() : nullptr);
 }
+
+bool Pipewire::isReady() { return PwConnection::instance()->registry.isInitialized(); }
 
 PwNodeIface* PwNodeLinkTracker::node() const { return this->mNode; }
 
@@ -298,6 +311,7 @@ void PwNodeAudioIface::setVolumes(const QVector<float>& volumes) {
 
 PwNodeIface::PwNodeIface(PwNode* node): PwObjectIface(node), mNode(node) {
 	QObject::connect(node, &PwNode::propertiesChanged, this, &PwNodeIface::propertiesChanged);
+	QObject::connect(node, &PwNode::readyChanged, this, &PwNodeIface::readyChanged);
 
 	if (auto* audioBoundData = dynamic_cast<PwNodeBoundAudio*>(node->boundData)) {
 		this->audioIface = new PwNodeAudioIface(audioBoundData, this);
@@ -317,6 +331,8 @@ QString PwNodeIface::nickname() const { return this->mNode->nick; }
 bool PwNodeIface::isSink() const { return this->mNode->isSink; }
 
 bool PwNodeIface::isStream() const { return this->mNode->isStream; }
+
+bool PwNodeIface::isReady() const { return this->mNode->ready; }
 
 QVariantMap PwNodeIface::properties() const {
 	auto map = QVariantMap();
