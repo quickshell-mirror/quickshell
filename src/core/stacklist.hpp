@@ -7,6 +7,7 @@
 #include <iterator>
 #include <vector>
 
+#include <qlist.h>
 #include <qtypes.h>
 
 template <class T, size_t N>
@@ -40,11 +41,22 @@ public:
 	[[nodiscard]] bool operator==(const StackList<T, N>& other) const {
 		if (other.size != this->size) return false;
 
-		for (size_t i = 0; i < this->size; ++i) {
+		for (size_t i = 0; i != this->size; ++i) {
 			if (this->operator[](i) != other[i]) return false;
 		}
 
 		return true;
+	}
+
+	[[nodiscard]] QList<T> toList() const {
+		QList<T> list;
+		list.reserve(this->size);
+
+		for (const auto& entry: *this) {
+			list.push_back(entry);
+		}
+
+		return list;
 	}
 
 	template <typename Self, typename ListPtr, typename IT>
@@ -65,6 +77,7 @@ public:
 			++this->i;
 			return *static_cast<Self*>(this);
 		}
+
 		Self& operator--() {
 			--this->i;
 			return *static_cast<Self*>(this);
@@ -75,6 +88,7 @@ public:
 			this->operator++();
 			return v;
 		}
+
 		Self operator--(int) {
 			auto v = *this;
 			this->operator--();
