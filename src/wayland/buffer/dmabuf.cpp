@@ -167,7 +167,6 @@ void LinuxDmabufFeedback::zwp_linux_dmabuf_feedback_v1_tranche_formats(wl_array*
 	auto indexTableLength = indices->size / sizeof(uint16_t);
 
 	uint32_t lastFormat = 0;
-	LinuxDmabufModifiers* lastModifiers = nullptr;
 	LinuxDmabufModifiers* modifiers = nullptr;
 
 	for (uint16_t ti = 0; ti != indexTableLength; ++ti) {
@@ -176,14 +175,7 @@ void LinuxDmabufFeedback::zwp_linux_dmabuf_feedback_v1_tranche_formats(wl_array*
 
 		// Compositors usually send a single format's modifiers as a block.
 		if (!modifiers || entry.format != lastFormat) {
-			// We can often share modifier lists between formats
-			if (lastModifiers && modifiers->modifiers == lastModifiers->modifiers) {
-				// avoids storing a second list
-				modifiers->modifiers = lastModifiers->modifiers;
-			}
-
 			lastFormat = entry.format;
-			lastModifiers = modifiers;
 
 			auto modifiersIter = std::ranges::find_if(tranche.formats.formats, [&](const auto& pair) {
 				return pair.first == entry.format;
@@ -202,10 +194,6 @@ void LinuxDmabufFeedback::zwp_linux_dmabuf_feedback_v1_tranche_formats(wl_array*
 		} else {
 			modifiers->modifiers.push(entry.modifier);
 		}
-	}
-
-	if (lastModifiers && modifiers && modifiers->modifiers == lastModifiers->modifiers) {
-		modifiers->modifiers = lastModifiers->modifiers;
 	}
 }
 
