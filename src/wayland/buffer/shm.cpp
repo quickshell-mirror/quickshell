@@ -17,7 +17,9 @@
 
 namespace qs::wayland::buffer::shm {
 
+namespace {
 Q_LOGGING_CATEGORY(logShm, "quickshell.wayland.buffer.shm", QtWarningMsg);
+}
 
 bool WlShmBuffer::isCompatible(const WlBufferRequest& request) const {
 	if (QSize(static_cast<int>(request.width), static_cast<int>(request.height)) != this->size()) {

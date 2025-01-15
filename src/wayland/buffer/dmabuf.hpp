@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
+#include <xf86drm.h>
 
 #include "manager.hpp"
 #include "qsg.hpp"
@@ -28,6 +29,45 @@ class WlBufferManagerPrivate;
 namespace qs::wayland::buffer::dmabuf {
 
 class LinuxDmabufManager;
+class FourCCStr {
+public:
+	explicit FourCCStr(uint32_t code)
+	    : chars(
+	          {static_cast<char>(code >> 0 & 0xff),
+	           static_cast<char>(code >> 8 & 0xff),
+	           static_cast<char>(code >> 16 & 0xff),
+	           static_cast<char>(code >> 24 & 0xff),
+	           '\0'}
+	      ) {
+		for (auto i = 3; i != 0; i--) {
+			if (chars[i] == ' ') chars[i] = '\0';
+			else break;
+		}
+	}
+
+	[[nodiscard]] const char* cStr() const { return this->chars.data(); }
+
+private:
+	std::array<char, 5> chars {};
+};
+
+class FourCCModStr {
+public:
+	explicit FourCCModStr(uint64_t code): drmStr(drmGetFormatModifierName(code)) {}
+	~FourCCModStr() {
+		if (this->drmStr) drmFree(this->drmStr);
+	}
+
+	Q_DISABLE_COPY_MOVE(FourCCModStr);
+
+	[[nodiscard]] const char* cStr() const { return this->drmStr; }
+
+private:
+	char* drmStr;
+};
+
+QDebug& operator<<(QDebug& debug, const FourCCStr& fourcc);
+QDebug& operator<<(QDebug& debug, const FourCCModStr& fourcc);
 
 class GbmDeviceHandle {
 public:

@@ -25,7 +25,6 @@
 #include <qquickwindow.h>
 #include <qscopedpointer.h>
 #include <qsgtexture_platform.h>
-#include <qtclasshelpermacros.h>
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/mman.h>
@@ -48,42 +47,7 @@ Q_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg);
 
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
 
-class FourCCStr {
-public:
-	explicit FourCCStr(uint32_t code)
-	    : chars(
-	          {static_cast<char>(code >> 0 & 0xff),
-	           static_cast<char>(code >> 8 & 0xff),
-	           static_cast<char>(code >> 16 & 0xff),
-	           static_cast<char>(code >> 24 & 0xff),
-	           '\0'}
-	      ) {
-		for (auto i = 3; i != 0; i--) {
-			if (chars[i] == ' ') chars[i] = '\0';
-			else break;
-		}
-	}
-
-	[[nodiscard]] const char* cStr() const { return this->chars.data(); }
-
-private:
-	std::array<char, 5> chars {};
-};
-
-class FourCCModStr {
-public:
-	explicit FourCCModStr(uint64_t code): drmStr(drmGetFormatModifierName(code)) {}
-	~FourCCModStr() {
-		if (this->drmStr) drmFree(this->drmStr);
-	}
-
-	Q_DISABLE_COPY_MOVE(FourCCModStr);
-
-	[[nodiscard]] const char* cStr() const { return this->drmStr; }
-
-private:
-	char* drmStr;
-};
+} // namespace
 
 QDebug& operator<<(QDebug& debug, const FourCCStr& fourcc) {
 	debug << fourcc.cStr();
@@ -94,8 +58,6 @@ QDebug& operator<<(QDebug& debug, const FourCCModStr& fourcc) {
 	debug << fourcc.cStr();
 	return debug;
 }
-
-} // namespace
 
 QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer) {
 	auto saver = QDebugStateSaver(debug);

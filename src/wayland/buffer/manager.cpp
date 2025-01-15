@@ -17,6 +17,10 @@
 
 namespace qs::wayland::buffer {
 
+namespace {
+Q_LOGGING_CATEGORY(logBuffer, "quickshell.wayland.buffer", QtWarningMsg);
+}
+
 WlBuffer* WlBufferSwapchain::createBackbuffer(const WlBufferRequest& request, bool* newBuffer) {
 	auto& buffer = this->presentSecondBuffer ? this->buffer1 : this->buffer2;
 
@@ -42,9 +46,28 @@ bool WlBufferManager::isReady() const { return this->p->mReady; }
 [[nodiscard]] WlBuffer* WlBufferManager::createBuffer(const WlBufferRequest& request) {
 	static const bool dmabufDisabled = qEnvironmentVariableIsSet("QS_DISABLE_DMABUF");
 
+	qCDebug(logBuffer).nospace() << "Creating buffer from request at " << request.width << 'x'
+	                             << request.height;
+	qCDebug(logBuffer).nospace() << "  Dmabuf requests on device " << request.dmabuf.device
+	                             << " (disabled: " << dmabufDisabled << ')';
+
+	for (const auto& [format, modifiers]: request.dmabuf.formats) {
+		qCDebug(logBuffer) << "    Format" << dmabuf::FourCCStr(format);
+
+		for (const auto& modifier: modifiers) {
+			qCDebug(logBuffer) << "      Explicit Modifier" << dmabuf::FourCCModStr(modifier);
+		}
+	}
+
+	qCDebug(logBuffer).nospace() << "  Shm requests";
+
+	for (const auto& format: request.shm.formats) {
+		qCDebug(logBuffer) << "    Format" << format;
+	}
+
 	if (!dmabufDisabled) {
 		if (auto* buf = this->p->dmabuf.createDmabuf(request)) return buf;
-		qCWarning(shm::logShm) << "DMA buffer creation failed, falling back to SHM.";
+		qCWarning(logBuffer) << "DMA buffer creation failed, falling back to SHM.";
 	}
 
 	return shm::ShmbufManager::createShmbuf(request);

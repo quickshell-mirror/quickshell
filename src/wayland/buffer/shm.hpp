@@ -14,8 +14,6 @@
 
 namespace qs::wayland::buffer::shm {
 
-Q_DECLARE_LOGGING_CATEGORY(logShm);
-
 class WlShmBuffer: public WlBuffer {
 public:
 	~WlShmBuffer() override;
