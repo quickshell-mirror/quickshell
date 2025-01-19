@@ -213,7 +213,7 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 
 				currentArgument += c;
 				escape = 0;
-			} else if (c == u'"') {
+			} else if (c == u'"' || c == u'\'') {
 				parsingString = false;
 			} else {
 				currentArgument += c;
@@ -229,7 +229,7 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 			percent = false;
 		} else if (c == '%') {
 			percent = true;
-		} else if (c == u'"') {
+		} else if (c == u'"' || c == u'\'') {
 			parsingString = true;
 		} else if (c == u' ') {
 			if (!currentArgument.isEmpty()) {
