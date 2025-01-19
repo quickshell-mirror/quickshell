@@ -40,7 +40,7 @@ class QuickshellScreenInfo: public QObject {
 	/// The ratio between physical pixels and device-independent (scaled) pixels.
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY physicalPixelDensityChanged);
 	Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation NOTIFY orientationChanged);
-	Q_PROPERTY(Qt::ScreenOrientation primatyOrientation READ primaryOrientation NOTIFY primaryOrientationChanged);
+	Q_PROPERTY(Qt::ScreenOrientation primaryOrientation READ primaryOrientation NOTIFY primaryOrientationChanged);
 	// clang-format on
 
 public:
