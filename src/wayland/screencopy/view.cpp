@@ -66,6 +66,8 @@ void ScreencopyView::createContext() {
 		return;
 	}
 
+	this->context->setParent(this);
+
 	QObject::connect(
 	    this->context,
 	    &ScreencopyContext::stopped,
