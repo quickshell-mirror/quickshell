@@ -8,6 +8,7 @@
 #include <qregion.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvectornd.h>
 
 PendingRegion::PendingRegion(QObject* parent): QObject(parent) {
 	QObject::connect(this, &PendingRegion::shapeChanged, this, &PendingRegion::changed);
@@ -105,8 +106,19 @@ QRegion PendingRegion::applyTo(QRegion& region) const {
 	return region;
 }
 
+QRegion PendingRegion::applyTo(const QRect& rect) const {
+	// if left as the default, dont combine it with the whole rect area, leave it as is.
+	if (this->mIntersection == Intersection::Combine) {
+		return this->build();
+	} else {
+		auto baseRegion = QRegion(rect);
+		return this->applyTo(baseRegion);
+	}
+}
+
 void PendingRegion::regionsAppend(QQmlListProperty<PendingRegion>* prop, PendingRegion* region) {
 	auto* self = static_cast<PendingRegion*>(prop->object); // NOLINT
+	if (!region) return;
 
 	QObject::connect(region, &QObject::destroyed, self, &PendingRegion::onChildDestroyed);
 	QObject::connect(region, &PendingRegion::changed, self, &PendingRegion::childrenChanged);

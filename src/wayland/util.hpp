@@ -1,9 +1,9 @@
 #pragma once
 
-#include <private/qwaylandwindow_p.h>
+#include "../window/proxywindow.hpp"
 
 namespace qs::wayland::util {
 
-void scheduleCommit(QtWaylandClient::QWaylandWindow* window);
+void scheduleCommit(ProxyWindowBase* window);
 
 }

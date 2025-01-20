@@ -62,7 +62,7 @@ void HyprlandWindow::setOpacity(qreal opacity) {
 
 	if (this->surface) {
 		this->surface->setOpacity(opacity);
-		qs::wayland::util::scheduleCommit(this->mWaylandWindow);
+		qs::wayland::util::scheduleCommit(this->proxyWindow);
 	}
 
 	emit this->opacityChanged();
@@ -127,7 +127,7 @@ void HyprlandWindow::onWaylandSurfaceCreated() {
 
 	if (this->mOpacity != 1.0) {
 		this->surface->setOpacity(this->mOpacity);
-		qs::wayland::util::scheduleCommit(this->mWaylandWindow);
+		qs::wayland::util::scheduleCommit(this->proxyWindow);
 	}
 }
 

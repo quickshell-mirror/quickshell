@@ -96,6 +96,7 @@ public:
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] QRegion build() const;
 	[[nodiscard]] QRegion applyTo(QRegion& region) const;
+	[[nodiscard]] QRegion applyTo(const QRect& rect) const;
 
 	RegionShape::Enum mShape = RegionShape::Rect;
 	Intersection::Enum mIntersection = Intersection::Combine;
@@ -109,6 +110,11 @@ signals:
 	void widthChanged();
 	void heightChanged();
 	void childrenChanged();
+
+	/// Triggered when the region's geometry changes.
+	///
+	/// In some cases the region does not update automatically.
+	/// In those cases you can emit this signal manually.
 	void changed();
 
 private slots:

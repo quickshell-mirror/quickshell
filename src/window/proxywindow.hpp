@@ -20,6 +20,7 @@
 #include "windowinterface.hpp"
 
 class ProxiedWindow;
+class ProxyWindowContentItem;
 
 // Proxy to an actual window exposing a limited property set with the ability to
 // transfer it to a new window.
@@ -85,6 +86,8 @@ public:
 	virtual void setVisible(bool visible);
 	virtual void setVisibleDirect(bool visible);
 
+	void schedulePolish();
+
 	[[nodiscard]] virtual qint32 x() const;
 	[[nodiscard]] virtual qint32 y() const;
 
@@ -124,6 +127,7 @@ signals:
 	void colorChanged();
 	void maskChanged();
 	void surfaceFormatChanged();
+	void polished();
 
 protected slots:
 	virtual void onWidthChanged();
@@ -131,6 +135,7 @@ protected slots:
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
+	void onPolished();
 	void runLints();
 
 protected:
@@ -141,11 +146,15 @@ protected:
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
 	ProxiedWindow* window = nullptr;
-	QQuickItem* mContentItem = nullptr;
+	ProxyWindowContentItem* mContentItem = nullptr;
 	bool reloadComplete = false;
 	bool ranLints = false;
 	QsSurfaceFormat qsSurfaceFormat;
 	QSurfaceFormat mSurfaceFormat;
+
+	struct {
+		bool inputMask : 1 = false;
+	} pendingPolish;
 
 private:
 	void polishItems();
@@ -189,4 +198,14 @@ protected:
 
 private:
 	ProxyWindowBase* mProxy;
+};
+
+class ProxyWindowContentItem: public QQuickItem {
+	Q_OBJECT;
+
+signals:
+	void polished();
+
+protected:
+	void updatePolish() override;
 };

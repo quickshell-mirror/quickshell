@@ -28,15 +28,16 @@
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
     : Reloadable(parent)
-    , mContentItem(new QQuickItem()) {
+    , mContentItem(new ProxyWindowContentItem()) {
 	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
 
 	// clang-format off
+	QObject::connect(this->mContentItem, &ProxyWindowContentItem::polished, this, &ProxyWindowBase::onPolished);
+
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onWidthChanged);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onHeightChanged);
 
-	QObject::connect(this, &ProxyWindowBase::maskChanged, this, &ProxyWindowBase::onMaskChanged);
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &ProxyWindowBase::onMaskChanged);
 	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &ProxyWindowBase::onMaskChanged);
 
@@ -264,6 +265,12 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 	}
 }
 
+void ProxyWindowBase::schedulePolish() {
+	if (this->isVisibleDirect()) {
+		this->mContentItem->polish();
+	}
+}
+
 void ProxyWindowBase::polishItems() {
 	// Due to QTBUG-126704, layouts in invisible windows don't update their dimensions.
 	// Usually this isn't an issue, but it is when the size of a window is based on the size
@@ -385,11 +392,11 @@ void ProxyWindowBase::setMask(PendingRegion* mask) {
 	this->mMask = mask;
 
 	if (mask != nullptr) {
-		mask->setParent(this);
 		QObject::connect(mask, &QObject::destroyed, this, &ProxyWindowBase::onMaskDestroyed);
-		QObject::connect(mask, &PendingRegion::changed, this, &ProxyWindowBase::maskChanged);
+		QObject::connect(mask, &PendingRegion::changed, this, &ProxyWindowBase::onMaskChanged);
 	}
 
+	this->onMaskChanged();
 	emit this->maskChanged();
 }
 
@@ -410,23 +417,13 @@ void ProxyWindowBase::onMaskChanged() {
 
 void ProxyWindowBase::onMaskDestroyed() {
 	this->mMask = nullptr;
+	this->onMaskChanged();
 	emit this->maskChanged();
 }
 
 void ProxyWindowBase::updateMask() {
-	QRegion mask;
-	if (this->mMask != nullptr) {
-		// if left as the default, dont combine it with the whole window area, leave it as is.
-		if (this->mMask->mIntersection == Intersection::Combine) {
-			mask = this->mMask->build();
-		} else {
-			auto windowRegion = QRegion(QRect(0, 0, this->width(), this->height()));
-			mask = this->mMask->applyTo(windowRegion);
-		}
-	}
-
-	this->window->setFlag(Qt::WindowTransparentForInput, this->mMask != nullptr && mask.isEmpty());
-	this->window->setMask(mask);
+	this->pendingPolish.inputMask = true;
+	this->schedulePolish();
 }
 
 QQmlListProperty<QObject> ProxyWindowBase::data() {
@@ -462,4 +459,22 @@ void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 void ProxiedWindow::exposeEvent(QExposeEvent* event) {
 	this->QQuickWindow::exposeEvent(event);
 	emit this->exposed();
+}
+
+void ProxyWindowContentItem::updatePolish() { emit this->polished(); }
+
+void ProxyWindowBase::onPolished() {
+	if (this->pendingPolish.inputMask) {
+		QRegion mask;
+		if (this->mMask != nullptr) {
+			mask = this->mMask->applyTo(QRect(0, 0, this->width(), this->height()));
+		}
+
+		this->window->setFlag(Qt::WindowTransparentForInput, this->mMask != nullptr && mask.isEmpty());
+		this->window->setMask(mask);
+
+		this->pendingPolish.inputMask = false;
+	}
+
+	emit this->polished();
 }
