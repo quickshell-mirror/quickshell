@@ -32,6 +32,7 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyWindowBase::backerVisibilityChanged, this, &FloatingWindowInterface::backingWindowVisibleChanged);
 	QObject::connect(this->window, &ProxyWindowBase::heightChanged, this, &FloatingWindowInterface::heightChanged);
 	QObject::connect(this->window, &ProxyWindowBase::widthChanged, this, &FloatingWindowInterface::widthChanged);
+	QObject::connect(this->window, &ProxyWindowBase::devicePixelRatioChanged, this, &FloatingWindowInterface::devicePixelRatioChanged);
 	QObject::connect(this->window, &ProxyWindowBase::screenChanged, this, &FloatingWindowInterface::screenChanged);
 	QObject::connect(this->window, &ProxyWindowBase::windowTransformChanged, this, &FloatingWindowInterface::windowTransformChanged);
 	QObject::connect(this->window, &ProxyWindowBase::colorChanged, this, &FloatingWindowInterface::colorChanged);
@@ -50,9 +51,12 @@ void FloatingWindowInterface::onReload(QObject* oldInstance) {
 QQmlListProperty<QObject> FloatingWindowInterface::data() { return this->window->data(); }
 ProxyWindowBase* FloatingWindowInterface::proxyWindow() const { return this->window; }
 QQuickItem* FloatingWindowInterface::contentItem() const { return this->window->contentItem(); }
+
 bool FloatingWindowInterface::isBackingWindowVisible() const {
 	return this->window->isVisibleDirect();
 }
+
+qreal FloatingWindowInterface::devicePixelRatio() const { return this->window->devicePixelRatio(); }
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \

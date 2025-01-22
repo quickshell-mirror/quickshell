@@ -42,6 +42,8 @@ public:
 	[[nodiscard]] qint32 height() const override;
 	void setHeight(qint32 height) override;
 
+	[[nodiscard]] virtual qreal devicePixelRatio() const override;
+
 	[[nodiscard]] QuickshellScreenInfo* screen() const override;
 	void setScreen(QuickshellScreenInfo* screen) override;
 

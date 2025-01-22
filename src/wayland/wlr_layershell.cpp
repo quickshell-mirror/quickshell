@@ -192,6 +192,7 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &ProxyWindowBase::backerVisibilityChanged, this, &WaylandPanelInterface::backingWindowVisibleChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::heightChanged, this, &WaylandPanelInterface::heightChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::widthChanged, this, &WaylandPanelInterface::widthChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::devicePixelRatioChanged, this, &WaylandPanelInterface::devicePixelRatioChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::screenChanged, this, &WaylandPanelInterface::screenChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::windowTransformChanged, this, &WaylandPanelInterface::windowTransformChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::colorChanged, this, &WaylandPanelInterface::colorChanged);
@@ -218,9 +219,12 @@ void WaylandPanelInterface::onReload(QObject* oldInstance) {
 QQmlListProperty<QObject> WaylandPanelInterface::data() { return this->layer->data(); }
 ProxyWindowBase* WaylandPanelInterface::proxyWindow() const { return this->layer; }
 QQuickItem* WaylandPanelInterface::contentItem() const { return this->layer->contentItem(); }
+
 bool WaylandPanelInterface::isBackingWindowVisible() const {
 	return this->layer->isVisibleDirect();
 }
+
+qreal WaylandPanelInterface::devicePixelRatio() const { return this->layer->devicePixelRatio(); }
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \

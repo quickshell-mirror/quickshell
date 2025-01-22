@@ -1,6 +1,7 @@
 #include "proxywindow.hpp"
 
 #include <private/qquickwindow_p.h>
+#include <qcoreevent.h>
 #include <qevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
@@ -191,6 +192,7 @@ void ProxyWindowBase::connectWindow() {
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
 	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::runLints);
+	QObject::connect(this->window, &ProxiedWindow::devicePixelRatioChanged, this, &ProxyWindowBase::devicePixelRatioChanged);
 	// clang-format on
 }
 
@@ -213,6 +215,7 @@ void ProxyWindowBase::completeWindow() {
 	emit this->yChanged();
 	emit this->widthChanged();
 	emit this->heightChanged();
+	emit this->devicePixelRatioChanged();
 
 	this->mContentItem->setParentItem(this->window->contentItem());
 	this->mContentItem->setWidth(this->width());
@@ -411,6 +414,12 @@ void ProxyWindowBase::setSurfaceFormat(QsSurfaceFormat format) {
 	emit this->surfaceFormatChanged();
 }
 
+qreal ProxyWindowBase::devicePixelRatio() const {
+	if (this->window != nullptr) return this->window->devicePixelRatio();
+	if (this->mScreen != nullptr) return this->mScreen->devicePixelRatio();
+	return 1.0;
+}
+
 void ProxyWindowBase::onMaskChanged() {
 	if (this->window != nullptr) this->updateMask();
 }
@@ -454,6 +463,14 @@ void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 	if (window == this->mWindow) return;
 	this->mWindow = window;
 	emit this->windowChanged();
+}
+
+bool ProxiedWindow::event(QEvent* event) {
+	if (event->type() == QEvent::DevicePixelRatioChange) {
+		emit this->devicePixelRatioChanged();
+	}
+
+	return this->QQuickWindow::event(event);
 }
 
 void ProxiedWindow::exposeEvent(QExposeEvent* event) {

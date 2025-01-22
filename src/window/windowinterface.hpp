@@ -55,6 +55,12 @@ class WindowInterface: public Reloadable {
 	Q_PROPERTY(bool backingWindowVisible READ isBackingWindowVisible NOTIFY backingWindowVisibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
+	/// The ratio between logical pixels and monitor pixels.
+	///
+	/// Qt's coordinate system works in logical pixels, which equal N monitor pixels
+	/// depending on scale factor. This property returns the amount of monitor pixels
+	/// in a logical pixel for the current window.
+	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
 	/// The screen that the window currently occupies.
 	///
 	/// This may be modified to move the window to the given screen.
@@ -147,6 +153,8 @@ public:
 	[[nodiscard]] virtual qint32 height() const = 0;
 	virtual void setHeight(qint32 height) = 0;
 
+	[[nodiscard]] virtual qreal devicePixelRatio() const = 0;
+
 	[[nodiscard]] virtual QuickshellScreenInfo* screen() const = 0;
 	virtual void setScreen(QuickshellScreenInfo* screen) = 0;
 
@@ -171,6 +179,7 @@ signals:
 	void backingWindowVisibleChanged();
 	void widthChanged();
 	void heightChanged();
+	void devicePixelRatioChanged();
 	void screenChanged();
 	void windowTransformChanged();
 	void colorChanged();

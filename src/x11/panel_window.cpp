@@ -478,6 +478,7 @@ XPanelInterface::XPanelInterface(QObject* parent)
 	QObject::connect(this->panel, &ProxyWindowBase::backerVisibilityChanged, this, &XPanelInterface::backingWindowVisibleChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::heightChanged, this, &XPanelInterface::heightChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::widthChanged, this, &XPanelInterface::widthChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::devicePixelRatioChanged, this, &XPanelInterface::devicePixelRatioChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::screenChanged, this, &XPanelInterface::screenChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::windowTransformChanged, this, &XPanelInterface::windowTransformChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::colorChanged, this, &XPanelInterface::colorChanged);
@@ -505,6 +506,7 @@ QQmlListProperty<QObject> XPanelInterface::data() { return this->panel->data(); 
 ProxyWindowBase* XPanelInterface::proxyWindow() const { return this->panel; }
 QQuickItem* XPanelInterface::contentItem() const { return this->panel->contentItem(); }
 bool XPanelInterface::isBackingWindowVisible() const { return this->panel->isVisibleDirect(); }
+qreal XPanelInterface::devicePixelRatio() const { return this->panel->devicePixelRatio(); }
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \

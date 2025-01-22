@@ -44,6 +44,7 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
+	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
 	Q_PROPERTY(QuickshellScreenInfo* screen READ screen WRITE setScreen NOTIFY screenChanged);
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);
 	Q_PROPERTY(PendingRegion* mask READ mask WRITE setMask NOTIFY maskChanged);
@@ -97,6 +98,8 @@ public:
 	[[nodiscard]] virtual qint32 height() const;
 	virtual void setHeight(qint32 height);
 
+	[[nodiscard]] qreal devicePixelRatio() const;
+
 	[[nodiscard]] virtual QuickshellScreenInfo* screen() const;
 	virtual void setScreen(QuickshellScreenInfo* screen);
 
@@ -122,6 +125,7 @@ signals:
 	void yChanged();
 	void widthChanged();
 	void heightChanged();
+	void devicePixelRatioChanged();
 	void windowTransformChanged();
 	void screenChanged();
 	void colorChanged();
@@ -192,8 +196,10 @@ public:
 
 signals:
 	void exposed();
+	void devicePixelRatioChanged();
 
 protected:
+	bool event(QEvent* event) override;
 	void exposeEvent(QExposeEvent* event) override;
 
 private:
