@@ -352,6 +352,22 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto* monitor = this->findMonitorByName(monitorName, true);
 
 		workspace->setMonitor(monitor);
+	} else if (event->name == "renameworkspace") {
+		auto args = event->parseView(2);
+		auto id = args.at(0).toInt();
+		auto name = QString::fromUtf8(args.at(1));
+
+		const auto& mList = this->mWorkspaces.valueList();
+
+		auto workspaceIter =
+		    std::ranges::find_if(mList, [id](const HyprlandWorkspace* m) { return m->id() == id; });
+
+		if (workspaceIter == mList.end()) return;
+
+		qCDebug(logHyprlandIpc) << "Workspace with id" << id << "renamed from"
+		                        << (*workspaceIter)->name() << "to" << name;
+
+		(*workspaceIter)->setName(name);
 	}
 }
 

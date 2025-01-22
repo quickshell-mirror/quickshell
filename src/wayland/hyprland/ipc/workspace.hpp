@@ -32,11 +32,14 @@ public:
 	void updateFromObject(QVariantMap object);
 
 	[[nodiscard]] qint32 id() const;
+
 	[[nodiscard]] QString name() const;
+	void setName(QString name);
+
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
-	void setMonitor(HyprlandMonitor* monitor);
 	[[nodiscard]] HyprlandMonitor* monitor() const;
+	void setMonitor(HyprlandMonitor* monitor);
 
 signals:
 	void idChanged();

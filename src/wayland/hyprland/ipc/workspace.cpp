@@ -11,7 +11,15 @@
 namespace qs::hyprland::ipc {
 
 qint32 HyprlandWorkspace::id() const { return this->mId; }
+
 QString HyprlandWorkspace::name() const { return this->mName; }
+
+void HyprlandWorkspace::setName(QString name) {
+	if (name == this->mName) return;
+	this->mName = std::move(name);
+	emit this->nameChanged();
+}
+
 QVariantMap HyprlandWorkspace::lastIpcObject() const { return this->mLastIpcObject; }
 
 void HyprlandWorkspace::updateInitial(qint32 id, QString name) {
