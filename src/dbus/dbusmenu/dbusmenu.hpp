@@ -30,7 +30,17 @@ namespace qs::dbus::dbusmenu {
 using menu::QsMenuEntry;
 
 class DBusMenu;
-class DBusMenuPngImage;
+class DBusMenuItem;
+
+class DBusMenuPngImage: public QsIndexedImageHandle {
+public:
+	explicit DBusMenuPngImage(): QsIndexedImageHandle(QQuickImageProvider::Image) {}
+
+	[[nodiscard]] bool hasData() const { return !data.isEmpty(); }
+	QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
+
+	QByteArray data;
+};
 
 ///! Menu item shared by an external program.
 /// Menu item shared by an external program via the
@@ -93,7 +103,7 @@ private:
 	bool visible = true;
 	bool mSeparator = false;
 	QString iconName;
-	DBusMenuPngImage* image = nullptr;
+	DBusMenuPngImage image;
 	menu::QsMenuButtonType::Enum mButtonType = menu::QsMenuButtonType::None;
 	Qt::CheckState mCheckState = Qt::Unchecked;
 	bool displayChildren = false;
@@ -155,17 +165,6 @@ private:
 };
 
 QDebug operator<<(QDebug debug, DBusMenu* menu);
-
-class DBusMenuPngImage: public QsImageHandle {
-public:
-	explicit DBusMenuPngImage(QByteArray data, DBusMenuItem* parent)
-	    : QsImageHandle(QQuickImageProvider::Image, parent)
-	    , data(std::move(data)) {}
-
-	QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
-
-	QByteArray data;
-};
 
 class DBusMenuHandle;
 

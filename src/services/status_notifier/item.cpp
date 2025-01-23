@@ -282,7 +282,7 @@ void StatusNotifierItem::onGetAllFailed() const {
 }
 
 TrayImageHandle::TrayImageHandle(StatusNotifierItem* item)
-    : QsImageHandle(QQmlImageProviderBase::Pixmap, item)
+    : QsImageHandle(QQmlImageProviderBase::Pixmap)
     , item(item) {}
 
 QPixmap

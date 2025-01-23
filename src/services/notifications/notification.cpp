@@ -1,5 +1,4 @@
 #include "notification.hpp"
-#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdbusargument.h>
@@ -117,13 +116,12 @@ void Notification::updateProperties(
 
 	QString imagePath;
 
-	if (!imageDataName.isEmpty()) {
+	if (imageDataName.isEmpty()) {
+		this->mImagePixmap.clear();
+	} else {
 		auto value = hints.value(imageDataName).value<QDBusArgument>();
-		DBusNotificationImage image;
-		value >> image;
-		if (this->mImagePixmap) this->mImagePixmap->deleteLater();
-		this->mImagePixmap = new NotificationImage(std::move(image), this);
-		imagePath = this->mImagePixmap->url();
+		value >> this->mImagePixmap.writeImage();
+		imagePath = this->mImagePixmap.url();
 	}
 
 	// don't store giant byte arrays longer than necessary
@@ -131,7 +129,7 @@ void Notification::updateProperties(
 	hints.remove("image_data");
 	hints.remove("icon_data");
 
-	if (!this->mImagePixmap) {
+	if (!this->mImagePixmap.hasData()) {
 		QString imagePathName;
 		if (hints.contains("image-path")) imagePathName = "image-path";
 		else if (hints.contains("image_path")) imagePathName = "image_path";

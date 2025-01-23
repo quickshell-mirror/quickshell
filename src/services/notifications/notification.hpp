@@ -12,10 +12,9 @@
 
 #include "../../core/retainable.hpp"
 #include "../../core/util.hpp"
+#include "dbusimage.hpp"
 
 namespace qs::service::notifications {
-
-class NotificationImage;
 
 ///! The urgency level of a Notification.
 /// See @@Notification.urgency.
@@ -187,7 +186,7 @@ private:
 	quint32 mId;
 	NotificationCloseReason::Enum mCloseReason = NotificationCloseReason::Dismissed;
 	bool mLastGeneration = false;
-	NotificationImage* mImagePixmap = nullptr;
+	NotificationImage mImagePixmap;
 	QList<NotificationAction*> mActions;
 
 	// clang-format off

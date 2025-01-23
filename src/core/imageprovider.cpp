@@ -1,5 +1,6 @@
 #include "imageprovider.hpp"
 
+#include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qimage.h>
 #include <qlogging.h>
@@ -7,10 +8,14 @@
 #include <qobject.h>
 #include <qpixmap.h>
 #include <qqmlengine.h>
+#include <qtypes.h>
 
 namespace {
 
+namespace {
 QMap<QString, QsImageHandle*> liveImages; // NOLINT
+quint32 handleIndex = 0;                  // NOLINT
+} // namespace
 
 void parseReq(const QString& req, QString& target, QString& param) {
 	auto splitIdx = req.indexOf('/');
@@ -24,14 +29,9 @@ void parseReq(const QString& req, QString& target, QString& param) {
 
 } // namespace
 
-QsImageHandle::QsImageHandle(QQmlImageProviderBase::ImageType type, QObject* parent)
-    : QObject(parent)
-    , type(type) {
-	{
-		auto dbg = QDebug(&this->id);
-		dbg.nospace() << static_cast<void*>(this);
-	}
-
+QsImageHandle::QsImageHandle(QQmlImageProviderBase::ImageType type)
+    : type(type)
+    , id(QString::number(++handleIndex)) {
 	liveImages.insert(this->id, this);
 }
 
@@ -85,3 +85,9 @@ QsPixmapProvider::requestPixmap(const QString& id, QSize* size, const QSize& req
 		return QPixmap();
 	}
 }
+
+QString QsIndexedImageHandle::url() const {
+	return this->QsImageHandle::url() % '/' % QString::number(this->changeIndex);
+}
+
+void QsIndexedImageHandle::imageChanged() { ++this->changeIndex; }

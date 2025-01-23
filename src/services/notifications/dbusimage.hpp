@@ -1,7 +1,5 @@
 #pragma once
 
-#include <utility>
-
 #include <qdbusargument.h>
 #include <qimage.h>
 #include <qobject.h>
@@ -23,14 +21,22 @@ struct DBusNotificationImage {
 const QDBusArgument& operator>>(const QDBusArgument& argument, DBusNotificationImage& pixmap);
 const QDBusArgument& operator<<(QDBusArgument& argument, const DBusNotificationImage& pixmap);
 
-class NotificationImage: public QsImageHandle {
+class NotificationImage: public QsIndexedImageHandle {
 public:
-	explicit NotificationImage(DBusNotificationImage image, QObject* parent)
-	    : QsImageHandle(QQuickAsyncImageProvider::Image, parent)
-	    , image(std::move(image)) {}
+	explicit NotificationImage(): QsIndexedImageHandle(QQuickAsyncImageProvider::Image) {}
+
+	[[nodiscard]] bool hasData() const { return !this->image.data.isEmpty(); }
+	void clear() { this->image.data.clear(); }
+
+	[[nodiscard]] DBusNotificationImage& writeImage() {
+		this->imageChanged();
+		return this->image;
+	}
 
 	QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
 
+private:
 	DBusNotificationImage image;
 };
+
 } // namespace qs::service::notifications

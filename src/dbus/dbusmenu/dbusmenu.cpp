@@ -59,8 +59,8 @@ QString DBusMenuItem::icon() const {
 		    this->iconName,
 		    this->menu->iconThemePath.value().join(':')
 		);
-	} else if (this->image != nullptr) {
-		return this->image->url();
+	} else if (this->image.hasData()) {
+		return this->image.url();
 	} else return nullptr;
 }
 
@@ -113,7 +113,7 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 	auto originalEnabled = this->mEnabled;
 	auto originalVisible = this->visible;
 	auto originalIconName = this->iconName;
-	auto* originalImage = this->image;
+	auto imageChanged = false;
 	auto originalIsSeparator = this->mSeparator;
 	auto originalButtonType = this->mButtonType;
 	auto originalToggleState = this->mCheckState;
@@ -173,12 +173,16 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 	if (iconData.canConvert<QByteArray>()) {
 		auto data = iconData.value<QByteArray>();
 		if (data.isEmpty()) {
-			this->image = nullptr;
-		} else if (this->image == nullptr || this->image->data != data) {
-			this->image = new DBusMenuPngImage(data, this);
+			imageChanged = this->image.hasData();
+			this->image.data.clear();
+		} else if (!this->image.hasData() || this->image.data != data) {
+			imageChanged = true;
+			this->image.data = data;
+			this->image.imageChanged();
 		}
 	} else if (removed.isEmpty() || removed.contains("icon-data")) {
-		this->image = nullptr;
+		imageChanged = this->image.hasData();
+		image.data.clear();
 	}
 
 	auto type = properties.value("type");
@@ -239,17 +243,13 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 	if (this->mSeparator != originalIsSeparator) emit this->isSeparatorChanged();
 	if (this->displayChildren != originalDisplayChildren) emit this->hasChildrenChanged();
 
-	if (this->iconName != originalIconName || this->image != originalImage) {
-		if (this->image != originalImage) {
-			delete originalImage;
-		}
-
+	if (this->iconName != originalIconName || imageChanged) {
 		emit this->iconChanged();
 	}
 
 	qCDebug(logDbusMenu).nospace() << "Updated properties of " << this << " { label=" << this->mText
 	                               << ", enabled=" << this->mEnabled << ", visible=" << this->visible
-	                               << ", iconName=" << this->iconName << ", iconData=" << this->image
+	                               << ", iconName=" << this->iconName << ", iconData=" << &this->image
 	                               << ", separator=" << this->mSeparator
 	                               << ", toggleType=" << this->mButtonType
 	                               << ", toggleState=" << this->mCheckState

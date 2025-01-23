@@ -20,15 +20,13 @@ public:
 	QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override;
 };
 
-class QsImageHandle: public QObject {
-	Q_OBJECT;
-
+class QsImageHandle {
 public:
-	explicit QsImageHandle(QQmlImageProviderBase::ImageType type, QObject* parent = nullptr);
-	~QsImageHandle() override;
+	explicit QsImageHandle(QQmlImageProviderBase::ImageType type);
+	virtual ~QsImageHandle();
 	Q_DISABLE_COPY_MOVE(QsImageHandle);
 
-	[[nodiscard]] QString url() const;
+	[[nodiscard]] virtual QString url() const;
 
 	virtual QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize);
 	virtual QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize);
@@ -36,4 +34,15 @@ public:
 private:
 	QQmlImageProviderBase::ImageType type;
 	QString id;
+};
+
+class QsIndexedImageHandle: public QsImageHandle {
+public:
+	explicit QsIndexedImageHandle(QQmlImageProviderBase::ImageType type): QsImageHandle(type) {}
+
+	[[nodiscard]] QString url() const override;
+	void imageChanged();
+
+private:
+	quint32 changeIndex = 0;
 };
