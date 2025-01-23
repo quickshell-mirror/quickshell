@@ -7,13 +7,13 @@
 
 namespace qs::hyprland::surface::impl {
 
-HyprlandSurfaceManager::HyprlandSurfaceManager(): QWaylandClientExtensionTemplate(1) {
+HyprlandSurfaceManager::HyprlandSurfaceManager(): QWaylandClientExtensionTemplate(2) {
 	this->initialize();
 }
 
 HyprlandSurface*
 HyprlandSurfaceManager::createHyprlandExtension(QtWaylandClient::QWaylandWindow* surface) {
-	return new HyprlandSurface(this->get_hyprland_surface(surface->surface()));
+	return new HyprlandSurface(this->get_hyprland_surface(surface->surface()), surface);
 }
 
 HyprlandSurfaceManager* HyprlandSurfaceManager::instance() {

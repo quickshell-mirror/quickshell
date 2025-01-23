@@ -34,7 +34,7 @@
     This protocol exposes hyprland-specific wl_surface properties.
   </description>
 
-  <interface name="hyprland_surface_manager_v1" version="1">
+  <interface name="hyprland_surface_manager_v1" version="2">
     <description summary="manager for hyprland surface objects">
       This interface allows a client to create hyprland surface objects.
     </description>
@@ -63,7 +63,7 @@
     </enum>
   </interface>
 
-  <interface name="hyprland_surface_v1" version="1">
+  <interface name="hyprland_surface_v1" version="2">
     <description summary="hyprland-specific wl_surface properties">
       This interface allows access to hyprland-specific properties of a wl_surface.
 
@@ -96,5 +96,31 @@
       <entry name="no_surface" value="0" summary="wl_surface was destroyed"/>
       <entry name="out_of_range" value="1" summary="given opacity was not in the range 0.0 - 1.0 (inclusive)"/>
     </enum>
+
+    <request name="set_visible_region" since="2">
+      <description summary="set the visible region of the surface">
+        This request sets the region of the surface that contains visible content.
+        Visible content refers to content that has an alpha value greater than zero.
+
+        The visible region is an optimization hint for the compositor that lets it
+        avoid drawing parts of the surface that are not visible. Setting a visible region
+        that does not contain all content in the surface may result in missing content
+        not being drawn.
+
+        The visible region is specified in buffer-local coordinates.
+
+        The compositor ignores the parts of the visible region that fall outside of the surface.
+        When all parts of the region fall outside of the buffer geometry, the compositor may
+        avoid rendering the surface entirely.
+
+        The initial value for the visible region is empty. Setting the
+        visible region has copy semantics, and the wl_region object can be destroyed immediately.
+        A NULL wl_region causes the visible region to be set to empty.
+
+        Does not take effect until wl_surface.commit is called.
+      </description>
+
+      <arg name="region" type="object" interface="wl_region" allow-null="true"/>
+    </request>
   </interface>
 </protocol>

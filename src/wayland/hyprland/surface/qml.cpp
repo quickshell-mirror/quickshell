@@ -1,17 +1,20 @@
 #include "qml.hpp"
 #include <memory>
 
+#include <private/qhighdpiscaling_p.h>
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlinfo.h>
+#include <qregion.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 #include <qwindow.h>
 
+#include "../../../core/region.hpp"
 #include "../../../window/proxywindow.hpp"
 #include "../../../window/windowinterface.hpp"
-#include "../../util.hpp"
 #include "manager.hpp"
 #include "surface.hpp"
 
@@ -40,6 +43,15 @@ HyprlandWindow::HyprlandWindow(ProxyWindowBase* window): QObject(nullptr), proxy
 	    &HyprlandWindow::onWindowConnected
 	);
 
+	QObject::connect(window, &ProxyWindowBase::polished, this, &HyprlandWindow::onWindowPolished);
+
+	QObject::connect(
+	    window,
+	    &ProxyWindowBase::devicePixelRatioChanged,
+	    this,
+	    &HyprlandWindow::updateVisibleMask
+	);
+
 	QObject::connect(window, &QObject::destroyed, this, &HyprlandWindow::onProxyWindowDestroyed);
 
 	if (window->backingWindow()) {
@@ -60,12 +72,74 @@ void HyprlandWindow::setOpacity(qreal opacity) {
 
 	this->mOpacity = opacity;
 
-	if (this->surface) {
-		this->surface->setOpacity(opacity);
-		qs::wayland::util::scheduleCommit(this->proxyWindow);
+	if (this->surface && this->proxyWindow) {
+		this->pendingPolish.opacity = true;
+		this->proxyWindow->schedulePolish();
 	}
 
 	emit this->opacityChanged();
+}
+
+PendingRegion* HyprlandWindow::visibleMask() const { return this->mVisibleMask; }
+
+void HyprlandWindow::setVisibleMask(PendingRegion* mask) {
+	if (mask == this->mVisibleMask) return;
+
+	if (this->mVisibleMask) {
+		QObject::disconnect(this->mVisibleMask, nullptr, this, nullptr);
+	}
+
+	this->mVisibleMask = mask;
+
+	if (mask) {
+		QObject::connect(mask, &QObject::destroyed, this, &HyprlandWindow::onVisibleMaskDestroyed);
+		QObject::connect(mask, &PendingRegion::changed, this, &HyprlandWindow::updateVisibleMask);
+	}
+
+	this->updateVisibleMask();
+	emit this->visibleMaskChanged();
+}
+
+void HyprlandWindow::onVisibleMaskDestroyed() {
+	this->mVisibleMask = nullptr;
+	this->updateVisibleMask();
+	emit this->visibleMaskChanged();
+}
+
+void HyprlandWindow::updateVisibleMask() {
+	if (!this->surface || !this->proxyWindow) return;
+
+	this->pendingPolish.visibleMask = true;
+	this->proxyWindow->schedulePolish();
+}
+
+void HyprlandWindow::onWindowPolished() {
+	if (!this->surface) return;
+
+	if (this->pendingPolish.opacity) {
+		this->surface->setOpacity(this->mOpacity);
+		this->pendingPolish.opacity = false;
+	}
+
+	if (this->pendingPolish.visibleMask) {
+		QRegion mask;
+		if (this->mVisibleMask != nullptr) {
+			mask =
+			    this->mVisibleMask->applyTo(QRect(0, 0, this->mWindow->width(), this->mWindow->height()));
+		}
+
+		auto dpr = this->proxyWindow->devicePixelRatio();
+		if (dpr != 1.0) {
+			mask = QHighDpi::scale(mask, dpr);
+		}
+
+		if (mask.isEmpty() && this->mVisibleMask) {
+			mask = QRect(-1, -1, 1, 1);
+		}
+
+		this->surface->setVisibleRegion(mask);
+		this->pendingPolish.visibleMask = false;
+	}
 }
 
 void HyprlandWindow::onWindowConnected() {
@@ -86,32 +160,45 @@ void HyprlandWindow::onWindowVisibleChanged() {
 		if (!this->mWindow->handle()) {
 			this->mWindow->create();
 		}
+	}
 
-		this->mWaylandWindow = dynamic_cast<QWaylandWindow*>(this->mWindow->handle());
+	auto* window = dynamic_cast<QWaylandWindow*>(this->mWindow->handle());
+	if (window == this->mWaylandWindow) return;
 
-		if (this->mWaylandWindow) {
-			// disconnected by destructor
+	if (this->mWaylandWindow) {
+		QObject::disconnect(this->mWaylandWindow, nullptr, this, nullptr);
+	}
 
-			QObject::connect(
-			    this->mWaylandWindow,
-			    &QWaylandWindow::surfaceCreated,
-			    this,
-			    &HyprlandWindow::onWaylandSurfaceCreated
-			);
+	this->mWaylandWindow = window;
+	if (!window) return;
 
-			QObject::connect(
-			    this->mWaylandWindow,
-			    &QWaylandWindow::surfaceDestroyed,
-			    this,
-			    &HyprlandWindow::onWaylandSurfaceDestroyed
-			);
+	QObject::connect(
+	    this->mWaylandWindow,
+	    &QObject::destroyed,
+	    this,
+	    &HyprlandWindow::onWaylandWindowDestroyed
+	);
 
-			if (this->mWaylandWindow->surface()) {
-				this->onWaylandSurfaceCreated();
-			}
-		}
+	QObject::connect(
+	    this->mWaylandWindow,
+	    &QWaylandWindow::surfaceCreated,
+	    this,
+	    &HyprlandWindow::onWaylandSurfaceCreated
+	);
+
+	QObject::connect(
+	    this->mWaylandWindow,
+	    &QWaylandWindow::surfaceDestroyed,
+	    this,
+	    &HyprlandWindow::onWaylandSurfaceDestroyed
+	);
+
+	if (this->mWaylandWindow->surface()) {
+		this->onWaylandSurfaceCreated();
 	}
 }
+
+void HyprlandWindow::onWaylandWindowDestroyed() { this->mWaylandWindow = nullptr; }
 
 void HyprlandWindow::onWaylandSurfaceCreated() {
 	auto* manager = impl::HyprlandSurfaceManager::instance();
@@ -122,12 +209,26 @@ void HyprlandWindow::onWaylandSurfaceCreated() {
 		return;
 	}
 
-	auto* ext = manager->createHyprlandExtension(this->mWaylandWindow);
-	this->surface = std::unique_ptr<impl::HyprlandSurface>(ext);
+	auto v = this->mWaylandWindow->property("hyprland_window_ext");
+	if (v.canConvert<HyprlandWindow*>()) {
+		auto* windowExt = v.value<HyprlandWindow*>();
+		if (windowExt != this && windowExt->surface) {
+			this->surface.swap(windowExt->surface);
+		}
+	}
 
-	if (this->mOpacity != 1.0) {
-		this->surface->setOpacity(this->mOpacity);
-		qs::wayland::util::scheduleCommit(this->proxyWindow);
+	if (!this->surface) {
+		auto* ext = manager->createHyprlandExtension(this->mWaylandWindow);
+		this->surface = std::unique_ptr<impl::HyprlandSurface>(ext);
+	}
+
+	this->mWaylandWindow->setProperty("hyprland_window_ext", QVariant::fromValue(this));
+
+	this->pendingPolish.opacity = this->mOpacity != 1.0;
+	this->pendingPolish.visibleMask = this->mVisibleMask;
+
+	if (this->pendingPolish.opacity || this->pendingPolish.visibleMask) {
+		this->proxyWindow->schedulePolish();
 	}
 }
 
@@ -144,8 +245,9 @@ void HyprlandWindow::onProxyWindowDestroyed() {
 	// Deleting it when the proxy window is deleted will cause a full opacity frame between the destruction of the
 	// hyprland_surface_v1 and wl_surface objects.
 
+	this->proxyWindow = nullptr;
+
 	if (this->surface == nullptr) {
-		this->proxyWindow = nullptr;
 		this->deleteLater();
 	}
 }
