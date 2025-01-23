@@ -29,6 +29,10 @@ class QuickshellScreenInfo: public QObject {
 	///
 	/// Usually something like `DP-1`, `HDMI-1`, `eDP-1`.
 	Q_PROPERTY(QString name READ name CONSTANT);
+	/// The model of the screen as seen by the operating system.
+	Q_PROPERTY(QString model READ model CONSTANT);
+	/// The serial number of the screen as seen by the operating system.
+	Q_PROPERTY(QString serialNumber READ serialNumber CONSTANT);
 	Q_PROPERTY(qint32 x READ x NOTIFY geometryChanged);
 	Q_PROPERTY(qint32 y READ y NOTIFY geometryChanged);
 	Q_PROPERTY(qint32 width READ width NOTIFY geometryChanged);
@@ -49,6 +53,8 @@ public:
 	bool operator==(QuickshellScreenInfo& other) const;
 
 	[[nodiscard]] QString name() const;
+	[[nodiscard]] QString model() const;
+	[[nodiscard]] QString serialNumber() const;
 	[[nodiscard]] qint32 x() const;
 	[[nodiscard]] qint32 y() const;
 	[[nodiscard]] qint32 width() const;

@@ -42,6 +42,24 @@ QString QuickshellScreenInfo::name() const {
 	return this->screen->name();
 }
 
+QString QuickshellScreenInfo::model() const {
+	if (this->screen == nullptr) {
+		this->warnDangling();
+		return "{ NULL SCREEN }";
+	}
+
+	return this->screen->model();
+}
+
+QString QuickshellScreenInfo::serialNumber() const {
+	if (this->screen == nullptr) {
+		this->warnDangling();
+		return "{ NULL SCREEN }";
+	}
+
+	return this->screen->serialNumber();
+}
+
 qint32 QuickshellScreenInfo::x() const {
 	if (this->screen == nullptr) {
 		this->warnDangling();
