@@ -100,7 +100,8 @@ public:
 
 	[[nodiscard]] qreal devicePixelRatio() const;
 
-	[[nodiscard]] virtual QuickshellScreenInfo* screen() const;
+	[[nodiscard]] QScreen* qscreen() const;
+	[[nodiscard]] QuickshellScreenInfo* screen() const;
 	virtual void setScreen(QuickshellScreenInfo* screen);
 
 	[[nodiscard]] QColor color() const;

@@ -90,8 +90,8 @@ void WlrLayershell::setHeight(qint32 height) {
 }
 
 void WlrLayershell::setScreen(QuickshellScreenInfo* screen) {
-	this->ProxyWindowBase::setScreen(screen);
 	this->ext->setUseWindowScreen(screen != nullptr);
+	this->ProxyWindowBase::setScreen(screen);
 }
 
 // NOLINTBEGIN

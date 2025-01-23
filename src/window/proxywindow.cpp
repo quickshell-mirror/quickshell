@@ -3,6 +3,7 @@
 #include <private/qquickwindow_p.h>
 #include <qcoreevent.h>
 #include <qevent.h>
+#include <qguiapplication.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
@@ -200,9 +201,6 @@ void ProxyWindowBase::completeWindow() {
 	if (this->mScreen != nullptr && this->window->screen() != this->mScreen) {
 		if (this->window->isVisible()) this->window->setVisible(false);
 		this->window->setScreen(this->mScreen);
-	} else if (this->mScreen == nullptr) {
-		this->mScreen = this->window->screen();
-		QObject::connect(this->mScreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
 	}
 
 	this->setWidth(this->mWidth);
@@ -327,39 +325,39 @@ void ProxyWindowBase::setHeight(qint32 height) {
 
 void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	auto* qscreen = screen == nullptr ? nullptr : screen->screen;
-	if (qscreen == this->mScreen) return;
+	auto newMScreen = this->mScreen != qscreen;
 
-	if (this->mScreen != nullptr) {
+	if (this->mScreen && newMScreen) {
 		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
 	}
 
-	if (this->window == nullptr) {
-		emit this->screenChanged();
-	} else {
-		auto reshow = this->isVisibleDirect();
-		if (reshow) this->setVisibleDirect(false);
-		if (this->window != nullptr) this->window->setScreen(qscreen);
-		if (reshow) this->setVisibleDirect(true);
+	if (this->qscreen() != qscreen) {
+		this->mScreen = qscreen;
+		if (this->window == nullptr) {
+			emit this->screenChanged();
+		} else if (qscreen) {
+			auto reshow = this->isVisibleDirect();
+			if (reshow) this->setVisibleDirect(false);
+			if (this->window != nullptr) this->window->setScreen(qscreen);
+			if (reshow) this->setVisibleDirect(true);
+		}
 	}
 
-	if (qscreen) this->mScreen = qscreen;
-	else this->mScreen = this->window->screen();
-
-	QObject::connect(this->mScreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
+	if (qscreen && newMScreen) {
+		QObject::connect(this->mScreen, &QObject::destroyed, this, &ProxyWindowBase::onScreenDestroyed);
+	}
 }
 
 void ProxyWindowBase::onScreenDestroyed() { this->mScreen = nullptr; }
 
+QScreen* ProxyWindowBase::qscreen() const {
+	if (this->window) return this->window->screen();
+	if (this->mScreen) return this->mScreen;
+	return QGuiApplication::primaryScreen();
+}
+
 QuickshellScreenInfo* ProxyWindowBase::screen() const {
-	QScreen* qscreen = nullptr;
-
-	if (this->window == nullptr) {
-		if (this->mScreen != nullptr) qscreen = this->mScreen;
-	} else {
-		qscreen = this->window->screen();
-	}
-
-	return QuickshellTracked::instance()->screenInfo(qscreen);
+	return QuickshellTracked::instance()->screenInfo(this->qscreen());
 }
 
 QColor ProxyWindowBase::color() const { return this->mColor; }
