@@ -102,9 +102,10 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 	return 0;
 }
 
-void sortInstances(QVector<InstanceLockInfo>& list) {
-	std::ranges::sort(list, [](const InstanceLockInfo& a, const InstanceLockInfo& b) {
-		return a.instance.launchTime < b.instance.launchTime;
+void sortInstances(QVector<InstanceLockInfo>& list, bool newestFirst) {
+	std::ranges::sort(list, [=](const InstanceLockInfo& a, const InstanceLockInfo& b) {
+		auto r = a.instance.launchTime < b.instance.launchTime;
+		return newestFirst ? !r : r;
 	});
 };
 
@@ -153,7 +154,7 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
 		auto instances = QsPaths::collectInstances(path);
-		sortInstances(instances);
+		sortInstances(instances, cmd.config.newest);
 
 		if (instances.isEmpty()) {
 			qCInfo(logBare) << "No running instances for" << configFilePath;
@@ -227,7 +228,7 @@ int listInstances(CommandState& cmd) {
 			qCInfo(logBare) << "Use --all to list all instances.";
 		}
 	} else {
-		sortInstances(instances);
+		sortInstances(instances, cmd.config.newest);
 
 		if (cmd.output.json) {
 			auto array = QJsonArray();

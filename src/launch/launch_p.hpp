@@ -49,6 +49,7 @@ struct CommandState {
 		QStringOption path;
 		QStringOption manifest;
 		QStringOption name;
+		bool newest = false;
 	} config;
 
 	struct {

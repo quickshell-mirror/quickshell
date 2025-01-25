@@ -16,7 +16,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	    .argv = argv,
 	};
 
-	auto addConfigSelection = [&](CLI::App* cmd) {
+	auto addConfigSelection = [&](CLI::App* cmd, bool withNewestOption = false) {
 		auto* group = cmd->add_option_group("Config Selection")
 		                  ->description("If no options in this group are specified,\n"
 		                                "$XDG_CONFIG_HOME/quickshell/shell.qml will be used.");
@@ -36,6 +36,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		                  "If -m is specified, this is a configuration in the manifest,\n"
 		                  "otherwise it is the name of a folder in $XDG_CONFIG_HOME/quickshell.")
 		    ->envname("QS_CONFIG_NAME");
+
+		if (withNewestOption) {
+			group->add_flag("-n,--newest", state.config.newest)
+			    ->description("Operate on the most recently launched instance instead of the oldest");
+		}
 
 		return group;
 	};
@@ -146,7 +151,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 
 		sub->add_flag("-j,--json", state.output.json, "Output the list as a json.");
 
-		addConfigSelection(sub)->excludes(all);
+		addConfigSelection(sub, true)->excludes(all);
 		addLoggingOptions(sub, false, true);
 
 		state.subcommand.list = sub;
@@ -156,7 +161,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		auto* sub = cli->add_subcommand("kill", "Kill quickshell instances.");
 		//sub->add_flag("-a,--all", "Kill all matching instances instead of just one.");
 		auto* instance = addInstanceSelection(sub);
-		addConfigSelection(sub)->excludes(instance);
+		addConfigSelection(sub, true)->excludes(instance);
 		addLoggingOptions(sub, false, true);
 
 		state.subcommand.kill = sub;
@@ -182,7 +187,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->excludes(arguments);
 
 		auto* instance = addInstanceSelection(sub);
-		addConfigSelection(sub)->excludes(instance);
+		addConfigSelection(sub, true)->excludes(instance);
 		addLoggingOptions(sub, false, true);
 
 		sub->require_option();
