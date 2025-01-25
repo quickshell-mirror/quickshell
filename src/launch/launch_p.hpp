@@ -68,9 +68,12 @@ struct CommandState {
 	} output;
 
 	struct {
-		bool info = false;
+		CLI::App* ipc = nullptr;
+		CLI::App* show = nullptr;
+		CLI::App* call = nullptr;
+		bool showOld = false;
 		QStringOption target;
-		QStringOption function;
+		QStringOption name;
 		std::vector<QStringOption> arguments;
 	} ipc;
 

@@ -285,26 +285,21 @@ int killInstances(CommandState& cmd) {
 	});
 }
 
-int msgInstance(CommandState& cmd) {
+int ipcCommand(CommandState& cmd) {
 	InstanceLockInfo instance;
 	auto r = selectInstance(cmd, &instance);
 	if (r != 0) return r;
 
 	return IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
-		if (cmd.ipc.info) {
-			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.function);
+		if (*cmd.ipc.show || cmd.ipc.showOld) {
+			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {
 				arguments += *arg;
 			}
 
-			return qs::io::ipc::comm::callFunction(
-			    &client,
-			    *cmd.ipc.target,
-			    *cmd.ipc.function,
-			    arguments
-			);
+			return qs::io::ipc::comm::callFunction(&client, *cmd.ipc.target, *cmd.ipc.name, arguments);
 		}
 
 		return -1;
@@ -423,8 +418,8 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		return listInstances(state);
 	} else if (*state.subcommand.kill) {
 		return killInstances(state);
-	} else if (*state.subcommand.msg) {
-		return msgInstance(state);
+	} else if (*state.subcommand.msg || *state.ipc.ipc) {
+		return ipcCommand(state);
 	} else {
 		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
 			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR

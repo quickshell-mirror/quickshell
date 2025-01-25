@@ -135,7 +135,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->description("Rules to apply to the log being read, in the format of QT_LOGGING_RULES.");
 
 		auto* instance = addInstanceSelection(sub)->excludes(file);
-		addConfigSelection(sub)->excludes(instance)->excludes(file);
+		addConfigSelection(sub, true)->excludes(instance)->excludes(file);
 		addLoggingOptions(sub, false);
 
 		state.subcommand.log = sub;
@@ -168,29 +168,52 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli->add_subcommand("msg", "Send messages to IpcHandlers.")->require_option();
-
-		auto* target = sub->add_option("target", state.ipc.target, "The target to message.");
-
-		auto* function = sub->add_option("function", state.ipc.function)
-		                     ->description("The function to call in the target.")
-		                     ->needs(target);
-
-		auto* arguments = sub->add_option("arguments", state.ipc.arguments)
-		                      ->description("Arguments to the called function.")
-		                      ->needs(function)
-		                      ->allow_extra_args();
-
-		sub->add_flag("-s,--show", state.ipc.info)
-		    ->description("Print information about a function or target if given, or all available "
-		                  "targets if not.")
-		    ->excludes(arguments);
+		auto* sub = cli->add_subcommand("ipc", "Communicate with other Quickshell instances.")
+		                ->require_subcommand();
+		state.ipc.ipc = sub;
 
 		auto* instance = addInstanceSelection(sub);
 		addConfigSelection(sub, true)->excludes(instance);
 		addLoggingOptions(sub, false, true);
 
-		sub->require_option();
+		{
+			auto* show = sub->add_subcommand("show", "Print information about available IPC targets.");
+			state.ipc.show = show;
+		}
+
+		{
+			auto* call = sub->add_subcommand("call", "Call an IpcHandler function.");
+			state.ipc.call = call;
+
+			call->add_option("target", state.ipc.target, "The target to message.");
+
+			call->add_option("function", state.ipc.name)
+			    ->description("The function to call in the target.");
+
+			call->add_option("arguments", state.ipc.arguments)
+			    ->description("Arguments to the called function.")
+			    ->allow_extra_args();
+		}
+	}
+
+	{
+		auto* sub = cli->add_subcommand("msg", "[DEPRECATED] Moved to `ipc call`.")->require_option();
+
+		sub->add_option("target", state.ipc.target, "The target to message.");
+
+		sub->add_option("function", state.ipc.name)->description("The function to call in the target.");
+
+		sub->add_option("arguments", state.ipc.arguments)
+		    ->description("Arguments to the called function.")
+		    ->allow_extra_args();
+
+		sub->add_flag("-s,--show", state.ipc.showOld)
+		    ->description("Print information about a function or target if given, or all available "
+		                  "targets if not.");
+
+		auto* instance = addInstanceSelection(sub);
+		addConfigSelection(sub, true)->excludes(instance);
+		addLoggingOptions(sub, false, true);
 
 		state.subcommand.msg = sub;
 	}
