@@ -37,6 +37,7 @@ qt_add_library(quickshell-core STATIC
 	common.cpp
 	iconprovider.cpp
 	scriptmodel.cpp
+	colorquantizer.cpp
 )
 
 qt_add_qml_module(quickshell-core

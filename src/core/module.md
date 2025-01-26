@@ -29,5 +29,6 @@ headers = [
 	"qsmenuanchor.hpp",
 	"clock.hpp",
 	"scriptmodel.hpp",
+	"colorquantizer.hpp",
 ]
 -----
