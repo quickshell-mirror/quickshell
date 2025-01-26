@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qobjectdefs.h>
 #include <qtclasshelpermacros.h>
+#include <qtypes.h>
 
 #include "../ipc/ipc.hpp"
 
@@ -21,10 +22,12 @@ public:
 
 	[[nodiscard]] virtual const char* name() const = 0;
 	[[nodiscard]] virtual const char* genericArgumentName() const = 0;
+	[[nodiscard]] virtual qsizetype size() const = 0;
 	[[nodiscard]] virtual void* fromString(const QString& /*string*/) const { return nullptr; }
 	[[nodiscard]] virtual QString toString(void* /*slot*/) const { return ""; }
 	[[nodiscard]] virtual void* createStorage() const { return nullptr; }
 	virtual void destroyStorage(void* /*slot*/) const {}
+	void* copyStorage(const void* data) const;
 
 	static const IpcType* ipcType(const QMetaType& metaType);
 };
@@ -43,6 +46,7 @@ public:
 	[[nodiscard]] QGenericReturnArgument asGenericReturnArgument();
 
 	void replace(void* value);
+	void replace(const QVariant& value);
 
 private:
 	const IpcType* mType = nullptr;
@@ -53,6 +57,7 @@ class VoidIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 
 	static const VoidIpcType INSTANCE;
 };
@@ -61,6 +66,7 @@ class StringIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 	[[nodiscard]] void* fromString(const QString& string) const override;
 	[[nodiscard]] QString toString(void* slot) const override;
 	[[nodiscard]] void* createStorage() const override;
@@ -73,6 +79,7 @@ class IntIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 	[[nodiscard]] void* fromString(const QString& string) const override;
 	[[nodiscard]] QString toString(void* slot) const override;
 	[[nodiscard]] void* createStorage() const override;
@@ -85,6 +92,7 @@ class BoolIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 	[[nodiscard]] void* fromString(const QString& string) const override;
 	[[nodiscard]] QString toString(void* slot) const override;
 	[[nodiscard]] void* createStorage() const override;
@@ -97,6 +105,7 @@ class DoubleIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 	[[nodiscard]] void* fromString(const QString& string) const override;
 	[[nodiscard]] QString toString(void* slot) const override;
 	[[nodiscard]] void* createStorage() const override;
@@ -109,6 +118,7 @@ class ColorIpcType: public IpcType {
 public:
 	[[nodiscard]] const char* name() const override;
 	[[nodiscard]] const char* genericArgumentName() const override;
+	[[nodiscard]] qsizetype size() const override;
 	[[nodiscard]] void* fromString(const QString& string) const override;
 	[[nodiscard]] QString toString(void* slot) const override;
 	[[nodiscard]] void* createStorage() const override;
@@ -127,13 +137,23 @@ struct WireFunctionDefinition {
 
 DEFINE_SIMPLE_DATASTREAM_OPS(WireFunctionDefinition, data.name, data.returnType, data.arguments);
 
-struct WireTargetDefinition {
+struct WirePropertyDefinition {
 	QString name;
-	QVector<WireFunctionDefinition> functions;
+	QString type;
 
 	[[nodiscard]] QString toString() const;
 };
 
-DEFINE_SIMPLE_DATASTREAM_OPS(WireTargetDefinition, data.name, data.functions);
+DEFINE_SIMPLE_DATASTREAM_OPS(WirePropertyDefinition, data.name, data.type);
+
+struct WireTargetDefinition {
+	QString name;
+	QVector<WireFunctionDefinition> functions;
+	QVector<WirePropertyDefinition> properties;
+
+	[[nodiscard]] QString toString() const;
+};
+
+DEFINE_SIMPLE_DATASTREAM_OPS(WireTargetDefinition, data.name, data.functions, data.properties);
 
 } // namespace qs::io::ipc

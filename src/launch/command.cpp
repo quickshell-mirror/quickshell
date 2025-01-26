@@ -293,6 +293,8 @@ int ipcCommand(CommandState& cmd) {
 	return IpcClient::connect(instance.instance.instanceId, [&](IpcClient& client) {
 		if (*cmd.ipc.show || cmd.ipc.showOld) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.getprop) {
+			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {

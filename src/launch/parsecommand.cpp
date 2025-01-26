@@ -194,6 +194,18 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 			    ->description("Arguments to the called function.")
 			    ->allow_extra_args();
 		}
+
+		{
+			auto* prop =
+			    sub->add_subcommand("prop", "Manipulate IpcHandler properties.")->require_subcommand();
+
+			{
+				auto* get = prop->add_subcommand("get", "Read the value of a property.");
+				state.ipc.getprop = get;
+				get->add_option("target", state.ipc.target, "The target to read the property of.");
+				get->add_option("property", state.ipc.name)->description("The property to read.");
+			}
+		}
 	}
 
 	{

@@ -107,6 +107,32 @@ WireFunctionDefinition IpcFunction::wireDef() const {
 	return wire;
 }
 
+bool IpcProperty::resolve(QString& error) {
+	this->type = IpcType::ipcType(this->property.metaType());
+
+	if (!this->type) {
+		error = QString("Type %1 cannot be used across IPC.").arg(this->property.metaType().name());
+		return false;
+	}
+
+	return true;
+}
+
+void IpcProperty::read(QObject* target, IpcTypeSlot& slot) const {
+	slot.replace(this->property.read(target));
+}
+
+QString IpcProperty::toString() const {
+	return QString("property ") % this->property.name() % ": " % this->type->name();
+}
+
+WirePropertyDefinition IpcProperty::wireDef() const {
+	WirePropertyDefinition wire;
+	wire.name = this->property.name();
+	wire.type = this->type->name();
+	return wire;
+}
+
 IpcCallStorage::IpcCallStorage(const IpcFunction& function): returnSlot(function.returnType) {
 	for (const auto& arg: function.argumentTypes) {
 		this->argumentSlots.emplace_back(arg);
@@ -150,6 +176,21 @@ void IpcHandler::onPostReload() {
 			    << "Error parsing function \"" << method.name() << "\": " << error;
 		} else {
 			this->functionMap.insert(method.name(), ipcFunc);
+		}
+	}
+
+	for (auto i = smeta.propertyCount(); i != meta->propertyCount(); i++) {
+		const auto& property = meta->property(i);
+		if (!property.isReadable() || !property.hasNotifySignal()) continue;
+
+		auto ipcProp = IpcProperty(property);
+		QString error;
+
+		if (!ipcProp.resolve(error)) {
+			qmlWarning(this).nospace().noquote()
+			    << "Error parsing property \"" << property.name() << "\": " << error;
+		} else {
+			this->propertyMap.insert(property.name(), ipcProp);
 		}
 	}
 
@@ -270,6 +311,10 @@ WireTargetDefinition IpcHandler::wireDef() const {
 		wire.functions += func.wireDef();
 	}
 
+	for (const auto& prop: this->propertyMap.values()) {
+		wire.properties += prop.wireDef();
+	}
+
 	return wire;
 }
 
@@ -304,6 +349,13 @@ IpcFunction* IpcHandler::findFunction(const QString& name) {
 	auto itr = this->functionMap.find(name);
 
 	if (itr == this->functionMap.end()) return nullptr;
+	else return &*itr;
+}
+
+IpcProperty* IpcHandler::findProperty(const QString& name) {
+	auto itr = this->propertyMap.find(name);
+
+	if (itr == this->propertyMap.end()) return nullptr;
 	else return &*itr;
 }
 

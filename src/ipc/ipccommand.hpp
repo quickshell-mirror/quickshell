@@ -15,6 +15,7 @@ using IpcCommand = std::variant<
     std::monostate,
     IpcKillCommand,
     qs::io::ipc::comm::QueryMetadataCommand,
-    qs::io::ipc::comm::StringCallCommand>;
+    qs::io::ipc::comm::StringCallCommand,
+    qs::io::ipc::comm::StringPropReadCommand>;
 
 } // namespace qs::ipc

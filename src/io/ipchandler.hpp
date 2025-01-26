@@ -53,14 +53,28 @@ private:
 	friend class IpcFunction;
 };
 
+class IpcProperty {
+public:
+	explicit IpcProperty(QMetaProperty property): property(property) {}
+
+	bool resolve(QString& error);
+	void read(QObject* target, IpcTypeSlot& slot) const;
+
+	[[nodiscard]] QString toString() const;
+	[[nodiscard]] WirePropertyDefinition wireDef() const;
+
+	QMetaProperty property;
+	const IpcType* type = nullptr;
+};
+
 class IpcHandlerRegistry;
 
 ///! Handler for IPC message calls.
 /// Each IpcHandler is registered into a per-instance map by its unique @@target.
-/// Functions defined on the IpcHandler can be called by `qs msg`.
+/// Functions and properties defined on the IpcHandler can be accessed via `qs ipc`.
 ///
 /// #### Handler Functions
-/// IPC handler functions can be called by `qs msg` as long as they have at most 10
+/// IPC handler functions can be called by `qs ipc call` as long as they have at most 10
 /// arguments, and all argument types along with the return type are listed below.
 ///
 /// **Argument and return types must be explicitly specified or they will not
@@ -112,9 +126,9 @@ class IpcHandlerRegistry;
 ///   }
 /// }
 /// ```
-/// The list of registered targets can be inspected using `qs msg -s`.
+/// The list of registered targets can be inspected using `qs ipc show`.
 /// ```sh
-/// $ qs msg -s
+/// $ qs ipc show
 /// target rect
 ///   function setColor(color: color): void
 ///   function getColor(): color
@@ -124,18 +138,22 @@ class IpcHandlerRegistry;
 ///   function getRadius(): int
 /// ```
 ///
-/// and then invoked using `qs msg`.
+/// and then invoked using `qs ipc call`.
 /// ```sh
-/// $ qs msg rect setColor orange
-/// $ qs msg rect setAngle 40.5
-/// $ qs msg rect setRadius 30
-/// $ qs msg rect getColor
+/// $ qs ipc call rect setColor orange
+/// $ qs ipc call rect setAngle 40.5
+/// $ qs ipc call rect setRadius 30
+/// $ qs ipc call rect getColor
 /// #ffffa500
-/// $ qs msg rect getAngle
+/// $ qs ipc call rect getAngle
 /// 40.5
-/// $ qs msg rect getRadius
+/// $ qs ipc call rect getRadius
 /// 30
 /// ```
+///
+/// #### Properties
+/// Properties of an IpcHanlder can be read using `qs ipc prop get` as long as they are
+/// of an IPC compatible type. See the table above for compatible types.
 class IpcHandler
     : public QObject
     , public PostReloadHook {
@@ -162,11 +180,15 @@ public:
 
 	QString listMembers(qsizetype indent);
 	[[nodiscard]] IpcFunction* findFunction(const QString& name);
+	[[nodiscard]] IpcProperty* findProperty(const QString& name);
 	[[nodiscard]] WireTargetDefinition wireDef() const;
 
 signals:
 	void enabledChanged();
 	void targetChanged();
+
+private slots:
+	//void handleIpcPropertyChange();
 
 private:
 	void updateRegistration(bool destroying = false);
@@ -183,6 +205,7 @@ private:
 	bool complete = false;
 
 	QHash<QString, IpcFunction> functionMap;
+	QHash<QString, IpcProperty> propertyMap;
 
 	friend class IpcHandlerRegistry;
 };
