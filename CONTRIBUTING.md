@@ -30,6 +30,139 @@ If the results look stupid, fix the clang-format file if possible,
 or disable clang-format in the affected area
 using `// clang-format off` and `// clang-format on`.
 
+#### Style preferences not caught by clang-format
+These are flexible. You can ignore them if it looks or works better to
+for one reason or another.
+
+Use `auto` if the type of a variable can be deduced automatically, instead of
+redeclaring the returned value's type. Additionally, auto should be used when a
+constructor takes arguments.
+
+```cpp
+auto x = <expr>; // ok
+auto x = QString::number(3); // ok
+QString x; // ok
+QString x = "foo"; // ok
+auto x = QString("foo"); // ok
+
+auto x = QString(); // avoid
+QString x(); // avoid
+QString x("foo"); // avoid
+```
+
+Put newlines around logical units of code, and after closing braces. If the
+most reasonable logical unit of code takes only a single line, it should be
+merged into the next single line logical unit if applicable.
+```cpp
+// multiple units
+auto x = <expr>; // unit 1
+auto y = <expr>; // unit 2
+
+auto x = <expr>; // unit 1
+emit this->y(); // unit 2
+
+auto x1 = <expr>; // unit 1
+auto x2 = <expr>; // unit 1
+auto x3 = <expr>; // unit 1
+
+auto y1 = <expr>; // unit 2
+auto y2 = <expr>; // unit 2
+auto y3 = <expr>; // unit 2
+
+// one unit
+auto x = <expr>;
+if (x...) {
+  // ...
+}
+
+// if more than one variable needs to be used then add a newline
+auto x = <expr>;
+auto y = <expr>;
+
+if (x && y) {
+  // ...
+}
+```
+
+Class formatting:
+```cpp
+//! Doc comment summary
+/// Doc comment body
+class Foo: public QObject {
+  // The Q_OBJECT macro comes first. Macros are ; terminated.
+  Q_OBJECT;
+  QML_ELEMENT;
+  QML_CLASSINFO(...);
+  // Properties must stay on a single line or the doc generator won't be able to pick them up
+  Q_PROPERTY(...);
+  /// Doc comment
+  Q_PROPERTY(...);
+  /// Doc comment
+  Q_PROPERTY(...);
+
+public:
+  // Classes should have explicit constructors if they aren't intended to
+  // implicitly cast. The constructor can be inline in the header if it has no body.
+  explicit Foo(QObject* parent = nullptr): QObject(parent) {}
+
+  // Instance functions if applicable.
+  static Foo* instance();
+
+  // Member functions unrelated to properties come next
+  void function();
+  void function();
+  void function();
+
+  // Then Q_INVOKABLEs
+  Q_INVOKABLE function();
+  /// Doc comment
+  Q_INVOKABLE function();
+  /// Doc comment
+  Q_INVOKABLE function();
+
+  // Then property related functions, in the order (bindable, getter, setter).
+  // Related functions may be included here as well. Function bodies may be inline
+  // if they are a single expression. There should be a newline between each
+  // property's methods.
+  [[nodiscard]] QBindable<T> bindableFoo() { return &this->bFoo; }
+  [[nodiscard]] T foo() const { return this->foo; }
+  void setFoo();
+
+  [[nodiscard]] T bar() const { return this->foo; }
+  void setBar();
+
+signals:
+  // Signals that are not property change related go first.
+  // Property change signals go in property definition order.
+  void asd();
+  void asd2();
+  void fooChanged();
+  void barChanged();
+
+public slots:
+  // generally Q_INVOKABLEs are preferred to public slots.
+  void slot();
+
+private slots:
+  // ...
+
+private:
+  // statics, then functions, then fields
+  static const foo BAR;
+  static void foo();
+
+  void foo();
+  void bar();
+
+  // property related members are prefixed with `m`.
+  QString mFoo;
+  QString bar;
+
+  // Bindables go last and should be prefixed with `b`.
+  Q_OBJECT_BINDABLE_PROPERTY(Foo, QString, bFoo, &Foo::fooChanged);
+};
+```
+
 ### Linter
 All contributions should pass the linter.
 
@@ -37,11 +170,11 @@ Note that running the linter requires disabling precompiled
 headers and including the test codepaths:
 ```sh
 $ just configure debug -DNO_PCH=ON -DBUILD_TESTING=ON
-$ just lint
+$ just lint-changed
 ```
 
 If the linter is complaining about something that you think it should not,
-please disable the lint in your MR and explain your reasoning.
+please disable the lint in your MR and explain your reasoning if it isn't obvious.
 
 ### Tests
 If you feel like the feature you are working on is very complex or likely to break,
@@ -77,7 +210,7 @@ and list of headers to scan for documentation.
 ### Commits
 Please structure your commit messages as `scope[!]: commit` where
 the scope is something like `core` or `service/mpris`. (pick what has been
-used historically or what makes sense if new.) Add `!` for changes that break
+used historically or what makes sense if new). Add `!` for changes that break
 existing APIs or functionality.
 
 Commit descriptions should contain a summary of the changes if they are not
