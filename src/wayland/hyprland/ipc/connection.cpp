@@ -342,7 +342,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		if (this->mFocusedMonitor != nullptr) {
 			auto* workspace = this->findWorkspaceByName(name, true, id);
 			this->mFocusedMonitor->setActiveWorkspace(workspace);
-			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on" << this->mFocusedMonitor->name();
+			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on"
+			                        << this->mFocusedMonitor->name();
 		}
 	} else if (event->name == "moveworkspacev2") {
 		auto args = event->parseView(3);
@@ -377,15 +378,28 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 HyprlandWorkspace*
 HyprlandIpc::findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id) {
 	const auto& mList = this->mWorkspaces.valueList();
+	HyprlandWorkspace* workspace = nullptr;
 
-	auto workspaceIter =
-	    std::ranges::find_if(mList, [name](const HyprlandWorkspace* m) { return m->name() == name; });
+	if (id != -1) {
+		auto workspaceIter =
+		    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->id() == id; });
 
-	if (workspaceIter != mList.end()) {
-		return *workspaceIter;
+		workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
+	}
+
+	if (!workspace) {
+		auto workspaceIter =
+		    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->name() == name; });
+
+		workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
+	}
+
+	if (workspace) {
+		return workspace;
 	} else if (createIfMissing) {
 		qCDebug(logHyprlandIpc) << "Workspace" << name
-		                        << "requested before creation, performing early init";
+		                        << "requested before creation, performing early init with id" << id;
+
 		auto* workspace = new HyprlandWorkspace(this);
 		workspace->updateInitial(id, name);
 		this->mWorkspaces.insertObject(workspace);
@@ -414,9 +428,8 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 
 			auto id = object.value("id").toInt();
 
-			auto workspaceIter = std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) {
-				return m->id() == id;
-			});
+			auto workspaceIter =
+			    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->id() == id; });
 
 			// Only fall back to name-based filtering as a last resort, for workspaces where
 			// no ID has been determined yet.

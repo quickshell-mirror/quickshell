@@ -81,7 +81,7 @@ public:
 	[[nodiscard]] ObjectModel<HyprlandWorkspace>* workspaces();
 
 	// No byId because these preemptively create objects. The given id is set if created.
-	HyprlandWorkspace* findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id = 0);
+	HyprlandWorkspace* findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id = -1);
 	HyprlandMonitor* findMonitorByName(const QString& name, bool createIfMissing, qint32 id = -1);
 
 	// canCreate avoids making ghost workspaces when the connection races

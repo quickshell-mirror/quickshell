@@ -35,6 +35,7 @@ void HyprlandWorkspace::updateInitial(qint32 id, QString name) {
 }
 
 void HyprlandWorkspace::updateFromObject(QVariantMap object) {
+	auto name = object.value("name").value<QString>();
 	auto monitorId = object.value("monitorID").value<qint32>();
 	auto monitorName = object.value("monitor").value<QString>();
 
@@ -48,8 +49,8 @@ void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 
 	// No events we currently handle give a workspace id but not a name,
 	// so we shouldn't set this if it isn't an initial query
-	if (initial) {
-		this->mName = object.value("name").value<QString>();
+	if (initial && name != this->mName) {
+		this->mName = name;
 		emit this->nameChanged();
 	}
 
