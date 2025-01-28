@@ -333,6 +333,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto* monitor = this->findMonitorByName(name, true);
 		this->setFocusedMonitor(monitor);
 		monitor->setActiveWorkspace(workspace);
+		qCDebug(logHyprlandIpc) << "Monitor" << name << "focused with workspace" << workspace->id();
 	} else if (event->name == "workspacev2") {
 		auto args = event->parseView(2);
 		auto id = args.at(0).toInt();
@@ -341,6 +342,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		if (this->mFocusedMonitor != nullptr) {
 			auto* workspace = this->findWorkspaceByName(name, true, id);
 			this->mFocusedMonitor->setActiveWorkspace(workspace);
+			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on" << this->mFocusedMonitor->name();
 		}
 	} else if (event->name == "moveworkspacev2") {
 		auto args = event->parseView(3);
@@ -351,6 +353,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto* workspace = this->findWorkspaceByName(name, true, id);
 		auto* monitor = this->findMonitorByName(monitorName, true);
 
+		qCDebug(logHyprlandIpc) << "Workspace" << id << "moved to monitor" << monitorName;
 		workspace->setMonitor(monitor);
 	} else if (event->name == "renameworkspace") {
 		auto args = event->parseView(2);
@@ -400,24 +403,35 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 		this->requestingWorkspaces = false;
 		if (!success) return;
 
-		qCDebug(logHyprlandIpc) << "parsing workspaces response";
+		qCDebug(logHyprlandIpc) << "Parsing workspaces response";
 		auto json = QJsonDocument::fromJson(resp).array();
 
 		const auto& mList = this->mWorkspaces.valueList();
-		auto names = QVector<QString>();
+		auto ids = QVector<quint32>();
 
 		for (auto entry: json) {
 			auto object = entry.toObject().toVariantMap();
-			auto name = object.value("name").toString();
 
-			auto workspaceIter = std::ranges::find_if(mList, [name](const HyprlandWorkspace* m) {
-				return m->name() == name;
+			auto id = object.value("id").toInt();
+
+			auto workspaceIter = std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) {
+				return m->id() == id;
 			});
+
+			// Only fall back to name-based filtering as a last resort, for workspaces where
+			// no ID has been determined yet.
+			if (workspaceIter == mList.end()) {
+				auto name = object.value("name").toString();
+
+				workspaceIter = std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) {
+					return m->id() == -1 && m->name() == name;
+				});
+			}
 
 			auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 			auto existed = workspace != nullptr;
 
-			if (workspace == nullptr) {
+			if (!existed) {
 				if (!canCreate) continue;
 				workspace = new HyprlandWorkspace(this);
 			}
@@ -428,20 +442,22 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 				this->mWorkspaces.insertObject(workspace);
 			}
 
-			names.push_back(name);
+			ids.push_back(id);
 		}
 
-		auto removedWorkspaces = QVector<HyprlandWorkspace*>();
+		if (canCreate) {
+			auto removedWorkspaces = QVector<HyprlandWorkspace*>();
 
-		for (auto* workspace: mList) {
-			if (!names.contains(workspace->name())) {
-				removedWorkspaces.push_back(workspace);
+			for (auto* workspace: mList) {
+				if (!ids.contains(workspace->id())) {
+					removedWorkspaces.push_back(workspace);
+				}
 			}
-		}
 
-		for (auto* workspace: removedWorkspaces) {
-			this->mWorkspaces.removeObject(workspace);
-			delete workspace;
+			for (auto* workspace: removedWorkspaces) {
+				this->mWorkspaces.removeObject(workspace);
+				delete workspace;
+			}
 		}
 	});
 }

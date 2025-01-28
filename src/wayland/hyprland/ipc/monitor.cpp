@@ -117,6 +117,8 @@ void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
 	this->mActiveWorkspace = workspace;
 
 	if (workspace != nullptr) {
+		workspace->setMonitor(this);
+
 		QObject::connect(
 		    workspace,
 		    &QObject::destroyed,
