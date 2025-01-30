@@ -369,7 +369,7 @@ void I3Ipc::onEvent(I3IpcEvent* event) {
 		return;
 	case EventCode::Subscribe: qCInfo(logI3Ipc) << "Connected to IPC"; return;
 	case EventCode::GetOutputs: this->handleGetOutputsEvent(event); return;
-	case EventCode::GetWorkspaces: this->handleWorkspaceEvent(event); return;
+	case EventCode::GetWorkspaces: this->handleGetWorkspacesEvent(event); return;
 	case EventCode::RunCommand: I3Ipc::handleRunCommand(event); return;
 	case EventCode::Unknown:
 		qCWarning(logI3Ipc) << "Unknown event:" << event->type() << event->data();
