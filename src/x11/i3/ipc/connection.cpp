@@ -401,8 +401,9 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 		auto workspaceData = event->mData["current"];
 
 		auto* workspace = this->findWorkspaceByID(workspaceData["id"].toInt(-1));
+		auto existed = workspace != nullptr;
 
-		if (workspace == nullptr) {
+		if (!existed) {
 			workspace = new I3Workspace(this);
 		}
 
@@ -410,8 +411,10 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 			workspace->updateFromObject(workspaceData.toObject().toVariantMap());
 		}
 
-		this->mWorkspaces.insertObject(workspace);
-		qCInfo(logI3Ipc) << "Added workspace" << workspace->name() << "to list";
+		if (!existed) {
+			this->mWorkspaces.insertObject(workspace);
+			qCInfo(logI3Ipc) << "Added workspace" << workspace->name() << "to list";
+		}
 	} else if (change == "focus") {
 		auto oldData = event->mData["old"];
 		auto newData = event->mData["current"];
