@@ -51,6 +51,7 @@ signals:
 private slots:
 	void onParentClosed();
 	void onRectWindowDestroyed();
+	void onScreenAdded(QScreen* screen);
 
 private:
 	void zwlr_foreign_toplevel_handle_v1_done() override;
@@ -66,6 +67,7 @@ private:
 	QString mAppId;
 	QString mTitle;
 	QVector<QScreen*> mVisibleScreens;
+	QVector<wl_output*> mPendingVisibleScreens;
 	ToplevelHandle* mParent = nullptr;
 	bool mActivated = false;
 	bool mMaximized = false;
