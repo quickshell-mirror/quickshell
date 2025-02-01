@@ -333,7 +333,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto* monitor = this->findMonitorByName(name, true);
 		this->setFocusedMonitor(monitor);
 		monitor->setActiveWorkspace(workspace);
-		qCDebug(logHyprlandIpc) << "Monitor" << name << "focused with workspace" << workspace->id();
+		qCDebug(logHyprlandIpc) << "Monitor" << name << "focused with workspace"
+		                        << (workspace ? workspace->id() : -1);
 	} else if (event->name == "workspacev2") {
 		auto args = event->parseView(2);
 		auto id = args.at(0).toInt();
