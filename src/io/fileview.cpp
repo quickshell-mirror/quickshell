@@ -490,7 +490,14 @@ void FileView::updateWatchedFiles() {
 		qCDebug(logFileView) << "Creating watcher for" << this << "at" << this->targetPath;
 		this->watcher = new QFileSystemWatcher(this);
 		this->watcher->addPath(this->targetPath);
-		this->watcher->addPath(QDir(this->targetPath).dirName());
+
+		auto dirPath = this->targetPath;
+		if (!dirPath.contains("/")) dirPath = "./" % dirPath;
+
+		if (auto lastIndex = dirPath.lastIndexOf('/'); lastIndex != -1) {
+			dirPath = dirPath.sliced(0, lastIndex);
+			this->watcher->addPath(dirPath);
+		}
 
 		QObject::connect(
 		    this->watcher,
