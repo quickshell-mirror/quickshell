@@ -242,7 +242,7 @@ public:
 	/// Equivalent to calling @@play() if not playing or @@pause() if playing.
 	///
 	/// May only be called if @@canTogglePlaying is true, which is equivalent to
-	/// @@canPlay or @@canPause() depending on the current playback state.
+	/// @@canPlay or @@canPause depending on the current playback state.
 	Q_INVOKABLE void togglePlaying();
 
 	[[nodiscard]] bool isValid() const;
@@ -391,6 +391,7 @@ private slots:
 private:
 	void onMetadataChanged();
 	void onPositionUpdated();
+	void onPlaybackStatusUpdated();
 	// call instead of setting bpPosition
 	void setPosition(qlonglong position);
 	void requestPositionUpdate() { this->pPosition.requestUpdate(); };
@@ -462,7 +463,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, qlonglong, pPosition, bpPosition, onPositionUpdated, playerProperties, "Position", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pVolume, bVolume, playerProperties, "Volume", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMetadata, bpMetadata, playerProperties, "Metadata");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pPlaybackStatus, bpPlaybackStatus, playerProperties, "PlaybackStatus");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, void, pPlaybackStatus, bpPlaybackStatus, onPlaybackStatusUpdated, playerProperties, "PlaybackStatus", true);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pLoopStatus, bpLoopStatus, playerProperties, "LoopStatus", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pRate, bRate, playerProperties, "Rate", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMinRate, bMinRate, playerProperties, "MinimumRate", false);
@@ -477,6 +478,8 @@ private:
 	DBusMprisPlayer* player = nullptr;
 	QString mTrackId;
 	QString mTrackUrl;
+	QString mTrackTitle;
+	bool trackChangedBeforeState = false;
 };
 
 } // namespace qs::service::mpris
