@@ -10,6 +10,7 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qvariant.h>
+#include <sys/types.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
 
