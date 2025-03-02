@@ -295,6 +295,13 @@ int ipcCommand(CommandState& cmd) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else if (*cmd.ipc.getprop) {
 			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.callJson) {
+			return qs::io::ipc::comm::callFunction(
+			    &client,
+			    *cmd.ipc.target,
+			    *cmd.ipc.name,
+			    {*cmd.ipc.jsonArgument}
+			);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {

@@ -71,10 +71,12 @@ struct CommandState {
 		CLI::App* ipc = nullptr;
 		CLI::App* show = nullptr;
 		CLI::App* call = nullptr;
+		CLI::App* callJson = nullptr;
 		CLI::App* getprop = nullptr;
 		bool showOld = false;
 		QStringOption target;
 		QStringOption name;
+		QStringOption jsonArgument;
 		std::vector<QStringOption> arguments;
 	} ipc;
 
