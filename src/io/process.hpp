@@ -11,6 +11,11 @@
 
 #include "datastream.hpp"
 
+// Needed when compiling with clang musl-libc++.
+// Default include paths contain macros that cause name collisions.
+#undef stdout
+#undef stderr
+
 ///! Child process.
 /// #### Example
 /// ```qml
