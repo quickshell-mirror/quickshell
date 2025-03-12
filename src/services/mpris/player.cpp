@@ -1,6 +1,5 @@
 #include "player.hpp"
 
-#include <qtimer.h>
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
 #include <qdbusconnection.h>
@@ -11,6 +10,7 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qstring.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 

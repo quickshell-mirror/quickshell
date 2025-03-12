@@ -7,8 +7,6 @@ qt_add_library(quickshell-io STATIC
 	ipchandler.cpp
 )
 
-add_library(quickshell-io-init OBJECT init.cpp)
-
 if (SOCKETS)
 	target_sources(quickshell-io PRIVATE socket.cpp)
 endif()
@@ -24,9 +22,7 @@ qt_add_qml_module(quickshell-io
 install_qml_module(quickshell-io)
 
 target_link_libraries(quickshell-io PRIVATE Qt::Quick)
-target_link_libraries(quickshell-io-init PRIVATE Qt::Qml)
-
-target_link_libraries(quickshell PRIVATE quickshell-ioplugin quickshell-io-init)
+target_link_libraries(quickshell PRIVATE quickshell-ioplugin)
 
 qs_module_pch(quickshell-io)
 
