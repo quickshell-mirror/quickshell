@@ -20,8 +20,9 @@ public:
 	static QDir crashDir(const QString& id);
 	static QString basePath(const QString& id);
 	static QString ipcPath(const QString& id);
-	static bool checkLock(const QString& path, InstanceLockInfo* info = nullptr);
-	static QVector<InstanceLockInfo> collectInstances(const QString& path);
+	static bool
+	checkLock(const QString& path, InstanceLockInfo* info = nullptr, bool allowDead = false);
+	static QVector<InstanceLockInfo> collectInstances(const QString& path, bool fallbackDead = false);
 
 	QDir* cacheDir();
 	QDir* baseRunDir();

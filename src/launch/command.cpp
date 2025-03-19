@@ -109,7 +109,7 @@ void sortInstances(QVector<InstanceLockInfo>& list, bool newestFirst) {
 	});
 };
 
-int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
+int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallback = false) {
 	auto* basePath = QsPaths::instance()->baseRunDir();
 	if (!basePath) return -1;
 
@@ -117,13 +117,13 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 
 	if (cmd.instance.pid != -1) {
 		path = QDir(basePath->filePath("by-pid")).filePath(QString::number(cmd.instance.pid));
-		if (!QsPaths::checkLock(path, instance)) {
+		if (!QsPaths::checkLock(path, instance, deadFallback)) {
 			qCInfo(logBare) << "No instance found for pid" << cmd.instance.pid;
 			return -1;
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto instances = QsPaths::collectInstances(path);
+		auto instances = QsPaths::collectInstances(path, deadFallback);
 
 		instances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
@@ -136,7 +136,8 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 			qCInfo(logBare) << "More than one instance starts with" << *cmd.instance.id;
 
 			for (auto& instance: instances) {
-				qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+				qCInfo(logBare).noquote() << " -" << instance.instance.instanceId
+				                          << (instance.pid == -1 ? " (dead)" : "");
 			}
 
 			return -1;
@@ -153,8 +154,11 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance) {
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto instances = QsPaths::collectInstances(path);
-		sortInstances(instances, cmd.config.newest);
+		auto instances = QsPaths::collectInstances(path, deadFallback);
+		sortInstances(
+		    instances,
+		    cmd.config.newest || (!instances.empty() && instances.first().pid == -1)
+		);
 
 		if (instances.isEmpty()) {
 			qCInfo(logBare) << "No running instances for" << configFilePath;
@@ -172,7 +176,7 @@ int readLogFile(CommandState& cmd) {
 
 	if (path.isEmpty()) {
 		InstanceLockInfo instance;
-		auto r = selectInstance(cmd, &instance);
+		auto r = selectInstance(cmd, &instance, true);
 		if (r != 0) return r;
 
 		path = QDir(QsPaths::basePath(instance.instance.instanceId)).filePath("log.qslog");

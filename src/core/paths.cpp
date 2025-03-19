@@ -262,7 +262,7 @@ void QsPaths::createLock() {
 	}
 }
 
-bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info) {
+bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowDead) {
 	auto file = QFile(QDir(path).filePath("instance.lock"));
 	if (!file.open(QFile::ReadOnly)) return false;
 
@@ -275,10 +275,12 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info) {
 	};
 
 	fcntl(file.handle(), F_GETLK, &lock); // NOLINT
-	if (lock.l_type == F_UNLCK) return false;
+	auto isLocked = lock.l_type != F_UNLCK;
+
+	if (!isLocked && !allowDead) return false;
 
 	if (info) {
-		info->pid = lock.l_pid;
+		info->pid = isLocked ? lock.l_pid : -1;
 
 		auto stream = QDataStream(&file);
 		stream >> info->instance;
@@ -287,7 +289,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info) {
 	return true;
 }
 
-QVector<InstanceLockInfo> QsPaths::collectInstances(const QString& path) {
+QVector<InstanceLockInfo> QsPaths::collectInstances(const QString& path, bool fallbackDead) {
 	qCDebug(logPaths) << "Collecting instances from" << path;
 	auto instances = QVector<InstanceLockInfo>();
 	auto dir = QDir(path);
@@ -296,13 +298,18 @@ QVector<InstanceLockInfo> QsPaths::collectInstances(const QString& path) {
 	for (auto& entry: dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
 		auto path = dir.filePath(entry);
 
-		if (QsPaths::checkLock(path, &info)) {
-			qCDebug(logPaths).nospace() << "Found live instance " << info.instance.instanceId << " (pid "
+		if (QsPaths::checkLock(path, &info, fallbackDead)) {
+			if (fallbackDead && info.pid != -1) {
+				fallbackDead = false;
+				instances.clear();
+			}
+
+			qCDebug(logPaths).nospace() << "Found instance " << info.instance.instanceId << " (pid "
 			                            << info.pid << ") at " << path;
 
 			instances.push_back(info);
 		} else {
-			qCDebug(logPaths) << "Skipped dead instance at" << path;
+			qCDebug(logPaths) << "Skipped potential instance at" << path;
 		}
 	}
 
