@@ -190,7 +190,7 @@ void I3Ipc::setFocusedWorkspace(I3Workspace* workspace) {
 	if (workspace == this->mFocusedWorkspace) return;
 
 	if (this->mFocusedWorkspace != nullptr) {
-		this->mFocusedWorkspace->setFocus(false);
+		this->mFocusedWorkspace->bindableFocused().setValue(false);
 		QObject::disconnect(this->mFocusedWorkspace, nullptr, this, nullptr);
 	}
 
@@ -202,7 +202,7 @@ void I3Ipc::setFocusedWorkspace(I3Workspace* workspace) {
 		}
 
 		QObject::connect(workspace, &QObject::destroyed, this, &I3Ipc::onFocusedWorkspaceDestroyed);
-		workspace->setFocus(true);
+		workspace->bindableFocused().setValue(true);
 		this->setFocusedMonitor(workspace->monitor());
 	}
 
@@ -213,14 +213,14 @@ void I3Ipc::setFocusedMonitor(I3Monitor* monitor) {
 	if (monitor == this->mFocusedMonitor) return;
 
 	if (this->mFocusedMonitor != nullptr) {
-		this->mFocusedMonitor->setFocus(false);
+		this->mFocusedMonitor->bindableFocused().setValue(false);
 		QObject::disconnect(this->mFocusedMonitor, nullptr, this, nullptr);
 	}
 
 	this->mFocusedMonitor = monitor;
 
 	if (monitor != nullptr) {
-		monitor->setFocus(true);
+		monitor->bindableFocused().setValue(true);
 		QObject::connect(monitor, &QObject::destroyed, this, &I3Ipc::onFocusedMonitorDestroyed);
 	}
 
@@ -264,8 +264,9 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 		auto object = entry.toObject().toVariantMap();
 		auto name = object["name"].toString();
 
-		auto workspaceIter =
-		    std::ranges::find_if(mList, [name](const I3Workspace* m) { return m->name() == name; });
+		auto workspaceIter = std::ranges::find_if(mList, [name](I3Workspace* m) {
+			return m->bindableName().value() == name;
+		});
 
 		auto* workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 		auto existed = workspace != nullptr;
@@ -276,7 +277,7 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 
 		workspace->updateFromObject(object);
 
-		if (workspace->focused()) {
+		if (workspace->bindableFocused().value()) {
 			this->setFocusedWorkspace(workspace);
 		}
 
@@ -290,7 +291,7 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 	auto removedWorkspaces = QVector<I3Workspace*>();
 
 	for (auto* workspace: mList) {
-		if (!names.contains(workspace->name())) {
+		if (!names.contains(workspace->bindableName().value())) {
 			removedWorkspaces.push_back(workspace);
 		}
 	}
@@ -320,8 +321,9 @@ void I3Ipc::handleGetOutputsEvent(I3IpcEvent* event) {
 		auto object = elem.toObject().toVariantMap();
 		auto name = object["name"].toString();
 
-		auto monitorIter =
-		    std::ranges::find_if(mList, [name](const I3Monitor* m) { return m->name() == name; });
+		auto monitorIter = std::ranges::find_if(mList, [name](I3Monitor* m) {
+			return m->bindableName().value() == name;
+		});
 
 		auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
 		auto existed = monitor != nullptr;
@@ -332,7 +334,7 @@ void I3Ipc::handleGetOutputsEvent(I3IpcEvent* event) {
 
 		monitor->updateFromObject(object);
 
-		if (monitor->focused()) {
+		if (monitor->bindableFocused().value()) {
 			this->setFocusedMonitor(monitor);
 		}
 
@@ -346,7 +348,7 @@ void I3Ipc::handleGetOutputsEvent(I3IpcEvent* event) {
 	auto removedMonitors = QVector<I3Monitor*>();
 
 	for (auto* monitor: mList) {
-		if (!names.contains(monitor->name())) {
+		if (!names.contains(monitor->bindableName().value())) {
 			removedMonitors.push_back(monitor);
 		}
 	}
@@ -413,7 +415,7 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 
 		if (!existed) {
 			this->mWorkspaces.insertObject(workspace);
-			qCInfo(logI3Ipc) << "Added workspace" << workspace->name() << "to list";
+			qCInfo(logI3Ipc) << "Added workspace" << workspace->bindableName().value() << "to list";
 		}
 	} else if (change == "focus") {
 		auto oldData = event->mData["old"];
@@ -441,7 +443,7 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 		auto* oldWorkspace = this->findWorkspaceByName(name);
 
 		if (oldWorkspace != nullptr) {
-			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->id() << name;
+			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->bindableId().value() << name;
 
 			if (this->mFocusedWorkspace == oldWorkspace) {
 				this->setFocusedWorkspace(nullptr);
@@ -480,23 +482,25 @@ I3Monitor* I3Ipc::monitorFor(QuickshellScreenInfo* screen) {
 I3Workspace* I3Ipc::findWorkspaceByID(qint32 id) {
 	auto list = this->mWorkspaces.valueList();
 	auto workspaceIter =
-	    std::ranges::find_if(list, [id](const I3Workspace* m) { return m->id() == id; });
+	    std::ranges::find_if(list, [id](I3Workspace* m) { return m->bindableId().value() == id; });
 
 	return workspaceIter == list.end() ? nullptr : *workspaceIter;
 }
 
 I3Workspace* I3Ipc::findWorkspaceByName(const QString& name) {
 	auto list = this->mWorkspaces.valueList();
-	auto workspaceIter =
-	    std::ranges::find_if(list, [name](const I3Workspace* m) { return m->name() == name; });
+	auto workspaceIter = std::ranges::find_if(list, [name](I3Workspace* m) {
+		return m->bindableName().value() == name;
+	});
 
 	return workspaceIter == list.end() ? nullptr : *workspaceIter;
 }
 
 I3Monitor* I3Ipc::findMonitorByName(const QString& name) {
 	auto list = this->mMonitors.valueList();
-	auto monitorIter =
-	    std::ranges::find_if(list, [name](const I3Monitor* m) { return m->name() == name; });
+	auto monitorIter = std::ranges::find_if(list, [name](I3Monitor* m) {
+		return m->bindableName().value() == name;
+	});
 
 	return monitorIter == list.end() ? nullptr : *monitorIter;
 }

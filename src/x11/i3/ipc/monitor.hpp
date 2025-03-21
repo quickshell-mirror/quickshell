@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qproperty.h>
 
 #include "connection.hpp"
 
@@ -11,25 +12,25 @@ class I3Monitor: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The ID of this monitor
-	Q_PROPERTY(qint32 id READ id NOTIFY idChanged);
+	Q_PROPERTY(qint32 id READ default NOTIFY idChanged BINDABLE bindableId);
 	/// The name of this monitor
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
+	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// Wether this monitor is turned on or not
-	Q_PROPERTY(bool power READ power NOTIFY powerChanged);
+	Q_PROPERTY(bool power READ default NOTIFY powerChanged BINDABLE bindablePower);
 	/// The current workspace
 	Q_PROPERTY(qs::i3::ipc::I3Workspace* focusedWorkspace READ focusedWorkspace NOTIFY focusedWorkspaceChanged);
 	/// The X coordinate of this monitor inside the monitor layout
-	Q_PROPERTY(qint32 x READ x NOTIFY xChanged);
+	Q_PROPERTY(qint32 x READ default NOTIFY xChanged BINDABLE bindableX);
 	/// The Y coordinate of this monitor inside the monitor layout
-	Q_PROPERTY(qint32 y READ y NOTIFY yChanged);
+	Q_PROPERTY(qint32 y READ default NOTIFY yChanged BINDABLE bindableY);
 	/// The width in pixels of this monitor
-	Q_PROPERTY(qint32 width READ width NOTIFY widthChanged);
+	Q_PROPERTY(qint32 width READ default NOTIFY widthChanged BINDABLE bindableWidth);
 	/// The height in pixels of this monitor
-	Q_PROPERTY(qint32 height READ height NOTIFY heightChanged);
+	Q_PROPERTY(qint32 height READ default NOTIFY heightChanged BINDABLE bindableHeight);
 	/// The scaling factor of this monitor, 1 means it runs at native resolution
-	Q_PROPERTY(qreal scale READ scale NOTIFY scaleChanged);
+	Q_PROPERTY(qreal scale READ default NOTIFY scaleChanged BINDABLE bindableScale);
 	/// Whether this monitor is currently in focus
-	Q_PROPERTY(bool focused READ focused NOTIFY focusedChanged);
+	Q_PROPERTY(bool focused READ default NOTIFY focusedChanged BINDABLE bindableFocused);
 	/// Last JSON returned for this monitor, as a JavaScript object.
 	///
 	/// This updates every time Quickshell receives an `output` event from i3/Sway
@@ -41,22 +42,23 @@ class I3Monitor: public QObject {
 public:
 	explicit I3Monitor(I3Ipc* ipc): QObject(ipc), ipc(ipc) {}
 
-	[[nodiscard]] qint32 id() const;
-	[[nodiscard]] QString name() const;
-	[[nodiscard]] bool power() const;
+	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
+	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
+	[[nodiscard]] QBindable<bool> bindablePower() { return &this->bPower; }
+	[[nodiscard]] QBindable<qint32> bindableX() { return &this->bX; }
+	[[nodiscard]] QBindable<qint32> bindableY() { return &this->bY; }
+	[[nodiscard]] QBindable<qint32> bindableWidth() { return &this->bWidth; }
+	[[nodiscard]] QBindable<qint32> bindableHeight() { return &this->bHeight; }
+	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
+	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
+
 	[[nodiscard]] I3Workspace* focusedWorkspace() const;
-	[[nodiscard]] qint32 x() const;
-	[[nodiscard]] qint32 y() const;
-	[[nodiscard]] qint32 width() const;
-	[[nodiscard]] qint32 height() const;
-	[[nodiscard]] qreal scale() const;
-	[[nodiscard]] bool focused() const;
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
 	void updateFromObject(const QVariantMap& obj);
 
 	void setFocusedWorkspace(I3Workspace* workspace);
-	void setFocus(bool focus);
+
 signals:
 	void idChanged();
 	void nameChanged();
@@ -73,19 +75,19 @@ signals:
 private:
 	I3Ipc* ipc;
 
-	qint32 mId = -1;
-	QString mName;
-	bool mPower = false;
-	qint32 mX = 0;
-	qint32 mY = 0;
-	qint32 mWidth = 0;
-	qint32 mHeight = 0;
-	qreal mScale = 1;
-	bool mFocused = false;
 	QVariantMap mLastIpcObject;
-
 	I3Workspace* mFocusedWorkspace = nullptr;
 	QString mFocusedWorkspaceName; // use for faster change detection
+
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(I3Monitor, qint32, bId, -1, &I3Monitor::idChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, QString, bName, &I3Monitor::nameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, bool, bPower, &I3Monitor::powerChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, qint32, bX, &I3Monitor::xChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, qint32, bY, &I3Monitor::yChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, qint32, bWidth, &I3Monitor::widthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, qint32, bHeight, &I3Monitor::heightChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(I3Monitor, qreal, bScale, 1, &I3Monitor::scaleChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, bool, bFocused, &I3Monitor::focusedChanged);
 };
 
 } // namespace qs::i3::ipc
