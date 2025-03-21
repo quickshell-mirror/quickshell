@@ -3,6 +3,7 @@
 
 #include <qcontainerfwd.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -10,88 +11,36 @@
 
 namespace qs::hyprland::ipc {
 
-qint32 HyprlandMonitor::id() const { return this->mId; }
-QString HyprlandMonitor::name() const { return this->mName; }
-QString HyprlandMonitor::description() const { return this->mDescription; }
-qint32 HyprlandMonitor::x() const { return this->mX; }
-qint32 HyprlandMonitor::y() const { return this->mY; }
-qint32 HyprlandMonitor::width() const { return this->mWidth; }
-qint32 HyprlandMonitor::height() const { return this->mHeight; }
-qreal HyprlandMonitor::scale() const { return this->mScale; }
 QVariantMap HyprlandMonitor::lastIpcObject() const { return this->mLastIpcObject; }
 
-void HyprlandMonitor::updateInitial(qint32 id, QString name, QString description) {
-	if (id != this->mId) {
-		this->mId = id;
-		emit this->idChanged();
-	}
-
-	if (name != this->mName) {
-		this->mName = std::move(name);
-		emit this->nameChanged();
-	}
-
-	if (description != this->mDescription) {
-		this->mDescription = std::move(description);
-		emit this->descriptionChanged();
-	}
+void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QString& description) {
+	Qt::beginPropertyUpdateGroup();
+	this->bId = id;
+	this->bName = name;
+	this->bDescription = description;
+	Qt::endPropertyUpdateGroup();
 }
 
 void HyprlandMonitor::updateFromObject(QVariantMap object) {
-	auto id = object.value("id").value<qint32>();
-	auto name = object.value("name").value<QString>();
-	auto description = object.value("description").value<QString>();
-	auto x = object.value("x").value<qint32>();
-	auto y = object.value("y").value<qint32>();
-	auto width = object.value("width").value<qint32>();
-	auto height = object.value("height").value<qint32>();
-	auto scale = object.value("height").value<qint32>();
 	auto activeWorkspaceObj = object.value("activeWorkspace").value<QVariantMap>();
 	auto activeWorkspaceId = activeWorkspaceObj.value("id").value<qint32>();
 	auto activeWorkspaceName = activeWorkspaceObj.value("name").value<QString>();
 	auto focused = object.value("focused").value<bool>();
 
-	if (id != this->mId) {
-		this->mId = id;
-		emit this->idChanged();
-	}
+	Qt::beginPropertyUpdateGroup();
+	this->bId = object.value("id").value<qint32>();
+	this->bName = object.value("name").value<QString>();
+	this->bDescription = object.value("description").value<QString>();
+	this->bX = object.value("x").value<qint32>();
+	this->bY = object.value("y").value<qint32>();
+	this->bWidth = object.value("width").value<qint32>();
+	this->bHeight = object.value("height").value<qint32>();
+	this->bScale = object.value("scale").value<qreal>();
+	Qt::endPropertyUpdateGroup();
 
-	if (name != this->mName) {
-		this->mName = std::move(name);
-		emit this->nameChanged();
-	}
-
-	if (description != this->mDescription) {
-		this->mDescription = std::move(description);
-		emit this->descriptionChanged();
-	}
-
-	if (x != this->mX) {
-		this->mX = x;
-		emit this->xChanged();
-	}
-
-	if (y != this->mY) {
-		this->mY = y;
-		emit this->yChanged();
-	}
-
-	if (width != this->mWidth) {
-		this->mWidth = width;
-		emit this->widthChanged();
-	}
-
-	if (height != this->mHeight) {
-		this->mHeight = height;
-		emit this->heightChanged();
-	}
-
-	if (scale != this->mScale) {
-		this->mScale = scale;
-		emit this->scaleChanged();
-	}
-
-	if (this->mActiveWorkspace == nullptr || this->mActiveWorkspace->name() != activeWorkspaceName) {
+	if (this->mActiveWorkspace == nullptr
+	    || this->mActiveWorkspace->bindableName().value() != activeWorkspaceName)
+	{
 		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceId);
 		workspace->setMonitor(this);
 		this->setActiveWorkspace(workspace);

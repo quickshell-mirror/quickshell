@@ -243,8 +243,9 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		const auto& mList = this->mMonitors.valueList();
 		auto name = QString::fromUtf8(event->data);
 
-		auto monitorIter =
-		    std::ranges::find_if(mList, [name](const HyprlandMonitor* m) { return m->name() == name; });
+		auto monitorIter = std::ranges::find_if(mList, [name](HyprlandMonitor* m) {
+			return m->bindableName().value() == name;
+		});
 
 		if (monitorIter == mList.end()) {
 			qCWarning(logHyprlandIpc) << "Got removal for monitor" << name
@@ -255,8 +256,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto index = monitorIter - mList.begin();
 		auto* monitor = *monitorIter;
 
-		qCDebug(logHyprlandIpc) << "Monitor removed with id" << monitor->id() << "name"
-		                        << monitor->name();
+		qCDebug(logHyprlandIpc) << "Monitor removed with id" << monitor->bindableId().value() << "name"
+		                        << monitor->bindableName().value();
 		this->mMonitors.removeAt(index);
 
 		// delete the monitor object in the next event loop cycle so it's likely to
@@ -293,8 +294,9 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		const auto& mList = this->mWorkspaces.valueList();
 
-		auto workspaceIter =
-		    std::ranges::find_if(mList, [id](const HyprlandWorkspace* m) { return m->id() == id; });
+		auto workspaceIter = std::ranges::find_if(mList, [id](HyprlandWorkspace* m) {
+			return m->bindableId().value() == id;
+		});
 
 		if (workspaceIter == mList.end()) {
 			qCWarning(logHyprlandIpc) << "Got removal for workspace id" << id << "name" << name
@@ -334,7 +336,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		this->setFocusedMonitor(monitor);
 		monitor->setActiveWorkspace(workspace);
 		qCDebug(logHyprlandIpc) << "Monitor" << name << "focused with workspace"
-		                        << (workspace ? workspace->id() : -1);
+		                        << (workspace ? workspace->bindableId().value() : -1);
 	} else if (event->name == "workspacev2") {
 		auto args = event->parseView(2);
 		auto id = args.at(0).toInt();
@@ -344,7 +346,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 			auto* workspace = this->findWorkspaceByName(name, true, id);
 			this->mFocusedMonitor->setActiveWorkspace(workspace);
 			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on"
-			                        << this->mFocusedMonitor->name();
+			                        << this->mFocusedMonitor->bindableName().value();
 		}
 	} else if (event->name == "moveworkspacev2") {
 		auto args = event->parseView(3);
@@ -364,15 +366,16 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		const auto& mList = this->mWorkspaces.valueList();
 
-		auto workspaceIter =
-		    std::ranges::find_if(mList, [id](const HyprlandWorkspace* m) { return m->id() == id; });
+		auto workspaceIter = std::ranges::find_if(mList, [id](HyprlandWorkspace* m) {
+			return m->bindableId().value() == id;
+		});
 
 		if (workspaceIter == mList.end()) return;
 
 		qCDebug(logHyprlandIpc) << "Workspace with id" << id << "renamed from"
-		                        << (*workspaceIter)->name() << "to" << name;
+		                        << (*workspaceIter)->bindableName().value() << "to" << name;
 
-		(*workspaceIter)->setName(name);
+		(*workspaceIter)->bindableName().setValue(name);
 	}
 }
 
@@ -382,15 +385,17 @@ HyprlandIpc::findWorkspaceByName(const QString& name, bool createIfMissing, qint
 	HyprlandWorkspace* workspace = nullptr;
 
 	if (id != -1) {
-		auto workspaceIter =
-		    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->id() == id; });
+		auto workspaceIter = std::ranges::find_if(mList, [&](HyprlandWorkspace* m) {
+			return m->bindableId().value() == id;
+		});
 
 		workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 	}
 
 	if (!workspace) {
-		auto workspaceIter =
-		    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->name() == name; });
+		auto workspaceIter = std::ranges::find_if(mList, [&](HyprlandWorkspace* m) {
+			return m->bindableName().value() == name;
+		});
 
 		workspace = workspaceIter == mList.end() ? nullptr : *workspaceIter;
 	}
@@ -429,16 +434,17 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 
 			auto id = object.value("id").toInt();
 
-			auto workspaceIter =
-			    std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) { return m->id() == id; });
+			auto workspaceIter = std::ranges::find_if(mList, [&](HyprlandWorkspace* m) {
+				return m->bindableId().value() == id;
+			});
 
 			// Only fall back to name-based filtering as a last resort, for workspaces where
 			// no ID has been determined yet.
 			if (workspaceIter == mList.end()) {
 				auto name = object.value("name").toString();
 
-				workspaceIter = std::ranges::find_if(mList, [&](const HyprlandWorkspace* m) {
-					return m->id() == -1 && m->name() == name;
+				workspaceIter = std::ranges::find_if(mList, [&](HyprlandWorkspace* m) {
+					return m->bindableId().value() == -1 && m->bindableName().value() == name;
 				});
 			}
 
@@ -463,7 +469,7 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 			auto removedWorkspaces = QVector<HyprlandWorkspace*>();
 
 			for (auto* workspace: mList) {
-				if (!ids.contains(workspace->id())) {
+				if (!ids.contains(workspace->bindableId().value())) {
 					removedWorkspaces.push_back(workspace);
 				}
 			}
@@ -480,8 +486,9 @@ HyprlandMonitor*
 HyprlandIpc::findMonitorByName(const QString& name, bool createIfMissing, qint32 id) {
 	const auto& mList = this->mMonitors.valueList();
 
-	auto monitorIter =
-	    std::ranges::find_if(mList, [name](const HyprlandMonitor* m) { return m->name() == name; });
+	auto monitorIter = std::ranges::find_if(mList, [name](HyprlandMonitor* m) {
+		return m->bindableName().value() == name;
+	});
 
 	if (monitorIter != mList.end()) {
 		return *monitorIter;
@@ -549,8 +556,8 @@ void HyprlandIpc::refreshMonitors(bool canCreate) {
 			auto object = entry.toObject().toVariantMap();
 			auto name = object.value("name").toString();
 
-			auto monitorIter = std::ranges::find_if(mList, [name](const HyprlandMonitor* m) {
-				return m->name() == name;
+			auto monitorIter = std::ranges::find_if(mList, [name](HyprlandMonitor* m) {
+				return m->bindableName().value() == name;
 			});
 
 			auto* monitor = monitorIter == mList.end() ? nullptr : *monitorIter;
@@ -573,7 +580,7 @@ void HyprlandIpc::refreshMonitors(bool canCreate) {
 		auto removedMonitors = QVector<HyprlandMonitor*>();
 
 		for (auto* monitor: mList) {
-			if (!names.contains(monitor->name())) {
+			if (!names.contains(monitor->bindableName().value())) {
 				removedMonitors.push_back(monitor);
 			}
 		}

@@ -3,6 +3,7 @@
 #include <qbytearrayview.h>
 #include <qjsonobject.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -13,8 +14,8 @@ namespace qs::hyprland::ipc {
 
 class HyprlandWorkspace: public QObject {
 	Q_OBJECT;
-	Q_PROPERTY(qint32 id READ id NOTIFY idChanged);
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
+	Q_PROPERTY(qint32 id READ default NOTIFY idChanged BINDABLE bindableId);
+	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// Last json returned for this workspace, as a javascript object.
 	///
 	/// > [!WARNING] This is *not* updated unless the workspace object is fetched again from
@@ -28,13 +29,11 @@ class HyprlandWorkspace: public QObject {
 public:
 	explicit HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {}
 
-	void updateInitial(qint32 id, QString name);
+	void updateInitial(qint32 id, const QString& name);
 	void updateFromObject(QVariantMap object);
 
-	[[nodiscard]] qint32 id() const;
-
-	[[nodiscard]] QString name() const;
-	void setName(QString name);
+	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
+	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
 
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
@@ -53,10 +52,13 @@ private slots:
 private:
 	HyprlandIpc* ipc;
 
-	qint32 mId = -1;
-	QString mName;
 	QVariantMap mLastIpcObject;
 	HyprlandMonitor* mMonitor = nullptr;
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(HyprlandWorkspace, qint32, bId, -1, &HyprlandWorkspace::idChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bName, &HyprlandWorkspace::nameChanged);
+	// clang-format on
 };
 
 } // namespace qs::hyprland::ipc
