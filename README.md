@@ -22,20 +22,6 @@ Commits with breaking qml api changes will contain a `!` at the end of the scope
 
 # Installation
 
-## Guix
-This repo works as a channel. Add the following to your channel list:
-
-```scheme
-(channel
-  (name 'outfoxxed-quickshell)
-  (url "https://git.outfoxxed.me/outfoxxed/quickshell")
-  (branch "master"))
-```
-
-You can also clone the repository and use `guix shell -f outfoxxed-quickshell.scm` to try out the package.
-
-Quickshell will be packaged upstream after the first versioned release.
-
 ## Nix
 This repo has a nix flake you can use to install the package directly:
 
@@ -91,6 +77,20 @@ Quickshell has a third party [Fedora COPR package] available under the same name
 It is not managed by us and should be looked over before use.
 
 [Fedora COPR package]: https://copr.fedorainfracloud.org/coprs/errornointernet/quickshell
+
+## Guix
+This repo works as a channel. Add the following to your channel list:
+
+```scheme
+(channel
+  (name quickshell)
+  (url "https://git.outfoxxed.me/outfoxxed/quickshell")
+  (branch "master"))
+```
+
+Then, you can install the package via `guix install quickshell-git` or by adding `quickshell-git` to your system or home definition.
+
+You can also clone the repository and use `guix shell -f quickshell.scm` to try out the package.
 
 ## Anything else
 See [BUILD.md](BUILD.md) for instructions on building and packaging quickshell.

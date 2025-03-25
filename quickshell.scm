@@ -1,4 +1,4 @@
-(define-module (outfoxxed-quickshell)
+(define-module (quickshell)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages freedesktop)
@@ -25,17 +25,17 @@
     (name "quickshell")
     (version "git")
     (source (local-file "." "quickshell-checkout"
-			#:recursive? #t
-			#:select? (or (git-predicate (current-source-directory))
-				      (const #t))))
+                        #:recursive? #t
+                        #:select? (or (git-predicate (current-source-directory))
+                                      (const #t))))
     (build-system cmake-build-system)
     (propagated-inputs (list qtbase qtdeclarative qtsvg))
     (native-inputs (list ninja
+                         gcc-14
                          pkg-config
                          qtshadertools
                          spirv-tools
-			 wayland-protocols
-                         gcc-14))
+                         wayland-protocols))
     (inputs (list cli11
                   jemalloc
                   libdrm
@@ -44,24 +44,26 @@
                   linux-pam
                   mesa
                   pipewire
+                  qtbase
                   qtdeclarative
                   qtwayland
                   vulkan-headers
-                  wayland
-                  qtbase))
+                  wayland))
     (arguments
      (list #:tests? #f
-           #:configure-flags #~(list "-GNinja"
-                                     "-DDISTRIBUTOR=\"GNU Guix\""
-                                     "-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO"
-                                     "-DCRASH_REPORTER=OFF") ;no breakpad
+           #:configure-flags
+	   #~(list "-GNinja"
+                   "-DDISTRIBUTOR=\"In-tree Guix channel\""
+                   "-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO"
+		   ;; Breakpad is not currently packaged for Guix.
+                   "-DCRASH_REPORTER=OFF")
            #:phases #~(modify-phases %standard-phases
                         (replace 'build
                           (lambda* (#:key parallel-build? #:allow-other-keys)
                             (invoke "cmake" "--build" ".")))
                         (replace 'install
                           (lambda _ (invoke "cmake" "--install" "."))))))
-    (home-page "https://git.outfoxxed.me/quickshell/quickshell")
+    (home-page "https://quickshell.outfoxxed.me")
     (synopsis "QtQuick-based desktop shell toolkit")
     (description
      "Quickshell is a flexible QtQuick-based toolkit for creating and
