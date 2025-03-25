@@ -52,10 +52,10 @@
     (arguments
      (list #:tests? #f
            #:configure-flags
-	   #~(list "-GNinja"
+           #~(list "-GNinja"
                    "-DDISTRIBUTOR=\"In-tree Guix channel\""
                    "-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO"
-		   ;; Breakpad is not currently packaged for Guix.
+                   ;; Breakpad is not currently packaged for Guix.
                    "-DCRASH_REPORTER=OFF")
            #:phases #~(modify-phases %standard-phases
                         (replace 'build
