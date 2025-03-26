@@ -9,6 +9,7 @@
 #include <qtypes.h>
 
 #include "connection.hpp"
+#include "monitor.hpp"
 
 namespace qs::hyprland::ipc {
 
@@ -27,12 +28,12 @@ class HyprlandWorkspace: public QObject {
 	/// > Hyprland. If you need a value that is subject to change and does not have a dedicated
 	/// > property, run @@Hyprland.refreshWorkspaces() and wait for this property to update.
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
-	Q_PROPERTY(HyprlandMonitor* monitor READ monitor NOTIFY monitorChanged);
+	Q_PROPERTY(HyprlandMonitor* monitor READ default NOTIFY monitorChanged BINDABLE bindableMonitor);
 	QML_ELEMENT;
 	QML_UNCREATABLE("HyprlandWorkspaces must be retrieved from the HyprlandIpc object.");
 
 public:
-	explicit HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {}
+	explicit HyprlandWorkspace(HyprlandIpc* ipc);
 
 	void updateInitial(qint32 id, const QString& name);
 	void updateFromObject(QVariantMap object);
@@ -49,10 +50,10 @@ public:
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
 	[[nodiscard]] QBindable<bool> bindableActive() { return &this->bActive; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
+	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor() { return &this->bMonitor; }
 
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
-	[[nodiscard]] HyprlandMonitor* monitor() const;
 	void setMonitor(HyprlandMonitor* monitor);
 
 signals:
@@ -70,13 +71,13 @@ private:
 	HyprlandIpc* ipc;
 
 	QVariantMap mLastIpcObject;
-	HyprlandMonitor* mMonitor = nullptr;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(HyprlandWorkspace, qint32, bId, -1, &HyprlandWorkspace::idChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bName, &HyprlandWorkspace::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bActive, &HyprlandWorkspace::activeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bFocused, &HyprlandWorkspace::focusedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, HyprlandMonitor*, bMonitor, &HyprlandWorkspace::monitorChanged);
 	// clang-format on
 };
 
