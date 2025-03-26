@@ -9,9 +9,10 @@
 #include <qtypes.h>
 
 #include "connection.hpp"
-#include "workspace.hpp"
 
 namespace qs::hyprland::ipc {
+
+class HyprlandWorkspace;
 
 class HyprlandMonitor: public QObject {
 	Q_OBJECT;
@@ -31,9 +32,9 @@ class HyprlandMonitor: public QObject {
 	/// > property, run @@Hyprland.refreshMonitors() and wait for this property to update.
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
 	/// The currently active workspace on this monitor. May be null.
-	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* activeWorkspace READ default NOTIFY activeWorkspaceChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* activeWorkspace READ default NOTIFY activeWorkspaceChanged BINDABLE bindableActiveWorkspace);
 	/// If the monitor is currently focused.
-	Q_PROPERTY(bool focused READ default NOTIFY focusedChanged);
+	Q_PROPERTY(bool focused READ default NOTIFY focusedChanged BINDABLE bindableFocused);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("HyprlandMonitors must be retrieved from the HyprlandIpc object.");

@@ -7,11 +7,26 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "connection.hpp"
 #include "monitor.hpp"
 
 namespace qs::hyprland::ipc {
 
 QVariantMap HyprlandWorkspace::lastIpcObject() const { return this->mLastIpcObject; }
+
+HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
+	Qt::beginPropertyUpdateGroup();
+
+	this->bActive.setBinding([this]() {
+		return this->bMonitor.value() && this->bMonitor->bindableActiveWorkspace().value() == this;
+	});
+
+	this->bFocused.setBinding([this]() {
+		return this->bActive.value() && this->bMonitor->bindableFocused().value();
+	});
+
+	Qt::endPropertyUpdateGroup();
+}
 
 void HyprlandWorkspace::updateInitial(qint32 id, const QString& name) {
 	Qt::beginPropertyUpdateGroup();
@@ -38,7 +53,7 @@ void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 	}
 
 	if (!monitorName.isEmpty()
-	    && (this->mMonitor == nullptr || this->mMonitor->bindableName().value() != monitorName))
+	    && (this->bMonitor == nullptr || this->bMonitor->bindableName().value() != monitorName))
 	{
 		auto* monitor = this->ipc->findMonitorByName(monitorName, true, monitorId);
 		this->setMonitor(monitor);
@@ -48,45 +63,25 @@ void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 	emit this->lastIpcObjectChanged();
 }
 
-HyprlandMonitor* HyprlandWorkspace::monitor() const { return this->mMonitor; }
-
 void HyprlandWorkspace::setMonitor(HyprlandMonitor* monitor) {
-	if (monitor == this->mMonitor) return;
+	auto* oldMonitor = this->bMonitor.value();
+	if (monitor == oldMonitor) return;
 
-	if (this->mMonitor != nullptr) {
-		QObject::disconnect(this->mMonitor, nullptr, this, nullptr);
+	if (oldMonitor != nullptr) {
+		QObject::disconnect(oldMonitor, nullptr, this, nullptr);
 	}
-
-	this->mMonitor = monitor;
-
-	Qt::beginPropertyUpdateGroup();
 
 	if (monitor != nullptr) {
 		QObject::connect(monitor, &QObject::destroyed, this, &HyprlandWorkspace::onMonitorDestroyed);
-
-		this->bActive.setBinding([this]() {
-			return this->mMonitor->bindableActiveWorkspace().value() == this;
-		});
-
-		this->bFocused.setBinding([this]() {
-			return this->bActive.value() && this->mMonitor->bindableFocused().value();
-		});
-	} else {
-		this->bActive = false;
-		this->bFocused = false;
 	}
 
-	Qt::endPropertyUpdateGroup();
-	emit this->monitorChanged();
+	this->bMonitor = monitor;
 }
 
-void HyprlandWorkspace::onMonitorDestroyed() {
-	this->mMonitor = nullptr;
-	emit this->monitorChanged();
-}
+void HyprlandWorkspace::onMonitorDestroyed() { this->bMonitor = nullptr; }
 
 void HyprlandWorkspace::activate() {
-	HyprlandIpc::instance()->dispatch(QString("workspace %1").arg(this->bId.value()));
+	this->ipc->dispatch(QString("workspace %1").arg(this->bId.value()));
 }
 
 } // namespace qs::hyprland::ipc
