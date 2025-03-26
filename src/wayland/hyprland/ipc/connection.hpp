@@ -7,8 +7,10 @@
 #include <qhash.h>
 #include <qlocalsocket.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
@@ -74,7 +76,11 @@ public:
 	void dispatch(const QString& request);
 
 	[[nodiscard]] HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
-	[[nodiscard]] HyprlandMonitor* focusedMonitor() const;
+
+	[[nodiscard]] QBindable<HyprlandMonitor*> bindableFocusedMonitor() const {
+		return &this->bFocusedMonitor;
+	}
+
 	void setFocusedMonitor(HyprlandMonitor* monitor);
 
 	[[nodiscard]] ObjectModel<HyprlandMonitor>* monitors();
@@ -119,10 +125,15 @@ private:
 
 	ObjectModel<HyprlandMonitor> mMonitors {this};
 	ObjectModel<HyprlandWorkspace> mWorkspaces {this};
-	HyprlandMonitor* mFocusedMonitor = nullptr;
-	//HyprlandWorkspace* activeWorkspace = nullptr;
 
 	HyprlandIpcEvent event {this};
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    HyprlandIpc,
+	    HyprlandMonitor*,
+	    bFocusedMonitor,
+	    &HyprlandIpc::focusedMonitorChanged
+	);
 };
 
 } // namespace qs::hyprland::ipc

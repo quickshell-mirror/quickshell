@@ -18,6 +18,11 @@ void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QStrin
 	this->bId = id;
 	this->bName = name;
 	this->bDescription = description;
+
+	this->bFocused.setBinding([this]() {
+		return HyprlandIpc::instance()->bindableFocusedMonitor().value() == this;
+	});
+
 	Qt::endPropertyUpdateGroup();
 }
 
@@ -38,8 +43,8 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	this->bScale = object.value("scale").value<qreal>();
 	Qt::endPropertyUpdateGroup();
 
-	if (this->mActiveWorkspace == nullptr
-	    || this->mActiveWorkspace->bindableName().value() != activeWorkspaceName)
+	if (this->bActiveWorkspace == nullptr
+	    || this->bActiveWorkspace->bindableName().value() != activeWorkspaceName)
 	{
 		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceId);
 		workspace->setMonitor(this);
@@ -54,16 +59,15 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	}
 }
 
-HyprlandWorkspace* HyprlandMonitor::activeWorkspace() const { return this->mActiveWorkspace; }
-
 void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
-	if (workspace == this->mActiveWorkspace) return;
+	auto* oldWorkspace = this->bActiveWorkspace.value();
+	if (workspace == oldWorkspace) return;
 
-	if (this->mActiveWorkspace != nullptr) {
-		QObject::disconnect(this->mActiveWorkspace, nullptr, this, nullptr);
+	if (oldWorkspace != nullptr) {
+		QObject::disconnect(oldWorkspace, nullptr, this, nullptr);
 	}
 
-	this->mActiveWorkspace = workspace;
+	Qt::beginPropertyUpdateGroup();
 
 	if (workspace != nullptr) {
 		workspace->setMonitor(this);
@@ -76,12 +80,11 @@ void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
 		);
 	}
 
-	emit this->activeWorkspaceChanged();
+	this->bActiveWorkspace = workspace;
+
+	Qt::endPropertyUpdateGroup();
 }
 
-void HyprlandMonitor::onActiveWorkspaceDestroyed() {
-	this->mActiveWorkspace = nullptr;
-	emit this->activeWorkspaceChanged();
-}
+void HyprlandMonitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
 
 } // namespace qs::hyprland::ipc

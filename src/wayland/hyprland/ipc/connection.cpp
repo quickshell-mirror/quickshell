@@ -314,7 +314,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		delete workspace;
 
 		for (auto* monitor: this->mMonitors.valueList()) {
-			if (monitor->activeWorkspace() == nullptr) {
+			if (monitor->bindableActiveWorkspace().value() == nullptr) {
 				// removing a monitor will cause a new workspace to be created and destroyed after removal,
 				// but it won't go back to a real workspace afterwards and just leaves a null, so we
 				// re-query monitors if this appears to be the case.
@@ -342,11 +342,11 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto id = args.at(0).toInt();
 		auto name = QString::fromUtf8(args.at(1));
 
-		if (this->mFocusedMonitor != nullptr) {
+		if (this->bFocusedMonitor != nullptr) {
 			auto* workspace = this->findWorkspaceByName(name, true, id);
-			this->mFocusedMonitor->setActiveWorkspace(workspace);
+			this->bFocusedMonitor->setActiveWorkspace(workspace);
 			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on"
-			                        << this->mFocusedMonitor->bindableName().value();
+			                        << this->bFocusedMonitor->bindableName().value();
 		}
 	} else if (event->name == "moveworkspacev2") {
 		auto args = event->parseView(3);
@@ -504,8 +504,6 @@ HyprlandIpc::findMonitorByName(const QString& name, bool createIfMissing, qint32
 	}
 }
 
-HyprlandMonitor* HyprlandIpc::focusedMonitor() const { return this->mFocusedMonitor; }
-
 HyprlandMonitor* HyprlandIpc::monitorFor(QuickshellScreenInfo* screen) {
 	// Wayland monitors appear after hyprland ones are created and disappear after destruction
 	// so simply not doing any preemptive creation is enough, however if this call creates
@@ -517,22 +515,22 @@ HyprlandMonitor* HyprlandIpc::monitorFor(QuickshellScreenInfo* screen) {
 }
 
 void HyprlandIpc::setFocusedMonitor(HyprlandMonitor* monitor) {
-	if (monitor == this->mFocusedMonitor) return;
+	auto* oldMonitor = this->bFocusedMonitor.value();
+	if (monitor == oldMonitor) return;
 
-	if (this->mFocusedMonitor != nullptr) {
-		QObject::disconnect(this->mFocusedMonitor, nullptr, this, nullptr);
+	if (this->bFocusedMonitor != nullptr) {
+		QObject::disconnect(this->bFocusedMonitor, nullptr, this, nullptr);
 	}
-
-	this->mFocusedMonitor = monitor;
 
 	if (monitor != nullptr) {
 		QObject::connect(monitor, &QObject::destroyed, this, &HyprlandIpc::onFocusedMonitorDestroyed);
 	}
-	emit this->focusedMonitorChanged();
+
+	this->bFocusedMonitor = monitor;
 }
 
 void HyprlandIpc::onFocusedMonitorDestroyed() {
-	this->mFocusedMonitor = nullptr;
+	this->bFocusedMonitor = nullptr;
 	emit this->focusedMonitorChanged();
 }
 

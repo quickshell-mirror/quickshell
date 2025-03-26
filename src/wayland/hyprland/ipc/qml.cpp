@@ -38,7 +38,7 @@ QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->re
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 
 HyprlandMonitor* HyprlandIpcQml::focusedMonitor() {
-	return HyprlandIpc::instance()->focusedMonitor();
+	return HyprlandIpc::instance()->bindableFocusedMonitor().value();
 }
 
 ObjectModel<HyprlandMonitor>* HyprlandIpcQml::monitors() {

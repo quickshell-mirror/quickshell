@@ -9,6 +9,7 @@
 #include <qtypes.h>
 
 #include "connection.hpp"
+#include "workspace.hpp"
 
 namespace qs::hyprland::ipc {
 
@@ -30,7 +31,9 @@ class HyprlandMonitor: public QObject {
 	/// > property, run @@Hyprland.refreshMonitors() and wait for this property to update.
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
 	/// The currently active workspace on this monitor. May be null.
-	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* activeWorkspace READ activeWorkspace NOTIFY activeWorkspaceChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* activeWorkspace READ default NOTIFY activeWorkspaceChanged);
+	/// If the monitor is currently focused.
+	Q_PROPERTY(bool focused READ default NOTIFY focusedChanged);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("HyprlandMonitors must be retrieved from the HyprlandIpc object.");
@@ -50,10 +53,15 @@ public:
 	[[nodiscard]] QBindable<qint32> bindableHeight() { return &this->bHeight; }
 	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
 
+	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableActiveWorkspace() const {
+		return &this->bActiveWorkspace;
+	}
+
+	[[nodiscard]] QBindable<bool> bindableFocused() const { return &this->bFocused; }
+
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
 	void setActiveWorkspace(HyprlandWorkspace* workspace);
-	[[nodiscard]] HyprlandWorkspace* activeWorkspace() const;
 
 signals:
 	void idChanged();
@@ -66,6 +74,7 @@ signals:
 	void scaleChanged();
 	void lastIpcObjectChanged();
 	void activeWorkspaceChanged();
+	void focusedChanged();
 
 private slots:
 	void onActiveWorkspaceDestroyed();
@@ -74,7 +83,6 @@ private:
 	HyprlandIpc* ipc;
 
 	QVariantMap mLastIpcObject;
-	HyprlandWorkspace* mActiveWorkspace = nullptr;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(HyprlandMonitor, qint32, bId, -1, &HyprlandMonitor::idChanged);
@@ -85,6 +93,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandMonitor, qint32, bWidth, &HyprlandMonitor::widthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandMonitor, qint32, bHeight, &HyprlandMonitor::heightChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandMonitor, qreal, bScale, &HyprlandMonitor::scaleChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandMonitor, HyprlandWorkspace*, bActiveWorkspace, &HyprlandMonitor::activeWorkspaceChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandMonitor, bool, bFocused, &HyprlandMonitor::focusedChanged);
 	// clang-format on
 };
 
