@@ -21,7 +21,9 @@ class HyprlandIpcQml: public QObject {
 	/// Path to the event socket (.socket2.sock)
 	Q_PROPERTY(QString eventSocketPath READ eventSocketPath CONSTANT);
 	/// The currently focused hyprland monitor. May be null.
-	Q_PROPERTY(qs::hyprland::ipc::HyprlandMonitor* focusedMonitor READ focusedMonitor NOTIFY focusedMonitorChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandMonitor* focusedMonitor READ default NOTIFY focusedMonitorChanged BINDABLE bindableFocusedMonitor);
+	/// The currently focused hyprland workspace. May be null.
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* focusedWorkspace READ default NOTIFY focusedWorkspaceChanged BINDABLE bindableFocusedWorkspace);
 	/// All hyprland monitors.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandMonitor>*);
 	Q_PROPERTY(UntypedObjectModel* monitors READ monitors CONSTANT);
@@ -55,7 +57,8 @@ public:
 
 	[[nodiscard]] static QString requestSocketPath();
 	[[nodiscard]] static QString eventSocketPath();
-	[[nodiscard]] static HyprlandMonitor* focusedMonitor();
+	[[nodiscard]] static QBindable<HyprlandMonitor*> bindableFocusedMonitor();
+	[[nodiscard]] static QBindable<HyprlandWorkspace*> bindableFocusedWorkspace();
 	[[nodiscard]] static ObjectModel<HyprlandMonitor>* monitors();
 	[[nodiscard]] static ObjectModel<HyprlandWorkspace>* workspaces();
 
@@ -66,6 +69,7 @@ signals:
 	void rawEvent(qs::hyprland::ipc::HyprlandIpcEvent* event);
 
 	void focusedMonitorChanged();
+	void focusedWorkspaceChanged();
 };
 
 } // namespace qs::hyprland::ipc

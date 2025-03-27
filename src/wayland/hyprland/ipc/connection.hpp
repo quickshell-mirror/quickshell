@@ -81,6 +81,10 @@ public:
 		return &this->bFocusedMonitor;
 	}
 
+	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableFocusedWorkspace() const {
+		return &this->bFocusedWorkspace;
+	}
+
 	void setFocusedMonitor(HyprlandMonitor* monitor);
 
 	[[nodiscard]] ObjectModel<HyprlandMonitor>* monitors();
@@ -102,6 +106,7 @@ signals:
 	void rawEvent(HyprlandIpcEvent* event);
 
 	void focusedMonitorChanged();
+	void focusedWorkspaceChanged();
 
 private slots:
 	void eventSocketError(QLocalSocket::LocalSocketError error) const;
@@ -133,6 +138,13 @@ private:
 	    HyprlandMonitor*,
 	    bFocusedMonitor,
 	    &HyprlandIpc::focusedMonitorChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    HyprlandIpc,
+	    HyprlandWorkspace*,
+	    bFocusedWorkspace,
+	    &HyprlandIpc::focusedWorkspaceChanged
 	);
 };
 

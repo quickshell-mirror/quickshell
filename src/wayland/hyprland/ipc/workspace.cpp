@@ -22,7 +22,7 @@ HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 	});
 
 	this->bFocused.setBinding([this]() {
-		return this->bActive.value() && this->bMonitor->bindableFocused().value();
+		return this->ipc->bindableFocusedWorkspace().value() == this;
 	});
 
 	Qt::endPropertyUpdateGroup();

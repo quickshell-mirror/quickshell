@@ -1,6 +1,7 @@
 #include "qml.hpp"
 
 #include <qobject.h>
+#include <qproperty.h>
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
@@ -13,6 +14,14 @@ HyprlandIpcQml::HyprlandIpcQml() {
 	auto* instance = HyprlandIpc::instance();
 
 	QObject::connect(instance, &HyprlandIpc::rawEvent, this, &HyprlandIpcQml::rawEvent);
+
+	QObject::connect(
+	    instance,
+	    &HyprlandIpc::focusedMonitorChanged,
+	    this,
+	    &HyprlandIpcQml::focusedMonitorChanged
+	);
+
 	QObject::connect(
 	    instance,
 	    &HyprlandIpc::focusedMonitorChanged,
@@ -30,15 +39,16 @@ HyprlandMonitor* HyprlandIpcQml::monitorFor(QuickshellScreenInfo* screen) {
 }
 
 void HyprlandIpcQml::refreshMonitors() { HyprlandIpc::instance()->refreshMonitors(false); }
-
 void HyprlandIpcQml::refreshWorkspaces() { HyprlandIpc::instance()->refreshWorkspaces(false); }
-
 QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->requestSocketPath(); }
-
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 
-HyprlandMonitor* HyprlandIpcQml::focusedMonitor() {
-	return HyprlandIpc::instance()->bindableFocusedMonitor().value();
+QBindable<HyprlandMonitor*> HyprlandIpcQml::bindableFocusedMonitor() {
+	return HyprlandIpc::instance()->bindableFocusedMonitor();
+}
+
+QBindable<HyprlandWorkspace*> HyprlandIpcQml::bindableFocusedWorkspace() {
+	return HyprlandIpc::instance()->bindableFocusedWorkspace();
 }
 
 ObjectModel<HyprlandMonitor>* HyprlandIpcQml::monitors() {

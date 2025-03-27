@@ -50,6 +50,11 @@ HyprlandIpc::HyprlandIpc() {
 		return;
 	}
 
+	this->bFocusedWorkspace.setBinding([this]() -> HyprlandWorkspace* {
+		if (!this->bFocusedMonitor) return nullptr;
+		return this->bFocusedMonitor->bindableActiveWorkspace().value();
+	});
+
 	this->mRequestSocketPath = hyprlandDir + "/.socket.sock";
 	this->mEventSocketPath = hyprlandDir + "/.socket2.sock";
 
