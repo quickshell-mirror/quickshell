@@ -99,6 +99,8 @@ void I3Ipc::subscribe() {
 
 	this->makeRequest(message);
 
+	// Workspaces must be refreshed before monitors or no focus will be
+	// detected on launch.
 	this->refreshWorkspaces();
 	this->refreshMonitors();
 }
@@ -248,6 +250,10 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 
 		if (!existed) {
 			this->mWorkspaces.insertObjectSorted(workspace, &I3Ipc::compareWorkspaces);
+		}
+
+		if (!this->bFocusedWorkspace && object.value("focused").value<bool>()) {
+			this->bFocusedMonitor = workspace->bindableMonitor().value();
 		}
 
 		names.push_back(name);
@@ -466,13 +472,23 @@ I3Workspace* I3Ipc::findWorkspaceByName(const QString& name) {
 	return workspaceIter == list.end() ? nullptr : *workspaceIter;
 }
 
-I3Monitor* I3Ipc::findMonitorByName(const QString& name) {
+I3Monitor* I3Ipc::findMonitorByName(const QString& name, bool createIfMissing) {
 	auto list = this->mMonitors.valueList();
 	auto monitorIter = std::ranges::find_if(list, [name](I3Monitor* m) {
 		return m->bindableName().value() == name;
 	});
 
-	return monitorIter == list.end() ? nullptr : *monitorIter;
+	if (monitorIter != list.end()) {
+		return *monitorIter;
+	} else if (createIfMissing) {
+		qCDebug(logI3Ipc) << "Monitor" << name << "requested before creation, performing early init";
+		auto* monitor = new I3Monitor(this);
+		monitor->updateInitial(name);
+		this->mMonitors.insertObject(monitor);
+		return monitor;
+	} else {
+		return nullptr;
+	}
 }
 
 ObjectModel<I3Monitor>* I3Ipc::monitors() { return &this->mMonitors; }

@@ -43,16 +43,17 @@ void I3Monitor::updateFromObject(const QVariantMap& obj) {
 	if (!this->bActiveWorkspace
 	    || activeWorkspaceName != this->bActiveWorkspace->bindableName().value())
 	{
-		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceName);
-		if (activeWorkspaceName.isEmpty() || workspace == nullptr) { // is null when output is disabled
+		if (activeWorkspaceName.isEmpty()) {
 			this->bActiveWorkspace = nullptr;
 		} else {
-			this->bActiveWorkspace = workspace;
+			this->bActiveWorkspace = this->ipc->findWorkspaceByName(activeWorkspaceName);
 		}
 	};
 
 	Qt::endPropertyUpdateGroup();
 }
+
+void I3Monitor::updateInitial(const QString& name) { this->bName = name; }
 
 void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) { this->bActiveWorkspace = workspace; };
 

@@ -61,6 +61,7 @@ public:
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
 	void updateFromObject(const QVariantMap& obj);
+	void updateInitial(const QString& name);
 
 	void setFocusedWorkspace(I3Workspace* workspace);
 

@@ -89,7 +89,7 @@ public:
 	static QByteArray buildRequestMessage(EventCode cmd, const QByteArray& payload = QByteArray());
 
 	I3Workspace* findWorkspaceByName(const QString& name);
-	I3Monitor* findMonitorByName(const QString& name);
+	I3Monitor* findMonitorByName(const QString& name, bool createIfMissing = false);
 	I3Workspace* findWorkspaceByID(qint32 id);
 
 	void setFocusedMonitor(I3Monitor* monitor);

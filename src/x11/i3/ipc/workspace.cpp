@@ -44,11 +44,10 @@ void I3Workspace::updateFromObject(const QVariantMap& obj) {
 	auto monitorName = obj.value("output").value<QString>();
 
 	if (!this->bMonitor || monitorName != this->bMonitor->bindableName().value()) {
-		auto* monitor = this->ipc->findMonitorByName(monitorName);
-		if (monitorName.isEmpty() || monitor == nullptr) { // is null when output is disabled
+		if (monitorName.isEmpty()) {
 			this->bMonitor = nullptr;
 		} else {
-			this->bMonitor = monitor;
+			this->bMonitor = this->ipc->findMonitorByName(monitorName, true);
 		}
 	}
 
