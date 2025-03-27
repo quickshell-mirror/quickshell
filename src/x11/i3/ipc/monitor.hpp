@@ -17,8 +17,10 @@ class I3Monitor: public QObject {
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// Wether this monitor is turned on or not
 	Q_PROPERTY(bool power READ default NOTIFY powerChanged BINDABLE bindablePower);
-	/// The current workspace
-	Q_PROPERTY(qs::i3::ipc::I3Workspace* focusedWorkspace READ focusedWorkspace NOTIFY focusedWorkspaceChanged);
+	/// The currently active workspace on this monitor, May be null.
+	Q_PROPERTY(qs::i3::ipc::I3Workspace* activeWorkspace READ default NOTIFY activeWorkspaceChanged BINDABLE bindableActiveWorkspace);
+	/// Deprecated: See @@activeWorkspace.
+	Q_PROPERTY(qs::i3::ipc::I3Workspace* focusedWorkspace READ default NOTIFY activeWorkspaceChanged BINDABLE bindableActiveWorkspace);
 	/// The X coordinate of this monitor inside the monitor layout
 	Q_PROPERTY(qint32 x READ default NOTIFY xChanged BINDABLE bindableX);
 	/// The Y coordinate of this monitor inside the monitor layout
@@ -40,7 +42,7 @@ class I3Monitor: public QObject {
 	QML_UNCREATABLE("I3Monitors must be retrieved from the I3Ipc object.");
 
 public:
-	explicit I3Monitor(I3Ipc* ipc): QObject(ipc), ipc(ipc) {}
+	explicit I3Monitor(I3Ipc* ipc);
 
 	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
@@ -52,7 +54,10 @@ public:
 	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
 
-	[[nodiscard]] I3Workspace* focusedWorkspace() const;
+	[[nodiscard]] QBindable<I3Workspace*> bindableActiveWorkspace() {
+		return &this->bActiveWorkspace;
+	}
+
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
 	void updateFromObject(const QVariantMap& obj);
@@ -63,7 +68,7 @@ signals:
 	void idChanged();
 	void nameChanged();
 	void powerChanged();
-	void focusedWorkspaceChanged();
+	void activeWorkspaceChanged();
 	void xChanged();
 	void yChanged();
 	void widthChanged();
@@ -76,9 +81,8 @@ private:
 	I3Ipc* ipc;
 
 	QVariantMap mLastIpcObject;
-	I3Workspace* mFocusedWorkspace = nullptr;
-	QString mFocusedWorkspaceName; // use for faster change detection
 
+	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(I3Monitor, qint32, bId, -1, &I3Monitor::idChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, QString, bName, &I3Monitor::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, bool, bPower, &I3Monitor::powerChanged);
@@ -88,6 +92,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, qint32, bHeight, &I3Monitor::heightChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(I3Monitor, qreal, bScale, 1, &I3Monitor::scaleChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, bool, bFocused, &I3Monitor::focusedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(I3Monitor, I3Workspace*, bActiveWorkspace, &I3Monitor::activeWorkspaceChanged);
+	// clang-format on
 };
 
 } // namespace qs::i3::ipc

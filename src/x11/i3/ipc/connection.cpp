@@ -73,6 +73,11 @@ I3Ipc::I3Ipc() {
 		}
 	}
 
+	this->bFocusedWorkspace.setBinding([this]() -> I3Workspace* {
+		if (!this->bFocusedMonitor) return nullptr;
+		return this->bFocusedMonitor->bindableActiveWorkspace().value();
+	});
+
 	this->mSocketPath = sock;
 
 	// clang-format off
@@ -183,59 +188,23 @@ void I3Ipc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) {
 }
 
 QString I3Ipc::socketPath() const { return this->mSocketPath; }
-I3Workspace* I3Ipc::focusedWorkspace() const { return this->mFocusedWorkspace; }
-I3Monitor* I3Ipc::focusedMonitor() const { return this->mFocusedMonitor; }
-
-void I3Ipc::setFocusedWorkspace(I3Workspace* workspace) {
-	if (workspace == this->mFocusedWorkspace) return;
-
-	if (this->mFocusedWorkspace != nullptr) {
-		this->mFocusedWorkspace->bindableFocused().setValue(false);
-		QObject::disconnect(this->mFocusedWorkspace, nullptr, this, nullptr);
-	}
-
-	this->mFocusedWorkspace = workspace;
-
-	if (workspace != nullptr) {
-		if (auto* monitor = this->mFocusedWorkspace->monitor()) {
-			monitor->setFocusedWorkspace(this->mFocusedWorkspace);
-		}
-
-		QObject::connect(workspace, &QObject::destroyed, this, &I3Ipc::onFocusedWorkspaceDestroyed);
-		workspace->bindableFocused().setValue(true);
-		this->setFocusedMonitor(workspace->monitor());
-	}
-
-	emit this->focusedWorkspaceChanged();
-}
 
 void I3Ipc::setFocusedMonitor(I3Monitor* monitor) {
-	if (monitor == this->mFocusedMonitor) return;
+	auto* oldMonitor = this->bFocusedMonitor.value();
+	if (monitor == oldMonitor) return;
 
-	if (this->mFocusedMonitor != nullptr) {
-		this->mFocusedMonitor->bindableFocused().setValue(false);
-		QObject::disconnect(this->mFocusedMonitor, nullptr, this, nullptr);
+	if (oldMonitor != nullptr) {
+		QObject::disconnect(oldMonitor, nullptr, this, nullptr);
 	}
 
-	this->mFocusedMonitor = monitor;
-
 	if (monitor != nullptr) {
-		monitor->bindableFocused().setValue(true);
 		QObject::connect(monitor, &QObject::destroyed, this, &I3Ipc::onFocusedMonitorDestroyed);
 	}
 
-	emit this->focusedMonitorChanged();
+	this->bFocusedMonitor = monitor;
 }
 
-void I3Ipc::onFocusedWorkspaceDestroyed() {
-	this->mFocusedWorkspace = nullptr;
-	emit this->focusedWorkspaceChanged();
-}
-
-void I3Ipc::onFocusedMonitorDestroyed() {
-	this->mFocusedMonitor = nullptr;
-	emit this->focusedMonitorChanged();
-}
+void I3Ipc::onFocusedMonitorDestroyed() { this->bFocusedMonitor = nullptr; }
 
 I3Ipc* I3Ipc::instance() {
 	static I3Ipc* instance = nullptr; // NOLINT
@@ -276,10 +245,6 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 		}
 
 		workspace->updateFromObject(object);
-
-		if (workspace->bindableFocused().value()) {
-			this->setFocusedWorkspace(workspace);
-		}
 
 		if (!existed) {
 			this->mWorkspaces.insertObject(workspace);
@@ -436,7 +401,12 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 		}
 
 		newWorkspace->updateFromObject(newData.toObject().toVariantMap());
-		this->setFocusedWorkspace(newWorkspace);
+
+		if (newWorkspace->bindableMonitor().value()) {
+			auto* monitor = newWorkspace->bindableMonitor().value();
+			monitor->setFocusedWorkspace(newWorkspace);
+			this->bFocusedMonitor = monitor;
+		}
 	} else if (change == "empty") {
 		auto name = event->mData["current"]["name"].toString();
 
@@ -445,8 +415,8 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 		if (oldWorkspace != nullptr) {
 			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->bindableId().value() << name;
 
-			if (this->mFocusedWorkspace == oldWorkspace) {
-				this->setFocusedWorkspace(nullptr);
+			if (this->bFocusedWorkspace == oldWorkspace) {
+				this->bFocusedMonitor->setFocusedWorkspace(nullptr);
 			}
 
 			this->workspaces()->removeObject(oldWorkspace);

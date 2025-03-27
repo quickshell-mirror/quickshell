@@ -1,23 +1,36 @@
 #include "monitor.hpp"
 
 #include <qcontainerfwd.h>
+#include <qobject.h>
 #include <qproperty.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "connection.hpp"
 #include "workspace.hpp"
 
 namespace qs::i3::ipc {
 
-I3Workspace* I3Monitor::focusedWorkspace() const { return this->mFocusedWorkspace; };
+I3Monitor::I3Monitor(I3Ipc* ipc): QObject(ipc), ipc(ipc) {
+	// clang-format off
+	this->bFocused.setBinding([this]() { return this->ipc->bindableFocusedMonitor().value() == this; });
+	// clang-format on
+}
+
 QVariantMap I3Monitor::lastIpcObject() const { return this->mLastIpcObject; };
 
 void I3Monitor::updateFromObject(const QVariantMap& obj) {
-	auto activeWorkspaceId = obj.value("current_workspace").value<QString>();
+	if (obj != this->mLastIpcObject) {
+		this->mLastIpcObject = obj;
+		emit this->lastIpcObjectChanged();
+	}
+
+	auto activeWorkspaceName = obj.value("current_workspace").value<QString>();
 	auto rect = obj.value("rect").toMap();
 
 	Qt::beginPropertyUpdateGroup();
+
 	this->bId = obj.value("id").value<qint32>();
 	this->bName = obj.value("name").value<QString>();
 	this->bPower = obj.value("power").value<bool>();
@@ -26,31 +39,21 @@ void I3Monitor::updateFromObject(const QVariantMap& obj) {
 	this->bWidth = rect.value("width").value<qint32>();
 	this->bHeight = rect.value("height").value<qint32>();
 	this->bScale = obj.value("scale").value<qreal>();
-	this->bFocused = obj.value("focused").value<bool>();
-	Qt::endPropertyUpdateGroup();
 
-	if (activeWorkspaceId != this->mFocusedWorkspaceName) {
-		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceId);
-		if (activeWorkspaceId.isEmpty() || workspace == nullptr) { // is null when output is disabled
-			this->mFocusedWorkspace = nullptr;
-			this->mFocusedWorkspaceName = "";
+	if (!this->bActiveWorkspace
+	    || activeWorkspaceName != this->bActiveWorkspace->bindableName().value())
+	{
+		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceName);
+		if (activeWorkspaceName.isEmpty() || workspace == nullptr) { // is null when output is disabled
+			this->bActiveWorkspace = nullptr;
 		} else {
-			this->mFocusedWorkspaceName = activeWorkspaceId;
-			this->mFocusedWorkspace = workspace;
+			this->bActiveWorkspace = workspace;
 		}
-		emit this->focusedWorkspaceChanged();
 	};
 
-	if (obj != this->mLastIpcObject) {
-		this->mLastIpcObject = obj;
-		emit this->lastIpcObjectChanged();
-	}
+	Qt::endPropertyUpdateGroup();
 }
 
-void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) {
-	this->mFocusedWorkspace = workspace;
-	this->mFocusedWorkspaceName = workspace->bindableName().value();
-	emit this->focusedWorkspaceChanged();
-};
+void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) { this->bActiveWorkspace = workspace; };
 
 } // namespace qs::i3::ipc

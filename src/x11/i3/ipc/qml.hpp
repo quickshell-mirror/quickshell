@@ -2,6 +2,7 @@
 
 #include <qjsonarray.h>
 #include <qobject.h>
+#include <qproperty.h>
 
 #include "../../../core/doc.hpp"
 #include "../../../core/qmlscreen.hpp"
@@ -16,8 +17,8 @@ class I3IpcQml: public QObject {
 	/// Path to the I3 socket
 	Q_PROPERTY(QString socketPath READ socketPath CONSTANT);
 
-	Q_PROPERTY(qs::i3::ipc::I3Workspace* focusedWorkspace READ focusedWorkspace NOTIFY focusedWorkspaceChanged);
-	Q_PROPERTY(qs::i3::ipc::I3Monitor* focusedMonitor READ focusedMonitor NOTIFY focusedMonitorChanged);
+	Q_PROPERTY(qs::i3::ipc::I3Workspace* focusedWorkspace READ default NOTIFY focusedWorkspaceChanged BINDABLE bindableFocusedWorkspace);
+	Q_PROPERTY(qs::i3::ipc::I3Monitor* focusedMonitor READ default NOTIFY focusedMonitorChanged BINDABLE bindableFocusedMonitor);
 	/// All I3 monitors.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::i3::ipc::I3Monitor>*);
 	Q_PROPERTY(UntypedObjectModel* monitors READ monitors CONSTANT);
@@ -59,10 +60,10 @@ public:
 	[[nodiscard]] static ObjectModel<I3Workspace>* workspaces();
 
 	/// The currently focused Workspace
-	[[nodiscard]] static I3Workspace* focusedWorkspace();
+	[[nodiscard]] static QBindable<I3Workspace*> bindableFocusedWorkspace();
 
 	/// The currently focused Monitor
-	[[nodiscard]] static I3Monitor* focusedMonitor();
+	[[nodiscard]] static QBindable<I3Monitor*> bindableFocusedMonitor();
 
 signals:
 	void rawEvent(I3IpcEvent* event);

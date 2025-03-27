@@ -5,6 +5,7 @@
 #include <qjsonobject.h>
 #include <qlocalsocket.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqml.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
@@ -91,7 +92,6 @@ public:
 	I3Monitor* findMonitorByName(const QString& name);
 	I3Workspace* findWorkspaceByID(qint32 id);
 
-	void setFocusedWorkspace(I3Workspace* workspace);
 	void setFocusedMonitor(I3Monitor* monitor);
 
 	void refreshWorkspaces();
@@ -99,8 +99,14 @@ public:
 
 	I3Monitor* monitorFor(QuickshellScreenInfo* screen);
 
-	[[nodiscard]] I3Monitor* focusedMonitor() const;
-	[[nodiscard]] I3Workspace* focusedWorkspace() const;
+	[[nodiscard]] QBindable<I3Monitor*> bindableFocusedMonitor() const {
+		return &this->bFocusedMonitor;
+	};
+
+	[[nodiscard]] QBindable<I3Workspace*> bindableFocusedWorkspace() const {
+		return &this->bFocusedWorkspace;
+	};
+
 	[[nodiscard]] ObjectModel<I3Monitor>* monitors();
 	[[nodiscard]] ObjectModel<I3Workspace>* workspaces();
 signals:
@@ -115,7 +121,6 @@ private slots:
 	void eventSocketReady();
 	void subscribe();
 
-	void onFocusedWorkspaceDestroyed();
 	void onFocusedMonitorDestroyed();
 
 private:
@@ -144,8 +149,14 @@ private:
 
 	I3IpcEvent event {this};
 
-	I3Workspace* mFocusedWorkspace = nullptr;
-	I3Monitor* mFocusedMonitor = nullptr;
+	Q_OBJECT_BINDABLE_PROPERTY(I3Ipc, I3Monitor*, bFocusedMonitor, &I3Ipc::focusedMonitorChanged);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3Ipc,
+	    I3Workspace*,
+	    bFocusedWorkspace,
+	    &I3Ipc::focusedWorkspaceChanged
+	);
 };
 
 } // namespace qs::i3::ipc
