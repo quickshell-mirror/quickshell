@@ -120,6 +120,8 @@ private:
 
 	void onEvent(HyprlandIpcEvent* event);
 
+	static bool compareWorkspaces(HyprlandWorkspace* a, HyprlandWorkspace* b);
+
 	QLocalSocket eventSocket;
 	QString mRequestSocketPath;
 	QString mEventSocketPath;

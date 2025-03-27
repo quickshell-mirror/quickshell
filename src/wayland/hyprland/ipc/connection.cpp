@@ -289,7 +289,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		if (!existed) {
 			this->refreshWorkspaces(false);
-			this->mWorkspaces.insertObject(workspace);
+			this->mWorkspaces.insertObjectSorted(workspace, &HyprlandIpc::compareWorkspaces);
 		}
 	} else if (event->name == "destroyworkspacev2") {
 		auto args = event->parseView(2);
@@ -413,7 +413,7 @@ HyprlandIpc::findWorkspaceByName(const QString& name, bool createIfMissing, qint
 
 		auto* workspace = new HyprlandWorkspace(this);
 		workspace->updateInitial(id, name);
-		this->mWorkspaces.insertObject(workspace);
+		this->mWorkspaces.insertObjectSorted(workspace, &HyprlandIpc::compareWorkspaces);
 		return workspace;
 	} else {
 		return nullptr;
@@ -464,7 +464,7 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 			workspace->updateFromObject(object);
 
 			if (!existed) {
-				this->mWorkspaces.insertObject(workspace);
+				this->mWorkspaces.insertObjectSorted(workspace, &HyprlandIpc::compareWorkspaces);
 			}
 
 			ids.push_back(id);
@@ -594,6 +594,10 @@ void HyprlandIpc::refreshMonitors(bool canCreate) {
 			monitor->deleteLater();
 		}
 	});
+}
+
+bool HyprlandIpc::compareWorkspaces(HyprlandWorkspace* a, HyprlandWorkspace* b) {
+	return a->bindableId().value() > b->bindableId().value();
 }
 
 } // namespace qs::hyprland::ipc

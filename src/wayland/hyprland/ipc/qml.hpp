@@ -27,7 +27,9 @@ class HyprlandIpcQml: public QObject {
 	/// All hyprland monitors.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandMonitor>*);
 	Q_PROPERTY(UntypedObjectModel* monitors READ monitors CONSTANT);
-	/// All hyprland workspaces.
+	/// All hyprland workspaces, sorted by id.
+	///
+	/// > [!NOTE] Named workspaces have a negative id, and will appear before unnamed workspaces.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandWorkspace>*);
 	Q_PROPERTY(UntypedObjectModel* workspaces READ workspaces CONSTANT);
 	// clang-format on
