@@ -44,13 +44,15 @@ Q_NAMESPACE;
 QML_ELEMENT;
 
 enum Enum : quint8 {
-	/// The fallback category for general applications or anything that does
-	/// not fit into a different category.
-	ApplicationStatus = 0,
+	/// Hardware controls like battery indicators or volume control.
+	Hardware = 0,
 	/// System services such as IMEs or disk indexing.
 	SystemServices = 1,
-	/// Hardware controls like battery indicators or volume control.
-	Hardware = 2,
+	/// The fallback category for general applications or anything that does
+	/// not fit into a different category.
+	ApplicationStatus = 2,
+	/// Communication related applications such as instant messengers or email clients.
+	Communications = 3,
 };
 Q_ENUM_NS(Enum);
 } // namespace Category

@@ -352,6 +352,7 @@ DBusResult<Status::Enum> DBusDataTransform<Status::Enum>::fromWire(const QString
 
 DBusResult<Category::Enum> DBusDataTransform<Category::Enum>::fromWire(const QString& wire) {
 	if (wire == "ApplicationStatus") return DBusResult(Category::ApplicationStatus);
+	if (wire == "Communications") return DBusResult(Category::Communications);
 	if (wire == "SystemServices") return DBusResult(Category::SystemServices);
 	if (wire == "Hardware") return DBusResult(Category::Hardware);
 

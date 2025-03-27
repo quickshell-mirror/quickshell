@@ -1,5 +1,6 @@
 #include "qml.hpp"
 
+#include <qnamespace.h>
 #include <qobject.h>
 
 #include "../../core/model.hpp"
@@ -28,9 +29,6 @@ void SystemTray::onItemRegistered(StatusNotifierItem* item) {
 void SystemTray::onItemUnregistered(StatusNotifierItem* item) { this->mItems.removeObject(item); }
 ObjectModel<StatusNotifierItem>* SystemTray::items() { return &this->mItems; }
 
-bool SystemTray::compareItems(
-    qs::service::sni::StatusNotifierItem* a,
-    qs::service::sni::StatusNotifierItem* b
-) {
-	return a->category() > b->category() || a->id().compare(b->id(), Qt::CaseInsensitive) >= 0;
+bool SystemTray::compareItems(StatusNotifierItem* a, StatusNotifierItem* b) {
+	return a->category() < b->category() || a->id().compare(b->id(), Qt::CaseInsensitive) >= 0;
 }
