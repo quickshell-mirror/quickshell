@@ -109,6 +109,7 @@ public:
 
 	[[nodiscard]] ObjectModel<I3Monitor>* monitors();
 	[[nodiscard]] ObjectModel<I3Workspace>* workspaces();
+
 signals:
 	void connected();
 	void rawEvent(I3IpcEvent* event);
@@ -132,6 +133,7 @@ private:
 	void handleGetWorkspacesEvent(I3IpcEvent* event);
 	void handleGetOutputsEvent(I3IpcEvent* event);
 	static void handleRunCommand(I3IpcEvent* event);
+	static bool compareWorkspaces(I3Workspace* a, I3Workspace* b);
 
 	void reconnectIPC();
 

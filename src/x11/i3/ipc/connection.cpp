@@ -247,7 +247,7 @@ void I3Ipc::handleGetWorkspacesEvent(I3IpcEvent* event) {
 		workspace->updateFromObject(object);
 
 		if (!existed) {
-			this->mWorkspaces.insertObject(workspace);
+			this->mWorkspaces.insertObjectSorted(workspace, &I3Ipc::compareWorkspaces);
 		}
 
 		names.push_back(name);
@@ -379,7 +379,7 @@ void I3Ipc::handleWorkspaceEvent(I3IpcEvent* event) {
 		}
 
 		if (!existed) {
-			this->mWorkspaces.insertObject(workspace);
+			this->mWorkspaces.insertObjectSorted(workspace, &I3Ipc::compareWorkspaces);
 			qCInfo(logI3Ipc) << "Added workspace" << workspace->bindableName().value() << "to list";
 		}
 	} else if (change == "focus") {
@@ -477,6 +477,10 @@ I3Monitor* I3Ipc::findMonitorByName(const QString& name) {
 
 ObjectModel<I3Monitor>* I3Ipc::monitors() { return &this->mMonitors; }
 ObjectModel<I3Workspace>* I3Ipc::workspaces() { return &this->mWorkspaces; }
+
+bool I3Ipc::compareWorkspaces(I3Workspace* a, I3Workspace* b) {
+	return a->bindableNumber().value() > b->bindableNumber().value();
+}
 
 QString I3IpcEvent::type() const { return I3IpcEvent::eventToString(this->mCode); }
 QString I3IpcEvent::data() const { return QString::fromUtf8(this->mData.toJson()); }
