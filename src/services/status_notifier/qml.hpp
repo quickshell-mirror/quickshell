@@ -31,5 +31,8 @@ private slots:
 	void onItemUnregistered(qs::service::sni::StatusNotifierItem* item);
 
 private:
+	static bool
+	compareItems(qs::service::sni::StatusNotifierItem* a, qs::service::sni::StatusNotifierItem* b);
+
 	ObjectModel<qs::service::sni::StatusNotifierItem> mItems {this};
 };

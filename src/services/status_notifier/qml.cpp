@@ -17,10 +17,20 @@ SystemTray::SystemTray(QObject* parent): QObject(parent) {
 	// clang-format on
 
 	for (auto* item: host->items()) {
-		this->mItems.insertObject(item);
+		this->mItems.insertObjectSorted(item, &SystemTray::compareItems);
 	}
 }
 
-void SystemTray::onItemRegistered(StatusNotifierItem* item) { this->mItems.insertObject(item); }
+void SystemTray::onItemRegistered(StatusNotifierItem* item) {
+	this->mItems.insertObjectSorted(item, &SystemTray::compareItems);
+}
+
 void SystemTray::onItemUnregistered(StatusNotifierItem* item) { this->mItems.removeObject(item); }
 ObjectModel<StatusNotifierItem>* SystemTray::items() { return &this->mItems; }
+
+bool SystemTray::compareItems(
+    qs::service::sni::StatusNotifierItem* a,
+    qs::service::sni::StatusNotifierItem* b
+) {
+	return a->category() > b->category() || a->id().compare(b->id(), Qt::CaseInsensitive) >= 0;
+}

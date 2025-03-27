@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <bit>
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
@@ -96,6 +98,19 @@ public:
 
 	void insertObject(T* object, qsizetype index = -1) {
 		this->UntypedObjectModel::insertObject(object, index);
+	}
+
+	void insertObjectSorted(T* object, const std::function<bool(T*, T*)>& compare) {
+		auto& list = this->valueList();
+		auto iter = list.begin();
+
+		while (iter != list.end()) {
+			if (!compare(object, *iter)) break;
+			++iter;
+		}
+
+		auto idx = iter - list.begin();
+		this->UntypedObjectModel::insertObject(object, idx);
 	}
 
 	void removeObject(const T* object) { this->UntypedObjectModel::removeObject(object); }
