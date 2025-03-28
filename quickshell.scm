@@ -57,12 +57,15 @@
                    "-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO"
                    ;; Breakpad is not currently packaged for Guix.
                    "-DCRASH_REPORTER=OFF")
-           #:phases #~(modify-phases %standard-phases
-                        (replace 'build
-                          (lambda* (#:key parallel-build? #:allow-other-keys)
-                            (invoke "cmake" "--build" ".")))
-                        (replace 'install
-                          (lambda _ (invoke "cmake" "--install" "."))))))
+           #:phases
+           #~(modify-phases %standard-phases
+               (replace 'build (lambda _ (invoke "cmake" "--build" ".")))
+               (replace 'install (lambda _ (invoke "cmake" "--install" ".")))
+               (add-after 'install 'wrap-program
+                 (lambda* (#:key inputs #:allow-other-keys)
+                   (wrap-program (string-append #$output "/bin/quickshell")
+                     `("QML_IMPORT_PATH" ":"
+                       = (,(getenv "QML_IMPORT_PATH")))))))))
     (home-page "https://quickshell.outfoxxed.me")
     (synopsis "QtQuick-based desktop shell toolkit")
     (description
