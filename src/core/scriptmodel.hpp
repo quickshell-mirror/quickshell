@@ -70,7 +70,13 @@ class ScriptModel: public QAbstractListModel {
 	QML_ELEMENT;
 
 public:
-	[[nodiscard]] const QVariantList& values() const { return this->mValues; }
+	[[nodiscard]] QVariantList values() const {
+		auto values = this->mValues;
+		// If not detached, the QML engine will invalidate iterators in updateValuesUnique.
+		if (this->hasActiveIterators) values.detach();
+		return values;
+	}
+
 	void setValues(const QVariantList& newValues);
 
 	[[nodiscard]] qint32 rowCount(const QModelIndex& parent) const override;
@@ -82,6 +88,7 @@ signals:
 
 private:
 	QVariantList mValues;
+	bool hasActiveIterators = false;
 
 	void updateValuesUnique(const QVariantList& newValues);
 };

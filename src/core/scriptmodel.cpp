@@ -12,6 +12,7 @@
 #include <qvariant.h>
 
 void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
+	this->hasActiveIterators = true;
 	this->mValues.reserve(newValues.size());
 
 	auto iter = this->mValues.begin();
@@ -112,6 +113,8 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 			++newIter;
 		}
 	}
+
+	this->hasActiveIterators = false;
 }
 
 void ScriptModel::setValues(const QVariantList& newValues) {
