@@ -2,7 +2,6 @@
 
 #include <private/qwaylandscreen_p.h>
 #include <private/qwaylandshellsurface_p.h>
-#include <private/qwaylandshmbackingstore_p.h>
 #include <private/qwaylandsurface_p.h>
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
@@ -103,6 +102,10 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
 	}
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
+
+#include <private/qwaylandshmbackingstore_p.h>
+
 void QSWaylandSessionLockSurface::initVisible() {
 	this->visible = true;
 
@@ -117,3 +120,71 @@ void QSWaylandSessionLockSurface::initVisible() {
 	this->window()->waylandSurface()->attach(this->initBuf->buffer(), 0, 0);
 	this->window()->window()->setVisible(true);
 }
+
+#else
+
+#include <cmath>
+
+#include <private/qwayland-wayland.h>
+#include <private/qwaylanddisplay_p.h>
+#include <qscopedpointer.h>
+#include <qtclasshelpermacros.h>
+#include <qtdeprecationdefinitions.h>
+
+// As of Qt 6.9, a null buffer is unconditionally comitted to the surface. To avoid this, we
+// cast the window to a subclass with access to mSurface, then swap mSurface during
+// QWaylandWindow::initWindow to avoid the null commit.
+
+// Since QWaylandWindow::mSurface is protected and not private, we can just pretend our
+// QWaylandWindow is a subclass that can access it.
+class SurfaceAccessor: public QtWaylandClient::QWaylandWindow {
+public:
+	QScopedPointer<QtWaylandClient::QWaylandSurface>& surfacePointer() { return this->mSurface; }
+};
+
+// QWaylandSurface is not exported, meaning we can't link to its constructor or destructor.
+// As such, the best alternative is to create a class that can take its place during
+// QWaylandWindow::init.
+//
+// Fortunately, QWaylandSurface's superclasses are both exported, and are therefore identical
+// for the purpose of accepting calls during initWindow.
+class HackSurface
+    : public QObject
+    , public QtWayland::wl_surface {
+public:
+	HackSurface(QtWaylandClient::QWaylandDisplay* display)
+	    : wl_surface(display->createSurface(this)) {}
+	~HackSurface() override { this->destroy(); }
+	Q_DISABLE_COPY_MOVE(HackSurface);
+};
+
+void QSWaylandSessionLockSurface::initVisible() {
+	this->visible = true;
+
+	// See note above HackSurface.
+	auto* dummySurface = new HackSurface(this->window()->display());
+	auto* tempSurface =
+	    new QScopedPointer(reinterpret_cast<QtWaylandClient::QWaylandSurface*>(dummySurface));
+
+	auto& surfacePointer = reinterpret_cast<SurfaceAccessor*>(this->window())->surfacePointer();
+
+	// Swap out the surface for a dummy during initWindow.
+	QT_WARNING_DISABLE_DEPRECATED // swap()
+	{
+		surfacePointer.swap(*tempSurface);
+		this->window()->window()->setVisible(true);
+		surfacePointer.swap(*tempSurface);
+	}
+	QT_WARNING_POP
+
+	// Cast to a HackSurface pointer so ~HackSurface is called instead of ~QWaylandSurface.
+	delete reinterpret_cast<QScopedPointer<HackSurface>*>(tempSurface);
+
+	// This would normally be run in QWaylandWindow::initWindow but isn't because we
+	// fed that a dummy surface.
+	if (surfacePointer->version() >= 3) {
+		surfacePointer->set_buffer_scale(std::ceil(this->window()->scale()));
+	}
+}
+
+#endif
