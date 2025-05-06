@@ -331,8 +331,10 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 		QObject::disconnect(this->mScreen, nullptr, this, nullptr);
 	}
 
-	if (this->qscreen() != qscreen) {
-		this->mScreen = qscreen;
+	auto* oldScreen = this->qscreen();
+	this->mScreen = qscreen;
+
+	if (oldScreen != qscreen) {
 		if (this->window == nullptr) {
 			emit this->screenChanged();
 		} else if (qscreen) {
