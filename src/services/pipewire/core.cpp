@@ -52,7 +52,7 @@ PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read
 	qCInfo(logLoop) << "Connecting to pipewire server.";
 	this->core = pw_context_connect(this->context, nullptr, 0);
 	if (this->core == nullptr) {
-		qCCritical(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
+	qCCritical(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
 		return;
 	}
 
