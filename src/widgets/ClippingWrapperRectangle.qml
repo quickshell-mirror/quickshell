@@ -5,7 +5,7 @@ import QtQuick
 /// a child item. If you don't need clipping, use @@WrapperRectangle.
 ///
 /// > [!NOTE] ClippingWrapperRectangle is a @@MarginWrapperManager based component.
-/// > You should read its documentation as well.
+/// > See its documentation for information on how margins and sizes are calculated.
 ///
 /// > [!WARNING] You should not set @@Item.x, @@Item.y, @@Item.width,
 /// > @@Item.height or @@Item.anchors on the child item, as they are used
@@ -14,11 +14,32 @@ import QtQuick
 ClippingRectangle {
 	id: root
 
-	/// The minimum margin between the child item and the ClippingWrapperRectangle's
-	/// edges. Defaults to 0.
+	/// The default for @@topMargin, @@bottomMargin, @@leftMargin and @@rightMargin.
+	/// Defaults to 0.
 	property /*real*/alias margin: manager.margin
-	/// If the child item should be resized larger than its implicit size if
-	/// the WrapperRectangle is resized larger than its implicit size. Defaults to false.
+	/// An extra margin applied in addition to @@topMargin, @@bottomMargin,
+	/// @@leftMargin, and @@rightMargin.
+	/// If @@contentInsideBorder is true, the rectangle's border width will be added
+	/// to this property. Defaults to 0.
+	property /*real*/alias extraMargin: manager.extraMargin
+	/// The requested top margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias topMargin: manager.topMargin
+	/// The requested bottom margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias bottomMargin: manager.bottomMargin
+	/// The requested left margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias leftMargin: manager.leftMargin
+	/// The requested right margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias rightMargin: manager.rightMargin
+	/// Determines if child item should be resized larger than its implicit size if
+	/// the parent is resized larger than its implicit size. Defaults to false.
 	property /*bool*/alias resizeChild: manager.resizeChild
 	/// See @@WrapperManager.child for details.
 	property alias child: manager.child

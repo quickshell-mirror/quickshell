@@ -1,5 +1,4 @@
 #include "marginwrapper.hpp"
-#include <algorithm>
 
 #include <qobject.h>
 #include <qquickitem.h>
@@ -17,6 +16,35 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 	    this,
 	    &MarginWrapperManager::onChildChanged
 	);
+
+	this->bTopMargin.setBinding([this] {
+		return this->bExtraMargin
+		     + (this->bTopMarginSet.value() ? this->bTopMarginValue : this->bMargin);
+	});
+
+	this->bBottomMargin.setBinding([this] {
+		return this->bExtraMargin
+		     + (this->bBottomMarginSet.value() ? this->bBottomMarginValue : this->bMargin);
+	});
+
+	this->bLeftMargin.setBinding([this] {
+		return this->bExtraMargin
+		     + (this->bLeftMarginSet.value() ? this->bLeftMarginValue : this->bMargin);
+	});
+
+	this->bRightMargin.setBinding([this] {
+		return this->bExtraMargin
+		     + (this->bRightMarginSet.value() ? this->bRightMarginValue : this->bMargin);
+	});
+
+	// Coalesces updates via binding infrastructure
+	this->bUpdateWatcher.setBinding([this] {
+		this->bTopMargin.value();
+		this->bBottomMargin.value();
+		this->bLeftMargin.value();
+		this->bRightMargin.value();
+		return 0;
+	});
 }
 
 void MarginWrapperManager::componentComplete() {
@@ -39,15 +67,6 @@ void MarginWrapperManager::componentComplete() {
 	}
 
 	if (!this->mChild) this->updateGeometry();
-}
-
-qreal MarginWrapperManager::margin() const { return this->mMargin; }
-
-void MarginWrapperManager::setMargin(qreal margin) {
-	if (margin == this->mMargin) return;
-	this->mMargin = margin;
-	this->updateGeometry();
-	emit this->marginChanged();
 }
 
 bool MarginWrapperManager::resizeChild() const { return this->mResizeChild; }
@@ -82,33 +101,36 @@ void MarginWrapperManager::onChildChanged() {
 }
 
 qreal MarginWrapperManager::targetChildWidth() const {
-	auto max = this->mWrapper->width() - this->mMargin * 2;
+	auto max = this->mWrapper->width() - (this->bLeftMargin + this->bRightMargin);
 
 	if (this->mResizeChild) return max;
-	else return std::min(this->mChild->implicitWidth(), max);
+	else return this->mChild->implicitWidth();
 }
 
 qreal MarginWrapperManager::targetChildHeight() const {
-	auto max = this->mWrapper->height() - this->mMargin * 2;
+	auto max = this->mWrapper->height() - (this->bTopMargin + this->bBottomMargin);
 
 	if (this->mResizeChild) return max;
-	else return std::min(this->mChild->implicitHeight(), max);
+	else return this->mChild->implicitHeight();
 }
 
 qreal MarginWrapperManager::targetChildX() const {
-	if (this->mResizeChild) return this->mMargin;
+	if (this->mResizeChild) return this->bLeftMargin;
 	else {
-		return std::max(this->mMargin, this->mWrapper->width() / 2 - this->mChild->implicitWidth() / 2);
+		auto total = this->bLeftMargin + this->bRightMargin;
+		auto mul = total == 0 ? 0.5 : this->bLeftMargin / total;
+		auto margin = this->mWrapper->width() - this->mChild->implicitWidth();
+		return margin * mul;
 	}
 }
 
 qreal MarginWrapperManager::targetChildY() const {
-	if (this->mResizeChild) return this->mMargin;
+	if (this->mResizeChild) return this->bTopMargin;
 	else {
-		return std::max(
-		    this->mMargin,
-		    this->mWrapper->height() / 2 - this->mChild->implicitHeight() / 2
-		);
+		auto total = this->bTopMargin + this->bBottomMargin;
+		auto mul = total == 0 ? 0.5 : this->bTopMargin / total;
+		auto margin = this->mWrapper->height() - this->mChild->implicitHeight();
+		return margin * mul;
 	}
 }
 
@@ -126,7 +148,9 @@ void MarginWrapperManager::updateChildY() {
 
 void MarginWrapperManager::onChildImplicitWidthChanged() {
 	if (!this->mChild || !this->mWrapper) return;
-	this->mWrapper->setImplicitWidth(this->mChild->implicitWidth() + this->mMargin * 2);
+	this->mWrapper->setImplicitWidth(
+	    this->mChild->implicitWidth() + this->bLeftMargin + this->bRightMargin
+	);
 
 	// If the implicit width change does not result in an actual width change,
 	// this will not be called anywhere else.
@@ -135,7 +159,9 @@ void MarginWrapperManager::onChildImplicitWidthChanged() {
 
 void MarginWrapperManager::onChildImplicitHeightChanged() {
 	if (!this->mChild || !this->mWrapper) return;
-	this->mWrapper->setImplicitHeight(this->mChild->implicitHeight() + this->mMargin * 2);
+	this->mWrapper->setImplicitHeight(
+	    this->mChild->implicitHeight() + this->bTopMargin + this->bBottomMargin
+	);
 
 	// If the implicit height change does not result in an actual height change,
 	// this will not be called anywhere else.
@@ -146,15 +172,19 @@ void MarginWrapperManager::updateGeometry() {
 	if (!this->mWrapper) return;
 
 	if (this->mChild) {
-		this->mWrapper->setImplicitWidth(this->mChild->implicitWidth() + this->mMargin * 2);
-		this->mWrapper->setImplicitHeight(this->mChild->implicitHeight() + this->mMargin * 2);
+		this->mWrapper->setImplicitWidth(
+		    this->mChild->implicitWidth() + this->bLeftMargin + this->bRightMargin
+		);
+		this->mWrapper->setImplicitHeight(
+		    this->mChild->implicitHeight() + this->bTopMargin + this->bBottomMargin
+		);
 		this->mChild->setX(this->targetChildX());
 		this->mChild->setY(this->targetChildY());
 		this->mChild->setWidth(this->targetChildWidth());
 		this->mChild->setHeight(this->targetChildHeight());
 	} else {
-		this->mWrapper->setImplicitWidth(this->mMargin * 2);
-		this->mWrapper->setImplicitHeight(this->mMargin * 2);
+		this->mWrapper->setImplicitWidth(this->bLeftMargin + this->bRightMargin);
+		this->mWrapper->setImplicitHeight(this->bTopMargin + this->bBottomMargin);
 	}
 }
 
