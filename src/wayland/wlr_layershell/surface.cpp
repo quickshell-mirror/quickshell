@@ -1,4 +1,5 @@
 #include "surface.hpp"
+#include <algorithm>
 #include <any>
 
 #include <private/qhighdpiscaling_p.h>
@@ -61,8 +62,8 @@ toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
 
 [[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept {
 	return QSize(
-	    anchors.horizontalConstraint() ? 0 : size.width(),
-	    anchors.verticalConstraint() ? 0 : size.height()
+	    anchors.horizontalConstraint() ? 0 : std::max(1, size.width()),
+	    anchors.verticalConstraint() ? 0 : std::max(1, size.height())
 	);
 }
 

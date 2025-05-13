@@ -203,8 +203,8 @@ void ProxyWindowBase::completeWindow() {
 		this->window->setScreen(this->mScreen);
 	}
 
-	this->setWidth(this->mWidth);
-	this->setHeight(this->mHeight);
+	this->trySetWidth(this->implicitWidth());
+	this->trySetHeight(this->implicitHeight());
 	this->setColor(this->mColor);
 	this->updateMask();
 
@@ -299,28 +299,52 @@ qint32 ProxyWindowBase::y() const {
 	else return this->window->y();
 }
 
+qint32 ProxyWindowBase::implicitWidth() const { return this->mImplicitWidth; }
+
+void ProxyWindowBase::setImplicitWidth(qint32 implicitWidth) {
+	if (implicitWidth == this->mImplicitWidth) return;
+	this->mImplicitWidth = implicitWidth;
+	emit this->implicitWidthChanged();
+
+	if (this->window) this->trySetWidth(implicitWidth);
+	else emit this->widthChanged();
+}
+
+void ProxyWindowBase::trySetWidth(qint32 implicitWidth) { this->window->setWidth(implicitWidth); }
+
+qint32 ProxyWindowBase::implicitHeight() const { return this->mImplicitHeight; }
+
+void ProxyWindowBase::setImplicitHeight(qint32 implicitHeight) {
+	if (implicitHeight == this->mImplicitHeight) return;
+	this->mImplicitHeight = implicitHeight;
+	emit this->implicitHeightChanged();
+
+	if (this->window) this->trySetHeight(implicitHeight);
+	else emit this->heightChanged();
+}
+
+void ProxyWindowBase::trySetHeight(qint32 implicitHeight) {
+	this->window->setHeight(implicitHeight);
+}
+
 qint32 ProxyWindowBase::width() const {
-	if (this->window == nullptr) return this->mWidth;
+	if (this->window == nullptr) return this->implicitWidth();
 	else return this->window->width();
 }
 
 void ProxyWindowBase::setWidth(qint32 width) {
-	this->mWidth = width;
-	if (this->window == nullptr) {
-		emit this->widthChanged();
-	} else this->window->setWidth(width);
+	this->setImplicitWidth(width);
+	qmlWarning(this) << "Setting `width` is deprecated. Set `implicitWidth` instead.";
 }
 
 qint32 ProxyWindowBase::height() const {
-	if (this->window == nullptr) return this->mHeight;
+	if (this->window == nullptr) return this->implicitHeight();
 	else return this->window->height();
 }
 
 void ProxyWindowBase::setHeight(qint32 height) {
-	this->mHeight = height;
-	if (this->window == nullptr) {
-		emit this->heightChanged();
-	} else this->window->setHeight(height);
+	this->setImplicitHeight(height);
+	qmlWarning(this) << "Setting `height` is deprecated. Set `implicitHeight` instead.";
 }
 
 void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {

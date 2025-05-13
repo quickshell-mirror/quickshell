@@ -69,8 +69,8 @@ public:
 	void connectWindow() override;
 	[[nodiscard]] bool deleteOnInvisible() const override;
 
-	void setWidth(qint32 width) override;
-	void setHeight(qint32 height) override;
+	void trySetWidth(qint32 implicitWidth) override;
+	void trySetHeight(qint32 implicitHeight) override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 
@@ -139,6 +139,12 @@ public:
 	[[nodiscard]] bool isVisible() const override;
 	[[nodiscard]] bool isBackingWindowVisible() const override;
 	void setVisible(bool visible) override;
+
+	[[nodiscard]] qint32 implicitWidth() const override;
+	void setImplicitWidth(qint32 implicitWidth) override;
+
+	[[nodiscard]] qint32 implicitHeight() const override;
+	void setImplicitHeight(qint32 implicitHeight) override;
 
 	[[nodiscard]] qint32 width() const override;
 	void setWidth(qint32 width) override;

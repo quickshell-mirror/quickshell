@@ -53,7 +53,17 @@ class WindowInterface: public Reloadable {
 	/// This property is useful for ensuring windows spawn in a specific order, and you should
 	/// not use it in place of [visible](#prop.visible).
 	Q_PROPERTY(bool backingWindowVisible READ isBackingWindowVisible NOTIFY backingWindowVisibleChanged);
+	/// The window's desired width.
+	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged);
+	/// The window's desired height.
+	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged);
+	/// The window's actual width.
+	///
+	/// Setting this property is deprecated. Set @@implicitWidth instead.
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
+	/// The window's actual height.
+	///
+	/// Setting this property is deprecated. Set @@implicitHeight instead.
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	/// The ratio between logical pixels and monitor pixels.
 	///
@@ -147,6 +157,12 @@ public:
 	[[nodiscard]] virtual bool isBackingWindowVisible() const = 0;
 	virtual void setVisible(bool visible) = 0;
 
+	[[nodiscard]] virtual qint32 implicitWidth() const = 0;
+	virtual void setImplicitWidth(qint32 implicitWidth) = 0;
+
+	[[nodiscard]] virtual qint32 implicitHeight() const = 0;
+	virtual void setImplicitHeight(qint32 implicitHeight) = 0;
+
 	[[nodiscard]] virtual qint32 width() const = 0;
 	virtual void setWidth(qint32 width) = 0;
 
@@ -177,6 +193,8 @@ signals:
 	void windowConnected();
 	void visibleChanged();
 	void backingWindowVisibleChanged();
+	void implicitWidthChanged();
+	void implicitHeightChanged();
 	void widthChanged();
 	void heightChanged();
 	void devicePixelRatioChanged();

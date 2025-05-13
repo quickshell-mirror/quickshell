@@ -42,6 +42,8 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
+	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged);
+	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
@@ -92,11 +94,20 @@ public:
 	[[nodiscard]] virtual qint32 x() const;
 	[[nodiscard]] virtual qint32 y() const;
 
+	[[nodiscard]] qint32 implicitWidth() const;
+	void setImplicitWidth(qint32 implicitWidth);
+
+	[[nodiscard]] qint32 implicitHeight() const;
+	void setImplicitHeight(qint32 implicitHeight);
+
 	[[nodiscard]] virtual qint32 width() const;
-	virtual void setWidth(qint32 width);
+	void setWidth(qint32 width);
 
 	[[nodiscard]] virtual qint32 height() const;
-	virtual void setHeight(qint32 height);
+	void setHeight(qint32 height);
+
+	virtual void trySetWidth(qint32 implicitWidth);
+	virtual void trySetHeight(qint32 implicitHeight);
 
 	[[nodiscard]] qreal devicePixelRatio() const;
 
@@ -124,6 +135,8 @@ signals:
 	void backerVisibilityChanged();
 	void xChanged();
 	void yChanged();
+	void implicitWidthChanged();
+	void implicitHeightChanged();
 	void widthChanged();
 	void heightChanged();
 	void devicePixelRatioChanged();
@@ -145,8 +158,8 @@ protected slots:
 
 protected:
 	bool mVisible = true;
-	qint32 mWidth = 100;
-	qint32 mHeight = 100;
+	qint32 mImplicitWidth = 100;
+	qint32 mImplicitHeight = 100;
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;

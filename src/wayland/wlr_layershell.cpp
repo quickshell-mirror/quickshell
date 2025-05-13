@@ -71,21 +71,17 @@ bool WlrLayershell::deleteOnInvisible() const {
 	return true;
 }
 
-void WlrLayershell::setWidth(qint32 width) {
-	this->mWidth = width;
-
+void WlrLayershell::trySetWidth(qint32 implicitWidth) {
 	// only update the actual size if not blocked by anchors
 	if (!this->ext->anchors().horizontalConstraint()) {
-		this->ProxyWindowBase::setWidth(width);
+		this->ProxyWindowBase::trySetWidth(implicitWidth);
 	}
 }
 
-void WlrLayershell::setHeight(qint32 height) {
-	this->mHeight = height;
-
+void WlrLayershell::trySetHeight(qint32 implicitHeight) {
 	// only update the actual size if not blocked by anchors
 	if (!this->ext->anchors().verticalConstraint()) {
-		this->ProxyWindowBase::setHeight(height);
+		this->ProxyWindowBase::trySetHeight(implicitHeight);
 	}
 }
 
@@ -108,10 +104,11 @@ Anchors WlrLayershell::anchors() const { return this->ext->anchors(); }
 
 void WlrLayershell::setAnchors(Anchors anchors) {
 	this->ext->setAnchors(anchors);
+	if (!this->window) return;
 
 	// explicitly set width values are tracked so the entire screen isn't covered if an anchor is removed.
-	if (!anchors.horizontalConstraint()) this->ProxyWindowBase::setWidth(this->mWidth);
-	if (!anchors.verticalConstraint()) this->ProxyWindowBase::setHeight(this->mHeight);
+	if (!anchors.horizontalConstraint()) this->ProxyWindowBase::trySetWidth(this->implicitWidth());
+	if (!anchors.verticalConstraint()) this->ProxyWindowBase::trySetHeight(this->implicitHeight());
 }
 
 bool WlrLayershell::aboveWindows() const { return this->layer() > WlrLayer::Bottom; }
@@ -190,6 +187,8 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &ProxyWindowBase::windowConnected, this, &WaylandPanelInterface::windowConnected);
 	QObject::connect(this->layer, &ProxyWindowBase::visibleChanged, this, &WaylandPanelInterface::visibleChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::backerVisibilityChanged, this, &WaylandPanelInterface::backingWindowVisibleChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::implicitHeightChanged, this, &WaylandPanelInterface::implicitHeightChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::implicitWidthChanged, this, &WaylandPanelInterface::implicitWidthChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::heightChanged, this, &WaylandPanelInterface::heightChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::widthChanged, this, &WaylandPanelInterface::widthChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::devicePixelRatioChanged, this, &WaylandPanelInterface::devicePixelRatioChanged);
@@ -232,6 +231,8 @@ qreal WaylandPanelInterface::devicePixelRatio() const { return this->layer->devi
 	void WaylandPanelInterface::set(type value) { this->layer->set(value); }
 
 proxyPair(bool, isVisible, setVisible);
+proxyPair(qint32, implicitWidth, setImplicitWidth);
+proxyPair(qint32, implicitHeight, setImplicitHeight);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);

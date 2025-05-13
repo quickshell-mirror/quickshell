@@ -9,15 +9,15 @@
 #include "proxywindow.hpp"
 #include "windowinterface.hpp"
 
-void ProxyFloatingWindow::setWidth(qint32 width) {
-	if (this->window == nullptr || !this->window->isVisible()) {
-		this->ProxyWindowBase::setWidth(width);
+void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
+	if (!this->window->isVisible()) {
+		this->ProxyWindowBase::trySetWidth(implicitWidth);
 	}
 }
 
-void ProxyFloatingWindow::setHeight(qint32 height) {
-	if (this->window == nullptr || !this->window->isVisible()) {
-		this->ProxyWindowBase::setHeight(height);
+void ProxyFloatingWindow::trySetHeight(qint32 implicitHeight) {
+	if (!this->window->isVisible()) {
+		this->ProxyWindowBase::trySetHeight(implicitHeight);
 	}
 }
 
@@ -32,6 +32,8 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyWindowBase::backerVisibilityChanged, this, &FloatingWindowInterface::backingWindowVisibleChanged);
 	QObject::connect(this->window, &ProxyWindowBase::heightChanged, this, &FloatingWindowInterface::heightChanged);
 	QObject::connect(this->window, &ProxyWindowBase::widthChanged, this, &FloatingWindowInterface::widthChanged);
+	QObject::connect(this->window, &ProxyWindowBase::implicitHeightChanged, this, &FloatingWindowInterface::implicitHeightChanged);
+	QObject::connect(this->window, &ProxyWindowBase::implicitWidthChanged, this, &FloatingWindowInterface::implicitWidthChanged);
 	QObject::connect(this->window, &ProxyWindowBase::devicePixelRatioChanged, this, &FloatingWindowInterface::devicePixelRatioChanged);
 	QObject::connect(this->window, &ProxyWindowBase::screenChanged, this, &FloatingWindowInterface::screenChanged);
 	QObject::connect(this->window, &ProxyWindowBase::windowTransformChanged, this, &FloatingWindowInterface::windowTransformChanged);
@@ -64,6 +66,8 @@ qreal FloatingWindowInterface::devicePixelRatio() const { return this->window->d
 	void FloatingWindowInterface::set(type value) { this->window->set(value); }
 
 proxyPair(bool, isVisible, setVisible);
+proxyPair(qint32, implicitWidth, setImplicitWidth);
+proxyPair(qint32, implicitHeight, setImplicitHeight);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);

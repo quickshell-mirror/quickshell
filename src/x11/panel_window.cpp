@@ -126,22 +126,18 @@ void XPanelWindow::connectWindow() {
 	}
 }
 
-void XPanelWindow::setWidth(qint32 width) {
-	this->mWidth = width;
-
+void XPanelWindow::trySetWidth(qint32 implicitWidth) {
 	// only update the actual size if not blocked by anchors
 	if (!this->mAnchors.horizontalConstraint()) {
-		this->ProxyWindowBase::setWidth(width);
+		this->ProxyWindowBase::trySetWidth(implicitWidth);
 		this->updateDimensions();
 	}
 }
 
-void XPanelWindow::setHeight(qint32 height) {
-	this->mHeight = height;
-
+void XPanelWindow::trySetHeight(qint32 implicitHeight) {
 	// only update the actual size if not blocked by anchors
 	if (!this->mAnchors.verticalConstraint()) {
-		this->ProxyWindowBase::setHeight(height);
+		this->ProxyWindowBase::trySetHeight(implicitHeight);
 		this->updateDimensions();
 	}
 }
@@ -307,13 +303,14 @@ void XPanelWindow::updateDimensions(bool propagate) {
 			geometry.setX(screenGeometry.x() + this->mMargins.mLeft);
 		} else if (this->mAnchors.mRight) {
 			geometry.setX(
-			    screenGeometry.x() + screenGeometry.width() - this->mWidth - this->mMargins.mRight
+			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth()
+			    - this->mMargins.mRight
 			);
 		} else {
-			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->mWidth / 2);
+			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->implicitWidth() / 2);
 		}
 
-		geometry.setWidth(this->mWidth);
+		geometry.setWidth(this->implicitWidth());
 	}
 
 	if (this->mAnchors.verticalConstraint()) {
@@ -324,13 +321,14 @@ void XPanelWindow::updateDimensions(bool propagate) {
 			geometry.setY(screenGeometry.y() + this->mMargins.mTop);
 		} else if (this->mAnchors.mBottom) {
 			geometry.setY(
-			    screenGeometry.y() + screenGeometry.height() - this->mHeight - this->mMargins.mBottom
+			    screenGeometry.y() + screenGeometry.height() - this->implicitHeight()
+			    - this->mMargins.mBottom
 			);
 		} else {
-			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->mHeight / 2);
+			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->implicitHeight() / 2);
 		}
 
-		geometry.setHeight(this->mHeight);
+		geometry.setHeight(this->implicitHeight());
 	}
 
 	this->window->setGeometry(geometry);
@@ -378,9 +376,11 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 
 	if (autoExclude) {
 		if (side == 0 || side == 1) {
-			exclusiveZone = this->mWidth + (side == 0 ? this->mMargins.mLeft : this->mMargins.mRight);
+			exclusiveZone =
+			    this->implicitWidth() + (side == 0 ? this->mMargins.mLeft : this->mMargins.mRight);
 		} else {
-			exclusiveZone = this->mHeight + (side == 2 ? this->mMargins.mTop : this->mMargins.mBottom);
+			exclusiveZone =
+			    this->implicitHeight() + (side == 2 ? this->mMargins.mTop : this->mMargins.mBottom);
 		}
 	} else {
 		exclusiveZone = this->mExclusiveZone;
@@ -476,6 +476,8 @@ XPanelInterface::XPanelInterface(QObject* parent)
 	QObject::connect(this->panel, &ProxyWindowBase::windowConnected, this, &XPanelInterface::windowConnected);
 	QObject::connect(this->panel, &ProxyWindowBase::visibleChanged, this, &XPanelInterface::visibleChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::backerVisibilityChanged, this, &XPanelInterface::backingWindowVisibleChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::implicitHeightChanged, this, &XPanelInterface::implicitHeightChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::implicitWidthChanged, this, &XPanelInterface::implicitWidthChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::heightChanged, this, &XPanelInterface::heightChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::widthChanged, this, &XPanelInterface::widthChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::devicePixelRatioChanged, this, &XPanelInterface::devicePixelRatioChanged);
@@ -514,6 +516,8 @@ qreal XPanelInterface::devicePixelRatio() const { return this->panel->devicePixe
 	void XPanelInterface::set(type value) { this->panel->set(value); }
 
 proxyPair(bool, isVisible, setVisible);
+proxyPair(qint32, implicitWidth, setImplicitWidth);
+proxyPair(qint32, implicitHeight, setImplicitHeight);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);
