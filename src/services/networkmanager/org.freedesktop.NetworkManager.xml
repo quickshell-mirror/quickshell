@@ -480,7 +480,9 @@
         defined capability numbers. The array is guaranteed to
         be sorted in ascending order without duplicates.
     -->
-    <property name="Capabilities" type="au" access="read"/>
+    <property name="Capabilities" type="au" access="read">
+		<annotation name="org.qtproject.QtDBus.QtTypeName" value="NetworkManagerCapabilities"/>
+	</property>
 
     <!--
         State:
@@ -573,6 +575,8 @@
         domain-specific options.
     -->
     <property name="GlobalDnsConfiguration" type="a{sv}" access="readwrite"/>
+		<annotation name="org.qtproject.QtDBus.QtTypeName" value=""/>
+	</property>
 
     <!--
         DeviceAdded:

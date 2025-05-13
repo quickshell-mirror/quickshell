@@ -32,7 +32,8 @@ install_qml_module(quickshell-service-networkmanager)
 
 target_link_libraries(quickshell-service-networkmanager PRIVATE
 	Qt::Qml
-	Qt::Quick # pch
+	#Qt::Quick # pch
+	Qt::DBus
 )
 
 qs_module_pch(quickshell-service-networkmanager)

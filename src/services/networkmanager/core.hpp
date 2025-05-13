@@ -2,6 +2,11 @@
 #include <qobject.h>
 #include <qdbusextratypes.h>
 #include "dbus_service.h"
+#include <qtypes.h>
+
+// Defining the "au" debus type
+using NetworkManagerCapabilities = QList<quint32>;
+Q_DECLARE_METATYPE(NetworkManagerCapabilities);
 
 namespace qs::service::networkmanager {
 
