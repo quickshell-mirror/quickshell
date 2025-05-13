@@ -69,6 +69,7 @@ boption(SERVICE_MPRIS "Mpris" ON)
 boption(SERVICE_PAM "Pam" ON)
 boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
+boption(SERVICE_NETWORKMANAGER "NetworkManager" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 
 include(cmake/install-qml-module.cmake)
