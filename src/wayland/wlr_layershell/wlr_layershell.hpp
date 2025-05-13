@@ -1,16 +1,71 @@
 #pragma once
 
+#include <qcontainerfwd.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
+#include <qsize.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/doc.hpp"
-#include "../window/panelinterface.hpp"
-#include "../window/proxywindow.hpp"
-#include "wlr_layershell/window.hpp"
+#include "../../core/doc.hpp"
+#include "../../core/util.hpp"
+#include "../../window/panelinterface.hpp"
+#include "../../window/proxywindow.hpp"
+
+namespace qs::wayland::layershell {
+
+struct LayerSurfaceState;
+class LayerSurfaceBridge;
+
+///! WlrLayershell layer.
+/// See @@WlrLayershell.layer.
+namespace WlrLayer { // NOLINT
+Q_NAMESPACE;
+QML_ELEMENT;
+
+enum Enum : quint8 {
+	/// Below bottom
+	Background = 0,
+	/// Above background, usually below windows
+	Bottom = 1,
+	/// Commonly used for panels, app launchers, and docks.
+	/// Usually renders over normal windows and below fullscreen windows.
+	Top = 2,
+	/// Usually renders over fullscreen windows
+	Overlay = 3,
+};
+Q_ENUM_NS(Enum);
+
+} // namespace WlrLayer
+
+///! WlrLayershell keyboard focus mode
+/// See @@WlrLayershell.keyboardFocus.
+namespace WlrKeyboardFocus { // NOLINT
+Q_NAMESPACE;
+QML_ELEMENT;
+
+enum Enum : quint8 {
+	/// No keyboard input will be accepted.
+	None = 0,
+	/// Exclusive access to the keyboard, locking out all other windows.
+	///
+	/// > [!WARNING] You **CANNOT** use this to make a secure lock screen.
+	/// >
+	/// > If you want to make a lock screen, use @@WlSessionLock.
+	Exclusive = 1,
+	/// Access to the keyboard as determined by the operating system.
+	///
+	/// > [!WARNING] On some systems, `OnDemand` may cause the shell window to
+	/// > retain focus over another window unexpectedly.
+	/// > You should try `None` if you experience issues.
+	OnDemand = 2,
+};
+Q_ENUM_NS(Enum);
+
+} // namespace WlrKeyboardFocus
 
 ///! Wlroots layershell window
 /// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
@@ -43,13 +98,13 @@ class WlrLayershell: public ProxyWindowBase {
 	// clang-format off
 	Q_OBJECT;
 	/// The shell layer the window sits in. Defaults to `WlrLayer.Top`.
-	Q_PROPERTY(WlrLayer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
+	Q_PROPERTY(qs::wayland::layershell::WlrLayer::Enum layer READ layer WRITE setLayer NOTIFY layerChanged);
 	/// Similar to the class property of windows. Can be used to identify the window to external tools.
 	///
 	/// Cannot be set after windowConnected.
 	Q_PROPERTY(QString namespace READ ns WRITE setNamespace NOTIFY namespaceChanged);
 	/// The degree of keyboard focus taken. Defaults to `KeyboardFocus.None`.
-	Q_PROPERTY(WlrKeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
+	Q_PROPERTY(qs::wayland::layershell::WlrKeyboardFocus::Enum keyboardFocus READ keyboardFocus WRITE setKeyboardFocus NOTIFY keyboardFocusChanged);
 
 	QSDOC_HIDE Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
 	QSDOC_HIDE Q_PROPERTY(qint32 exclusiveZone READ exclusiveZone WRITE setExclusiveZone NOTIFY exclusiveZoneChanged);
@@ -69,31 +124,37 @@ public:
 	void connectWindow() override;
 	[[nodiscard]] bool deleteOnInvisible() const override;
 
+	void onPolished() override;
 	void trySetWidth(qint32 implicitWidth) override;
 	void trySetHeight(qint32 implicitHeight) override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 
-	[[nodiscard]] WlrLayer::Enum layer() const;
-	void setLayer(WlrLayer::Enum layer); // NOLINT
+	[[nodiscard]] WlrLayer::Enum layer() const { return this->bLayer; }
+	void setLayer(WlrLayer::Enum layer) { this->bLayer = layer; }
 
-	[[nodiscard]] QString ns() const;
-	void setNamespace(QString ns);
+	[[nodiscard]] QString ns() const { return this->bNamespace; }
+	void setNamespace(const QString& ns) { this->bNamespace = ns; }
 
-	[[nodiscard]] WlrKeyboardFocus::Enum keyboardFocus() const;
-	void setKeyboardFocus(WlrKeyboardFocus::Enum focus); // NOLINT
+	[[nodiscard]] WlrKeyboardFocus::Enum keyboardFocus() const { return this->bKeyboardFocus; }
+	void setKeyboardFocus(WlrKeyboardFocus::Enum focus) { this->bKeyboardFocus = focus; }
 
-	[[nodiscard]] Anchors anchors() const;
-	void setAnchors(Anchors anchors);
+	[[nodiscard]] Anchors anchors() const { return this->bAnchors; }
+	void setAnchors(Anchors anchors) { this->bAnchors = anchors; }
 
-	[[nodiscard]] qint32 exclusiveZone() const;
-	void setExclusiveZone(qint32 exclusiveZone);
+	[[nodiscard]] qint32 exclusiveZone() const { return this->bExclusiveZone; }
+	void setExclusiveZone(qint32 exclusiveZone) {
+		Qt::beginPropertyUpdateGroup();
+		this->bExclusiveZone = exclusiveZone;
+		this->bExclusionMode = ExclusionMode::Normal;
+		Qt::endPropertyUpdateGroup();
+	}
 
-	[[nodiscard]] ExclusionMode::Enum exclusionMode() const;
-	void setExclusionMode(ExclusionMode::Enum exclusionMode);
+	[[nodiscard]] ExclusionMode::Enum exclusionMode() const { return this->bExclusionMode; }
+	void setExclusionMode(ExclusionMode::Enum exclusionMode) { this->bExclusionMode = exclusionMode; }
 
-	[[nodiscard]] Margins margins() const;
-	void setMargins(Margins margins); // NOLINT
+	[[nodiscard]] Margins margins() const { return this->bMargins; }
+	void setMargins(Margins margins) { this->bMargins = margins; }
 
 	[[nodiscard]] bool aboveWindows() const;
 	void setAboveWindows(bool aboveWindows);
@@ -116,12 +177,30 @@ private slots:
 	void updateAutoExclusion();
 
 private:
-	void setAutoExclusion();
+	[[nodiscard]] LayerSurfaceState computeState() const;
+	[[nodiscard]] qint32 computeExclusiveZone() const;
 
-	LayershellWindowExtension* ext;
+	void onStateChanged();
 
-	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
-	qint32 mExclusiveZone = 0;
+	bool compositorPicksScreen = true;
+	LayerSurfaceBridge* bridge = nullptr;
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, WlrLayer::Enum, bLayer, WlrLayer::Top, &WlrLayershell::layerChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, QString, bNamespace, "quickshell", &WlrLayershell::namespaceChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, Anchors, bAnchors, &WlrLayershell::anchorsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, Margins, bMargins, &WlrLayershell::marginsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bExclusiveZone, &WlrLayershell::exclusiveZoneChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, WlrKeyboardFocus::Enum, bKeyboardFocus, &WlrLayershell::keyboardFocusChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, ExclusionMode::Enum, bExclusionMode, ExclusionMode::Auto, &WlrLayershell::exclusionModeChanged);
+	Q_OBJECT_COMPUTED_PROPERTY(WlrLayershell, qint32, bcExclusiveZone, &WlrLayershell::computeExclusiveZone);
+
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bLayer, onStateChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bAnchors, onStateChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bMargins, onStateChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bcExclusiveZone, onStateChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bKeyboardFocus, onStateChanged, onValueChanged);
+	// clang-format on
 };
 
 class WaylandPanelInterface: public PanelWindowInterface {
@@ -194,3 +273,5 @@ private:
 
 	friend class WlrLayershell;
 };
+
+} // namespace qs::wayland::layershell

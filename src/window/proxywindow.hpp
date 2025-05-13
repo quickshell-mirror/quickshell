@@ -153,7 +153,7 @@ protected slots:
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
-	void onPolished();
+	virtual void onPolished();
 	void runLints();
 
 protected:

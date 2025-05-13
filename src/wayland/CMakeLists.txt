@@ -85,7 +85,6 @@ add_library(quickshell-wayland-init OBJECT init.cpp)
 set(WAYLAND_MODULES)
 
 if (WAYLAND_WLR_LAYERSHELL)
-	target_sources(quickshell-wayland PRIVATE wlr_layershell.cpp)
 	add_subdirectory(wlr_layershell)
 	target_compile_definitions(quickshell-wayland PRIVATE QS_WAYLAND_WLR_LAYERSHELL)
 	target_compile_definitions(quickshell-wayland-init PRIVATE QS_WAYLAND_WLR_LAYERSHELL)

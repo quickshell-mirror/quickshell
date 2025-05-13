@@ -5,14 +5,18 @@
 #include <qtclasshelpermacros.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 
-class QSWaylandLayerShellIntegration
-    : public QtWaylandClient::QWaylandShellIntegrationTemplate<QSWaylandLayerShellIntegration>
+namespace qs::wayland::layershell {
+
+class LayerShellIntegration
+    : public QtWaylandClient::QWaylandShellIntegrationTemplate<LayerShellIntegration>
     , public QtWayland::zwlr_layer_shell_v1 {
 public:
-	QSWaylandLayerShellIntegration();
-	~QSWaylandLayerShellIntegration() override;
-	Q_DISABLE_COPY_MOVE(QSWaylandLayerShellIntegration);
+	LayerShellIntegration();
+	~LayerShellIntegration() override;
+	Q_DISABLE_COPY_MOVE(LayerShellIntegration);
 
 	QtWaylandClient::QWaylandShellSurface* createShellSurface(QtWaylandClient::QWaylandWindow* window
 	) override;
 };
+
+} // namespace qs::wayland::layershell
