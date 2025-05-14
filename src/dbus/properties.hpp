@@ -235,6 +235,7 @@ public:
 	void updateAllDirect();
 	void updateAllViaGetAll();
 	[[nodiscard]] QString toString() const;
+	[[nodiscard]] bool isConnected() const { return this->interface; }
 
 	void pushPropertyUpdate(DBusPropertyCore* property);
 	void requestPropertyUpdate(DBusPropertyCore* property);
