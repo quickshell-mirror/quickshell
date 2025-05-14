@@ -32,6 +32,7 @@ void Toplevel::onClosed() {
 }
 
 void Toplevel::activate() { this->handle->activate(); }
+void Toplevel::close() { this->handle->close(); }
 
 QString Toplevel::appId() const { return this->handle->appId(); }
 QString Toplevel::title() const { return this->handle->title(); }

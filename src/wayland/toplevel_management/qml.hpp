@@ -56,6 +56,10 @@ public:
 	/// The request may be ignored by the compositor.
 	Q_INVOKABLE void activate();
 
+	/// Request that this toplevel is closed.
+	/// The request may be ignored by the compositor or the application.
+	Q_INVOKABLE void close();
+
 	/// Request that this toplevel is fullscreened on a specific screen.
 	/// The request may be ignored by the compositor.
 	Q_INVOKABLE void fullscreenOn(QuickshellScreenInfo* screen);
