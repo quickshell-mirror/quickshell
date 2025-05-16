@@ -61,6 +61,7 @@ void WrapperManager::setChild(QQuickItem* child) {
 		if (this->mChild->parentItem() == this->mWrapper) {
 			this->mChild->setParentItem(nullptr);
 		}
+		this->disconnectChild();
 	}
 
 	this->mChild = child;
@@ -78,6 +79,8 @@ void WrapperManager::setChild(QQuickItem* child) {
 		if (auto* wrapper = this->mWrapper) {
 			child->setParentItem(wrapper);
 		}
+
+		this->connectChild();
 	}
 
 	emit this->initializedChildChanged();
