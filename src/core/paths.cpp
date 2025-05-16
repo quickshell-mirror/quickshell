@@ -51,6 +51,7 @@ QString QsPaths::ipcPath(const QString& id) {
 QDir* QsPaths::cacheDir() {
 	if (this->cacheState == DirState::Unknown) {
 		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+		dir = QDir(dir.filePath("by-shell"));
 		dir = QDir(dir.filePath(this->shellId));
 		this->mCacheDir = dir;
 

@@ -21,6 +21,7 @@
 
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
+#include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
@@ -187,6 +188,14 @@ bool QuickshellGlobal::watchFiles() const { // NOLINT
 
 void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
+}
+
+QString QuickshellGlobal::cacheDir() const { // NOLINT
+	auto* dir = QsPaths::instance()->cacheDir();
+	if (dir) return dir->path();
+
+	qCritical() << "Could not find cache dir.";
+	return "/quickshell-cache-not-found";
 }
 
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
