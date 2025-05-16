@@ -202,6 +202,18 @@ QString QuickshellGlobal::cacheDir() const { // NOLINT
 	return QsPaths::instance()->shellCacheDir().path();
 }
 
+QString QuickshellGlobal::dataPath(const QString& path) const {
+	return this->dataDir() % '/' % path;
+}
+
+QString QuickshellGlobal::statePath(const QString& path) const {
+	return this->stateDir() % '/' % path;
+}
+
+QString QuickshellGlobal::cachePath(const QString& path) const {
+	return this->cacheDir() % '/' % path;
+}
+
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	auto vstr = variable.toStdString();
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);

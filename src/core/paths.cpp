@@ -11,6 +11,7 @@
 #include <qloggingcategory.h>
 #include <qstandardpaths.h>
 #include <qtenvironmentvariables.h>
+#include <qtversionchecks.h>
 #include <unistd.h>
 
 #include "instanceinfo.hpp"
@@ -232,7 +233,18 @@ QDir QsPaths::shellDataDir() {
 
 QDir QsPaths::shellStateDir() {
 	if (this->shellStateState == DirState::Unknown) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+		QDir dir;
+		if (qEnvironmentVariableIsSet("XDG_STATE_HOME")) {
+			dir = QDir(qEnvironmentVariable("XDG_STATE_HOME"));
+		} else {
+			auto home = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+			dir = QDir(home.filePath(".local/state"));
+		}
+#else
 		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation));
+#endif
+
 		dir = QDir(dir.filePath("by-shell"));
 		dir = QDir(dir.filePath(this->shellId));
 		this->mShellStateDir = dir;
