@@ -67,6 +67,13 @@ class ScriptModel: public QAbstractListModel {
 	/// > }
 	/// > ```
 	Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged);
+	/// The property that javascript objects passed into the model will be compared with.
+	///
+	/// For example, if `objectProp` is `"myprop"` then `{ myprop: "a", other: "y" }` and
+	/// `{ myprop: "a", other: "z" }` will be considered equal.
+	///
+	/// Defaults to `""`, meaning no key.
+	Q_PROPERTY(QString objectProp READ objectProp WRITE setObjectProp NOTIFY objectPropChanged);
 	QML_ELEMENT;
 
 public:
@@ -79,15 +86,20 @@ public:
 
 	void setValues(const QVariantList& newValues);
 
+	[[nodiscard]] QString objectProp() const { return this->cmpKey; }
+	void setObjectProp(const QString& objectProp);
+
 	[[nodiscard]] qint32 rowCount(const QModelIndex& parent) const override;
 	[[nodiscard]] QVariant data(const QModelIndex& index, qint32 role) const override;
 	[[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
 signals:
 	void valuesChanged();
+	void objectPropChanged();
 
 private:
 	QVariantList mValues;
+	QString cmpKey;
 	bool hasActiveIterators = false;
 
 	void updateValuesUnique(const QVariantList& newValues);
