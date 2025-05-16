@@ -28,6 +28,8 @@ FloatingWindow {
 					bottomMargin: separateMarginsCb.checked ? bottomMarginSlider.value : undefined
 					leftMargin: separateMarginsCb.checked ? leftMarginSlider.value : undefined
 					rightMargin: separateMarginsCb.checked ? rightMarginSlider.value : undefined
+					implicitWidth: parentImplicitSizeCb.checked ? parentImplicitWidthSlider.value : undefined
+					implicitHeight: parentImplicitSizeCb.checked ? parentImplicitHeightSlider.value : undefined
 				}
 
 				Rectangle {
@@ -54,6 +56,11 @@ FloatingWindow {
 			CheckBox {
 				id: separateMarginsCb
 				text: "Individual Margins"
+			}
+
+			CheckBox {
+				id: parentImplicitSizeCb
+				text: "Parent Implicit Size"
 			}
 		}
 
@@ -90,6 +97,24 @@ FloatingWindow {
 				id: implicitHeightSlider
 				Layout.fillWidth: true
 				from: 0; to: 200; value: 100
+			}
+		}
+
+		RowLayout {
+			Layout.fillWidth: true
+
+			Label { text: "Parent Implicit Width" }
+			Slider {
+				id: parentImplicitWidthSlider
+				Layout.fillWidth: true
+				from: 0; to: 300; value: 200
+			}
+
+			Label { text: "Parent Implicit Height" }
+			Slider {
+				id: parentImplicitHeightSlider
+				Layout.fillWidth: true
+				from: 0; to: 300; value: 200
 			}
 		}
 

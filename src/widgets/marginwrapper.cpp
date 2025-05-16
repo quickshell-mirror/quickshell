@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qquickitem.h>
+#include <qtmetamacros.h>
 
 #include "wrapper.hpp"
 
@@ -10,22 +11,26 @@ namespace qs::widgets {
 MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(parent) {
 	this->bTopMargin.setBinding([this] {
 		return this->bExtraMargin
-		     + (this->bTopMarginSet.value() ? this->bTopMarginValue : this->bMargin);
+		     + (this->bOverrides.value().testFlag(TopMargin) ? this->bTopMarginOverride : this->bMargin
+		     );
 	});
 
 	this->bBottomMargin.setBinding([this] {
 		return this->bExtraMargin
-		     + (this->bBottomMarginSet.value() ? this->bBottomMarginValue : this->bMargin);
+		     + (this->bOverrides.value().testFlag(BottomMargin) ? this->bBottomMarginOverride
+		                                                        : this->bMargin);
 	});
 
 	this->bLeftMargin.setBinding([this] {
 		return this->bExtraMargin
-		     + (this->bLeftMarginSet.value() ? this->bLeftMarginValue : this->bMargin);
+		     + (this->bOverrides.value().testFlag(LeftMargin) ? this->bLeftMarginOverride
+		                                                      : this->bMargin);
 	});
 
 	this->bRightMargin.setBinding([this] {
 		return this->bExtraMargin
-		     + (this->bRightMarginSet.value() ? this->bRightMarginValue : this->bMargin);
+		     + (this->bOverrides.value().testFlag(RightMargin) ? this->bRightMarginOverride
+		                                                       : this->bMargin);
 	});
 
 	this->bChildX.setBinding([this] {
@@ -63,11 +68,19 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 	});
 
 	this->bWrapperImplicitWidth.setBinding([this] {
-		return this->bChildImplicitWidth.value() + this->bLeftMargin + this->bRightMargin;
+		if (this->bOverrides.value().testFlag(ImplicitWidth)) {
+			return this->bImplicitWidthOverride.value();
+		} else {
+			return this->bChildImplicitWidth.value() + this->bLeftMargin + this->bRightMargin;
+		}
 	});
 
 	this->bWrapperImplicitHeight.setBinding([this] {
-		return this->bChildImplicitHeight.value() + this->bTopMargin + this->bBottomMargin;
+		if (this->bOverrides.value().testFlag(ImplicitHeight)) {
+			return this->bImplicitHeightOverride.value();
+		} else {
+			return this->bChildImplicitHeight.value() + this->bLeftMargin + this->bRightMargin;
+		}
 	});
 }
 
@@ -122,10 +135,12 @@ void MarginWrapperManager::onChildImplicitHeightChanged() {
 
 void MarginWrapperManager::setWrapperImplicitWidth() {
 	if (this->mWrapper) this->mWrapper->setImplicitWidth(this->bWrapperImplicitWidth);
+	emit this->implicitWidthChanged();
 }
 
 void MarginWrapperManager::setWrapperImplicitHeight() {
 	if (this->mWrapper) this->mWrapper->setImplicitHeight(this->bWrapperImplicitHeight);
+	emit this->implicitHeightChanged();
 }
 
 } // namespace qs::widgets
