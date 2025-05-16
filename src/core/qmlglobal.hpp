@@ -111,10 +111,16 @@ class QuickshellGlobal: public QObject {
 	/// The per-shell data directory.
 	///
 	/// Usually `~/.local/share/quickshell/by-shell/<shell-id>`
+	///
+	/// Can be overridden using `//@ pragma DataDir $BASE/path` in the root qml file, where `$BASE`
+	/// corrosponds to `$XDG_DATA_HOME` (usually `~/.local/share`).
 	Q_PROPERTY(QString dataDir READ dataDir CONSTANT);
 	/// The per-shell state directory.
 	///
 	/// Usually `~/.local/state/quickshell/by-shell/<shell-id>`
+	///
+	/// Can be overridden using `//@ pragma StateDir $BASE/path` in the root qml file, where `$BASE`
+	/// corrosponds to `$XDG_STATE_HOME` (usually `~/.local/state`).
 	Q_PROPERTY(QString stateDir READ stateDir CONSTANT);
 	/// The per-shell cache directory.
 	///

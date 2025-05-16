@@ -25,10 +25,12 @@ QsPaths* QsPaths::instance() {
 	return instance;
 }
 
-void QsPaths::init(QString shellId, QString pathId) {
+void QsPaths::init(QString shellId, QString pathId, QString dataOverride, QString stateOverride) {
 	auto* instance = QsPaths::instance();
 	instance->shellId = std::move(shellId);
 	instance->pathId = std::move(pathId);
+	instance->shellDataOverride = std::move(dataOverride);
+	instance->shellStateOverride = std::move(stateOverride);
 }
 
 QDir QsPaths::crashDir(const QString& id) {
@@ -211,9 +213,16 @@ void QsPaths::linkPathDir() {
 
 QDir QsPaths::shellDataDir() {
 	if (this->shellDataState == DirState::Unknown) {
-		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-		dir = QDir(dir.filePath("by-shell"));
-		dir = QDir(dir.filePath(this->shellId));
+		QDir dir;
+		if (this->shellDataOverride.isEmpty()) {
+			dir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+			dir = QDir(dir.filePath("by-shell"));
+			dir = QDir(dir.filePath(this->shellId));
+		} else {
+			auto basedir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+			dir = QDir(this->shellDataOverride.replace("$BASE", basedir));
+		}
+
 		this->mShellDataDir = dir;
 
 		qCDebug(logPaths) << "Initialized data path:" << dir.path();
@@ -241,12 +250,24 @@ QDir QsPaths::shellStateDir() {
 			auto home = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
 			dir = QDir(home.filePath(".local/state"));
 		}
-#else
-		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation));
-#endif
 
-		dir = QDir(dir.filePath("by-shell"));
-		dir = QDir(dir.filePath(this->shellId));
+		if (this->shellStateOverride.isEmpty()) {
+			dir = QDir(dir.filePath("quickshell/by-shell"));
+			dir = QDir(dir.filePath(this->shellId));
+		} else {
+			dir = QDir(this->shellStateOverride.replace("$BASE", dir.path()));
+		}
+#else
+		QDir dir;
+		if (this->shellStateOverride.isEmpty()) {
+			dir = QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation));
+			dir = QDir(dir.filePath("by-shell"));
+			dir = QDir(dir.filePath(this->shellId));
+		} else {
+			auto basedir = QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation);
+			dir = QDir(this->shellStateOverride.replace("$BASE", basedir));
+		}
+#endif
 		this->mShellStateDir = dir;
 
 		qCDebug(logPaths) << "Initialized state path:" << dir.path();
