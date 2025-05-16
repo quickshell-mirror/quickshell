@@ -23,23 +23,6 @@ QHash<int, QByteArray> UntypedObjectModel::roleNames() const {
 	return {{Qt::UserRole, "modelData"}};
 }
 
-QQmlListProperty<QObject> UntypedObjectModel::values() {
-	return QQmlListProperty<QObject>(
-	    this,
-	    nullptr,
-	    &UntypedObjectModel::valuesCount,
-	    &UntypedObjectModel::valueAt
-	);
-}
-
-qsizetype UntypedObjectModel::valuesCount(QQmlListProperty<QObject>* property) {
-	return static_cast<UntypedObjectModel*>(property->object)->valuesList.count(); // NOLINT
-}
-
-QObject* UntypedObjectModel::valueAt(QQmlListProperty<QObject>* property, qsizetype index) {
-	return static_cast<UntypedObjectModel*>(property->object)->valuesList.at(index); // NOLINT
-}
-
 void UntypedObjectModel::insertObject(QObject* object, qsizetype index) {
 	auto iindex = index == -1 ? this->valuesList.length() : index;
 	emit this->objectInsertedPre(object, iindex);
