@@ -222,7 +222,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconName, bAttentionIconName, properties, "AttentionIconName", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconPixmaps, bAttentionIconPixmaps, properties, "AttentionIconPixmap", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionMovieName, bAttentionMovieName, properties, "AttentionMovieName", false);
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTooltip, bTooltip, properties, "ToolTip");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTooltip, bTooltip, properties, "ToolTip", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIsMenu, bIsMenu, properties, "ItemIsMenu", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pMenuPath, bMenuPath, properties, "Menu", false);
 	// clang-format on
