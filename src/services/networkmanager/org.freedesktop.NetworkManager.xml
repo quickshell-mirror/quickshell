@@ -109,6 +109,7 @@
       <arg name="specific_object" type="o" direction="in"/>
       <arg name="path" type="o" direction="out"/>
       <arg name="active_connection" type="o" direction="out"/>
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QMap&lt;QString, QVariantMap&gt;"/>
     </method>
 
     <!--
@@ -140,6 +141,9 @@
       <arg name="path" type="o" direction="out"/>
       <arg name="active_connection" type="o" direction="out"/>
       <arg name="result" type="a{sv}" direction="out"/>
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QMap&lt;QString, QVariantMap&gt;"/>
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.Out2" value="QVariantMap"/>
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.In3" value="QVariantMap"/>
     </method>
 
     <!--
@@ -189,6 +193,7 @@
     -->
     <method name="GetPermissions">
       <arg name="permissions" type="a{ss}" direction="out"/>
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QMap&lt;QString, QString&gt;"/>
     </method>
 
     <!--
@@ -282,6 +287,7 @@
     <method name="CheckpointRollback">
       <arg name="checkpoint" type="o" direction="in"/>
       <arg name="result" type="a{su}" direction="out" />
+	  <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QMap&lt;QString, quint32&gt;"/>
     </method>
 
     <!--
@@ -470,7 +476,9 @@
 
         Since: 1.42
     -->
-    <property name="VersionInfo" type="au" access="read"/>
+    <property name="VersionInfo" type="au" access="read">
+		<annotation name="org.qtproject.QtDBus.QtTypeName" value="QList&lt;quint32&gt;"/>
+	</property>
 
     <!--
         Capabilities:
@@ -480,8 +488,9 @@
         defined capability numbers. The array is guaranteed to
         be sorted in ascending order without duplicates.
     -->
-    <property name="Capabilities" type="au" access="read">
-		<annotation name="org.qtproject.QtDBus.QtTypeName" value="NetworkManagerCapabilities"/>
+	<property name="Capabilities" type="au" access="read">
+		<!--<annotation name="org.qtproject.QtDBus.QtTypeName" value="dbus_au"/>-->
+		<annotation name="org.qtproject.QtDBus.QtTypeName" value="QList&lt;quint32&gt;"/>
 	</property>
 
     <!--
@@ -574,8 +583,8 @@
         a string array of DNS servers, "options" is a string array of
         domain-specific options.
     -->
-    <property name="GlobalDnsConfiguration" type="a{sv}" access="readwrite"/>
-		<annotation name="org.qtproject.QtDBus.QtTypeName" value=""/>
+    <property name="GlobalDnsConfiguration" type="a{sv}" access="readwrite">
+		<annotation name="org.qtproject.QtDBus.QtTypeName" value="QVariantMap"/>
 	</property>
 
     <!--

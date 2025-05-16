@@ -2,9 +2,10 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qdbusextratypes.h>
-
 #include "core.hpp"
 #include "dbus_service.h"
+#include <qdbusmetatype.h>
+#include <qtypes.h>
 
 namespace qs::service::networkmanager {
 
@@ -13,6 +14,8 @@ Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.service.networkmanager", QtDeb
 }
 
 NetworkManager::NetworkManager(){
+	//qDBusRegisterMetaType<QList<quint32>>();
+
 	auto bus = QDbusConnection::systemBus();
 
 	if (!bus.isConnected()) {
