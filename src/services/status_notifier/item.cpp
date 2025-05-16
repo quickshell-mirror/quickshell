@@ -65,19 +65,19 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewIcon, this, [this]() {
 		this->pIconName.requestUpdate();
 		this->pIconPixmaps.requestUpdate();
-		this->pIconThemePath.requestUpdate();
+		if (this->pIconThemePath.exists()) this->pIconThemePath.requestUpdate();
 	});
 
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewOverlayIcon, this, [this]() {
 		this->pOverlayIconName.requestUpdate();
 		this->pOverlayIconPixmaps.requestUpdate();
-		this->pIconThemePath.requestUpdate();
+		if (this->pIconThemePath.exists()) this->pIconThemePath.requestUpdate();
 	});
 
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewAttentionIcon, this, [this]() {
 		this->pAttentionIconName.requestUpdate();
 		this->pAttentionIconPixmaps.requestUpdate();
-		this->pIconThemePath.requestUpdate();
+		if (this->pIconThemePath.exists()) this->pIconThemePath.requestUpdate();
 	});
 
 	QObject::connect(this->item, &DBusStatusNotifierItem::NewToolTip, this, [this]() {

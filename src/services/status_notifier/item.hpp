@@ -213,18 +213,18 @@ private:
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pId, bId, properties, "Id");
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTitle, bTitle, properties, "Title");
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pStatus, bStatus, properties, "Status");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pCategory, bCategory, properties, "Category");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pCategory, bCategory, properties, "Category", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconThemePath, bIconThemePath, properties, "IconThemePath", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconName, bIconName, properties, "IconName", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIconPixmaps, bIconPixmaps, properties, "IconPixmap", false);
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconName, bOverlayIconName, properties, "OverlayIconName");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconPixmaps, bOverlayIconPixmaps, properties, "OverlayIconPixmap");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconName, bAttentionIconName, properties, "AttentionIconName");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconPixmaps, bAttentionIconPixmaps, properties, "AttentionIconPixmap");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconName, bOverlayIconName, properties, "OverlayIconName", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pOverlayIconPixmaps, bOverlayIconPixmaps, properties, "OverlayIconPixmap", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconName, bAttentionIconName, properties, "AttentionIconName", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionIconPixmaps, bAttentionIconPixmaps, properties, "AttentionIconPixmap", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pAttentionMovieName, bAttentionMovieName, properties, "AttentionMovieName", false);
 	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pTooltip, bTooltip, properties, "ToolTip");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIsMenu, bIsMenu, properties, "ItemIsMenu");
-	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pMenuPath, bMenuPath, properties, "Menu");
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pIsMenu, bIsMenu, properties, "ItemIsMenu", false);
+	QS_DBUS_PROPERTY_BINDING(StatusNotifierItem, pMenuPath, bMenuPath, properties, "Menu", false);
 	// clang-format on
 };
 
