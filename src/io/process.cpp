@@ -254,6 +254,8 @@ void Process::onStarted() {
 void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
 	this->process->deleteLater();
 	this->process = nullptr;
+	if (this->mStdoutParser) this->mStdoutParser->streamEnded(this->stdoutBuffer);
+	if (this->mStderrParser) this->mStderrParser->streamEnded(this->stderrBuffer);
 	this->stdoutBuffer.clear();
 	this->stderrBuffer.clear();
 

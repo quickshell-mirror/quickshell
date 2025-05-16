@@ -54,6 +54,7 @@ public:
 
 	// the buffer will be sent in both slots if there is data remaining from a previous parser
 	virtual void parseBytes(QByteArray& incoming, QByteArray& buffer) = 0;
+	virtual void streamEnded(QByteArray& /*buffer*/) {};
 
 signals:
 	/// Emitted when data is read from the stream.
@@ -75,6 +76,7 @@ public:
 	explicit SplitParser(QObject* parent = nullptr): DataStreamParser(parent) {}
 
 	void parseBytes(QByteArray& incoming, QByteArray& buffer) override;
+	void streamEnded(QByteArray& buffer) override;
 
 	[[nodiscard]] QString splitMarker() const;
 	void setSplitMarker(QString marker);
