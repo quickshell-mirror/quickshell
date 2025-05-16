@@ -3,7 +3,7 @@ find_package(PkgConfig REQUIRED)
 #pkg_check_modules(networkmanager REQUIRED IMPORTED_TARGET libnm)
 
 set_source_files_properties(org.freedesktop.NetworkManager.xml PROPERTIES
-	CLASSNAME DBusNetworkManager
+	CLASSNAME DBusNetworkManagerService
 	NO_NAMESPACE TRUE
 )
 qt_add_dbus_interface(DBUS_INTERFACES

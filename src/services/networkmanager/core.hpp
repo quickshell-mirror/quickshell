@@ -17,7 +17,8 @@ class NetworkManager : public QObject {
 public:
 	static NetworkManager* instance(); // Get instance of the class
 private:
-	DBUSNetworkservice* service = nullptr;
+	NetworkManager();
+	DBusNetworkManagerService* service = nullptr;
 	void init();
 };
 

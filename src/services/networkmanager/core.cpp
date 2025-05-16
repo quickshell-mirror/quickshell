@@ -7,6 +7,8 @@
 #include <qdbusmetatype.h>
 #include <qtypes.h>
 
+#include "../../dbus/bus.hpp"
+
 namespace qs::service::networkmanager {
 
 namespace {
@@ -16,7 +18,7 @@ Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.service.networkmanager", QtDeb
 NetworkManager::NetworkManager(){
 	//qDBusRegisterMetaType<QList<quint32>>();
 
-	auto bus = QDbusConnection::systemBus();
+	auto bus = QDBusConnection::systemBus();
 
 	if (!bus.isConnected()) {
 		// Log message
