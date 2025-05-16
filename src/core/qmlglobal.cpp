@@ -190,12 +190,16 @@ void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
 }
 
-QString QuickshellGlobal::cacheDir() const { // NOLINT
-	auto* dir = QsPaths::instance()->cacheDir();
-	if (dir) return dir->path();
+QString QuickshellGlobal::dataDir() const { // NOLINT
+	return QsPaths::instance()->shellDataDir().path();
+}
 
-	qCritical() << "Could not find cache dir.";
-	return "/quickshell-cache-not-found";
+QString QuickshellGlobal::stateDir() const { // NOLINT
+	return QsPaths::instance()->shellStateDir().path();
+}
+
+QString QuickshellGlobal::cacheDir() const { // NOLINT
+	return QsPaths::instance()->shellCacheDir().path();
 }
 
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
