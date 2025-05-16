@@ -24,6 +24,8 @@ class HyprlandWorkspace: public QObject {
 	/// If this workspace is currently active on a monitor and that monitor is currently
 	/// focused. See also @@active.
 	Q_PROPERTY(bool focused READ default NOTIFY focusedChanged BINDABLE bindableFocused);
+	/// If this workspace currently has a fullscreen client.
+	Q_PROPERTY(bool hasFullscreen READ default NOTIFY focusedChanged BINDABLE bindableHasFullscreen);
 	/// Last json returned for this workspace, as a javascript object.
 	///
 	/// > [!WARNING] This is *not* updated unless the workspace object is fetched again from
@@ -53,6 +55,7 @@ public:
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
 	[[nodiscard]] QBindable<bool> bindableActive() { return &this->bActive; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
+	[[nodiscard]] QBindable<bool> bindableHasFullscreen() { return &this->bHasFullscreen; }
 	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor() { return &this->bMonitor; }
 
 	[[nodiscard]] QVariantMap lastIpcObject() const;
@@ -64,6 +67,7 @@ signals:
 	void nameChanged();
 	void activeChanged();
 	void focusedChanged();
+	void hasFullscreenChanged();
 	void lastIpcObjectChanged();
 	void monitorChanged();
 
@@ -80,6 +84,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bName, &HyprlandWorkspace::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bActive, &HyprlandWorkspace::activeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bFocused, &HyprlandWorkspace::focusedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bHasFullscreen, &HyprlandWorkspace::hasFullscreenChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, HyprlandMonitor*, bMonitor, &HyprlandWorkspace::monitorChanged);
 	// clang-format on
 };
