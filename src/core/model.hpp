@@ -42,7 +42,7 @@ class UntypedObjectModel: public QAbstractListModel {
 	Q_OBJECT;
 	/// The content of the object model, as a QML list.
 	/// The values of this property will always be of the type of the model.
-	Q_PROPERTY(QQmlListProperty<QObject> values READ values NOTIFY valuesChanged);
+	Q_PROPERTY(QList<QObject*> values READ values NOTIFY valuesChanged);
 	QML_NAMED_ELEMENT(ObjectModel);
 	QML_UNCREATABLE("ObjectModels cannot be created directly.");
 
@@ -53,7 +53,7 @@ public:
 	[[nodiscard]] QVariant data(const QModelIndex& index, qint32 role) const override;
 	[[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
-	[[nodiscard]] QQmlListProperty<QObject> values();
+	[[nodiscard]] QList<QObject*> values() const { return this->valuesList; };
 	void removeAt(qsizetype index);
 
 	Q_INVOKABLE qsizetype indexOf(QObject* object);
