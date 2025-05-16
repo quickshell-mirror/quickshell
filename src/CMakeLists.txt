@@ -10,6 +10,7 @@ add_subdirectory(ipc)
 add_subdirectory(window)
 add_subdirectory(io)
 add_subdirectory(widgets)
+add_subdirectory(ui)
 
 if (CRASH_REPORTER)
 	add_subdirectory(crash)

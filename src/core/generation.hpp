@@ -28,6 +28,7 @@ class EngineGeneration: public QObject {
 	Q_OBJECT;
 
 public:
+	explicit EngineGeneration();
 	explicit EngineGeneration(const QDir& rootPath, QmlScanner scanner);
 	~EngineGeneration() override;
 	Q_DISABLE_COPY_MOVE(EngineGeneration);
