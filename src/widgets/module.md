@@ -10,6 +10,7 @@ qml_files = [
 	"IconImage.qml",
 	"ClippingRectangle.qml",
 	"WrapperItem.qml",
+	"WrapperMouseArea.qml",
 	"WrapperRectangle.qml",
 	"ClippingWrapperRectangle.qml",
 ]
