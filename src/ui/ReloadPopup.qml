@@ -58,7 +58,8 @@ PanelWindow {
 
 	component TopButton: WrapperMouseArea {
 		id: buttonMouse
-		property alias image: image.source
+		required property string icon
+		required property string fallbackText
 		property bool red: false
 
 		hoverEnabled: true
@@ -95,7 +96,20 @@ PanelWindow {
 			Behavior on color { ColorAnimation { duration: 100 } }
 			Behavior on border.color { ColorAnimation { duration: 100 } }
 
-			IconImage { id: image; implicitSize: 22 }
+			IconImage {
+				id: image
+				source: Quickshell.iconPath(buttonMouse.icon, true)
+				implicitSize: 22
+				visible: source != ""
+			}
+
+			Text {
+				id: fallback
+				text: buttonMouse.fallbackText
+				color: buttonMouse.red ? "white" : palette.active.buttonText
+			}
+
+			child: image.visible ? image : fallback
 		}
 	}
 
@@ -130,7 +144,8 @@ PanelWindow {
 				TopButton {
 					id: copyButton
 					visible: root.failed
-					image: Quickshell.iconPath("edit-copy")
+					icon: "edit-copy"
+					fallbackText: "Copy"
 					onClicked: {
 						Quickshell.clipboardText = root.errorString;
 						copyTooltip.showAction();
@@ -146,7 +161,8 @@ PanelWindow {
 				}
 
 				TopButton {
-					image: Quickshell.iconPath("window-close")
+					icon: "window-close"
+					fallbackText: "Close"
 					red: true
 					onClicked: {
 						fadeOutAnim.stop()
@@ -216,7 +232,8 @@ PanelWindow {
 							IconImage {
 								Layout.fillHeight: true
 								implicitWidth: height
-								source: Quickshell.iconPath("edit-copy")
+								source: Quickshell.iconPath("edit-copy", true)
+								visible: source != ""
 							}
 						}
 					}

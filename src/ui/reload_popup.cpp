@@ -39,7 +39,7 @@ void ReloadPopup::closed() {
 		this->deleting = true;
 
 		QTimer::singleShot(0, [this]() {
-			this->popup->deleteLater();
+			if (this->popup) this->popup->deleteLater();
 			this->generation->destroy();
 			this->deleteLater();
 		});
