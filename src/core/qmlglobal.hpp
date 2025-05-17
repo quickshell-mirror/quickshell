@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qclipboard.h>
 #include <qcontainerfwd.h>
 #include <qjsengine.h>
 #include <qobject.h>
@@ -10,6 +11,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <qwindowdefs.h>
 
 #include "qmlscreen.hpp"
 
@@ -108,6 +110,10 @@ class QuickshellGlobal: public QObject {
 	/// If true then the configuration will be reloaded whenever any files change.
 	/// Defaults to true.
 	Q_PROPERTY(bool watchFiles READ watchFiles WRITE setWatchFiles NOTIFY watchFilesChanged);
+	/// The system clipboard.
+	///
+	/// > [!WARNING] Under wayland the clipboard will be empty unless a quickshell window is focused.
+	Q_PROPERTY(QString clipboardText READ clipboardText WRITE setClipboardText NOTIFY clipboardTextChanged);
 	/// The per-shell data directory.
 	///
 	/// Usually `~/.local/share/quickshell/by-shell/<shell-id>`
@@ -176,6 +182,9 @@ public:
 	[[nodiscard]] bool watchFiles() const;
 	void setWatchFiles(bool watchFiles);
 
+	[[nodiscard]] static QString clipboardText();
+	static void setClipboardText(const QString& text);
+
 	[[nodiscard]] QString dataDir() const;
 	[[nodiscard]] QString stateDir() const;
 	[[nodiscard]] QString cacheDir() const;
@@ -195,6 +204,10 @@ signals:
 	void screensChanged();
 	void workingDirectoryChanged();
 	void watchFilesChanged();
+	void clipboardTextChanged();
+
+private slots:
+	void onClipboardChanged(QClipboard::Mode mode);
 
 private:
 	QuickshellGlobal(QObject* parent = nullptr);

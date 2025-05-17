@@ -1,6 +1,7 @@
 #include "qmlglobal.hpp"
 #include <utility>
 
+#include <qclipboard.h>
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qdir.h>
@@ -17,6 +18,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <qwindowdefs.h>
 #include <unistd.h>
 
 #include "generation.hpp"
@@ -132,6 +134,13 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 	QObject::connect(QuickshellTracked::instance(), &QuickshellTracked::screensChanged, this, &QuickshellGlobal::screensChanged);
 	// clang-format on
+
+	QObject::connect(
+	    static_cast<QGuiApplication*>(QGuiApplication::instance())->clipboard(), // NOLINT
+	    &QClipboard::changed,
+	    this,
+	    &QuickshellGlobal::onClipboardChanged
+	);
 }
 
 qint32 QuickshellGlobal::processId() const { // NOLINT
@@ -188,6 +197,20 @@ bool QuickshellGlobal::watchFiles() const { // NOLINT
 
 void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
+}
+
+QString QuickshellGlobal::clipboardText() {
+	return static_cast<QGuiApplication*>(QGuiApplication::instance())->clipboard()->text(); // NOLINT
+}
+
+void QuickshellGlobal::setClipboardText(const QString& text) {
+	return static_cast<QGuiApplication*>(QGuiApplication::instance()) // NOLINT
+	    ->clipboard()
+	    ->setText(text);
+}
+
+void QuickshellGlobal::onClipboardChanged(QClipboard::Mode mode) {
+	if (mode == QClipboard::Clipboard) emit this->clipboardTextChanged();
 }
 
 QString QuickshellGlobal::dataDir() const { // NOLINT
