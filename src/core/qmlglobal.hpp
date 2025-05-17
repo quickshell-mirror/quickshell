@@ -155,6 +155,12 @@ public:
 	/// Setting the `fallback` parameter of `iconPath` will attempt to load the fallback
 	/// icon if the requested one could not be loaded.
 	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
+	/// Equivalent to `${Quickshell.dataDir}/${path}`
+	Q_INVOKABLE [[nodiscard]] QString dataPath(const QString& path) const;
+	/// Equivalent to `${Quickshell.stateDir}/${path}`
+	Q_INVOKABLE [[nodiscard]] QString statePath(const QString& path) const;
+	/// Equivalent to `${Quickshell.cacheDir}/${path}`
+	Q_INVOKABLE [[nodiscard]] QString cachePath(const QString& path) const;
 
 	[[nodiscard]] QString shellRoot() const;
 
