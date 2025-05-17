@@ -134,6 +134,7 @@ void ProxyWindowBase::ensureQWindow() {
 
 	if (useOldWindow) return;
 	delete this->window;
+	this->window = nullptr; // createQQuickWindow may indirectly reference this->window
 	this->window = this->createQQuickWindow();
 	this->window->setFormat(format);
 }
