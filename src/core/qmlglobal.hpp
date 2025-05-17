@@ -108,6 +108,14 @@ class QuickshellGlobal: public QObject {
 	/// If true then the configuration will be reloaded whenever any files change.
 	/// Defaults to true.
 	Q_PROPERTY(bool watchFiles READ watchFiles WRITE setWatchFiles NOTIFY watchFilesChanged);
+	/// The per-shell data directory.
+	///
+	/// Usually `~/.local/share/quickshell/by-shell/<shell-id>`
+	Q_PROPERTY(QString dataDir READ dataDir CONSTANT);
+	/// The per-shell state directory.
+	///
+	/// Usually `~/.local/state/quickshell/by-shell/<shell-id>`
+	Q_PROPERTY(QString stateDir READ stateDir CONSTANT);
 	/// The per-shell cache directory.
 	///
 	/// Usually `~/.cache/quickshell/by-shell/<shell-id>`
@@ -156,6 +164,8 @@ public:
 	[[nodiscard]] bool watchFiles() const;
 	void setWatchFiles(bool watchFiles);
 
+	[[nodiscard]] QString dataDir() const;
+	[[nodiscard]] QString stateDir() const;
 	[[nodiscard]] QString cacheDir() const;
 
 	static QuickshellGlobal* create(QQmlEngine* engine, QJSEngine* /*unused*/);

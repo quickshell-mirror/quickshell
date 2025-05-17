@@ -48,28 +48,6 @@ QString QsPaths::ipcPath(const QString& id) {
 	return QDir(QsPaths::basePath(id)).filePath("ipc.sock");
 }
 
-QDir* QsPaths::cacheDir() {
-	if (this->cacheState == DirState::Unknown) {
-		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
-		dir = QDir(dir.filePath("by-shell"));
-		dir = QDir(dir.filePath(this->shellId));
-		this->mCacheDir = dir;
-
-		qCDebug(logPaths) << "Initialized cache path:" << dir.path();
-
-		if (!dir.mkpath(".")) {
-			qCCritical(logPaths) << "Could not create cache directory at" << dir.path();
-
-			this->cacheState = DirState::Failed;
-		} else {
-			this->cacheState = DirState::Ready;
-		}
-	}
-
-	if (this->cacheState == DirState::Failed) return nullptr;
-	else return &this->mCacheDir;
-}
-
 QDir* QsPaths::baseRunDir() {
 	if (this->baseRunState == DirState::Unknown) {
 		auto runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
@@ -228,6 +206,72 @@ void QsPaths::linkPathDir() {
 		qCCritical(logPaths) << "Could not create path symlink to shell runtime directory, as the "
 		                        "shell runtime directory could not be created.";
 	}
+}
+
+QDir QsPaths::shellDataDir() {
+	if (this->shellDataState == DirState::Unknown) {
+		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+		dir = QDir(dir.filePath("by-shell"));
+		dir = QDir(dir.filePath(this->shellId));
+		this->mShellDataDir = dir;
+
+		qCDebug(logPaths) << "Initialized data path:" << dir.path();
+
+		if (!dir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create data directory at" << dir.path();
+
+			this->shellDataState = DirState::Failed;
+		} else {
+			this->shellDataState = DirState::Ready;
+		}
+	}
+
+	// Returning no path on fail might result in files being written in unintended locations.
+	return this->mShellDataDir;
+}
+
+QDir QsPaths::shellStateDir() {
+	if (this->shellStateState == DirState::Unknown) {
+		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation));
+		dir = QDir(dir.filePath("by-shell"));
+		dir = QDir(dir.filePath(this->shellId));
+		this->mShellStateDir = dir;
+
+		qCDebug(logPaths) << "Initialized state path:" << dir.path();
+
+		if (!dir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create state directory at" << dir.path();
+
+			this->shellStateState = DirState::Failed;
+		} else {
+			this->shellStateState = DirState::Ready;
+		}
+	}
+
+	// Returning no path on fail might result in files being written in unintended locations.
+	return this->mShellStateDir;
+}
+
+QDir QsPaths::shellCacheDir() {
+	if (this->shellCacheState == DirState::Unknown) {
+		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+		dir = QDir(dir.filePath("by-shell"));
+		dir = QDir(dir.filePath(this->shellId));
+		this->mShellCacheDir = dir;
+
+		qCDebug(logPaths) << "Initialized cache path:" << dir.path();
+
+		if (!dir.mkpath(".")) {
+			qCCritical(logPaths) << "Could not create cache directory at" << dir.path();
+
+			this->shellCacheState = DirState::Failed;
+		} else {
+			this->shellCacheState = DirState::Ready;
+		}
+	}
+
+	// Returning no path on fail might result in files being written in unintended locations.
+	return this->mShellCacheDir;
 }
 
 void QsPaths::createLock() {
