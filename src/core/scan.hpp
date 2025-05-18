@@ -11,6 +11,7 @@ Q_DECLARE_LOGGING_CATEGORY(logQmlScanner);
 // expects canonical paths
 class QmlScanner {
 public:
+	QmlScanner() = default;
 	QmlScanner(const QDir& rootPath): rootPath(rootPath) {}
 
 	void scanDir(const QString& path);

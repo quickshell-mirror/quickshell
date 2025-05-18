@@ -173,6 +173,14 @@ public:
 	Q_INVOKABLE [[nodiscard]] QString statePath(const QString& path) const;
 	/// Equivalent to `${Quickshell.cacheDir}/${path}`
 	Q_INVOKABLE [[nodiscard]] QString cachePath(const QString& path) const;
+	/// When called from @@reloadCompleted() or @@reloadFailed(), prevents the
+	/// default reload popup from displaying.
+	///
+	/// The popup can also be blocked by setting `QS_NO_RELOAD_POPUP=1`.
+	Q_INVOKABLE void inhibitReloadPopup() { this->mInhibitReloadPopup = true; }
+
+	void clearReloadPopupInhibit() { this->mInhibitReloadPopup = false; }
+	[[nodiscard]] bool isReloadPopupInhibited() const { return this->mInhibitReloadPopup; }
 
 	[[nodiscard]] QString shellRoot() const;
 
@@ -211,6 +219,8 @@ private slots:
 
 private:
 	QuickshellGlobal(QObject* parent = nullptr);
+
+	bool mInhibitReloadPopup = false;
 
 	static qsizetype screensCount(QQmlListProperty<QuickshellScreenInfo>* prop);
 	static QuickshellScreenInfo* screenAt(QQmlListProperty<QuickshellScreenInfo>* prop, qsizetype i);

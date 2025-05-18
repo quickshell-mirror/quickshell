@@ -12,8 +12,10 @@
 #include <qtmetamacros.h>
 #include <qurl.h>
 
+#include "../ui/reload_popup.hpp"
 #include "../window/floatingwindow.hpp"
 #include "generation.hpp"
+#include "instanceinfo.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
 
@@ -68,6 +70,18 @@ void RootWrapper::reloadGraph(bool hard) {
 		qWarning().noquote() << error;
 		generation->destroy();
 
+		if (this->generation != nullptr) {
+			auto showPopup = true;
+
+			if (this->generation->qsgInstance != nullptr) {
+				this->generation->qsgInstance->clearReloadPopupInhibit();
+				emit this->generation->qsgInstance->reloadFailed(error);
+				showPopup = !this->generation->qsgInstance->isReloadPopupInhibited();
+			}
+
+			if (showPopup) qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, true, error);
+		}
+
 		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
 			emit this->generation->qsgInstance->reloadFailed(error);
 		}
@@ -113,8 +127,16 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	this->onWatchFilesChanged();
 
-	if (isReload && this->generation->qsgInstance != nullptr) {
-		emit this->generation->qsgInstance->reloadCompleted();
+	if (isReload) {
+		auto showPopup = true;
+
+		if (this->generation->qsgInstance != nullptr) {
+			this->generation->qsgInstance->clearReloadPopupInhibit();
+			emit this->generation->qsgInstance->reloadCompleted();
+			showPopup = !this->generation->qsgInstance->isReloadPopupInhibited();
+		}
+
+		if (showPopup) qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, false, "");
 	}
 }
 

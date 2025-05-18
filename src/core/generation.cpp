@@ -45,6 +45,8 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	QsEnginePlugin::runConstructGeneration(*this);
 }
 
+EngineGeneration::EngineGeneration(): EngineGeneration(QDir(), QmlScanner()) {}
+
 EngineGeneration::~EngineGeneration() {
 	if (this->engine != nullptr) {
 		qFatal() << this << "destroyed without calling destroy()";
