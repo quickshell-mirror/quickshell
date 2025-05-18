@@ -14,11 +14,12 @@ layout(binding = 2) uniform sampler2D content;
 
 vec4 overlay(vec4 base, vec4 overlay) {
 	if (overlay.a == 0.0) return base;
+	if (base.a == 0.0) return overlay;
 
-	float baseMul = 1.0 - overlay.a;
-	float newAlpha = overlay.a + base.a * baseMul;
-	vec3 rgb = (overlay.rgb * overlay.a + base.rgb * base.a * baseMul) / newAlpha;
-	return vec4(rgb, newAlpha);
+	vec3 rgb = overlay.rgb + base.rgb * (1.0 - overlay.a);
+	float a = overlay.a + base.a * (1.0 - overlay.a);
+
+	return vec4(rgb, a);
 }
 
 void main() {
