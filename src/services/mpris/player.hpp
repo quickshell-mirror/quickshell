@@ -70,13 +70,15 @@ class MprisPlayer: public QObject {
 	Q_PROPERTY(bool canSeek READ canSeek NOTIFY canSeekChanged BINDABLE bindableCanSeek);
 	Q_PROPERTY(bool canGoNext READ canGoNext NOTIFY canGoNextChanged BINDABLE bindableCanGoNext);
 	Q_PROPERTY(bool canGoPrevious READ canGoPrevious NOTIFY canGoPreviousChanged BINDABLE bindableCanGoPrevious);
-	Q_PROPERTY(bool canQuit READ canQuit NOTIFY canQuitChanged BINDABLE bindableCanQuit BINDABLE bindableCanQuit);
-	Q_PROPERTY(bool canRaise READ canRaise NOTIFY canRaiseChanged BINDABLE bindableCanRaise BINDABLE bindableCanRaise);
+	Q_PROPERTY(bool canQuit READ canQuit NOTIFY canQuitChanged BINDABLE bindableCanQuit);
+	Q_PROPERTY(bool canRaise READ canRaise NOTIFY canRaiseChanged BINDABLE bindableCanRaise);
 	Q_PROPERTY(bool canSetFullscreen READ canSetFullscreen NOTIFY canSetFullscreenChanged BINDABLE bindableCanSetFullscreen);
 	/// The human readable name of the media player.
 	Q_PROPERTY(QString identity READ identity NOTIFY identityChanged BINDABLE bindableIdentity);
 	/// The name of the desktop entry for the media player, or an empty string if not provided.
 	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged BINDABLE bindableDesktopEntry);
+	/// The DBus service name of the player.
+	Q_PROPERTY(QString dbusName READ address CONSTANT);
 	/// The current position in the playing track, as seconds, with millisecond precision,
 	/// or `0` if @@positionSupported is false.
 	///
