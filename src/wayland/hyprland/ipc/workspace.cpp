@@ -38,6 +38,7 @@ void HyprlandWorkspace::updateInitial(qint32 id, const QString& name) {
 void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 	auto monitorId = object.value("monitorID").value<qint32>();
 	auto monitorName = object.value("monitor").value<QString>();
+	auto hasFullscreen = object.value("hasfullscreen").value<bool>();
 
 	auto initial = this->bId == -1;
 
@@ -59,6 +60,7 @@ void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 		this->setMonitor(monitor);
 	}
 
+	this->bHasFullscreen = hasFullscreen;
 	this->mLastIpcObject = std::move(object);
 	emit this->lastIpcObjectChanged();
 }

@@ -381,6 +381,15 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		                        << (*workspaceIter)->bindableName().value() << "to" << name;
 
 		(*workspaceIter)->bindableName().setValue(name);
+	} else if (event->name == "fullscreen") {
+		if (auto* workspace = this->bFocusedWorkspace.value()) {
+			workspace->bindableHasFullscreen().setValue(event->data == "1");
+		}
+
+		// In theory knowing the current workspace would be enough to determine where
+		// the fullscreen state changed, but this falls apart if you move a fullscreen
+		// window between workspaces.
+		this->refreshWorkspaces(false);
 	}
 }
 
