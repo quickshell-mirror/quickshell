@@ -20,8 +20,11 @@ public:
 
 	QVector<QString> scannedDirs;
 	QVector<QString> scannedFiles;
-	QHash<QString, QString> qmldirIntercepts;
+	QHash<QString, QString> fileIntercepts;
 
 private:
 	QDir rootPath;
+
+	void scanQmlJson(const QString& path);
+	[[nodiscard]] static QPair<QString, QString> jsonToQml(const QJsonValue& value, int indent = 0);
 };

@@ -30,7 +30,7 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
     : rootPath(rootPath)
     , scanner(std::move(scanner))
     , urlInterceptor(this->rootPath)
-    , interceptNetFactory(this->scanner.qmldirIntercepts)
+    , interceptNetFactory(this->scanner.fileIntercepts)
     , engine(new QQmlEngine()) {
 	g_generations.insert(this->engine, this);
 
