@@ -178,7 +178,6 @@ private slots:
 
 private:
 	[[nodiscard]] LayerSurfaceState computeState() const;
-	[[nodiscard]] qint32 computeExclusiveZone() const;
 
 	void onStateChanged();
 
@@ -193,7 +192,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bExclusiveZone, &WlrLayershell::exclusiveZoneChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, WlrKeyboardFocus::Enum, bKeyboardFocus, &WlrLayershell::keyboardFocusChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, ExclusionMode::Enum, bExclusionMode, ExclusionMode::Auto, &WlrLayershell::exclusionModeChanged);
-	Q_OBJECT_COMPUTED_PROPERTY(WlrLayershell, qint32, bcExclusiveZone, &WlrLayershell::computeExclusiveZone);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bcExclusiveZone);
 
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bLayer, onStateChanged, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bAnchors, onStateChanged, onValueChanged);

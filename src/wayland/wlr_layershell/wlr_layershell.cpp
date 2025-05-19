@@ -14,7 +14,20 @@
 
 namespace qs::wayland::layershell {
 
-WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {}
+WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
+	this->bcExclusiveZone.setBinding([this]() -> qint32 {
+		switch (this->bExclusionMode.value()) {
+		case ExclusionMode::Ignore: return -1;
+		case ExclusionMode::Normal: return this->bExclusiveZone;
+		case ExclusionMode::Auto:
+			const auto anchors = this->bAnchors.value();
+
+			if (anchors.horizontalConstraint()) return this->height();
+			else if (anchors.verticalConstraint()) return this->width();
+			else return 0;
+		}
+	});
+}
 
 ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	auto* old = qobject_cast<WlrLayershell*>(oldInstance);
@@ -110,19 +123,6 @@ LayerSurfaceState WlrLayershell::computeState() const {
 	    .compositorPickesScreen = this->compositorPicksScreen,
 	    .mNamespace = this->bNamespace,
 	};
-}
-
-qint32 WlrLayershell::computeExclusiveZone() const {
-	switch (this->bExclusionMode.value()) {
-	case ExclusionMode::Ignore: return -1;
-	case ExclusionMode::Normal: return this->bExclusiveZone;
-	case ExclusionMode::Auto:
-		const auto anchors = this->bAnchors.value();
-
-		if (anchors.horizontalConstraint()) return this->height();
-		else if (anchors.verticalConstraint()) return this->width();
-		else return 0;
-	}
 }
 
 void WlrLayershell::updateAutoExclusion() { this->bcExclusiveZone.notify(); }
