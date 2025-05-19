@@ -1,9 +1,11 @@
 #include "qml.hpp"
 
+#include <qlist.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
 
 #include "../../core/model.hpp"
+#include "../../core/qmlglobal.hpp"
 #include "../../core/qmlscreen.hpp"
 #include "../../core/util.hpp"
 #include "../../window/proxywindow.hpp"
@@ -20,6 +22,8 @@ Toplevel::Toplevel(impl::ToplevelHandle* handle, QObject* parent): QObject(paren
 	QObject::connect(handle, &impl::ToplevelHandle::titleChanged, this, &Toplevel::titleChanged);
 	QObject::connect(handle, &impl::ToplevelHandle::parentChanged, this, &Toplevel::parentChanged);
 	QObject::connect(handle, &impl::ToplevelHandle::activatedChanged, this, &Toplevel::activatedChanged);
+	QObject::connect(handle, &impl::ToplevelHandle::visibleScreenAdded, this, &Toplevel::screensChanged);
+	QObject::connect(handle, &impl::ToplevelHandle::visibleScreenRemoved, this, &Toplevel::screensChanged);
 	QObject::connect(handle, &impl::ToplevelHandle::maximizedChanged, this, &Toplevel::maximizedChanged);
 	QObject::connect(handle, &impl::ToplevelHandle::minimizedChanged, this, &Toplevel::minimizedChanged);
 	QObject::connect(handle, &impl::ToplevelHandle::fullscreenChanged, this, &Toplevel::fullscreenChanged);
@@ -42,6 +46,16 @@ Toplevel* Toplevel::parent() const {
 }
 
 bool Toplevel::activated() const { return this->handle->activated(); }
+
+QList<QuickshellScreenInfo*> Toplevel::screens() const {
+	QList<QuickshellScreenInfo*> screens;
+
+	for (auto* screen: this->handle->visibleScreens()) {
+		screens.push_back(QuickshellTracked::instance()->screenInfo(screen));
+	}
+
+	return screens;
+}
 
 bool Toplevel::maximized() const { return this->handle->maximized(); }
 void Toplevel::setMaximized(bool maximized) { this->handle->setMaximized(maximized); }
