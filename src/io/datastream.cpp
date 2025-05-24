@@ -98,6 +98,10 @@ void SplitParser::parseBytes(QByteArray& incoming, QByteArray& buffer) {
 	}
 }
 
+void SplitParser::streamEnded(QByteArray& buffer) {
+	if (!buffer.isEmpty()) emit this->read(QString(buffer));
+}
+
 QString SplitParser::splitMarker() const { return this->mSplitMarker; }
 
 void SplitParser::setSplitMarker(QString marker) {
