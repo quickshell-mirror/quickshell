@@ -6,7 +6,6 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/util.hpp"
 #include "wrapper.hpp"
 
 namespace qs::widgets {
@@ -69,7 +68,7 @@ class MarginWrapperManager: public WrapperManager {
 	Q_PROPERTY(qreal rightMargin READ rightMargin WRITE setRightMargin RESET resetRightMargin NOTIFY rightMarginChanged FINAL);
 	/// Determines if child item should be resized larger than its implicit size if
 	/// the parent is resized larger than its implicit size. Defaults to false.
-	Q_PROPERTY(bool resizeChild READ resizeChild WRITE setResizeChild NOTIFY resizeChildChanged FINAL);
+	Q_PROPERTY(bool resizeChild READ default WRITE default BINDABLE bindableResizeChild NOTIFY resizeChildChanged FINAL);
 	// clang-format on
 	QML_ELEMENT;
 
@@ -109,8 +108,7 @@ public:
 		this->bRightMarginSet = true;
 	}
 
-	[[nodiscard]] bool resizeChild() const;
-	void setResizeChild(bool resizeChild);
+	[[nodiscard]] QBindable<bool> bindableResizeChild() { return &this->bResizeChild; }
 
 signals:
 	void marginChanged();
@@ -122,42 +120,50 @@ signals:
 	void resizeChildChanged();
 
 private slots:
-	void onChildChanged();
-	void updateChildX();
-	void updateChildY();
 	void onChildImplicitWidthChanged();
 	void onChildImplicitHeightChanged();
+	void setWrapperImplicitWidth();
+	void setWrapperImplicitHeight();
+
+protected:
+	void disconnectChild() override;
+	void connectChild() override;
 
 private:
-	void updateGeometry();
-
-	[[nodiscard]] qreal targetChildX() const;
-	[[nodiscard]] qreal targetChildY() const;
-	[[nodiscard]] qreal targetChildWidth() const;
-	[[nodiscard]] qreal targetChildHeight() const;
-
-	bool mResizeChild = false;
-
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bResizeChild);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bMargin, &MarginWrapperManager::marginChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bExtraMargin, &MarginWrapperManager::baseMarginChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bTopMarginValue);
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bBottomMarginValue);
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bLeftMarginValue);
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bRightMarginValue);
 
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bTopMarginSet);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bBottomMarginSet);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bLeftMarginSet);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bRightMarginSet);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bTopMarginValue);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bBottomMarginValue);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bLeftMarginValue);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bRightMarginValue);
 
+	// computed
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bTopMargin, &MarginWrapperManager::topMarginChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bBottomMargin, &MarginWrapperManager::bottomMarginChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bLeftMargin, &MarginWrapperManager::leftMarginChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bRightMargin, &MarginWrapperManager::rightMarginChanged);
 
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, int, bUpdateWatcher);
-	QS_BINDING_SUBSCRIBE_METHOD(MarginWrapperManager, bUpdateWatcher, updateGeometry, subscribe);
+	// bound
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bWrapperWidth);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bWrapperHeight);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildImplicitWidth);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildImplicitHeight);
+
+	// computed
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildX);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildY);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildWidth);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bChildHeight);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bWrapperImplicitWidth, &MarginWrapperManager::setWrapperImplicitWidth);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bWrapperImplicitHeight, &MarginWrapperManager::setWrapperImplicitHeight);
+
 	// clang-format on
 };
 
