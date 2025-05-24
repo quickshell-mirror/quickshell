@@ -131,6 +131,22 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 				iter = std::copy(startNewIter, newIter, iter);
 				this->endInsertRows();
 			}
+		} else if (*newIter != *iter) {
+			auto first = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
+			auto index = first;
+
+			do {
+				this->mValues.replace(index, *newIter);
+				++iter;
+				++newIter;
+				++index;
+			} while (iter != this->mValues.end() && newIter != newValues.end() && *newIter != *iter);
+
+			this->dataChanged(
+			    this->index(first, 0, QModelIndex()),
+			    this->index(index - 1, 0, QModelIndex()),
+			    {Qt::UserRole}
+			);
 		} else {
 			++iter;
 			++newIter;
