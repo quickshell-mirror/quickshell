@@ -45,6 +45,16 @@ Rectangle {
 	/// Determines if child item should be resized larger than its implicit size if
 	/// the parent is resized larger than its implicit size. Defaults to false.
 	property /*bool*/alias resizeChild: manager.resizeChild
+	/// Overrides the implicit width of the wrapper.
+	///
+	/// Defaults to the implicit width of the content item plus its left and right margin,
+	/// and may be reset by assigning `undefined`.
+	property /*real*/alias implicitWidth: manager.implicitWidth
+	/// Overrides the implicit height of the wrapper.
+	///
+	/// Defaults to the implicit width of the content item plus its top and bottom margin,
+	/// and may be reset by assigning `undefined`.
+	property /*real*/alias implicitHeight: manager.implicitHeight
 	/// See @@WrapperManager.child for details.
 	property alias child: manager.child
 
