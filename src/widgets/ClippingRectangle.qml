@@ -38,10 +38,14 @@ Item {
 	/// Radius of the bottom right corner. Defaults to @@radius.
 	property /*real*/alias bottomRightRadius: rectangle.bottomRightRadius
 
+	/// Data of the ClippingRectangle's @@contentItem. (`list<QtObject>`).
+	///
+	/// See @@QtQuick.Item.data for details.
+	default property alias data: contentItem.data
 	/// Visual children of the ClippingRectangle's @@contentItem. (`list<Item>`).
 	///
 	/// See @@QtQuick.Item.children for details.
-	default property alias children: contentItem.children
+	property alias children: contentItem.children
 	/// The item containing the rectangle's content.
 	/// There is usually no reason to use this directly.
 	readonly property alias contentItem: contentItem
