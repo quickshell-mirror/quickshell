@@ -90,6 +90,8 @@ void MarginWrapperManager::componentComplete() {
 	if (this->mWrapper) {
 		this->bWrapperWidth.setBinding([this] { return this->mWrapper->bindableWidth().value(); });
 		this->bWrapperHeight.setBinding([this] { return this->mWrapper->bindableHeight().value(); });
+		this->setWrapperImplicitWidth();
+		this->setWrapperImplicitHeight();
 	}
 }
 
