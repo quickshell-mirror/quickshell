@@ -34,7 +34,8 @@ ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	auto* window = old == nullptr ? nullptr : old->disownWindow();
 
 	if (window != nullptr) {
-		this->bridge = LayerSurfaceBridge::init(window, this->computeState());
+		this->connectBridge(LayerSurfaceBridge::init(window, this->computeState()));
+
 		if (this->bridge) {
 			return window;
 		} else {
@@ -48,7 +49,7 @@ ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 ProxiedWindow* WlrLayershell::createQQuickWindow() {
 	auto* window = this->ProxyWindowBase::createQQuickWindow();
 
-	this->bridge = LayerSurfaceBridge::init(window, this->computeState());
+	this->connectBridge(LayerSurfaceBridge::init(window, this->computeState()));
 	if (!this->bridge) {
 		qWarning() << "Could not attach Layershell extension to new QQuickWindow. Layer will not "
 		              "behave correctly.";
@@ -71,6 +72,30 @@ void WlrLayershell::connectWindow() {
 
 	this->updateAutoExclusion();
 }
+
+ProxiedWindow* WlrLayershell::disownWindow(bool keepItemOwnership) {
+	auto* window = this->ProxyWindowBase::disownWindow(keepItemOwnership);
+
+	if (this->bridge) {
+		this->connectBridge(nullptr);
+	}
+
+	return window;
+}
+
+void WlrLayershell::connectBridge(LayerSurfaceBridge* bridge) {
+	if (this->bridge) {
+		QObject::disconnect(this->bridge, nullptr, this, nullptr);
+	}
+
+	this->bridge = bridge;
+
+	if (bridge) {
+		QObject::connect(this->bridge, &QObject::destroyed, this, &WlrLayershell::onBridgeDestroyed);
+	}
+}
+
+void WlrLayershell::onBridgeDestroyed() { this->bridge = nullptr; }
 
 bool WlrLayershell::deleteOnInvisible() const {
 	// Qt windows behave weirdly when geometry is modified and setVisible(false)

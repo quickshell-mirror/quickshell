@@ -122,6 +122,7 @@ public:
 	ProxiedWindow* retrieveWindow(QObject* oldInstance) override;
 	ProxiedWindow* createQQuickWindow() override;
 	void connectWindow() override;
+	ProxiedWindow* disownWindow(bool keepItemOwnership = false) override;
 	[[nodiscard]] bool deleteOnInvisible() const override;
 
 	void onPolished() override;
@@ -175,10 +176,12 @@ signals:
 
 private slots:
 	void updateAutoExclusion();
+	void onBridgeDestroyed();
 
 private:
 	[[nodiscard]] LayerSurfaceState computeState() const;
 
+	void connectBridge(LayerSurfaceBridge* bridge);
 	void onStateChanged();
 
 	bool compositorPicksScreen = true;

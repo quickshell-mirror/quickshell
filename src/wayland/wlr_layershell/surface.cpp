@@ -173,7 +173,10 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 	this->bridge->surface = this;
 }
 
-LayerSurface::~LayerSurface() { this->destroy(); }
+LayerSurface::~LayerSurface() {
+	delete this->bridge;
+	this->destroy();
+}
 
 void LayerSurface::zwlr_layer_surface_v1_configure(quint32 serial, quint32 width, quint32 height) {
 	this->ack_configure(serial);
