@@ -53,7 +53,7 @@ Item {
 	/// Defaults to @@margin, and may be reset by assigning `undefined`.
 	property /*real*/alias rightMargin: manager.rightMargin
 	/// Determines if child item should be resized larger than its implicit size if
-	/// the parent is resized larger than its implicit size. Defaults to false.
+	/// the parent is resized larger than its implicit size. Defaults to true.
 	property /*bool*/alias resizeChild: manager.resizeChild
 	/// Overrides the implicit width of the wrapper.
 	///

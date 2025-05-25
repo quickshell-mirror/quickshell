@@ -68,7 +68,7 @@ class MarginWrapperManager: public WrapperManager {
 	/// Defaults to @@margin, and may be reset by assigning `undefined`.
 	Q_PROPERTY(qreal rightMargin READ rightMargin WRITE setRightMargin RESET resetRightMargin NOTIFY rightMarginChanged FINAL);
 	/// Determines if child item should be resized larger than its implicit size if
-	/// the parent is resized larger than its implicit size. Defaults to false.
+	/// the parent is resized larger than its implicit size. Defaults to true.
 	Q_PROPERTY(bool resizeChild READ default WRITE default BINDABLE bindableResizeChild NOTIFY resizeChildChanged FINAL);
 	/// Overrides the implicit width of the wrapper.
 	///
@@ -170,7 +170,7 @@ protected:
 
 private:
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, bool, bResizeChild);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MarginWrapperManager, bool, bResizeChild, true);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bMargin, &MarginWrapperManager::marginChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bExtraMargin, &MarginWrapperManager::baseMarginChanged);
 
