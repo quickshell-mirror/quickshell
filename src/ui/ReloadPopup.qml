@@ -118,6 +118,7 @@ PanelWindow {
 		anchors.fill: parent
 		color: palette.active.window
 		border.color: root.failed ? "#b53030" : palette.active.accent
+		border.width: 1
 
 		radius: 10
 		margin: 10

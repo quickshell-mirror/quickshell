@@ -58,6 +58,12 @@ Rectangle {
 	/// See @@WrapperManager.child for details.
 	property alias child: manager.child
 
+	// Reading the border property implicitly sets border width to 1.
+	// Setting it to 0 here means the user will also have to set border.width
+	// even if they just want 1, but it prevents adding unexpected padding
+	// and works around QTBUG-137166 otherwise.
+	border.width: 0
+
 	MarginWrapperManager {
 		id: manager
 		extraMargin: (root.contentInsideBorder ? root.border.width : 0) + root.extraMargin
