@@ -11,7 +11,7 @@ import QtQuick
 /// > @@Item.height or @@Item.anchors on the child item, as they are used
 /// > by WrapperItem to position it. Instead set @@Item.implicitWidth and
 /// > @@Item.implicitHeight.
-ClippingRectangle {
+ClippingWrapperRectangleInternal {
 	id: root
 
 	/// The default for @@topMargin, @@bottomMargin, @@leftMargin and @@rightMargin.
@@ -54,13 +54,10 @@ ClippingRectangle {
 	/// See @@WrapperManager.child for details.
 	property alias child: manager.child
 
-	implicitWidth: root.contentItem.implicitWidth + (root.contentInsideBorder ? root.border.width * 2 : 0)
-	implicitHeight: root.contentItem.implicitHeight + (root.contentInsideBorder ? root.border.width * 2 : 0)
+	border.width: 0
 
-	resources: [
-		MarginWrapperManager {
-			id: manager
-			wrapper: root.contentItem
-		}
-	]
+	__implicitWidthInternal: root.contentItem.implicitWidth + (root.contentInsideBorder ? root.border.width * 2 : 0)
+	__implicitHeightInternal: root.contentItem.implicitHeight + (root.contentInsideBorder ? root.border.width * 2 : 0)
+
+	MarginWrapperManager { id: manager }
 }

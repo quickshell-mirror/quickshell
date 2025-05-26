@@ -14,6 +14,7 @@ qt_add_qml_module(quickshell-widgets
 		WrapperMouseArea.qml
 		WrapperRectangle.qml
 		ClippingWrapperRectangle.qml
+		ClippingWrapperRectangleInternal.qml
 )
 
 qt6_add_shaders(quickshell-widgets "widgets-cliprect"
