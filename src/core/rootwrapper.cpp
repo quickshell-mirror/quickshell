@@ -16,6 +16,7 @@
 #include "../window/floatingwindow.hpp"
 #include "generation.hpp"
 #include "instanceinfo.hpp"
+#include "logging.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
 
@@ -63,16 +64,20 @@ void RootWrapper::reloadGraph(bool hard) {
 	url.setScheme("qsintercept");
 	auto component = QQmlComponent(generation->engine, url);
 
-	auto* newRoot = component.beginCreate(generation->engine->rootContext());
+	if (!component.isReady()) {
+		qCritical() << "Failed to load configuration:";
+		auto error = component.errorString().trimmed();
+		qCCritical(logBare).noquote() << error;
 
-	if (newRoot == nullptr) {
-		const QString error = "failed to create root component\n" + component.errorString();
-		qWarning().noquote() << error;
+		auto newFiles = generation->scanner.scannedFiles;
 		generation->destroy();
 
 		if (this->generation != nullptr) {
-			auto showPopup = true;
+			if (this->generation->setExtraWatchedFiles(newFiles)) {
+				qInfo() << "Watching additional files picked up in reload for changes...";
+			}
 
+			auto showPopup = true;
 			if (this->generation->qsgInstance != nullptr) {
 				this->generation->qsgInstance->clearReloadPopupInhibit();
 				emit this->generation->qsgInstance->reloadFailed(error);
@@ -88,6 +93,8 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		return;
 	}
+
+	auto* newRoot = component.beginCreate(generation->engine->rootContext());
 
 	if (auto* item = qobject_cast<QQuickItem*>(newRoot)) {
 		auto* window = new FloatingWindowInterface();

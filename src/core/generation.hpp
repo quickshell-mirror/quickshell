@@ -36,6 +36,7 @@ public:
 	// assumes root has been initialized, consumes old generation
 	void onReload(EngineGeneration* old);
 	void setWatchingFiles(bool watching);
+	bool setExtraWatchedFiles(const QVector<QString>& files);
 
 	void registerIncubationController(QQmlIncubationController* controller);
 	void deregisterIncubationController(QQmlIncubationController* controller);
@@ -61,6 +62,7 @@ public:
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
 	QVector<QString> deletedWatchedFiles;
+	QVector<QString> extraWatchedFiles;
 	DelayedQmlIncubationController delayedIncubationController;
 	bool reloadComplete = false;
 	QuickshellGlobal* qsgInstance = nullptr;

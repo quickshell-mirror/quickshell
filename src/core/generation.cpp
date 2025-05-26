@@ -162,6 +162,11 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 				this->watcher->addPath(QFileInfo(file).dir().absolutePath());
 			}
 
+			for (auto& file: this->extraWatchedFiles) {
+				this->watcher->addPath(file);
+				this->watcher->addPath(QFileInfo(file).dir().absolutePath());
+			}
+
 			QObject::connect(
 			    this->watcher,
 			    &QFileSystemWatcher::fileChanged,
@@ -182,6 +187,22 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 			this->watcher = nullptr;
 		}
 	}
+}
+
+bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
+	this->extraWatchedFiles.clear();
+	for (const auto& file: files) {
+		if (!this->scanner.scannedFiles.contains(file)) {
+			this->extraWatchedFiles.append(file);
+		}
+	}
+
+	if (this->watcher) {
+		this->setWatchingFiles(false);
+		this->setWatchingFiles(true);
+	}
+
+	return !this->extraWatchedFiles.isEmpty();
 }
 
 void EngineGeneration::onFileChanged(const QString& name) {
