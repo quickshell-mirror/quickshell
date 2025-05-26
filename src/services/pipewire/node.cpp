@@ -91,6 +91,7 @@ QString PwNodeType::toString(PwNodeType::Enum type) {
 	case PwNodeType::VideoSink: return QStringLiteral("VideoSink");
 	case PwNodeType::AudioSource: return QStringLiteral("AudioSource");
 	case PwNodeType::AudioSink: return QStringLiteral("AudioSink");
+	case PwNodeType::AudioDuplex: return QStringLiteral("AudioDuplex");
 	case PwNodeType::AudioOutStream: return QStringLiteral("AudioOutStream");
 	case PwNodeType::AudioInStream: return QStringLiteral("AudioInStream");
 	case PwNodeType::Untracked: return QStringLiteral("Untracked");
