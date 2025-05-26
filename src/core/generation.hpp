@@ -4,8 +4,10 @@
 #include <qdir.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qqmlengine.h>
+#include <qqmlerror.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
 
@@ -82,6 +84,7 @@ private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void incubationControllerDestroyed();
+	void onEngineWarnings(const QList<QQmlError>& warnings) const;
 
 private:
 	void postReload();

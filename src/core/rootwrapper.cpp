@@ -16,7 +16,6 @@
 #include "../window/floatingwindow.hpp"
 #include "generation.hpp"
 #include "instanceinfo.hpp"
-#include "logging.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
 
@@ -32,7 +31,6 @@ RootWrapper::RootWrapper(QString rootPath, QString shellId)
 	this->reloadGraph(true);
 
 	if (this->generation == nullptr) {
-		qCritical() << "could not create scene graph, exiting";
 		exit(-1); // NOLINT
 	}
 }
@@ -54,6 +52,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {
+		qInfo() << "Reloading configuration...";
 		QuickshellSettings::reset();
 	}
 
@@ -65,9 +64,17 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto component = QQmlComponent(generation->engine, url);
 
 	if (!component.isReady()) {
-		qCritical() << "Failed to load configuration:";
-		auto error = component.errorString().trimmed();
-		qCCritical(logBare).noquote() << error;
+		qCritical() << "Failed to load configuration";
+		QString errorString = "Failed to load configuration";
+
+		auto errors = component.errors();
+		for (auto& error: errors) {
+			auto rel = "**/" % rootPath.relativeFilePath(error.url().path());
+			auto msg = "  caused by " % rel % '[' % QString::number(error.line()) % ':'
+			         % QString::number(error.column()) % "]: " % error.description();
+			errorString += '\n' % msg;
+			qCritical().noquote() << msg;
+		}
 
 		auto newFiles = generation->scanner.scannedFiles;
 		generation->destroy();
@@ -80,15 +87,16 @@ void RootWrapper::reloadGraph(bool hard) {
 			auto showPopup = true;
 			if (this->generation->qsgInstance != nullptr) {
 				this->generation->qsgInstance->clearReloadPopupInhibit();
-				emit this->generation->qsgInstance->reloadFailed(error);
+				emit this->generation->qsgInstance->reloadFailed(errorString);
 				showPopup = !this->generation->qsgInstance->isReloadPopupInhibited();
 			}
 
-			if (showPopup) qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, true, error);
+			if (showPopup)
+				qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, true, errorString);
 		}
 
 		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
-			emit this->generation->qsgInstance->reloadFailed(error);
+			emit this->generation->qsgInstance->reloadFailed(errorString);
 		}
 
 		return;

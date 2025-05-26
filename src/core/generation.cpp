@@ -8,11 +8,13 @@
 #include <qfileinfo.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
+#include <qqmlerror.h>
 #include <qqmlincubator.h>
 #include <qtmetamacros.h>
 
@@ -24,6 +26,10 @@
 #include "reload.hpp"
 #include "scan.hpp"
 
+namespace {
+Q_LOGGING_CATEGORY(logScene, "scene");
+}
+
 static QHash<const QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
 EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
@@ -33,6 +39,9 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
     , interceptNetFactory(this->scanner.fileIntercepts)
     , engine(new QQmlEngine()) {
 	g_generations.insert(this->engine, this);
+
+	this->engine->setOutputWarningsToStandardError(false);
+	QObject::connect(this->engine, &QQmlEngine::warnings, this, &EngineGeneration::onEngineWarnings);
 
 	this->engine->addUrlInterceptor(&this->urlInterceptor);
 	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
@@ -309,6 +318,22 @@ void EngineGeneration::incubationControllerDestroyed() {
 		qCDebug(logIncubator
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
+	}
+}
+
+void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) const {
+	for (const auto& error: warnings) {
+		auto rel = "**/" % this->rootPath.relativeFilePath(error.url().path());
+
+		QString objectName;
+		auto desc = error.description();
+		if (auto i = desc.indexOf(": "); i != -1) {
+			objectName = desc.first(i);
+			desc = desc.sliced(i + 2);
+		}
+
+		qCWarning(logScene).noquote().nospace() << objectName << " at " << rel << '[' << error.line()
+		                                        << ':' << error.column() << "]: " << desc;
 	}
 }
 
