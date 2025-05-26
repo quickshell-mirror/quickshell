@@ -77,7 +77,7 @@ Item {
 		anchors.fill: root
 		fragmentShader: `qrc:/Quickshell/Widgets/shaders/cliprect${root.contentUnderBorder ? "-ub" : ""}.frag.qsb`
 		property Rectangle rect: rectangle
-		property color backgroundColor
+		property color backgroundColor: "white"
 		property color borderColor: root.border.color
 
 		property ShaderEffectSource content: ShaderEffectSource {
