@@ -185,6 +185,7 @@ PanelWindow {
 					selectionColor: palette.active.highlight
 					selectedTextColor: palette.active.highlightedText
 					readOnly: true
+					font.family: "monospace"
 				}
 			}
 
