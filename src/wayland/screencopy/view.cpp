@@ -1,5 +1,6 @@
 #include "view.hpp"
 
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlinfo.h>
 #include <qquickitem.h>
@@ -11,6 +12,23 @@
 #include "manager.hpp"
 
 namespace qs::wayland::screencopy {
+
+ScreencopyView::ScreencopyView(QQuickItem* parent): QQuickItem(parent) {
+	this->bImplicitSize.setBinding([this] {
+		auto constraint = this->bConstraintSize.value();
+		auto size = this->bSourceSize.value().toSizeF();
+
+		if (constraint.width() != 0 && constraint.height() != 0) {
+			size.scale(constraint.width(), constraint.height(), Qt::KeepAspectRatio);
+		} else if (constraint.width() != 0) {
+			size = QSizeF(constraint.width(), size.height() / constraint.width());
+		} else if (constraint.height() != 0) {
+			size = QSizeF(size.width() / constraint.height(), constraint.height());
+		}
+
+		return size;
+	});
+}
 
 void ScreencopyView::setCaptureSource(QObject* captureSource) {
 	if (captureSource == this->mCaptureSource) return;
@@ -146,6 +164,11 @@ QSGNode* ScreencopyView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* 
 
 	if (this->mLive) this->context->captureFrame();
 	return node;
+}
+
+void ScreencopyView::updateImplicitSize() {
+	auto size = this->bImplicitSize.value();
+	this->setImplicitSize(size.width(), size.height());
 }
 
 } // namespace qs::wayland::screencopy
