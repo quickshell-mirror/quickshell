@@ -287,6 +287,7 @@ class PwNodeIface: public PwObjectIface {
 	/// If `true` then the node is likely to be a program, if `false` it is likely to be
 	/// a hardware device.
 	Q_PROPERTY(bool isStream READ isStream CONSTANT);
+	Q_PROPERTY(qs::service::pipewire::PwNodeType::Enum type READ type CONSTANT);
 	/// The property set present on the node, as an object containing key-value pairs.
 	/// You can inspect this directly with `pw-cli i <id>`.
 	///
@@ -324,6 +325,7 @@ public:
 	[[nodiscard]] bool isSink() const;
 	[[nodiscard]] bool isStream() const;
 	[[nodiscard]] bool isReady() const;
+	[[nodiscard]] PwNodeType::Enum type() const;
 	[[nodiscard]] QVariantMap properties() const;
 	[[nodiscard]] PwNodeAudioIface* audio() const;
 

@@ -334,6 +334,8 @@ bool PwNodeIface::isStream() const { return this->mNode->isStream; }
 
 bool PwNodeIface::isReady() const { return this->mNode->ready; }
 
+PwNodeType::Enum PwNodeIface::type() const { return this->mNode->type; };
+
 QVariantMap PwNodeIface::properties() const {
 	auto map = QVariantMap();
 	for (auto [k, v]: this->mNode->properties.asKeyValueRange()) {

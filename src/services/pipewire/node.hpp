@@ -87,9 +87,34 @@ public:
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwAudioChannel::Enum value);
 };
 
-enum class PwNodeType : quint8 {
-	Untracked,
-	Audio,
+class PwNodeType: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		// A Pipewire node which is not being managed.
+		Untracked = 0,
+		// A a sink for audio samples, like an audio card.
+		AudioSink = 1,
+		// A source of audio samples like a microphone.
+		AudioSource = 2,
+		// A node that is both a sink and a source.
+		AudioDuplex = 3,
+		// A playback stream.
+		AudioOutStream = 4,
+		// A capture stream.
+		AudioInStream = 5,
+		// A producer of video, like a webcam or a screenshare
+		VideoSource = 6,
+		// A consumer of video, such as a program that is recieving a video stream
+		// TODO: Doublecheck
+		VideoSink = 7
+	};
+	Q_ENUM(Enum);
+
+	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Enum type);
 };
 
 class PwNode;
@@ -169,7 +194,7 @@ public:
 	QString nick;
 	QMap<QString, QString> properties;
 
-	PwNodeType type = PwNodeType::Untracked;
+	PwNodeType::Enum type = PwNodeType::Untracked;
 	bool isSink = false;
 	bool isStream = false;
 	bool ready = false;
