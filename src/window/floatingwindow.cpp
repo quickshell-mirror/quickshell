@@ -4,10 +4,18 @@
 #include <qqmlengine.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "proxywindow.hpp"
 #include "windowinterface.hpp"
+
+void ProxyFloatingWindow::connectWindow() {
+	this->ProxyWindowBase::connectWindow();
+
+	this->window->setMinimumSize(this->bMinimumSize);
+	this->window->setMaximumSize(this->bMaximumSize);
+}
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
 	if (!this->window->isVisible()) {
@@ -19,6 +27,16 @@ void ProxyFloatingWindow::trySetHeight(qint32 implicitHeight) {
 	if (!this->window->isVisible()) {
 		this->ProxyWindowBase::trySetHeight(implicitHeight);
 	}
+}
+
+void ProxyFloatingWindow::onMinimumSizeChanged() {
+	if (this->window) this->window->setMinimumSize(this->bMinimumSize);
+	emit this->minimumSizeChanged();
+}
+
+void ProxyFloatingWindow::onMaximumSizeChanged() {
+	if (this->window) this->window->setMaximumSize(this->bMaximumSize);
+	emit this->maximumSizeChanged();
 }
 
 // FloatingWindowInterface
@@ -40,6 +58,9 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyWindowBase::colorChanged, this, &FloatingWindowInterface::colorChanged);
 	QObject::connect(this->window, &ProxyWindowBase::maskChanged, this, &FloatingWindowInterface::maskChanged);
 	QObject::connect(this->window, &ProxyWindowBase::surfaceFormatChanged, this, &FloatingWindowInterface::surfaceFormatChanged);
+
+	QObject::connect(this->window, &ProxyFloatingWindow::minimumSizeChanged, this, &FloatingWindowInterface::minimumSizeChanged);
+	QObject::connect(this->window, &ProxyFloatingWindow::maximumSizeChanged, this, &FloatingWindowInterface::maximumSizeChanged);
 	// clang-format on
 }
 
