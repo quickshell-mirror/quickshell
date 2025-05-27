@@ -328,9 +328,9 @@ QString PwNodeIface::description() const { return this->mNode->description; }
 
 QString PwNodeIface::nickname() const { return this->mNode->nick; }
 
-bool PwNodeIface::isSink() const { return this->mNode->isSink; }
+bool PwNodeIface::isSink() const { return this->mNode->type & PwNodeType::Sink; }
 
-bool PwNodeIface::isStream() const { return this->mNode->isStream; }
+bool PwNodeIface::isStream() const { return this->mNode->type & PwNodeType::Stream; }
 
 bool PwNodeIface::isReady() const { return this->mNode->ready; }
 

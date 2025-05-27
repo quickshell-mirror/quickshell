@@ -131,28 +131,16 @@ void PwNode::initProps(const spa_dict* props) {
 	if (const auto* mediaClass = spa_dict_lookup(props, SPA_KEY_MEDIA_CLASS)) {
 		if (strcmp(mediaClass, "Audio/Sink") == 0) {
 			this->type = PwNodeType::AudioSink;
-			this->isSink = true;
-			this->isStream = false;
 		} else if (strcmp(mediaClass, "Audio/Source") == 0) {
 			this->type = PwNodeType::AudioSource;
-			this->isSink = false;
-			this->isStream = false;
 		} else if (strcmp(mediaClass, "Stream/Output/Audio") == 0) {
 			this->type = PwNodeType::AudioOutStream;
-			this->isSink = false;
-			this->isStream = true;
 		} else if (strcmp(mediaClass, "Stream/Input/Audio") == 0) {
 			this->type = PwNodeType::AudioInStream;
-			this->isSink = true;
-			this->isStream = true;
 		} else if (strcmp(mediaClass, "Video/Sink") == 0) {
 			this->type = PwNodeType::VideoSink;
-			this->isSink = true;
-			this->isStream = false;
 		} else if (strcmp(mediaClass, "Video/Source") == 0) {
 			this->type = PwNodeType::VideoSource;
-			this->isSink = false;
-			this->isStream = false;
 		}
 	}
 
@@ -186,9 +174,7 @@ void PwNode::initProps(const spa_dict* props) {
 		}
 	}
 
-	if (this->type == PwNodeType::AudioSink || this->type == PwNodeType::AudioSource
-	    || this->type == PwNodeType::AudioInStream || this->type == PwNodeType::AudioOutStream)
-	{
+	if (this->type & PwNodeType::Audio) {
 		this->boundData = new PwNodeBoundAudio(this);
 	}
 }

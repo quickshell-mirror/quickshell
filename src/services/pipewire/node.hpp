@@ -86,7 +86,8 @@ public:
 	/// including aux and custom channel ranges.
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwAudioChannel::Enum value);
 };
-
+///! The type of a pipewire node. Use bitwise comparisons to
+/// filter for audio, video, sink, source or stream nodes
 class PwNodeType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -95,25 +96,35 @@ class PwNodeType: public QObject {
 public:
 	enum Enum : quint8 {
 		// A Pipewire node which is not being managed.
-		Untracked = 0,
+		Untracked = 0x1,
+		// This flag is set when this node is an Audio node
+		Audio = 0x2,
+		// This flag is set when this node is an Video node
+		Video = 0x4,
+		// This flag is set when this node is a stream node
+		Stream = 0x8,
+		// This flag is set when this node is producing some form of data,
+		// such as a microphone, screenshare or webcam
+		Source = 0x10,
+		// This flag is set when this node is receiving data
+		Sink = 0x20,
 		// A a sink for audio samples, like an audio card.
-		AudioSink = 1,
+		AudioSink = Audio | Sink,
 		// A source of audio samples like a microphone.
-		AudioSource = 2,
+		AudioSource = Audio | Source,
 		// A node that is both a sink and a source.
-		AudioDuplex = 3,
+		AudioDuplex = Audio | Sink | Source,
 		// A playback stream.
-		AudioOutStream = 4,
+		AudioOutStream = Audio | Sink | Stream,
 		// A capture stream.
-		AudioInStream = 5,
+		AudioInStream = Audio | Source | Stream,
 		// A producer of video, like a webcam or a screenshare
-		VideoSource = 6,
+		VideoSource = Video | Source,
 		// A consumer of video, such as a program that is recieving a video stream
-		// TODO: Doublecheck
-		VideoSink = 7
+		VideoSink = Video | Sink,
 	};
 	Q_ENUM(Enum);
-
+	Q_DECLARE_FLAGS(Options, Enum)
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Enum type);
 };
 
@@ -195,8 +206,6 @@ public:
 	QMap<QString, QString> properties;
 
 	PwNodeType::Enum type = PwNodeType::Untracked;
-	bool isSink = false;
-	bool isStream = false;
 	bool ready = false;
 
 	PwNodeBoundData* boundData = nullptr;
