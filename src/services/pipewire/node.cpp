@@ -11,6 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qstringliteral.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
