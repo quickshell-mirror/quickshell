@@ -327,13 +327,13 @@ void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) const 
 
 		QString objectName;
 		auto desc = error.description();
-		if (auto i = desc.indexOf(": "); i != -1) {
-			objectName = desc.first(i);
+		if (auto i = desc.indexOf(": "); i != -1 && desc.startsWith("QML ")) {
+			objectName = desc.first(i) + " at ";
 			desc = desc.sliced(i + 2);
 		}
 
-		qCWarning(logScene).noquote().nospace() << objectName << " at " << rel << '[' << error.line()
-		                                        << ':' << error.column() << "]: " << desc;
+		qCWarning(logScene).noquote().nospace()
+		    << objectName << rel << '[' << error.line() << ':' << error.column() << "]: " << desc;
 	}
 }
 
