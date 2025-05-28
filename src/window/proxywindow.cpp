@@ -300,12 +300,9 @@ qint32 ProxyWindowBase::y() const {
 	else return this->window->y();
 }
 
-qint32 ProxyWindowBase::implicitWidth() const { return this->mImplicitWidth; }
-
 void ProxyWindowBase::setImplicitWidth(qint32 implicitWidth) {
-	if (implicitWidth == this->mImplicitWidth) return;
-	this->mImplicitWidth = implicitWidth;
-	emit this->implicitWidthChanged();
+	if (implicitWidth == this->bImplicitWidth) return;
+	this->bImplicitWidth = implicitWidth;
 
 	if (this->window) this->trySetWidth(implicitWidth);
 	else emit this->widthChanged();
@@ -313,12 +310,9 @@ void ProxyWindowBase::setImplicitWidth(qint32 implicitWidth) {
 
 void ProxyWindowBase::trySetWidth(qint32 implicitWidth) { this->window->setWidth(implicitWidth); }
 
-qint32 ProxyWindowBase::implicitHeight() const { return this->mImplicitHeight; }
-
 void ProxyWindowBase::setImplicitHeight(qint32 implicitHeight) {
-	if (implicitHeight == this->mImplicitHeight) return;
-	this->mImplicitHeight = implicitHeight;
-	emit this->implicitHeightChanged();
+	if (implicitHeight == this->bImplicitHeight) return;
+	this->bImplicitHeight = implicitHeight;
 
 	if (this->window) this->trySetHeight(implicitHeight);
 	else emit this->heightChanged();
