@@ -22,8 +22,8 @@ WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
 		case ExclusionMode::Auto:
 			const auto anchors = this->bAnchors.value();
 
-			if (anchors.horizontalConstraint()) return this->height();
-			else if (anchors.verticalConstraint()) return this->width();
+			if (anchors.horizontalConstraint()) return this->bImplicitHeight;
+			else if (anchors.verticalConstraint()) return this->bImplicitWidth;
 			else return 0;
 		}
 	});
