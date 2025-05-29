@@ -43,8 +43,8 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
-	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged BINDABLE bindableImplicitWidth);
-	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged BINDABLE bindableImplicitHeight);
+	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged);
+	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
@@ -97,11 +97,9 @@ public:
 
 	[[nodiscard]] qint32 implicitWidth() const { return this->bImplicitWidth; }
 	void setImplicitWidth(qint32 implicitWidth);
-	QBindable<qint32> bindableImplicitWidth() { return &this->bImplicitWidth; }
 
 	[[nodiscard]] qint32 implicitHeight() const { return this->bImplicitHeight; }
 	void setImplicitHeight(qint32 implicitHeight);
-	QBindable<qint32> bindableImplicitHeight() { return &this->bImplicitHeight; }
 
 	[[nodiscard]] virtual qint32 width() const;
 	void setWidth(qint32 width);

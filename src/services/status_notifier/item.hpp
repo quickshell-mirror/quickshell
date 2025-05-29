@@ -101,23 +101,23 @@ class StatusNotifierItem: public QObject {
 
 	// clang-format off
 	/// A name unique to the application, such as its name.
-	Q_PROPERTY(QString id READ id NOTIFY idChanged BINDABLE bindableId);
+	Q_PROPERTY(QString id READ default NOTIFY idChanged BINDABLE bindableId);
 	/// Text that describes the application.
-	Q_PROPERTY(QString title READ title NOTIFY titleChanged BINDABLE bindableTitle);
-	Q_PROPERTY(qs::service::sni::Status::Enum status READ status NOTIFY statusChanged BINDABLE bindableStatus);
-	Q_PROPERTY(qs::service::sni::Category::Enum category READ category NOTIFY categoryChanged BINDABLE bindableCategory);
+	Q_PROPERTY(QString title READ default NOTIFY titleChanged BINDABLE bindableTitle);
+	Q_PROPERTY(qs::service::sni::Status::Enum status READ default NOTIFY statusChanged BINDABLE bindableStatus);
+	Q_PROPERTY(qs::service::sni::Category::Enum category READ default NOTIFY categoryChanged BINDABLE bindableCategory);
 	/// Icon source string, usable as an Image source.
-	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged BINDABLE bindableIcon);
+	Q_PROPERTY(QString icon READ default NOTIFY iconChanged BINDABLE bindableIcon);
 	Q_PROPERTY(QString tooltipTitle READ tooltipTitle NOTIFY tooltipTitleChanged);
 	Q_PROPERTY(QString tooltipDescription READ tooltipDescription NOTIFY tooltipDescriptionChanged);
 	/// If this tray item has an associated menu accessible via @@display() or @@menu.
-	Q_PROPERTY(bool hasMenu READ hasMenu NOTIFY hasMenuChanged BINDABLE bindableHasMenu);
+	Q_PROPERTY(bool hasMenu READ default NOTIFY hasMenuChanged BINDABLE bindableHasMenu);
 	/// A handle to the menu associated with this tray item, if any.
 	///
 	/// Can be displayed with @@Quickshell.QsMenuAnchor or @@Quickshell.QsMenuOpener.
 	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenuHandle* menu READ menuHandle NOTIFY hasMenuChanged);
 	/// If this tray item only offers a menu and activation will do nothing.
-	Q_PROPERTY(bool onlyMenu READ onlyMenu NOTIFY onlyMenuChanged BINDABLE bindableOnlyMenu);
+	Q_PROPERTY(bool onlyMenu READ default NOTIFY onlyMenuChanged BINDABLE bindableOnlyMenu);
 	// clang-format on
 	QML_NAMED_ELEMENT(SystemTrayItem);
 	QML_UNCREATABLE("SystemTrayItems can only be acquired from SystemTray");
@@ -127,7 +127,7 @@ public:
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] bool isReady() const;
-	QS_BINDABLE_GETTER(QString, bIcon, icon, bindableIcon);
+	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; };
 	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
 
 	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
@@ -141,14 +141,14 @@ public:
 	/// Display a platform menu at the given location relative to the parent window.
 	Q_INVOKABLE void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
 
-	QS_BINDABLE_GETTER(QString, bId, id, bindableId);
-	QS_BINDABLE_GETTER(QString, bTitle, title, bindableTitle);
-	QS_BINDABLE_GETTER(Status::Enum, bStatus, status, bindableStatus);
-	QS_BINDABLE_GETTER(Category::Enum, bCategory, category, bindableCategory);
+	[[nodiscard]] QBindable<QString> bindableId() const { return &this->bId; };
+	[[nodiscard]] QBindable<QString> bindableTitle() const { return &this->bTitle; };
+	[[nodiscard]] QBindable<Status::Enum> bindableStatus() const { return &this->bStatus; };
+	[[nodiscard]] QBindable<Category::Enum> bindableCategory() const { return &this->bCategory; };
 	[[nodiscard]] QString tooltipTitle() const { return this->bTooltip.value().title; };
 	[[nodiscard]] QString tooltipDescription() const { return this->bTooltip.value().description; };
-	QS_BINDABLE_GETTER(bool, bHasMenu, hasMenu, bindableHasMenu);
-	QS_BINDABLE_GETTER(bool, bIsMenu, onlyMenu, bindableOnlyMenu);
+	[[nodiscard]] QBindable<bool> bindableHasMenu() const { return &this->bHasMenu; };
+	[[nodiscard]] QBindable<bool> bindableOnlyMenu() const { return &this->bIsMenu; };
 
 signals:
 	void ready();
