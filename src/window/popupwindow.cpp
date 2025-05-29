@@ -126,7 +126,20 @@ qint32 ProxyPopupWindow::relativeY() const {
 PopupAnchor* ProxyPopupWindow::anchor() { return &this->mAnchor; }
 
 void ProxyPopupWindow::reposition() {
-	if (this->window != nullptr) {
-		PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
+	// not gated on pendingReposition as a polish might not be triggered in edge cases
+	if (this->window) {
+		this->pendingReposition = true;
+		this->schedulePolish();
+	}
+}
+
+void ProxyPopupWindow::onPolished() {
+	this->ProxyWindowBase::onPolished();
+	if (this->pendingReposition) {
+		this->pendingReposition = false;
+
+		if (this->window) {
+			PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
+		}
 	}
 }

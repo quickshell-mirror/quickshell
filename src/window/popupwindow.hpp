@@ -87,6 +87,7 @@ public:
 
 	void completeWindow() override;
 	void postCompleteWindow() override;
+	void onPolished() override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 	void setVisible(bool visible) override;
@@ -119,4 +120,5 @@ private:
 
 	PopupAnchor mAnchor {this};
 	bool wantsVisible = false;
+	bool pendingReposition = false;
 };
