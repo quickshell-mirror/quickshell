@@ -14,7 +14,7 @@ ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {
 	this->mVisible = false;
 	// clang-format off
 	QObject::connect(&this->mAnchor, &PopupAnchor::windowChanged, this, &ProxyPopupWindow::parentWindowChanged);
-	QObject::connect(&this->mAnchor, &PopupAnchor::rectChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::windowRectChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::edgesChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::gravityChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::adjustmentChanged, this, &ProxyPopupWindow::reposition);
@@ -126,7 +126,20 @@ qint32 ProxyPopupWindow::relativeY() const {
 PopupAnchor* ProxyPopupWindow::anchor() { return &this->mAnchor; }
 
 void ProxyPopupWindow::reposition() {
-	if (this->window != nullptr) {
-		PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
+	// not gated on pendingReposition as a polish might not be triggered in edge cases
+	if (this->window) {
+		this->pendingReposition = true;
+		this->schedulePolish();
+	}
+}
+
+void ProxyPopupWindow::onPolished() {
+	this->ProxyWindowBase::onPolished();
+	if (this->pendingReposition) {
+		this->pendingReposition = false;
+
+		if (this->window) {
+			PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
+		}
 	}
 }

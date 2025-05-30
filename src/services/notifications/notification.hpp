@@ -81,35 +81,35 @@ class Notification
 	/// if @@NotificationServer.keepOnReload is true.
 	Q_PROPERTY(bool lastGeneration READ isLastGeneration CONSTANT);
 	/// Time in seconds the notification should be valid for
-	Q_PROPERTY(qreal expireTimeout READ expireTimeout NOTIFY expireTimeoutChanged BINDABLE bindableExpireTimeout);
+	Q_PROPERTY(qreal expireTimeout READ default NOTIFY expireTimeoutChanged BINDABLE bindableExpireTimeout);
 	/// The sending application's name.
-	Q_PROPERTY(QString appName READ appName NOTIFY appNameChanged BINDABLE bindableAppName);
+	Q_PROPERTY(QString appName READ default NOTIFY appNameChanged BINDABLE bindableAppName);
 	/// The sending application's icon. If none was provided, then the icon from an associated
 	/// desktop entry will be retrieved. If none was found then "".
-	Q_PROPERTY(QString appIcon READ appIcon NOTIFY appIconChanged BINDABLE bindableAppIcon);
+	Q_PROPERTY(QString appIcon READ default NOTIFY appIconChanged BINDABLE bindableAppIcon);
 	/// The image associated with this notification, or "" if none.
-	Q_PROPERTY(QString summary READ summary NOTIFY summaryChanged BINDABLE bindableSummary);
-	Q_PROPERTY(QString body READ body NOTIFY bodyChanged BINDABLE bindableBody);
-	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ urgency NOTIFY urgencyChanged BINDABLE bindableUrgency);
+	Q_PROPERTY(QString summary READ default NOTIFY summaryChanged BINDABLE bindableSummary);
+	Q_PROPERTY(QString body READ default NOTIFY bodyChanged BINDABLE bindableBody);
+	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ default NOTIFY urgencyChanged BINDABLE bindableUrgency);
 	/// Actions that can be taken for this notification.
 	Q_PROPERTY(QList<qs::service::notifications::NotificationAction*> actions READ actions NOTIFY actionsChanged);
 	/// If actions associated with this notification have icons available.
 	///
 	/// See @@NotificationAction.identifier for details.
-	Q_PROPERTY(bool hasActionIcons READ hasActionIcons NOTIFY hasActionIconsChanged);
+	Q_PROPERTY(bool hasActionIcons READ default NOTIFY hasActionIconsChanged BINDABLE bindableHasActionIcons);
 	/// If true, the notification will not be destroyed after an action is invoked.
-	Q_PROPERTY(bool resident READ resident NOTIFY residentChanged);
+	Q_PROPERTY(bool resident READ default NOTIFY residentChanged BINDABLE bindableResident);
 	/// If true, the notification should skip any kind of persistence function like a notification area.
-	Q_PROPERTY(bool transient READ transient NOTIFY transientChanged);
+	Q_PROPERTY(bool transient READ default NOTIFY transientChanged BINDABLE bindableTransient);
 	/// The name of the sender's desktop entry or "" if none was supplied.
-	Q_PROPERTY(QString desktopEntry READ desktopEntry NOTIFY desktopEntryChanged);
+	Q_PROPERTY(QString desktopEntry READ default NOTIFY desktopEntryChanged BINDABLE bindableDesktopEntry);
 	/// An image associated with the notification.
 	///
 	/// This image is often something like a profile picture in instant messaging applications.
-	Q_PROPERTY(QString image READ image NOTIFY imageChanged);
+	Q_PROPERTY(QString image READ default NOTIFY imageChanged BINDABLE bindableImage);
 	/// All hints sent by the client application as a javascript object.
 	/// Many common hints are exposed via other properties.
-	Q_PROPERTY(QVariantMap hints READ hints NOTIFY hintsChanged);
+	Q_PROPERTY(QVariantMap hints READ default NOTIFY hintsChanged BINDABLE bindableHints);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("Notifications must be acquired from a NotificationServer");
@@ -142,21 +142,23 @@ public:
 	[[nodiscard]] bool isLastGeneration() const;
 	void setLastGeneration();
 
-	QS_BINDABLE_GETTER(qreal, bExpireTimeout, expireTimeout, bindableExpireTimeout);
-	QS_BINDABLE_GETTER(QString, bAppName, appName, bindableAppName);
-	QS_BINDABLE_GETTER(QString, bAppIcon, appIcon, bindableAppIcon);
-	QS_BINDABLE_GETTER(QString, bSummary, summary, bindableSummary);
-	QS_BINDABLE_GETTER(QString, bBody, body, bindableBody);
-	QS_BINDABLE_GETTER(NotificationUrgency::Enum, bUrgency, urgency, bindableUrgency);
+	[[nodiscard]] QBindable<qreal> bindableExpireTimeout() const { return &this->bExpireTimeout; };
+	[[nodiscard]] QBindable<QString> bindableAppName() const { return &this->bAppName; };
+	[[nodiscard]] QBindable<QString> bindableAppIcon() const { return &this->bAppIcon; };
+	[[nodiscard]] QBindable<QString> bindableSummary() const { return &this->bSummary; };
+	[[nodiscard]] QBindable<QString> bindableBody() const { return &this->bBody; };
+	[[nodiscard]] QBindable<NotificationUrgency ::Enum> bindableUrgency() const {
+		return &this->bUrgency;
+	};
 
 	[[nodiscard]] QList<NotificationAction*> actions() const;
 
-	QS_BINDABLE_GETTER(bool, bHasActionIcons, hasActionIcons, bindableHasActionIcons);
-	QS_BINDABLE_GETTER(bool, bResident, resident, bindableResident);
-	QS_BINDABLE_GETTER(bool, bTransient, transient, bindableTransient);
-	QS_BINDABLE_GETTER(QString, bDesktopEntry, desktopEntry, bindableDesktopEntry);
-	QS_BINDABLE_GETTER(QString, bImage, image, bindableImage);
-	QS_BINDABLE_GETTER(QVariantMap, bHints, hints, bindableHints);
+	[[nodiscard]] QBindable<bool> bindableHasActionIcons() const { return &this->bHasActionIcons; };
+	[[nodiscard]] QBindable<bool> bindableResident() const { return &this->bResident; };
+	[[nodiscard]] QBindable<bool> bindableTransient() const { return &this->bTransient; };
+	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; };
+	[[nodiscard]] QBindable<QString> bindableImage() const { return &this->bImage; };
+	[[nodiscard]] QBindable<QVariantMap> bindableHints() const { return &this->bHints; };
 
 	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;
 	void setTracked(bool tracked);

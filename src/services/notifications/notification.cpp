@@ -49,7 +49,7 @@ void NotificationAction::invoke() {
 
 	NotificationServer::instance()->ActionInvoked(this->notification->id(), this->mIdentifier);
 
-	if (!this->notification->resident()) {
+	if (!this->notification->bindableResident().value()) {
 		this->notification->close(NotificationCloseReason::Dismissed);
 	}
 }

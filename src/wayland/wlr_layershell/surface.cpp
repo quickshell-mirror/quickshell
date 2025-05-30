@@ -162,10 +162,10 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 	this->set_size(size.width(), size.height());
 	this->set_anchor(toWaylandAnchors(s.anchors));
 	this->set_margin(
-	    QHighDpi::toNativePixels(s.margins.mTop, qwindow),
-	    QHighDpi::toNativePixels(s.margins.mRight, qwindow),
-	    QHighDpi::toNativePixels(s.margins.mBottom, qwindow),
-	    QHighDpi::toNativePixels(s.margins.mLeft, qwindow)
+	    QHighDpi::toNativePixels(s.margins.top, qwindow),
+	    QHighDpi::toNativePixels(s.margins.right, qwindow),
+	    QHighDpi::toNativePixels(s.margins.bottom, qwindow),
+	    QHighDpi::toNativePixels(s.margins.left, qwindow)
 	);
 	this->set_exclusive_zone(QHighDpi::toNativePixels(s.exclusiveZone, qwindow));
 	this->set_keyboard_interactivity(toWaylandKeyboardFocus(s.keyboardFocus));
@@ -221,10 +221,10 @@ void LayerSurface::commit() {
 
 	if (p.margins != c.margins) {
 		this->set_margin(
-		    QHighDpi::toNativePixels(p.margins.mTop, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.mRight, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.mBottom, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.mLeft, this->qwindow())
+		    QHighDpi::toNativePixels(p.margins.top, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.right, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.bottom, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.left, this->qwindow())
 		);
 	}
 

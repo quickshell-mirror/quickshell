@@ -17,25 +17,37 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	};
 
 	auto addConfigSelection = [&](CLI::App* cmd, bool withNewestOption = false) {
-		auto* group = cmd->add_option_group("Config Selection")
-		                  ->description("If no options in this group are specified,\n"
-		                                "$XDG_CONFIG_HOME/quickshell/shell.qml will be used.");
+		auto* group =
+		    cmd->add_option_group("Config Selection")
+		        ->description(
+		            "Quickshell detects configurations as named directories under each XDG config "
+		            "directory as `<xdg dir>/quickshell/<config name>/shell.qml`.\n\n"
+		            "If `<xdg dir>/quickshell/shell.qml` exists, it will be registered as the "
+		            "'default' configuration, and no subdirectories will be considered. "
+		            "If --config is not passed, 'default' will be assumed.\n\n"
+		            "Alternatively, a config can be selected by path with --path.\n\n"
+		            "Examples:\n"
+		            "- `~/.config/quickshell/shell.qml` can be run with `qs`\n"
+		            "- `/etc/xdg/quickshell/myconfig/shell.qml` can be run with `qs -c myconfig`\n"
+		            "- `~/myshell/shell.qml` can be run with `qs -p ~/myshell`\n"
+		            "- `~/myshell/randomfile.qml` can be run with `qs -p ~/myshell/randomfile.qml`"
+		        );
 
 		auto* path = group->add_option("-p,--path", state.config.path)
-		                 ->description("Path to a QML file.")
+		                 ->description("Path to a QML file or config folder.")
 		                 ->envname("QS_CONFIG_PATH");
 
+		group->add_option("-c,--config", state.config.name)
+		    ->description("Name of a quickshell configuration to run.")
+		    ->envname("QS_CONFIG_NAME")
+		    ->excludes(path);
+
 		group->add_option("-m,--manifest", state.config.manifest)
-		    ->description("Path to a quickshell manifest.\n"
+		    ->description("[DEPRECATED] Path to a quickshell manifest.\n"
+		                  "If a manifest is specified, configs named by -c will point to its entries.\n"
 		                  "Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf")
 		    ->envname("QS_MANIFEST")
 		    ->excludes(path);
-
-		group->add_option("-c,--config", state.config.name)
-		    ->description("Name of a quickshell configuration to run.\n"
-		                  "If -m is specified, this is a configuration in the manifest,\n"
-		                  "otherwise it is the name of a folder in $XDG_CONFIG_HOME/quickshell.")
-		    ->envname("QS_CONFIG_NAME");
 
 		if (withNewestOption) {
 			group->add_flag("-n,--newest", state.config.newest)
@@ -64,7 +76,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 
 		group->add_flag("--no-color", state.log.noColor)
 		    ->description("Disables colored logging.\n"
-		                  "Colored logging can also be disabled by specifying a non empty value\n"
+		                  "Colored logging can also be disabled by specifying a non empty value "
 		                  "for the NO_COLOR environment variable.");
 
 		group->add_flag("--log-times", state.log.timestamp)
@@ -87,7 +99,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 
 		group->add_option("-i,--id", state.instance.id)
 		    ->description("The instance id to operate on.\n"
-		                  "You may also use a substring the id as long as it is unique,\n"
+		                  "You may also use a substring the id as long as it is unique, "
 		                  "for example \"abc\" will select \"abcdefg\".");
 
 		group->add_option("--pid", state.instance.pid)

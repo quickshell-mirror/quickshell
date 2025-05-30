@@ -282,15 +282,6 @@ bool setSimpleObjectHandle(auto* parent, auto* value) {
 	return SimpleObjectHandleOps<member, destroyedSlot, changedSignal>::setObject(parent, value);
 }
 
-// NOLINTBEGIN
-#define QS_TRIVIAL_GETTER(Type, member, getter)                                                    \
-	[[nodiscard]] Type getter() { return this->member; }
-
-#define QS_BINDABLE_GETTER(Type, member, getter, bindable)                                         \
-	[[nodiscard]] Type getter() { return this->member.value(); }                                     \
-	[[nodiscard]] QBindable<Type> bindable() { return &this->member; }
-// NOLINTEND
-
 template <auto methodPtr>
 class MethodFunctor {
 	using PtrMeta = MemberPointerTraits<decltype(methodPtr)>;

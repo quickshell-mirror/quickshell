@@ -5,6 +5,7 @@
 #include <qtypes.h>
 
 #include "../core/doc.hpp"
+#include "../core/types.hpp"
 #include "windowinterface.hpp"
 
 class Anchors {
@@ -33,31 +34,6 @@ public:
 	bool mRight = false;
 	bool mTop = false;
 	bool mBottom = false;
-};
-
-class Margins {
-	Q_GADGET;
-	Q_PROPERTY(qint32 left MEMBER mLeft);
-	Q_PROPERTY(qint32 right MEMBER mRight);
-	Q_PROPERTY(qint32 top MEMBER mTop);
-	Q_PROPERTY(qint32 bottom MEMBER mBottom);
-	QML_VALUE_TYPE(panelMargins);
-	QML_STRUCTURED_VALUE;
-
-public:
-	[[nodiscard]] bool operator==(const Margins& other) const noexcept {
-		// clang-format off
-		return this->mLeft == other.mLeft
-			&& this->mRight == other.mRight
-			&& this->mTop == other.mTop
-			&& this->mBottom == other.mBottom;
-		// clang-format on
-	}
-
-	qint32 mLeft = 0;
-	qint32 mRight = 0;
-	qint32 mTop = 0;
-	qint32 mBottom = 0;
 };
 
 ///! Panel exclusion mode

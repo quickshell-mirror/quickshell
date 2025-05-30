@@ -18,6 +18,7 @@
 
 #include "../core/generation.hpp"
 #include "../core/qmlscreen.hpp"
+#include "../core/types.hpp"
 #include "../window/panelinterface.hpp"
 #include "../window/proxywindow.hpp"
 #include "util.hpp"
@@ -296,15 +297,14 @@ void XPanelWindow::updateDimensions(bool propagate) {
 	auto geometry = QRect();
 
 	if (this->mAnchors.horizontalConstraint()) {
-		geometry.setX(screenGeometry.x() + this->mMargins.mLeft);
-		geometry.setWidth(screenGeometry.width() - this->mMargins.mLeft - this->mMargins.mRight);
+		geometry.setX(screenGeometry.x() + this->mMargins.left);
+		geometry.setWidth(screenGeometry.width() - this->mMargins.left - this->mMargins.right);
 	} else {
 		if (this->mAnchors.mLeft) {
-			geometry.setX(screenGeometry.x() + this->mMargins.mLeft);
+			geometry.setX(screenGeometry.x() + this->mMargins.left);
 		} else if (this->mAnchors.mRight) {
 			geometry.setX(
-			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth()
-			    - this->mMargins.mRight
+			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth() - this->mMargins.right
 			);
 		} else {
 			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->implicitWidth() / 2);
@@ -314,15 +314,15 @@ void XPanelWindow::updateDimensions(bool propagate) {
 	}
 
 	if (this->mAnchors.verticalConstraint()) {
-		geometry.setY(screenGeometry.y() + this->mMargins.mTop);
-		geometry.setHeight(screenGeometry.height() - this->mMargins.mTop - this->mMargins.mBottom);
+		geometry.setY(screenGeometry.y() + this->mMargins.top);
+		geometry.setHeight(screenGeometry.height() - this->mMargins.top - this->mMargins.bottom);
 	} else {
 		if (this->mAnchors.mTop) {
-			geometry.setY(screenGeometry.y() + this->mMargins.mTop);
+			geometry.setY(screenGeometry.y() + this->mMargins.top);
 		} else if (this->mAnchors.mBottom) {
 			geometry.setY(
 			    screenGeometry.y() + screenGeometry.height() - this->implicitHeight()
-			    - this->mMargins.mBottom
+			    - this->mMargins.bottom
 			);
 		} else {
 			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->implicitHeight() / 2);
@@ -377,10 +377,10 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 	if (autoExclude) {
 		if (side == 0 || side == 1) {
 			exclusiveZone =
-			    this->implicitWidth() + (side == 0 ? this->mMargins.mLeft : this->mMargins.mRight);
+			    this->implicitWidth() + (side == 0 ? this->mMargins.left : this->mMargins.right);
 		} else {
 			exclusiveZone =
-			    this->implicitHeight() + (side == 2 ? this->mMargins.mTop : this->mMargins.mBottom);
+			    this->implicitHeight() + (side == 2 ? this->mMargins.top : this->mMargins.bottom);
 		}
 	} else {
 		exclusiveZone = this->mExclusiveZone;

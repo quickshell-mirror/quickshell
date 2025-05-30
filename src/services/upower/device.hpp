@@ -116,50 +116,50 @@ class UPowerDevice: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The type of device.
-	Q_PROPERTY(qs::service::upower::UPowerDeviceType::Enum type READ type NOTIFY typeChanged BINDABLE bindableType);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceType::Enum type READ default NOTIFY typeChanged BINDABLE bindableType);
 	/// If the device is a power supply for your computer and can provide charge.
-	Q_PROPERTY(bool powerSupply READ powerSupply NOTIFY powerSupplyChanged BINDABLE bindablePowerSupply);
+	Q_PROPERTY(bool powerSupply READ default NOTIFY powerSupplyChanged BINDABLE bindablePowerSupply);
 	/// Current energy level of the device in watt-hours.
-	Q_PROPERTY(qreal energy READ energy NOTIFY energyChanged BINDABLE bindableEnergy);
+	Q_PROPERTY(qreal energy READ default NOTIFY energyChanged BINDABLE bindableEnergy);
 	/// Maximum energy capacity of the device in watt-hours
-	Q_PROPERTY(qreal energyCapacity READ energyCapacity NOTIFY energyCapacityChanged BINDABLE bindableEnergyCapacity);
+	Q_PROPERTY(qreal energyCapacity READ default NOTIFY energyCapacityChanged BINDABLE bindableEnergyCapacity);
 	/// Rate of energy change in watts (positive when charging, negative when discharging).
-	Q_PROPERTY(qreal changeRate READ changeRate NOTIFY changeRateChanged BINDABLE bindableChangeRate);
+	Q_PROPERTY(qreal changeRate READ default NOTIFY changeRateChanged BINDABLE bindableChangeRate);
 	/// Estimated time until the device is fully discharged, in seconds.
 	///
 	/// Will be set to `0` if charging.
-	Q_PROPERTY(qreal timeToEmpty READ timeToEmpty NOTIFY timeToEmptyChanged BINDABLE bindableTimeToEmpty);
+	Q_PROPERTY(qreal timeToEmpty READ default NOTIFY timeToEmptyChanged BINDABLE bindableTimeToEmpty);
 	/// Estimated time until the device is fully charged, in seconds.
 	///
 	/// Will be set to `0` if discharging.
-	Q_PROPERTY(qreal timeToFull READ timeToFull NOTIFY timeToFullChanged BINDABLE bindableTimeToFull);
+	Q_PROPERTY(qreal timeToFull READ default NOTIFY timeToFullChanged BINDABLE bindableTimeToFull);
 	/// Current charge level as a percentage.
 	///
 	/// This would be equivalent to @@energy / @@energyCapacity.
-	Q_PROPERTY(qreal percentage READ percentage NOTIFY percentageChanged BINDABLE bindablePercentage);
+	Q_PROPERTY(qreal percentage READ default NOTIFY percentageChanged BINDABLE bindablePercentage);
 	/// If the power source is present in the bay or slot, useful for hot-removable batteries.
 	///
 	/// If the device `type` is not `Battery`, then the property will be invalid.
-	Q_PROPERTY(bool isPresent READ isPresent NOTIFY isPresentChanged BINDABLE bindableIsPresent);
+	Q_PROPERTY(bool isPresent READ default NOTIFY isPresentChanged BINDABLE bindableIsPresent);
 	/// Current state of the device.
-	Q_PROPERTY(qs::service::upower::UPowerDeviceState::Enum state READ state NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(qs::service::upower::UPowerDeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// Health of the device as a percentage of its original health.
-	Q_PROPERTY(qreal healthPercentage READ healthPercentage NOTIFY healthPercentageChanged BINDABLE bindableHealthPercentage);
-	Q_PROPERTY(bool healthSupported READ healthSupported NOTIFY healthSupportedChanged BINDABLE bindableHealthSupported);
+	Q_PROPERTY(qreal healthPercentage READ default NOTIFY healthPercentageChanged BINDABLE bindableHealthPercentage);
+	Q_PROPERTY(bool healthSupported READ default NOTIFY healthSupportedChanged BINDABLE bindableHealthSupported);
 	/// Name of the icon representing the current state of the device, or an empty string if not provided.
-	Q_PROPERTY(QString iconName READ iconName NOTIFY iconNameChanged BINDABLE bindableIconName);
+	Q_PROPERTY(QString iconName READ default NOTIFY iconNameChanged BINDABLE bindableIconName);
 	/// If the device is a laptop battery or not. Use this to check if your device is a valid battery.
 	///
 	/// This will be equivalent to @@type == Battery && @@powerSupply == true.
-	Q_PROPERTY(bool isLaptopBattery READ isLaptopBattery NOTIFY isLaptopBatteryChanged BINDABLE bindableIsLaptopBattery);
+	Q_PROPERTY(bool isLaptopBattery READ default NOTIFY isLaptopBatteryChanged BINDABLE bindableIsLaptopBattery);
 	/// Native path of the device specific to your OS.
-	Q_PROPERTY(QString nativePath READ nativePath NOTIFY nativePathChanged BINDABLE bindableNativePath);
+	Q_PROPERTY(QString nativePath READ default NOTIFY nativePathChanged BINDABLE bindableNativePath);
 	/// Model name of the device. Unlikely to be useful for internal devices.
-	Q_PROPERTY(QString model READ model NOTIFY modelChanged BINDABLE bindableModel);
+	Q_PROPERTY(QString model READ default NOTIFY modelChanged BINDABLE bindableModel);
 	/// If device statistics have been queried for this device yet.
   /// This will be true for all devices returned from @@UPower.devices, but not the default
   /// device, which may be returned before it is ready to avoid returning null.
-	Q_PROPERTY(bool ready READ ready NOTIFY readyChanged BINDABLE bindableReady);
+	Q_PROPERTY(bool ready READ default NOTIFY readyChanged BINDABLE bindableReady);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("UPowerDevices can only be acquired from UPower");
@@ -173,23 +173,25 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QString path() const;
 
-	QS_BINDABLE_GETTER(UPowerDeviceType::Enum, bType, type, bindableType);
-	QS_BINDABLE_GETTER(bool, bPowerSupply, powerSupply, bindablePowerSupply);
-	QS_BINDABLE_GETTER(qreal, bEnergy, energy, bindableEnergy);
-	QS_BINDABLE_GETTER(qreal, bEnergyCapacity, energyCapacity, bindableEnergyCapacity);
-	QS_BINDABLE_GETTER(qreal, bChangeRate, changeRate, bindableChangeRate);
-	QS_BINDABLE_GETTER(qlonglong, bTimeToEmpty, timeToEmpty, bindableTimeToEmpty);
-	QS_BINDABLE_GETTER(qlonglong, bTimeToFull, timeToFull, bindableTimeToFull);
-	QS_BINDABLE_GETTER(qreal, bPercentage, percentage, bindablePercentage);
-	QS_BINDABLE_GETTER(bool, bIsPresent, isPresent, bindableIsPresent);
-	QS_BINDABLE_GETTER(UPowerDeviceState::Enum, bState, state, bindableState);
-	QS_BINDABLE_GETTER(qreal, bHealthPercentage, healthPercentage, bindableHealthPercentage);
-	QS_BINDABLE_GETTER(bool, bHealthSupported, healthSupported, bindableHealthSupported);
-	QS_BINDABLE_GETTER(QString, bIconName, iconName, bindableIconName);
-	QS_BINDABLE_GETTER(bool, bIsLaptopBattery, isLaptopBattery, bindableIsLaptopBattery);
-	QS_BINDABLE_GETTER(QString, bNativePath, nativePath, bindableNativePath);
-	QS_BINDABLE_GETTER(QString, bModel, model, bindableModel);
-	QS_BINDABLE_GETTER(bool, bReady, ready, bindableReady);
+	[[nodiscard]] QBindable<UPowerDeviceType::Enum> bindableType() const { return &this->bType; };
+	[[nodiscard]] QBindable<bool> bindablePowerSupply() const { return &this->bPowerSupply; };
+	[[nodiscard]] QBindable<qreal> bindableEnergy() const { return &this->bEnergy; };
+	[[nodiscard]] QBindable<qreal> bindableEnergyCapacity() const { return &this->bEnergyCapacity; };
+	[[nodiscard]] QBindable<qreal> bindableChangeRate() const { return &this->bChangeRate; };
+	[[nodiscard]] QBindable<qlonglong> bindableTimeToEmpty() const { return &this->bTimeToEmpty; };
+	[[nodiscard]] QBindable<qlonglong> bindableTimeToFull() const { return &this->bTimeToFull; };
+	[[nodiscard]] QBindable<qreal> bindablePercentage() const { return &this->bPercentage; };
+	[[nodiscard]] QBindable<bool> bindableIsPresent() const { return &this->bIsPresent; };
+	[[nodiscard]] QBindable<UPowerDeviceState::Enum> bindableState() const { return &this->bState; };
+	[[nodiscard]] QBindable<qreal> bindableHealthPercentage() const {
+		return &this->bHealthPercentage;
+	};
+	[[nodiscard]] QBindable<bool> bindableHealthSupported() const { return &this->bHealthSupported; };
+	[[nodiscard]] QBindable<QString> bindableIconName() const { return &this->bIconName; };
+	[[nodiscard]] QBindable<bool> bindableIsLaptopBattery() const { return &this->bIsLaptopBattery; };
+	[[nodiscard]] QBindable<QString> bindableNativePath() const { return &this->bNativePath; };
+	[[nodiscard]] QBindable<QString> bindableModel() const { return &this->bModel; };
+	[[nodiscard]] QBindable<bool> bindableReady() const { return &this->bReady; };
 
 signals:
 	QSDOC_HIDE void readyChanged();

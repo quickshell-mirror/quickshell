@@ -15,10 +15,12 @@
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qstandardpaths.h>
+#include <qtenvironmentvariables.h>
 #include <qtversion.h>
 #include <unistd.h>
 
@@ -36,6 +38,44 @@ using qs::ipc::IpcClient;
 
 namespace {
 
+QList<QString> configBaseDirs() {
+	auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
+	if (configHome.isEmpty()) {
+		auto home = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+		configHome = QDir(home).filePath(".config");
+	}
+
+	auto configDirs = qEnvironmentVariable("XDG_CONFIG_DIRS").split(':', Qt::SkipEmptyParts);
+	if (configDirs.isEmpty()) {
+		configDirs.append("/etc/xdg");
+	}
+
+	configDirs.prepend(configHome);
+
+	for (auto& dir: configDirs) {
+		dir.append("/quickshell");
+	}
+
+	return configDirs;
+}
+
+QString locateNamedConfig(const QString& name) {
+	for (const auto& baseDir: configBaseDirs()) {
+		auto shellPath = QDir(baseDir).filePath("shell.qml");
+		auto hasShell = QFileInfo(shellPath).isFile();
+
+		if (hasShell) {
+			if (name == "default") return shellPath;
+			else continue; // skip subfolders if shell.qml is present in folder
+		}
+
+		shellPath = QDir(QDir(baseDir).filePath(name)).filePath("shell.qml");
+		if (QFileInfo(shellPath).isFile()) return shellPath;
+	}
+
+	return QString();
+}
+
 int locateConfigFile(CommandState& cmd, QString& path) {
 	if (!cmd.config.path->isEmpty()) {
 		path = *cmd.config.path;
@@ -48,6 +88,11 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 		}
 
 		if (!manifestPath.isEmpty()) {
+			qWarning(
+			) << "Config manifests (manifest.conf) are deprecated and will be removed in a future "
+			     "release.";
+			qWarning() << "Consider using symlinks to a subfolder of quickshell's XDG config dirs.";
+
 			auto file = QFile(manifestPath);
 			if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 				auto stream = QTextStream(&file);
@@ -78,13 +123,23 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 				return -1;
 			}
 		} else {
-			auto configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+			const auto& name = cmd.config.name->isEmpty() ? "default" : *cmd.config.name;
+			path = locateNamedConfig(name);
 
-			if (cmd.config.name->isEmpty()) {
-				path = configDir.path();
-			} else {
-				path = configDir.filePath(*cmd.config.name);
+			if (path.isEmpty()) {
+				if (name == "default") {
+					qCCritical(logBare
+					) << "Could not find \"default\" config directory or shell.qml in any valid config path.";
+				} else {
+					qCCritical(logBare) << "Could not find" << name
+					                    << "config directory in any valid config path.";
+				}
+
+				return -1;
 			}
+
+			path = QFileInfo(path).canonicalFilePath();
+			return 0;
 		}
 	}
 
@@ -98,7 +153,6 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 	}
 
 	path = QFileInfo(path).canonicalFilePath();
-
 	return 0;
 }
 

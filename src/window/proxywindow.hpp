@@ -5,6 +5,8 @@
 #include <qevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
+#include <qproperty.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
 #include <qquickitem.h>
@@ -12,6 +14,8 @@
 #include <qsurfaceformat.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../core/qmlscreen.hpp"
@@ -66,6 +70,14 @@ public:
 	void operator=(ProxyWindowBase&) = delete;
 	void operator=(ProxyWindowBase&&) = delete;
 
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+	Q_INVOKABLE [[nodiscard]] QRectF
+	mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
+
 	void onReload(QObject* oldInstance) override;
 	void ensureQWindow();
 	void createWindow();
@@ -94,10 +106,10 @@ public:
 	[[nodiscard]] virtual qint32 x() const;
 	[[nodiscard]] virtual qint32 y() const;
 
-	[[nodiscard]] qint32 implicitWidth() const;
+	[[nodiscard]] qint32 implicitWidth() const { return this->bImplicitWidth; }
 	void setImplicitWidth(qint32 implicitWidth);
 
-	[[nodiscard]] qint32 implicitHeight() const;
+	[[nodiscard]] qint32 implicitHeight() const { return this->bImplicitHeight; }
 	void setImplicitHeight(qint32 implicitHeight);
 
 	[[nodiscard]] virtual qint32 width() const;
@@ -158,8 +170,6 @@ protected slots:
 
 protected:
 	bool mVisible = true;
-	qint32 mImplicitWidth = 100;
-	qint32 mImplicitHeight = 100;
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
@@ -174,6 +184,22 @@ protected:
 		bool inputMask : 1 = false;
 	} pendingPolish;
 
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
+	    ProxyWindowBase,
+	    qint32,
+	    bImplicitWidth,
+	    100,
+	    &ProxyWindowBase::implicitWidthChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
+	    ProxyWindowBase,
+	    qint32,
+	    bImplicitHeight,
+	    100,
+	    &ProxyWindowBase::implicitHeightChanged
+	);
+
 private:
 	void polishItems();
 	void updateMask();
@@ -186,6 +212,7 @@ public:
 	explicit ProxyWindowAttached(QQuickItem* parent);
 
 	[[nodiscard]] QObject* window() const override;
+	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
 	[[nodiscard]] QQuickItem* contentItem() const override;
 
 protected:
@@ -193,6 +220,7 @@ protected:
 
 private:
 	ProxyWindowBase* mWindow = nullptr;
+	WindowInterface* mWindowInterface = nullptr;
 
 	void setWindow(ProxyWindowBase* window);
 };

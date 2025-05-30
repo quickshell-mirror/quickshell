@@ -148,7 +148,7 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 }
 
 void MprisPlayer::raise() {
-	if (!this->canRaise()) {
+	if (!this->bCanRaise) {
 		qWarning() << "Cannot call raise() on" << this << "because canRaise is false.";
 		return;
 	}
@@ -157,7 +157,7 @@ void MprisPlayer::raise() {
 }
 
 void MprisPlayer::quit() {
-	if (!this->canQuit()) {
+	if (!this->bCanQuit) {
 		qWarning() << "Cannot call quit() on" << this << "because canQuit is false.";
 		return;
 	}
@@ -168,7 +168,7 @@ void MprisPlayer::quit() {
 void MprisPlayer::openUri(const QString& uri) { this->player->OpenUri(uri); }
 
 void MprisPlayer::next() {
-	if (!this->canGoNext()) {
+	if (!this->bCanGoNext) {
 		qWarning() << "Cannot call next() on" << this << "because canGoNext is false.";
 		return;
 	}
@@ -177,7 +177,7 @@ void MprisPlayer::next() {
 }
 
 void MprisPlayer::previous() {
-	if (!this->canGoPrevious()) {
+	if (!this->bCanGoPrevious) {
 		qWarning() << "Cannot call previous() on" << this << "because canGoPrevious is false.";
 		return;
 	}
@@ -186,7 +186,7 @@ void MprisPlayer::previous() {
 }
 
 void MprisPlayer::seek(qreal offset) {
-	if (!this->canSeek()) {
+	if (!this->bCanSeek) {
 		qWarning() << "Cannot call seek() on" << this << "because canSeek is false.";
 		return;
 	}
@@ -226,7 +226,7 @@ void MprisPlayer::setPosition(qreal position) {
 		return;
 	}
 
-	if (!this->canSeek()) {
+	if (!this->bCanSeek) {
 		qWarning() << "Cannot set position of" << this << "because canSeek is false.";
 		return;
 	}
@@ -275,7 +275,7 @@ bool MprisPlayer::lengthSupported() const { return this->bInternalLength != -1; 
 bool MprisPlayer::volumeSupported() const { return this->pVolume.exists(); }
 
 void MprisPlayer::setVolume(qreal volume) {
-	if (!this->canControl()) {
+	if (!this->bCanControl) {
 		qWarning() << "Cannot set volume of" << this << "because canControl is false.";
 		return;
 	}
@@ -353,7 +353,7 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 
 	switch (playbackState) {
 	case MprisPlaybackState::Stopped:
-		if (!this->canControl()) {
+		if (!this->bCanControl) {
 			qWarning() << "Cannot set playbackState of" << this
 			           << "to Stopped because canControl is false.";
 			return;
@@ -362,7 +362,7 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 		this->player->Stop();
 		break;
 	case MprisPlaybackState::Playing:
-		if (!this->canPlay()) {
+		if (!this->bCanPlay) {
 			qWarning() << "Cannot set playbackState of" << this << "to Playing because canPlay is false.";
 			return;
 		}
@@ -370,7 +370,7 @@ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
 		this->player->Play();
 		break;
 	case MprisPlaybackState::Paused:
-		if (!this->canPause()) {
+		if (!this->bCanPause) {
 			qWarning() << "Cannot set playbackState of" << this << "to Paused because canPause is false.";
 			return;
 		}
@@ -420,7 +420,7 @@ void MprisPlayer::onPlaybackStatusUpdated() {
 bool MprisPlayer::loopSupported() const { return this->pLoopStatus.exists(); }
 
 void MprisPlayer::setLoopState(MprisLoopState::Enum loopState) {
-	if (!this->canControl()) {
+	if (!this->bCanControl) {
 		qWarning() << "Cannot set loopState of" << this << "because canControl is false.";
 		return;
 	}
@@ -468,7 +468,7 @@ void MprisPlayer::setShuffle(bool shuffle) {
 		return;
 	}
 
-	if (!this->canControl()) {
+	if (!this->bCanControl) {
 		qWarning() << "Cannot set shuffle state of" << this << "because canControl is false.";
 		return;
 	}
@@ -478,7 +478,7 @@ void MprisPlayer::setShuffle(bool shuffle) {
 }
 
 void MprisPlayer::setFullscreen(bool fullscreen) {
-	if (!this->canSetFullscreen()) {
+	if (!this->bCanSetFullscreen) {
 		qWarning() << "Cannot set fullscreen for" << this << "because canSetFullscreen is false.";
 		return;
 	}
