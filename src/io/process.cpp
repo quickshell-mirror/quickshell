@@ -13,6 +13,7 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../core/common.hpp"
 #include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
@@ -223,26 +224,24 @@ void Process::setupEnvironment(QProcess* process) {
 		process->setWorkingDirectory(this->mWorkingDirectory);
 	}
 
-	if (!this->mEnvironment.isEmpty() || this->mClearEnvironment) {
-		auto sysenv = QProcessEnvironment::systemEnvironment();
-		auto env = this->mClearEnvironment ? QProcessEnvironment() : sysenv;
+	const auto& sysenv = qs::Common::INITIAL_ENVIRONMENT;
+	auto env = this->mClearEnvironment ? QProcessEnvironment() : sysenv;
 
-		for (auto& name: this->mEnvironment.keys()) {
-			auto value = this->mEnvironment.value(name);
-			if (!value.isValid()) continue;
+	for (auto& name: this->mEnvironment.keys()) {
+		auto value = this->mEnvironment.value(name);
+		if (!value.isValid()) continue;
 
-			if (this->mClearEnvironment) {
-				if (value.isNull()) {
-					if (sysenv.contains(name)) env.insert(name, sysenv.value(name));
-				} else env.insert(name, value.toString());
-			} else {
-				if (value.isNull()) env.remove(name);
-				else env.insert(name, value.toString());
-			}
+		if (this->mClearEnvironment) {
+			if (value.isNull()) {
+				if (sysenv.contains(name)) env.insert(name, sysenv.value(name));
+			} else env.insert(name, value.toString());
+		} else {
+			if (value.isNull()) env.remove(name);
+			else env.insert(name, value.toString());
 		}
-
-		process->setProcessEnvironment(env);
 	}
+
+	process->setProcessEnvironment(env);
 }
 
 void Process::onStarted() {

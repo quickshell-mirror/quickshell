@@ -9,6 +9,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qnamespace.h>
+#include <qprocess.h>
 #include <qqmldebug.h>
 #include <qquickwindow.h>
 #include <qstring.h>
@@ -150,6 +151,8 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	QsPaths::instance()->linkRunDir();
 	QsPaths::instance()->linkPathDir();
 	LogManager::initFs();
+
+	Common::INITIAL_ENVIRONMENT = QProcessEnvironment::systemEnvironment();
 
 	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
 		qputenv(var.toUtf8(), val.toUtf8());
