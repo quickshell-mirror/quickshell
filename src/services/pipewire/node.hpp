@@ -97,18 +97,18 @@ public:
 	enum Enum : quint8 {
 		// A Pipewire node which is not being managed.
 		Untracked = 0x1,
-		// This flag is set when this node is an Audio node
+		// This flag is set when this node is an Audio node.
 		Audio = 0x2,
-		// This flag is set when this node is an Video node
+		// This flag is set when this node is an Video node.
 		Video = 0x4,
-		// This flag is set when this node is a stream node
+		// This flag is set when this node is a stream node.
 		Stream = 0x8,
 		// This flag is set when this node is producing some form of data,
-		// such as a microphone, screenshare or webcam
+		// such as a microphone, screenshare or webcam.
 		Source = 0x10,
-		// This flag is set when this node is receiving data
+		// This flag is set when this node is receiving data.
 		Sink = 0x20,
-		// A a sink for audio samples, like an audio card.
+		// A sink for audio samples, like an audio card.
 		AudioSink = Audio | Sink,
 		// A source of audio samples like a microphone.
 		AudioSource = Audio | Source,
@@ -118,9 +118,9 @@ public:
 		AudioOutStream = Audio | Sink | Stream,
 		// A capture stream.
 		AudioInStream = Audio | Source | Stream,
-		// A producer of video, like a webcam or a screenshare
+		// A producer of video, like a webcam or a screenshare.
 		VideoSource = Video | Source,
-		// A consumer of video, such as a program that is recieving a video stream
+		// A consumer of video, such as a program that is recieving a video stream.
 		VideoSink = Video | Sink,
 	};
 	Q_ENUM(Enum);
