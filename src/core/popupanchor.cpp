@@ -7,6 +7,7 @@
 #include <qquickitem.h>
 #include <qsize.h>
 #include <qtmetamacros.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
@@ -126,12 +127,21 @@ void PopupAnchor::setRect(Box rect) {
 	this->mUserRect = rect;
 	emit this->rectChanged();
 
-	this->setWindowRect(rect);
+	this->setWindowRect(rect.qrect().marginsRemoved(this->mMargins.qmargins()));
 }
 
-void PopupAnchor::setWindowRect(Box rect) {
-	if (rect.w <= 0) rect.w = 1;
-	if (rect.h <= 0) rect.h = 1;
+void PopupAnchor::setMargins(Margins margins) {
+	if (margins == this->mMargins) return;
+
+	this->mMargins = margins;
+	emit this->marginsChanged();
+
+	this->setWindowRect(this->mUserRect.qrect().marginsRemoved(margins.qmargins()));
+}
+
+void PopupAnchor::setWindowRect(QRect rect) {
+	if (rect.width() <= 0) rect.setWidth(1);
+	if (rect.height() <= 0) rect.setHeight(1);
 	if (rect == this->state.rect) return;
 
 	this->state.rect = rect;
@@ -177,12 +187,14 @@ void PopupAnchor::updatePlacement(const QPoint& anchorpoint, const QSize& size) 
 
 void PopupAnchor::updateAnchor() {
 	if (this->mItem && this->mProxyWindow) {
-		auto rect = this->mProxyWindow->contentItem()->mapRectFromItem(
+		auto baseRect =
+		    this->mUserRect.isEmpty() ? this->mItem->boundingRect() : this->mUserRect.qrect();
+		auto rect = this->mProxyWindow->contentItem()->mapFromItem(
 		    this->mItem,
-		    this->mUserRect.isEmpty() ? this->mItem->boundingRect() : this->mUserRect.qrect()
+		    baseRect.marginsRemoved(this->mMargins.qmargins())
 		);
 
-		this->setWindowRect(rect);
+		this->setWindowRect(rect.toRect());
 	}
 
 	emit this->anchoring();
@@ -207,7 +219,7 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 
 	auto adjustment = anchor->adjustment();
 	auto screenGeometry = parentWindow->screen()->geometry();
-	auto anchorRectGeometry = anchor->windowRect().qrect().translated(parentGeometry.topLeft());
+	auto anchorRectGeometry = anchor->windowRect().translated(parentGeometry.topLeft());
 
 	auto anchorEdges = anchor->edges();
 	auto anchorGravity = anchor->gravity();

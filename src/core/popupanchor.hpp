@@ -12,6 +12,8 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
@@ -61,7 +63,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(PopupAdjustment::Flags);
 struct PopupAnchorState {
 	bool operator==(const PopupAnchorState& other) const;
 
-	Box rect = {0, 0, 1, 1};
+	QRect rect = {0, 0, 1, 1};
 	Edges::Flags edges = Edges::Top | Edges::Left;
 	Edges::Flags gravity = Edges::Bottom | Edges::Right;
 	PopupAdjustment::Flags adjustment = PopupAdjustment::Slide;
@@ -90,12 +92,19 @@ class PopupAnchor: public QObject {
 	/// The anchorpoints the popup will attach to, relative to @@item or @@window.
 	/// Which anchors will be used is determined by the @@edges, @@gravity, and @@adjustment.
 	///
+	/// If using @@item, the default anchor rectangle matches the dimensions of the item.
+	///
 	/// If you leave @@edges, @@gravity and @@adjustment at their default values,
 	/// setting more than `x` and `y` does not matter. The anchor rect cannot
 	/// be smaller than 1x1 pixels.
 	///
 	/// [coordinate mapping functions]: https://doc.qt.io/qt-6/qml-qtquick-item.html#mapFromItem-method
 	Q_PROPERTY(Box rect READ rect WRITE setRect RESET resetRect NOTIFY rectChanged);
+	/// A margin applied to the anchor rect.
+	///
+	/// This is most useful when @@item is used and @@rect is left at its default
+	/// value (matching the Item's dimensions).
+	Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
 	/// The point on the anchor rectangle the popup should anchor to.
 	/// Opposing edges suchs as `Edges.Left | Edges.Right` are not allowed.
 	///
@@ -138,12 +147,15 @@ public:
 	[[nodiscard]] QQuickItem* item() const { return this->mItem; }
 	void setItem(QQuickItem* item);
 
-	[[nodiscard]] Box windowRect() const { return this->state.rect; }
-	void setWindowRect(Box rect);
+	[[nodiscard]] QRect windowRect() const { return this->state.rect; }
+	void setWindowRect(QRect rect);
 
 	[[nodiscard]] Box rect() const { return this->mUserRect; }
 	void setRect(Box rect);
 	void resetRect();
+
+	[[nodiscard]] Margins margins() const { return this->mMargins; }
+	void setMargins(Margins margins);
 
 	[[nodiscard]] Edges::Flags edges() const { return this->state.edges; }
 	void setEdges(Edges::Flags edges);
@@ -168,6 +180,7 @@ signals:
 	QSDOC_HIDE void backingWindowVisibilityChanged();
 	QSDOC_HIDE void windowRectChanged();
 	void rectChanged();
+	void marginsChanged();
 	void edgesChanged();
 	void gravityChanged();
 	void adjustmentChanged();
@@ -183,6 +196,7 @@ private:
 	ProxyWindowBase* mProxyWindow = nullptr;
 	PopupAnchorState state;
 	Box mUserRect;
+	Margins mMargins;
 	std::optional<PopupAnchorState> lastState;
 };
 

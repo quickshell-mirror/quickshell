@@ -46,13 +46,11 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 		auto anchorRect = anchor->windowRect();
 
 		if (auto* p = window->transientParent()) {
-			anchorRect.x = QHighDpi::toNativePixels(anchorRect.x, p);
-			anchorRect.y = QHighDpi::toNativePixels(anchorRect.y, p);
-			anchorRect.w = QHighDpi::toNativePixels(anchorRect.w, p);
-			anchorRect.h = QHighDpi::toNativePixels(anchorRect.h, p);
+			anchorRect = QHighDpi::toNativePixels(anchorRect, p);
 		}
 
-		positioner.set_anchor_rect(anchorRect.x, anchorRect.y, anchorRect.w, anchorRect.h);
+		positioner
+		    .set_anchor_rect(anchorRect.x(), anchorRect.y(), anchorRect.width(), anchorRect.height());
 
 		XdgPositioner::anchor anchorFlag = XdgPositioner::anchor_none;
 		switch (anchor->edges()) {
@@ -107,15 +105,12 @@ void WaylandPopupPositioner::setFlags(PopupAnchor* anchor, QWindow* window) {
 	auto anchorRect = anchor->windowRect();
 
 	if (auto* p = window->transientParent()) {
-		anchorRect.x = QHighDpi::toNativePixels(anchorRect.x, p);
-		anchorRect.y = QHighDpi::toNativePixels(anchorRect.y, p);
-		anchorRect.w = QHighDpi::toNativePixels(anchorRect.w, p);
-		anchorRect.h = QHighDpi::toNativePixels(anchorRect.h, p);
+		anchorRect = QHighDpi::toNativePixels(anchorRect, p);
 	}
 
 	// clang-format off
 	window->setProperty("_q_waylandPopupConstraintAdjustment", anchor->adjustment().toInt());
-	window->setProperty("_q_waylandPopupAnchorRect", anchorRect.qrect());
+	window->setProperty("_q_waylandPopupAnchorRect", anchorRect);
 	window->setProperty("_q_waylandPopupAnchor", QVariant::fromValue(Edges::toQt(anchor->edges())));
 	window->setProperty("_q_waylandPopupGravity", QVariant::fromValue(Edges::toQt(anchor->gravity())));
 	// clang-format on
