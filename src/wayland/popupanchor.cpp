@@ -4,7 +4,6 @@
 #include <private/qwayland-xdg-shell.h>
 #include <private/qwaylandwindow_p.h>
 #include <private/wayland-xdg-shell-client-protocol.h>
-#include <qtmetamacros.h>
 #include <qvariant.h>
 #include <qwindow.h>
 
@@ -21,7 +20,7 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 	auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle());
 	auto* popupRole = waylandWindow ? waylandWindow->surfaceRole<::xdg_popup>() : nullptr;
 
-	emit anchor->anchoring();
+	anchor->updateAnchor();
 
 	// If a popup becomes invisble after creation ensure the _q properties will
 	// be set and not ignored because the rest is the same.
@@ -44,7 +43,7 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 
 		positioner.set_constraint_adjustment(anchor->adjustment().toInt());
 
-		auto anchorRect = anchor->rect();
+		auto anchorRect = anchor->windowRect();
 
 		if (auto* p = window->transientParent()) {
 			anchorRect.x = QHighDpi::toNativePixels(anchorRect.x, p);
@@ -104,8 +103,8 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 bool WaylandPopupPositioner::shouldRepositionOnMove() const { return true; }
 
 void WaylandPopupPositioner::setFlags(PopupAnchor* anchor, QWindow* window) {
-	emit anchor->anchoring();
-	auto anchorRect = anchor->rect();
+	anchor->updateAnchor();
+	auto anchorRect = anchor->windowRect();
 
 	if (auto* p = window->transientParent()) {
 		anchorRect.x = QHighDpi::toNativePixels(anchorRect.x, p);

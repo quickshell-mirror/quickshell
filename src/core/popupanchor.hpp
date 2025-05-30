@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qpoint.h>
 #include <qqmlintegration.h>
+#include <qquickitem.h>
 #include <qsize.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
@@ -72,25 +73,29 @@ struct PopupAnchorState {
 class PopupAnchor: public QObject {
 	Q_OBJECT;
 	// clang-format off
-	/// The window to anchor / attach the popup to.
+	/// The window to anchor / attach the popup to. Setting this property unsets @@item.
 	Q_PROPERTY(QObject* window READ window WRITE setWindow NOTIFY windowChanged);
-	/// The anchorpoints the popup will attach to. Which anchors will be used is
-	/// determined by the @@edges, @@gravity, and @@adjustment.
+	/// The item to anchor / attach the popup to. Setting this property unsets @@window.
+	///
+	/// The popup's position relative to its parent window is only calculated when it is
+	/// initially shown (directly before @@anchoring(s) is emitted), meaning its anchor
+	/// rectangle will be set relative to the item's position in the window at that time.
+	/// @@updateAnchor() can be called to update the anchor rectangle if the item's position
+	/// has changed.
+	///
+	/// > [!NOTE] If a more flexible way to position a popup relative to an item is needed,
+	/// > set @@window to the item's parent window, and handle the @@anchoring signal to
+	/// > position the popup relative to the window's contentItem.
+	Q_PROPERTY(QQuickItem* item READ item WRITE setItem NOTIFY itemChanged);
+	/// The anchorpoints the popup will attach to, relative to @@item or @@window.
+	/// Which anchors will be used is determined by the @@edges, @@gravity, and @@adjustment.
 	///
 	/// If you leave @@edges, @@gravity and @@adjustment at their default values,
 	/// setting more than `x` and `y` does not matter. The anchor rect cannot
 	/// be smaller than 1x1 pixels.
 	///
-	/// > [!INFO] To position a popup relative to an item inside a window,
-	/// > you can use [coordinate mapping functions] (note the warning below).
-	///
-	/// > [!WARNING] Using [coordinate mapping functions] in a binding to
-	/// > this property will position the anchor incorrectly.
-	/// > If you want to use them, do so in @@anchoring(s), or use
-	/// > @@TransformWatcher if you need real-time updates to mapped coordinates.
-	///
 	/// [coordinate mapping functions]: https://doc.qt.io/qt-6/qml-qtquick-item.html#mapFromItem-method
-	Q_PROPERTY(Box rect READ rect WRITE setRect NOTIFY rectChanged);
+	Q_PROPERTY(Box rect READ rect WRITE setRect RESET resetRect NOTIFY rectChanged);
 	/// The point on the anchor rectangle the popup should anchor to.
 	/// Opposing edges suchs as `Edges.Left | Edges.Right` are not allowed.
 	///
@@ -113,25 +118,40 @@ class PopupAnchor: public QObject {
 public:
 	explicit PopupAnchor(QObject* parent): QObject(parent) {}
 
+	/// Update the popup's anchor rect relative to its parent window.
+	///
+	/// If anchored to an item, popups anchors will not automatically follow
+	/// the item if its position changes. This function can be called to
+	/// recalculate the anchors.
+	Q_INVOKABLE void updateAnchor();
+
 	[[nodiscard]] bool isDirty() const;
 	void markClean();
 	void markDirty();
 
-	[[nodiscard]] QObject* window() const;
-	[[nodiscard]] ProxyWindowBase* proxyWindow() const;
+	[[nodiscard]] QObject* window() const { return this->mWindow; }
+	[[nodiscard]] ProxyWindowBase* proxyWindow() const { return this->mProxyWindow; }
 	[[nodiscard]] QWindow* backingWindow() const;
+	void setWindowInternal(QObject* window);
 	void setWindow(QObject* window);
 
-	[[nodiscard]] Box rect() const;
-	void setRect(Box rect);
+	[[nodiscard]] QQuickItem* item() const { return this->mItem; }
+	void setItem(QQuickItem* item);
 
-	[[nodiscard]] Edges::Flags edges() const;
+	[[nodiscard]] Box windowRect() const { return this->state.rect; }
+	void setWindowRect(Box rect);
+
+	[[nodiscard]] Box rect() const { return this->mUserRect; }
+	void setRect(Box rect);
+	void resetRect();
+
+	[[nodiscard]] Edges::Flags edges() const { return this->state.edges; }
 	void setEdges(Edges::Flags edges);
 
-	[[nodiscard]] Edges::Flags gravity() const;
+	[[nodiscard]] Edges::Flags gravity() const { return this->state.gravity; }
 	void setGravity(Edges::Flags gravity);
 
-	[[nodiscard]] PopupAdjustment::Flags adjustment() const;
+	[[nodiscard]] PopupAdjustment::Flags adjustment() const { return this->state.adjustment; }
 	void setAdjustment(PopupAdjustment::Flags adjustment);
 
 	void updatePlacement(const QPoint& anchorpoint, const QSize& size);
@@ -144,7 +164,9 @@ signals:
 	void anchoring();
 
 	void windowChanged();
+	void itemChanged();
 	QSDOC_HIDE void backingWindowVisibilityChanged();
+	QSDOC_HIDE void windowRectChanged();
 	void rectChanged();
 	void edgesChanged();
 	void gravityChanged();
@@ -152,11 +174,15 @@ signals:
 
 private slots:
 	void onWindowDestroyed();
+	void onItemDestroyed();
+	void onItemWindowChanged();
 
 private:
 	QObject* mWindow = nullptr;
+	QQuickItem* mItem = nullptr;
 	ProxyWindowBase* mProxyWindow = nullptr;
 	PopupAnchorState state;
+	Box mUserRect;
 	std::optional<PopupAnchorState> lastState;
 };
 

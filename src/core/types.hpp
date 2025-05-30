@@ -44,6 +44,7 @@ public:
 	qint32 h = 0;
 
 	[[nodiscard]] QRect qrect() const;
+	[[nodiscard]] bool isEmpty() const { return this->w == 0 && this->h == 0; }
 };
 
 QDebug operator<<(QDebug debug, const Box& box);

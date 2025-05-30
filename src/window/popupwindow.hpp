@@ -57,8 +57,8 @@ class ProxyPopupWindow: public ProxyWindowBase {
 	///
 	/// The Y position of the popup relative to the parent window.
 	Q_PROPERTY(qint32 relativeY READ relativeY WRITE setRelativeY NOTIFY relativeYChanged);
-	/// The popup's anchor / positioner relative to another window. The popup will not be
-	/// shown until it has a valid anchor relative to a window and @@visible is true.
+	/// The popup's anchor / positioner relative to another item or window. The popup will
+	/// not be shown until it has a valid anchor relative to a window and @@visible is true.
 	///
 	/// You can set properties of the anchor like so:
 	/// ```qml

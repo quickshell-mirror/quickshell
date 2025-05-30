@@ -14,7 +14,7 @@ ProxyPopupWindow::ProxyPopupWindow(QObject* parent): ProxyWindowBase(parent) {
 	this->mVisible = false;
 	// clang-format off
 	QObject::connect(&this->mAnchor, &PopupAnchor::windowChanged, this, &ProxyPopupWindow::parentWindowChanged);
-	QObject::connect(&this->mAnchor, &PopupAnchor::rectChanged, this, &ProxyPopupWindow::reposition);
+	QObject::connect(&this->mAnchor, &PopupAnchor::windowRectChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::edgesChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::gravityChanged, this, &ProxyPopupWindow::reposition);
 	QObject::connect(&this->mAnchor, &PopupAnchor::adjustmentChanged, this, &ProxyPopupWindow::reposition);
