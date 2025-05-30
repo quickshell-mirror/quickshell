@@ -4,8 +4,10 @@
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qguiapplication.h>
+#include <qlogging.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
@@ -461,12 +463,71 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
 void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
 
+QPointF ProxyWindowBase::itemPosition(QQuickItem* item) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, 0, 0);
+}
+
+QRectF ProxyWindowBase::itemRect(QQuickItem* item) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, item->boundingRect());
+}
+
+QPointF ProxyWindowBase::mapFromItem(QQuickItem* item, QPointF point) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, point);
+}
+
+QPointF ProxyWindowBase::mapFromItem(QQuickItem* item, qreal x, qreal y) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, x, y);
+}
+
+QRectF ProxyWindowBase::mapFromItem(QQuickItem* item, QRectF rect) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, rect);
+}
+
+QRectF
+ProxyWindowBase::mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, x, y, width, height);
+}
+
 ProxyWindowAttached::ProxyWindowAttached(QQuickItem* parent): QsWindowAttached(parent) {
 	this->updateWindow();
 }
 
-QObject* ProxyWindowAttached::window() const { return this->mWindow; }
-QQuickItem* ProxyWindowAttached::contentItem() const { return this->mWindow->contentItem(); }
+QObject* ProxyWindowAttached::window() const { return this->mWindowInterface; }
+ProxyWindowBase* ProxyWindowAttached::proxyWindow() const { return this->mWindow; }
+
+QQuickItem* ProxyWindowAttached::contentItem() const {
+	return this->mWindow ? this->mWindow->contentItem() : nullptr;
+}
 
 void ProxyWindowAttached::updateWindow() {
 	auto* window = static_cast<QQuickItem*>(this->parent())->window(); // NOLINT
@@ -481,6 +542,7 @@ void ProxyWindowAttached::updateWindow() {
 void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 	if (window == this->mWindow) return;
 	this->mWindow = window;
+	this->mWindowInterface = window ? qobject_cast<WindowInterface*>(window->parent()) : nullptr;
 	emit this->windowChanged();
 }
 

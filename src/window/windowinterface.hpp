@@ -42,6 +42,9 @@ public:
 /// It provides the following properties
 /// - `window` - the `QSWindow` object.
 /// - `contentItem` - the `contentItem` property of the window.
+///
+/// @@itemPosition(), @@itemRect(), and @@mapFromItem() can also be called directly
+/// on the attached object.
 class WindowInterface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
@@ -150,6 +153,49 @@ class WindowInterface: public Reloadable {
 public:
 	explicit WindowInterface(QObject* parent = nullptr): Reloadable(parent) {}
 
+	/// Returns the given Item's position relative to the window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, 0, 0)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	/// Returns the given Item's geometry relative to the window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, 0, 0, 0, 0)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	/// Maps the given point in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, point)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	/// Maps the given point in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, x, y)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	/// Maps the given rect in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, rect)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+	// clang-format off
+	/// Maps the given rect in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, x, y, width, height)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
+	// clang-format on
+
 	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
 
@@ -213,7 +259,17 @@ class QsWindowAttached: public QObject {
 
 public:
 	[[nodiscard]] virtual QObject* window() const = 0;
+	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
+
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+
+	Q_INVOKABLE [[nodiscard]] QRectF
+	mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
 
 signals:
 	void windowChanged();

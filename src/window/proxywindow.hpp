@@ -5,6 +5,7 @@
 #include <qevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
 #include <qproperty.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
@@ -13,6 +14,8 @@
 #include <qsurfaceformat.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../core/qmlscreen.hpp"
@@ -66,6 +69,14 @@ public:
 	ProxyWindowBase(ProxyWindowBase&&) = delete;
 	void operator=(ProxyWindowBase&) = delete;
 	void operator=(ProxyWindowBase&&) = delete;
+
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+	Q_INVOKABLE [[nodiscard]] QRectF
+	mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
 
 	void onReload(QObject* oldInstance) override;
 	void ensureQWindow();
@@ -201,6 +212,7 @@ public:
 	explicit ProxyWindowAttached(QQuickItem* parent);
 
 	[[nodiscard]] QObject* window() const override;
+	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
 	[[nodiscard]] QQuickItem* contentItem() const override;
 
 protected:
@@ -208,6 +220,7 @@ protected:
 
 private:
 	ProxyWindowBase* mWindow = nullptr;
+	WindowInterface* mWindowInterface = nullptr;
 
 	void setWindow(ProxyWindowBase* window);
 };
