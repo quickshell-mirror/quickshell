@@ -86,7 +86,7 @@ QString PwAudioChannel::toString(Enum value) {
 	}
 }
 
-QString PwNodeType::toString(PwNodeType::Enum type) {
+QString PwNodeType::toString(PwNodeType::Flags type) {
 	switch (type) {
 	case PwNodeType::VideoSource: return QStringLiteral("VideoSource");
 	case PwNodeType::VideoSink: return QStringLiteral("VideoSink");
@@ -134,6 +134,8 @@ void PwNode::initProps(const spa_dict* props) {
 			this->type = PwNodeType::AudioSink;
 		} else if (strcmp(mediaClass, "Audio/Source") == 0) {
 			this->type = PwNodeType::AudioSource;
+		} else if (strcmp(mediaClass, "Audio/Duplex") == 0) {
+			this->type = PwNodeType::AudioDuplex;
 		} else if (strcmp(mediaClass, "Stream/Output/Audio") == 0) {
 			this->type = PwNodeType::AudioOutStream;
 		} else if (strcmp(mediaClass, "Stream/Input/Audio") == 0) {
@@ -175,7 +177,7 @@ void PwNode::initProps(const spa_dict* props) {
 		}
 	}
 
-	if (this->type & PwNodeType::Audio) {
+	if (this->type.testFlags(PwNodeType::Audio)) {
 		this->boundData = new PwNodeBoundAudio(this);
 	}
 }

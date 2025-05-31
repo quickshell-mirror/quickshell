@@ -4,6 +4,7 @@
 #include <pipewire/node.h>
 #include <pipewire/type.h>
 #include <qcontainerfwd.h>
+#include <qflags.h>
 #include <qmap.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
@@ -94,39 +95,46 @@ class PwNodeType: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum : quint8 {
+	enum Flag : quint8 {
 		// A Pipewire node which is not being managed.
-		Untracked = 0x1,
+		Untracked = 0b0,
 		// This flag is set when this node is an Audio node.
-		Audio = 0x2,
+		Audio = 0b1,
 		// This flag is set when this node is an Video node.
-		Video = 0x4,
+		Video = 0b10,
 		// This flag is set when this node is a stream node.
-		Stream = 0x8,
+		Stream = 0b100,
 		// This flag is set when this node is producing some form of data,
 		// such as a microphone, screenshare or webcam.
-		Source = 0x10,
+		Source = 0b1000,
 		// This flag is set when this node is receiving data.
-		Sink = 0x20,
-		// A sink for audio samples, like an audio card.
+		Sink = 0b10000,
+		// A sink for audio samples, like an audio card. This is equivalent to
+		// the media class `Video/Source`.
 		AudioSink = Audio | Sink,
-		// A source of audio samples like a microphone.
+		// A source of audio samples like a microphone. This is quivalent to
+		// the media class `Video/Sink`.
 		AudioSource = Audio | Source,
-		// A node that is both a sink and a source.
+		// A node that is both a sink and a source. This is equivalent to the
+		// media class `Audio/Duplex`.
 		AudioDuplex = Audio | Sink | Source,
-		// A playback stream.
+		// A playback stream. This is equivalent to the media class `Stream/Output/Audio`.
 		AudioOutStream = Audio | Sink | Stream,
-		// A capture stream.
+		// A capture stream. This is equivalent to the media class `Stream/Input/Audio`.
 		AudioInStream = Audio | Source | Stream,
-		// A producer of video, like a webcam or a screenshare.
+		// A producer of video, like a webcam or a screenshare. This is
+		// equivalent to the media class `Video/Source`.
 		VideoSource = Video | Source,
 		// A consumer of video, such as a program that is recieving a video stream.
+		// This is equivalent to the media class `Video/Sink`.
 		VideoSink = Video | Sink,
 	};
-	Q_ENUM(Enum);
-	Q_DECLARE_FLAGS(Options, Enum)
-	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Enum type);
+	Q_ENUM(Flag)
+	Q_DECLARE_FLAGS(Flags, Flag)
+	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Flags type);
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(PwNodeType::Flags)
 
 class PwNode;
 
@@ -205,7 +213,8 @@ public:
 	QString nick;
 	QMap<QString, QString> properties;
 
-	PwNodeType::Enum type = PwNodeType::Untracked;
+	PwNodeType::Flags type = PwNodeType::Untracked;
+
 	bool ready = false;
 
 	PwNodeBoundData* boundData = nullptr;
