@@ -110,23 +110,30 @@ public:
 		// This flag is set when this node is receiving data.
 		Sink = 0b10000,
 		// A sink for audio samples, like an audio card. This is equivalent to
-		// the media class `Video/Source`.
+		// the media class `Video/Source` and is composed of the
+		// @@PwNodeType.Audio and @@PwNodeType.Sink flags.
 		AudioSink = Audio | Sink,
 		// A source of audio samples like a microphone. This is quivalent to
-		// the media class `Video/Sink`.
+		// the media class `Video/Sink` and is composed of the
+		// @@PwNodeType.Audio and @@PwNodeType.Source flags.
 		AudioSource = Audio | Source,
 		// A node that is both a sink and a source. This is equivalent to the
-		// media class `Audio/Duplex`.
+		// media class `Audio/Duplex` and is composed of the
+		// @@PwNodeType.Audio, @@PwNodeType.Source and @@PwNodeType.Sink flags.
 		AudioDuplex = Audio | Sink | Source,
-		// A playback stream. This is equivalent to the media class `Stream/Output/Audio`.
+		// A playback stream. This is equivalent to the media class `Stream/Output/Audio`
+		// and is composed of the @@PwNodeType.Audio, @@PwNodeType.Sink and @@PwNodeType.Stream flags.
 		AudioOutStream = Audio | Sink | Stream,
-		// A capture stream. This is equivalent to the media class `Stream/Input/Audio`.
+		// A capture stream. This is equivalent to the media class `Stream/Input/Audio`
+		// and is composed of the @@PwNodeType.Audio, @@PwNodeType.Source and @@PwNodeType.Stream flags.
 		AudioInStream = Audio | Source | Stream,
 		// A producer of video, like a webcam or a screenshare. This is
-		// equivalent to the media class `Video/Source`.
+		// equivalent to the media class `Video/Source` and is composed of the
+		// @@PwNodeType.Video and @@PwNodeType.Source flags.
 		VideoSource = Video | Source,
 		// A consumer of video, such as a program that is recieving a video stream.
-		// This is equivalent to the media class `Video/Sink`.
+		// This is equivalent to the media class `Video/Sink` and is composed of the
+		// @@PwNodeType.Video and @@PwNodeType.Sink flags.
 		VideoSink = Video | Sink,
 	};
 	Q_ENUM(Flag)
