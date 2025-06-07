@@ -79,7 +79,7 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 		if (this->bOverrides.value().testFlag(ImplicitHeight)) {
 			return this->bImplicitHeightOverride.value();
 		} else {
-			return this->bChildImplicitHeight.value() + this->bLeftMargin + this->bRightMargin;
+			return this->bChildImplicitHeight.value() + this->bTopMargin + this->bBottomMargin;
 		}
 	});
 }
