@@ -146,7 +146,7 @@ void PwDefaultTracker::onNodeDestroyed(QObject* node) {
 
 void PwDefaultTracker::changeConfiguredSink(PwNode* node) {
 	if (node != nullptr) {
-		if (!node->isSink) {
+		if (!node->type.testFlags(PwNodeType::AudioSink)) {
 			qCCritical(logDefaults) << "Cannot change default sink to a node that is not a sink.";
 			return;
 		}
@@ -168,7 +168,7 @@ void PwDefaultTracker::changeConfiguredSinkName(const QString& sink) {
 
 void PwDefaultTracker::changeConfiguredSource(PwNode* node) {
 	if (node != nullptr) {
-		if (node->isSink) {
+		if (!node->type.testFlags(PwNodeType::AudioSource)) {
 			qCCritical(logDefaults) << "Cannot change default source to a node that is not a source.";
 			return;
 		}

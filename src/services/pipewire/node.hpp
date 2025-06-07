@@ -4,6 +4,7 @@
 #include <pipewire/node.h>
 #include <pipewire/type.h>
 #include <qcontainerfwd.h>
+#include <qflags.h>
 #include <qmap.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
@@ -86,11 +87,70 @@ public:
 	/// including aux and custom channel ranges.
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwAudioChannel::Enum value);
 };
+///! The type of a pipewire node.
+/// Use bitwise comparisons to filter for audio, video, sink, source or stream nodes
+class PwNodeType: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
 
-enum class PwNodeType : quint8 {
-	Untracked,
-	Audio,
+public:
+	enum Flag : quint8 {
+		// A Pipewire node which is not being managed.
+		Untracked = 0b0,
+		// This flag is set when this node is an Audio node.
+		Audio = 0b1,
+		// This flag is set when this node is an Video node.
+		Video = 0b10,
+		// This flag is set when this node is a stream node.
+		Stream = 0b100,
+		// This flag is set when this node is producing some form of data,
+		// such as a microphone, screenshare or webcam.
+		Source = 0b1000,
+		// This flag is set when this node is receiving data.
+		Sink = 0b10000,
+		// A sink for audio samples, like an audio card.
+		//
+		// This is equivalent to the media class `Video/Source` and is
+		// composed of the @@PwNodeType.Audio and @@PwNodeType.Sink flags.
+		AudioSink = Audio | Sink,
+		// A source of audio samples like a microphone.
+		//
+		// This is quivalent to the media class `Video/Sink` and is composed
+		// of the @@PwNodeType.Audio and @@PwNodeType.Source flags.
+		AudioSource = Audio | Source,
+		// A node that is both a sink and a source.
+		//
+		// This is equivalent to the media class `Audio/Duplex` and is composed of the
+		// @@PwNodeType.Audio, @@PwNodeType.Source and @@PwNodeType.Sink flags.
+		AudioDuplex = Audio | Sink | Source,
+		// A playback stream.
+		//
+		// This is equivalent to the media class `Stream/Output/Audio` and is composed
+		// of the @@PwNodeType.Audio, @@PwNodeType.Sink and @@PwNodeType.Stream flags.
+		AudioOutStream = Audio | Sink | Stream,
+		// A capture stream.
+		//
+		// This is equivalent to the media class `Stream/Input/Audio` and is composed
+		// of the @@PwNodeType.Audio, @@PwNodeType.Source and @@PwNodeType.Stream flags.
+		AudioInStream = Audio | Source | Stream,
+		// A producer of video, like a webcam or a screenshare.
+		//
+		// This is equivalent to the media class `Video/Source` and is composed
+		// of the @@PwNodeType.Video and @@PwNodeType.Source flags.
+		VideoSource = Video | Source,
+		// A consumer of video, such as a program that is recieving a video stream.
+		//
+		// This is equivalent to the media class `Video/Sink` and is composed of the
+		// @@PwNodeType.Video and @@PwNodeType.Sink flags.
+		VideoSink = Video | Sink,
+	};
+	Q_ENUM(Flag)
+	Q_DECLARE_FLAGS(Flags, Flag)
+	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Flags type);
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(PwNodeType::Flags)
 
 class PwNode;
 
@@ -169,9 +229,8 @@ public:
 	QString nick;
 	QMap<QString, QString> properties;
 
-	PwNodeType type = PwNodeType::Untracked;
-	bool isSink = false;
-	bool isStream = false;
+	PwNodeType::Flags type = PwNodeType::Untracked;
+
 	bool ready = false;
 
 	PwNodeBoundData* boundData = nullptr;
