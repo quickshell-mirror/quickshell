@@ -192,7 +192,7 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 		}
 	} else {
 		if (this->watcher != nullptr) {
-			delete this->watcher;
+			this->watcher->deleteLater();
 			this->watcher = nullptr;
 		}
 	}
