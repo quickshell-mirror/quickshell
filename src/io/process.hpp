@@ -22,8 +22,8 @@
 /// Process {
 ///   running: true
 ///   command: [ "some-command", "arg" ]
-///   stdout: SplitParser {
-///     onRead: data => console.log(`line read: ${data}`)
+///   stdout: @@StdioCollector {
+///     onStreamFinished: console.log(`line read: ${this.text}`)
 ///   }
 /// }
 /// ```

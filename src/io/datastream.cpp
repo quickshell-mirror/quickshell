@@ -111,3 +111,27 @@ void SplitParser::setSplitMarker(QString marker) {
 	this->mSplitMarkerChanged = true;
 	emit this->splitMarkerChanged();
 }
+
+void StdioCollector::parseBytes(QByteArray& incoming, QByteArray& buffer) {
+	buffer.append(incoming);
+
+	if (!this->mWaitForEnd) {
+		this->mData = buffer;
+		emit this->dataChanged();
+	}
+}
+
+void StdioCollector::streamEnded(QByteArray& buffer) {
+	if (this->mWaitForEnd) {
+		this->mData = buffer;
+		emit this->dataChanged();
+	}
+
+	emit this->streamFinished();
+}
+
+void StdioCollector::setWaitForEnd(bool waitForEnd) {
+	if (waitForEnd == this->mWaitForEnd) return;
+	this->mWaitForEnd = waitForEnd;
+	emit this->waitForEndChanged();
+}
