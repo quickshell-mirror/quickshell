@@ -353,7 +353,7 @@ void ThreadLogging::initFs() {
 		delete file;
 		file = nullptr;
 	} else {
-		qInfo() << "Saving logs to" << path;
+		qInfo() << "Saving logs to" << detailedPath;
 	}
 
 	// buffered by WriteBuffer
