@@ -16,6 +16,9 @@
 #include "node.hpp"
 #include "registry.hpp"
 
+// This and spa_json_init are part of json-core.h, which is missing from older pw versions.
+struct spa_json;
+
 namespace qs::service::pipewire {
 
 namespace {
@@ -72,7 +75,7 @@ void PwDefaultTracker::onMetadataProperty(const char* key, const char* type, con
 	if (type != nullptr && value != nullptr && strcmp(type, "Spa:String:JSON") == 0) {
 		auto failed = true;
 		auto iter = std::array<spa_json, 2>();
-		spa_json_init(&iter[0], value, strlen(value));
+		spa_json_init(&iter[0], value, strlen(value)); // NOLINT (misc-include-cleaner)
 
 		if (spa_json_enter_object(&iter[0], &iter[1]) > 0) {
 			auto buf = std::array<char, 1024>();

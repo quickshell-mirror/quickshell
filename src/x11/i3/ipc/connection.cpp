@@ -156,7 +156,8 @@ QVector<Event> I3Ipc::parseResponse() {
 			break;
 		}
 
-		QJsonParseError e;
+		// Importing this makes CI builds fail for some reason.
+		QJsonParseError e; // NOLINT (misc-include-cleaner)
 
 		auto data = QJsonDocument::fromJson(payload, &e);
 		if (e.error != QJsonParseError::NoError) {

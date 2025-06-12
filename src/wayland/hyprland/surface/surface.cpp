@@ -18,7 +18,6 @@ HyprlandSurface::HyprlandSurface(
     QtWaylandClient::QWaylandWindow* backer
 )
     : QtWayland::hyprland_surface_v1(surface)
-    , backer(backer)
     , backerSurface(backer->surface()) {}
 
 HyprlandSurface::~HyprlandSurface() { this->destroy(); }
