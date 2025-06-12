@@ -5,18 +5,20 @@
   keepDebugInfo,
   buildStdenv ? pkgs.clangStdenv,
 
+  pkg-config,
   cmake,
   ninja,
-  qt6,
   spirv-tools,
-  cli11,
+  qt6,
   breakpad,
   jemalloc,
+  cli11,
   wayland,
   wayland-protocols,
+  wayland-scanner,
+  xorg,
   libdrm,
   libgbm ? null,
-  xorg,
   pipewire,
   pam,
 
@@ -46,11 +48,12 @@
   version = "0.1.0";
   src = nix-gitignore.gitignoreSource "/docs\n/examples\n" ./.;
 
-  nativeBuildInputs = with pkgs; [
+  nativeBuildInputs = [
     cmake
     ninja
     qt6.qtshadertools
     spirv-tools
+    cli11
     qt6.wrapQtAppsHook
     pkg-config
   ] ++ (lib.optionals withWayland [
@@ -61,7 +64,6 @@
   buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
-    cli11
   ]
   ++ lib.optional withCrashReporter breakpad
   ++ lib.optional withJemalloc jemalloc
@@ -96,9 +98,10 @@
   dontStrip = debug;
 
   meta = with lib; {
-    homepage = "https://git.outfoxxed.me/outfoxxed/quickshell";
+    homepage = "https://quickshell.outfoxxed.me";
     description = "Flexbile QtQuick based desktop shell toolkit";
     license = licenses.lgpl3Only;
     platforms = platforms.linux;
+    mainProgram = "quickshell";
   };
 }

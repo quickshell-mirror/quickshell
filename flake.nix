@@ -4,9 +4,10 @@
   };
 
   outputs = { self, nixpkgs }: let
-    forEachSystem = fn: nixpkgs.lib.genAttrs
-      [ "x86_64-linux" "aarch64-linux" ]
-      (system: fn system nixpkgs.legacyPackages.${system});
+    forEachSystem = fn:
+      nixpkgs.lib.genAttrs
+        nixpkgs.lib.platforms.linux
+        (system: fn system nixpkgs.legacyPackages.${system});
   in {
     packages = forEachSystem (system: pkgs: rec {
       quickshell = pkgs.callPackage ./default.nix {
