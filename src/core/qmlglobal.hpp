@@ -88,7 +88,7 @@ class QuickshellGlobal: public QObject {
 	/// ShellRoot {
 	///   Variants {
 	///     // see Variants for details
-	///     variants: Quickshell.screens
+	///     model: Quickshell.screens
 	///     PanelWindow {
 	///       property var modelData
 	///       screen: modelData
