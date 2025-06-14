@@ -98,6 +98,7 @@ private:
 	Margins mMargins;
 	qint32 mExclusiveZone = 0;
 	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
+	EngineGeneration* knownGeneration = nullptr;
 
 	QRect lastScreenVirtualGeometry;
 	XPanelEventFilter eventFilter;

@@ -40,17 +40,20 @@ public:
 	}
 
 	void addPanel(XPanelWindow* panel) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(panel)];
+		panel->engineGeneration = EngineGeneration::findObjectGeneration(panel);
+		auto& panels = this->mPanels[panel->engineGeneration];
 		if (!panels.contains(panel)) {
 			panels.push_back(panel);
 		}
 	}
 
 	void removePanel(XPanelWindow* panel) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(panel)];
+		if (!panel->engineGeneration) return;
+
+		auto& panels = this->mPanels[panel->engineGeneration];
 		if (panels.removeOne(panel)) {
 			if (panels.isEmpty()) {
-				this->mPanels.erase(EngineGeneration::findObjectGeneration(panel));
+				this->mPanels.erase(panel->engineGeneration);
 			}
 
 			// from the bottom up, update all panels
@@ -61,7 +64,8 @@ public:
 	}
 
 	void updateLowerDimensions(XPanelWindow* exclude) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(exclude)];
+		if (!exclude->engineGeneration) return;
+		auto& panels = this->mPanels[exclude->engineGeneration];
 
 		// update all panels lower than the one we start from
 		auto found = false;
