@@ -104,7 +104,7 @@ class QuickshellGlobal: public QObject {
 	///
 	/// The root directory is the folder containing the entrypoint to your shell, often referred
 	/// to as `shell.qml`.
-	Q_PROPERTY(QString shellRoot READ shellRoot CONSTANT);
+	Q_PROPERTY(QString configDir READ configDir CONSTANT);
 	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
 	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
 	/// If true then the configuration will be reloaded whenever any files change.
@@ -167,6 +167,8 @@ public:
 	/// Setting the `fallback` parameter of `iconPath` will attempt to load the fallback
 	/// icon if the requested one could not be loaded.
 	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
+	/// Equivalent to `${Quickshell.configDir}/${path}`
+	Q_INVOKABLE [[nodiscard]] QString configPath(const QString& path) const;
 	/// Equivalent to `${Quickshell.dataDir}/${path}`
 	Q_INVOKABLE [[nodiscard]] QString dataPath(const QString& path) const;
 	/// Equivalent to `${Quickshell.stateDir}/${path}`
@@ -182,7 +184,7 @@ public:
 	void clearReloadPopupInhibit() { this->mInhibitReloadPopup = false; }
 	[[nodiscard]] bool isReloadPopupInhibited() const { return this->mInhibitReloadPopup; }
 
-	[[nodiscard]] QString shellRoot() const;
+	[[nodiscard]] QString configDir() const;
 
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(QString workingDirectory);

@@ -177,12 +177,6 @@ void QuickshellGlobal::reload(bool hard) {
 	root->reloadGraph(hard);
 }
 
-QString QuickshellGlobal::shellRoot() const {
-	auto* generation = EngineGeneration::findObjectGeneration(this);
-	// already canonical
-	return generation->rootPath.path();
-}
-
 QString QuickshellGlobal::workingDirectory() const { // NOLINT
 	return QuickshellSettings::instance()->workingDirectory();
 }
@@ -213,6 +207,10 @@ void QuickshellGlobal::onClipboardChanged(QClipboard::Mode mode) {
 	if (mode == QClipboard::Clipboard) emit this->clipboardTextChanged();
 }
 
+QString QuickshellGlobal::configDir() const {
+	return EngineGeneration::findObjectGeneration(this)->rootPath.path();
+}
+
 QString QuickshellGlobal::dataDir() const { // NOLINT
 	return QsPaths::instance()->shellDataDir().path();
 }
@@ -223,6 +221,10 @@ QString QuickshellGlobal::stateDir() const { // NOLINT
 
 QString QuickshellGlobal::cacheDir() const { // NOLINT
 	return QsPaths::instance()->shellCacheDir().path();
+}
+
+QString QuickshellGlobal::configPath(const QString& path) const {
+	return this->configDir() % '/' % path;
 }
 
 QString QuickshellGlobal::dataPath(const QString& path) const {
