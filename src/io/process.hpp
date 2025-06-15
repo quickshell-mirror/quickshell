@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qhash.h>
 #include <qobject.h>
 #include <qprocess.h>
 #include <qqmlintegration.h>
@@ -98,7 +99,7 @@ class Process: public QObject {
 	/// If the process is already running changing this property will affect the next
 	/// started process. If the property has been changed after starting a process it will
 	/// return the new value, not the one for the currently running process.
-	Q_PROPERTY(QMap<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
+	Q_PROPERTY(QHash<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
 	/// If the process's environment should be cleared prior to applying @@environment.
 	/// Defaults to false.
 	///
@@ -140,10 +141,12 @@ public:
 	/// Writes to the process's stdin. Does nothing if @@running is false.
 	Q_INVOKABLE void write(const QString& data);
 
-	/// Launches an instance of the process detached from quickshell.
+	/// Launches an instance of the process detached from Quickshell.
 	///
 	/// The subprocess will not be tracked, @@running will be false,
 	/// and the subprocess will not be killed by Quickshell.
+	///
+	/// This function is equivalent to @@Quickshell.Quickshell.execDetached().
 	Q_INVOKABLE void startDetached();
 
 	[[nodiscard]] bool isRunning() const;
@@ -157,8 +160,8 @@ public:
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(const QString& workingDirectory);
 
-	[[nodiscard]] QMap<QString, QVariant> environment() const;
-	void setEnvironment(QMap<QString, QVariant> environment);
+	[[nodiscard]] QHash<QString, QVariant> environment() const;
+	void setEnvironment(QHash<QString, QVariant> environment);
 
 	[[nodiscard]] bool environmentCleared() const;
 	void setEnvironmentCleared(bool cleared);
@@ -203,7 +206,7 @@ private:
 	QProcess* process = nullptr;
 	QList<QString> mCommand;
 	QString mWorkingDirectory;
-	QMap<QString, QVariant> mEnvironment;
+	QHash<QString, QVariant> mEnvironment;
 	DataStreamParser* mStdoutParser = nullptr;
 	DataStreamParser* mStderrParser = nullptr;
 	QByteArray stdoutBuffer;

@@ -1,8 +1,12 @@
 #pragma once
 
+#include <utility>
+
 #include <qclipboard.h>
 #include <qcontainerfwd.h>
+#include <qhash.h>
 #include <qjsengine.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qqmlengine.h>
 #include <qqmlintegration.h>
@@ -14,6 +18,25 @@
 #include <qwindowdefs.h>
 
 #include "qmlscreen.hpp"
+
+class ProcessContext {
+	Q_PROPERTY(QList<QString> command MEMBER command);
+	Q_PROPERTY(QHash<QString, QVariant> environment MEMBER environment);
+	Q_PROPERTY(bool clearEnvironment MEMBER clearEnvironment);
+	Q_PROPERTY(QString workingDirectory MEMBER workingDirectory);
+	Q_GADGET;
+	QML_STRUCTURED_VALUE;
+	QML_VALUE_TYPE(processContext);
+
+public:
+	ProcessContext() = default;
+	explicit ProcessContext(QList<QString> command): command(std::move(command)) {}
+
+	QList<QString> command;
+	QHash<QString, QVariant> environment;
+	bool clearEnvironment = false;
+	QString workingDirectory;
+};
 
 ///! Accessor for some options under the Quickshell type.
 class QuickshellSettings: public QObject {
@@ -151,6 +174,46 @@ public:
 
 	/// Returns the string value of an environment variable or null if it is not set.
 	Q_INVOKABLE QVariant env(const QString& variable);
+
+	/// Launch a process detached from Quickshell.
+	///
+	/// Each command argument is its own string, meaning arguments do
+	/// not have to be escaped.
+	///
+	/// > [!WARNING] This does not run command in a shell. All arguments to the command
+	/// > must be in separate values in the list, e.g. `["echo", "hello"]`
+	/// > and not `["echo hello"]`.
+	/// >
+	/// > Additionally, shell scripts must be run by your shell,
+	/// > e.g. `["sh", "script.sh"]` instead of `["script.sh"]` unless the script
+	/// > has a shebang.
+	///
+	/// > [!INFO] You can use `["sh", "-c", <your command>]` to execute your command with
+	/// > the system shell.
+	///
+	/// This function is equivalent to @@Quickshell.Io.Process.startDetached().
+	Q_INVOKABLE static void execDetached(QList<QString> command);
+	/// Launch a process detached from Quickshell.
+	///
+	/// The context parameter is a JS object with the following fields:
+	/// - `command`: A list containing the command and all its arguments. See @@Quickshell.Io.Process.command.
+	/// - `environment`: Changes to make to the process environment. See @@Quickshell.Io.Process.environment.
+	/// - `clearEnvironment`: Removes all variables from the environment if true.
+	/// - `workingDirectory`: The working directory the command should run in.
+	///
+	/// > [!WARNING] This does not run command in a shell. All arguments to the command
+	/// > must be in separate values in the list, e.g. `["echo", "hello"]`
+	/// > and not `["echo hello"]`.
+	/// >
+	/// > Additionally, shell scripts must be run by your shell,
+	/// > e.g. `["sh", "script.sh"]` instead of `["script.sh"]` unless the script
+	/// > has a shebang.
+	///
+	/// > [!INFO] You can use `["sh", "-c", <your command>]` to execute your command with
+	/// > the system shell.
+	///
+	/// This function is equivalent to @@Quickshell.Io.Process.startDetached().
+	Q_INVOKABLE static void execDetached(const ProcessContext& context);
 
 	/// Returns a string usable for a @@QtQuick.Image.source for a given system icon.
 	///

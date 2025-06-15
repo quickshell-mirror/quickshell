@@ -3,9 +3,9 @@
 #include <utility>
 
 #include <qdir.h>
+#include <qhash.h>
 #include <qlist.h>
 #include <qlogging.h>
-#include <qmap.h>
 #include <qobject.h>
 #include <qprocess.h>
 #include <qqmlinfo.h>
@@ -13,10 +13,10 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
-#include "../core/common.hpp"
 #include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
+#include "processcore.hpp"
 
 Process::Process(QObject* parent): QObject(parent) {
 	QObject::connect(
@@ -79,9 +79,10 @@ void Process::onGlobalWorkingDirectoryChanged() {
 	}
 }
 
-QMap<QString, QVariant> Process::environment() const { return this->mEnvironment; }
+QHash<QString, QVariant> Process::environment() const { return this->mEnvironment; }
 
-void Process::setEnvironment(QMap<QString, QVariant> environment) {
+void Process::setEnvironment(QHash<QString, QVariant> environment) {
+	qDebug() << "setEnv" << environment;
 	if (environment == this->mEnvironment) return;
 	this->mEnvironment = std::move(environment);
 	emit this->environmentChanged();
@@ -224,24 +225,7 @@ void Process::setupEnvironment(QProcess* process) {
 		process->setWorkingDirectory(this->mWorkingDirectory);
 	}
 
-	const auto& sysenv = qs::Common::INITIAL_ENVIRONMENT;
-	auto env = this->mClearEnvironment ? QProcessEnvironment() : sysenv;
-
-	for (auto& name: this->mEnvironment.keys()) {
-		auto value = this->mEnvironment.value(name);
-		if (!value.isValid()) continue;
-
-		if (this->mClearEnvironment) {
-			if (value.isNull()) {
-				if (sysenv.contains(name)) env.insert(name, sysenv.value(name));
-			} else env.insert(name, value.toString());
-		} else {
-			if (value.isNull()) env.remove(name);
-			else env.insert(name, value.toString());
-		}
-	}
-
-	process->setProcessEnvironment(env);
+	qs::core::process::setupProcessEnvironment(process, this->mClearEnvironment, this->mEnvironment);
 }
 
 void Process::onStarted() {

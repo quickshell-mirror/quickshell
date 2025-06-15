@@ -8,8 +8,10 @@
 #include <qguiapplication.h>
 #include <qicon.h>
 #include <qjsengine.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qprocess.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
@@ -21,6 +23,7 @@
 #include <qwindowdefs.h>
 #include <unistd.h>
 
+#include "../io/processcore.hpp"
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
 #include "paths.hpp"
@@ -244,6 +247,36 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
+}
+
+void QuickshellGlobal::execDetached(QList<QString> command) {
+	QuickshellGlobal::execDetached(ProcessContext(std::move(command)));
+}
+
+void QuickshellGlobal::execDetached(const ProcessContext& context) {
+	if (context.command.isEmpty()) {
+		qWarning() << "Cannot start process as command is empty.";
+		return;
+	}
+
+	const auto& cmd = context.command.first();
+	auto args = context.command.sliced(1);
+
+	QProcess process;
+
+	qs::core::process::setupProcessEnvironment(
+	    &process,
+	    context.clearEnvironment,
+	    context.environment
+	);
+
+	if (!context.workingDirectory.isEmpty()) {
+		process.setWorkingDirectory(context.workingDirectory);
+	}
+
+	process.setProgram(cmd);
+	process.setArguments(args);
+	process.startDetached();
 }
 
 QString QuickshellGlobal::iconPath(const QString& icon) {
