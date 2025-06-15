@@ -24,12 +24,21 @@ public:
 signals:
 	void minimumSizeChanged();
 	void maximumSizeChanged();
+	void titleChanged();
 
 private:
 	void onMinimumSizeChanged();
 	void onMaximumSizeChanged();
+	void onTitleChanged();
 
 public:
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    ProxyFloatingWindow,
+	    QString,
+	    bTitle,
+	    &ProxyFloatingWindow::onTitleChanged
+	);
+
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    ProxyFloatingWindow,
 	    QSize,
@@ -49,6 +58,8 @@ public:
 class FloatingWindowInterface: public WindowInterface {
 	Q_OBJECT;
 	// clang-format off
+	/// Window title.
+	Q_PROPERTY(QString title READ default WRITE default NOTIFY titleChanged BINDABLE bindableTitle);
 	/// Minimum window size given to the window system.
 	Q_PROPERTY(QSize minimumSize READ default WRITE default NOTIFY minimumSizeChanged BINDABLE bindableMinimumSize);
 	/// Maximum window size given to the window system.
@@ -100,10 +111,12 @@ public:
 
 	QBindable<QSize> bindableMinimumSize() { return &this->window->bMinimumSize; }
 	QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
+	QBindable<QString> bindableTitle() { return &this->window->bTitle; }
 
 signals:
 	void minimumSizeChanged();
 	void maximumSizeChanged();
+	void titleChanged();
 
 private:
 	ProxyFloatingWindow* window;

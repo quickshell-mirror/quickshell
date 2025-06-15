@@ -13,6 +13,7 @@
 void ProxyFloatingWindow::connectWindow() {
 	this->ProxyWindowBase::connectWindow();
 
+	this->window->setTitle(this->bTitle);
 	this->window->setMinimumSize(this->bMinimumSize);
 	this->window->setMaximumSize(this->bMaximumSize);
 }
@@ -27,6 +28,11 @@ void ProxyFloatingWindow::trySetHeight(qint32 implicitHeight) {
 	if (!this->window->isVisible()) {
 		this->ProxyWindowBase::trySetHeight(implicitHeight);
 	}
+}
+
+void ProxyFloatingWindow::onTitleChanged() {
+	if (this->window) this->window->setTitle(this->bTitle);
+	emit this->titleChanged();
 }
 
 void ProxyFloatingWindow::onMinimumSizeChanged() {
@@ -59,6 +65,7 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyWindowBase::maskChanged, this, &FloatingWindowInterface::maskChanged);
 	QObject::connect(this->window, &ProxyWindowBase::surfaceFormatChanged, this, &FloatingWindowInterface::surfaceFormatChanged);
 
+	QObject::connect(this->window, &ProxyFloatingWindow::titleChanged, this, &FloatingWindowInterface::titleChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::minimumSizeChanged, this, &FloatingWindowInterface::minimumSizeChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::maximumSizeChanged, this, &FloatingWindowInterface::maximumSizeChanged);
 	// clang-format on
