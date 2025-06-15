@@ -174,7 +174,10 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 }
 
 LayerSurface::~LayerSurface() {
-	delete this->bridge;
+	if (this->bridge && this->bridge->surface == this) {
+		this->bridge->surface = nullptr;
+	}
+
 	this->destroy();
 }
 
