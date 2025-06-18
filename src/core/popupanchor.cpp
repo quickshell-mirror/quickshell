@@ -189,10 +189,14 @@ void PopupAnchor::updateAnchor() {
 	if (this->mItem && this->mProxyWindow) {
 		auto baseRect =
 		    this->mUserRect.isEmpty() ? this->mItem->boundingRect() : this->mUserRect.qrect();
+
 		auto rect = this->mProxyWindow->contentItem()->mapFromItem(
 		    this->mItem,
 		    baseRect.marginsRemoved(this->mMargins.qmargins())
 		);
+
+		if (rect.width() < 1) rect.setWidth(1);
+		if (rect.height() < 1) rect.setHeight(1);
 
 		this->setWindowRect(rect.toRect());
 	}
