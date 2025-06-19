@@ -1,4 +1,5 @@
 #include "workspace.hpp"
+#include <algorithm>
 #include <utility>
 
 #include <qcontainerfwd.h>
@@ -23,6 +24,12 @@ HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 
 	this->bFocused.setBinding([this]() {
 		return this->ipc->bindableFocusedWorkspace().value() == this;
+	});
+
+	QObject::connect(this, &HyprlandWorkspace::focusedChanged, this, [this]() {
+		if (this->bFocused.value()) {
+			this->updateUrgent();
+		}
 	});
 
 	Qt::endPropertyUpdateGroup();
@@ -81,6 +88,67 @@ void HyprlandWorkspace::setMonitor(HyprlandMonitor* monitor) {
 }
 
 void HyprlandWorkspace::onMonitorDestroyed() { this->bMonitor = nullptr; }
+
+void HyprlandWorkspace::insertToplevel(HyprlandToplevel* toplevel) {
+	if (!toplevel) return;
+
+	const auto& mList = this->mToplevels.valueList();
+
+	if (std::ranges::find(mList, toplevel) != mList.end()) {
+		return;
+	}
+
+	this->mToplevels.insertObject(toplevel);
+
+	QObject::connect(toplevel, &QObject::destroyed, this, [this, toplevel]() {
+		this->removeToplevel(toplevel);
+	});
+
+	QObject::connect(
+	    toplevel,
+	    &HyprlandToplevel::urgentChanged,
+	    this,
+	    &HyprlandWorkspace::updateUrgent
+	);
+
+	this->updateUrgent();
+}
+
+void HyprlandWorkspace::removeToplevel(HyprlandToplevel* toplevel) {
+	if (!toplevel) return;
+
+	this->mToplevels.removeObject(toplevel);
+	emit this->updateUrgent();
+	QObject::disconnect(toplevel, nullptr, this, nullptr);
+}
+
+// Triggered when there is an update either on the toplevel list, on a toplevel's urgent state
+void HyprlandWorkspace::updateUrgent() {
+	const auto& mList = this->mToplevels.valueList();
+
+	const bool hasUrgentToplevel = std::ranges::any_of(mList, [&](HyprlandToplevel* toplevel) {
+		return toplevel->bindableUrgent().value();
+	});
+
+	if (this->bFocused && hasUrgentToplevel) {
+		this->clearUrgent();
+		return;
+	}
+
+	if (hasUrgentToplevel != this->bUrgent.value()) {
+		this->bUrgent = hasUrgentToplevel;
+	}
+}
+
+void HyprlandWorkspace::clearUrgent() {
+	this->bUrgent = false;
+
+	// Clear all urgent toplevels
+	const auto& mList = this->mToplevels.valueList();
+	for (auto* toplevel: mList) {
+		toplevel->bindableUrgent().setValue(false);
+	}
+}
 
 void HyprlandWorkspace::activate() {
 	this->ipc->dispatch(QString("workspace %1").arg(this->bId.value()));

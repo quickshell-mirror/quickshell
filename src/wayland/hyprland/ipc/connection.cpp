@@ -14,6 +14,8 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qproperty.h>
+#include <qqml.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -21,7 +23,10 @@
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
+#include "../../toplevel_management/handle.hpp"
+#include "hyprland_toplevel.hpp"
 #include "monitor.hpp"
+#include "toplevel_mapping.hpp"
 #include "workspace.hpp"
 
 namespace qs::hyprland::ipc {
@@ -62,11 +67,16 @@ HyprlandIpc::HyprlandIpc() {
 	QObject::connect(&this->eventSocket, &QLocalSocket::errorOccurred, this, &HyprlandIpc::eventSocketError);
 	QObject::connect(&this->eventSocket, &QLocalSocket::stateChanged, this, &HyprlandIpc::eventSocketStateChanged);
 	QObject::connect(&this->eventSocket, &QLocalSocket::readyRead, this, &HyprlandIpc::eventSocketReady);
+
+	auto *instance = HyprlandToplevelMappingManager::instance();
+	QObject::connect(instance, &HyprlandToplevelMappingManager::toplevelAddressed, this, &HyprlandIpc::toplevelAddressed);
+
 	// clang-format on
 
 	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
 	this->refreshMonitors(true);
 	this->refreshWorkspaces(true);
+	this->refreshToplevels();
 }
 
 QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath; }
@@ -111,6 +121,36 @@ void HyprlandIpc::eventSocketReady() {
 		this->onEvent(&this->event);
 		emit this->rawEvent(&this->event);
 	}
+}
+
+void HyprlandIpc::toplevelAddressed(
+    wayland::toplevel_management::impl::ToplevelHandle* handle,
+    quint64 address
+) {
+	auto* waylandToplevel =
+	    wayland::toplevel_management::ToplevelManager::instance()->forImpl(handle);
+
+	if (!waylandToplevel) return;
+
+	auto* attached = qobject_cast<HyprlandToplevel*>(
+	    qmlAttachedPropertiesObject<HyprlandToplevel>(waylandToplevel, false)
+	);
+
+	auto* hyprToplevel = this->findToplevelByAddress(address, true);
+
+	if (attached) {
+		if (attached->address()) {
+			qCDebug(logHyprlandIpc) << "Toplevel" << attached->addressStr() << "already has address"
+			                        << address;
+
+			return;
+		}
+
+		attached->setAddress(address);
+		attached->setHyprlandHandle(hyprToplevel);
+	}
+
+	hyprToplevel->setWaylandHandle(waylandToplevel->implHandle());
 }
 
 void HyprlandIpc::makeRequest(
@@ -166,6 +206,8 @@ ObjectModel<HyprlandMonitor>* HyprlandIpc::monitors() { return &this->mMonitors;
 
 ObjectModel<HyprlandWorkspace>* HyprlandIpc::workspaces() { return &this->mWorkspaces; }
 
+ObjectModel<HyprlandToplevel>* HyprlandIpc::toplevels() { return &this->mToplevels; }
+
 QVector<QByteArrayView> HyprlandIpc::parseEventArgs(QByteArrayView event, quint16 count) {
 	auto args = QVector<QByteArrayView>();
 
@@ -218,6 +260,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 	if (event->name == "configreloaded") {
 		this->refreshMonitors(true);
 		this->refreshWorkspaces(true);
+		this->refreshToplevels();
 	} else if (event->name == "monitoraddedv2") {
 		auto args = event->parseView(3);
 
@@ -390,6 +433,133 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		// the fullscreen state changed, but this falls apart if you move a fullscreen
 		// window between workspaces.
 		this->refreshWorkspaces(false);
+	} else if (event->name == "openwindow") {
+		auto args = event->parseView(4);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+
+		if (!ok) return;
+
+		auto workspaceName = QString::fromUtf8(args.at(1));
+		auto windowTitle = QString::fromUtf8(args.at(2));
+		auto windowClass = QString::fromUtf8(args.at(3));
+
+		auto* workspace = this->findWorkspaceByName(workspaceName, false);
+		if (!workspace) {
+			qCWarning(logHyprlandIpc) << "Got openwindow for workspace" << workspaceName
+			                          << "which was not previously tracked.";
+			return;
+		}
+
+		auto* toplevel = this->findToplevelByAddress(windowAddress, false);
+		const bool existed = toplevel != nullptr;
+
+		if (!toplevel) toplevel = new HyprlandToplevel(this);
+		toplevel->updateInitial(windowAddress, windowTitle, workspaceName);
+
+		workspace->insertToplevel(toplevel);
+
+		if (!existed) {
+			this->mToplevels.insertObject(toplevel);
+			qCDebug(logHyprlandIpc) << "New toplevel created with address" << windowAddress << ", title"
+			                        << windowTitle << ", workspace" << workspaceName;
+		}
+	} else if (event->name == "closewindow") {
+		auto args = event->parseView(1);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+
+		if (!ok) return;
+
+		const auto& mList = this->mToplevels.valueList();
+		auto toplevelIter = std::ranges::find_if(mList, [windowAddress](HyprlandToplevel* m) {
+			return m->address() == windowAddress;
+		});
+
+		if (toplevelIter == mList.end()) {
+			qCWarning(logHyprlandIpc) << "Got closewindow for address" << windowAddress
+			                          << "which was not previously tracked.";
+			return;
+		}
+
+		auto* toplevel = *toplevelIter;
+		auto index = toplevelIter - mList.begin();
+		this->mToplevels.removeAt(index);
+
+		// Remove from workspace
+		auto* workspace = toplevel->bindableWorkspace().value();
+		if (workspace) {
+			workspace->toplevels()->removeObject(toplevel);
+		}
+
+		delete toplevel;
+	} else if (event->name == "movewindowv2") {
+		auto args = event->parseView(3);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+		auto workspaceName = QString::fromUtf8(args.at(2));
+
+		auto* toplevel = this->findToplevelByAddress(windowAddress, false);
+		if (!toplevel) {
+			qCWarning(logHyprlandIpc) << "Got movewindowv2 event for client with address" << windowAddress
+			                          << "which was not previously tracked.";
+			return;
+		}
+
+		HyprlandWorkspace* workspace = this->findWorkspaceByName(workspaceName, false);
+		if (!workspace) {
+			qCWarning(logHyprlandIpc) << "Got movewindowv2 event for workspace" << args.at(2)
+			                          << "which was not previously tracked.";
+			return;
+		}
+
+		auto* oldWorkspace = toplevel->bindableWorkspace().value();
+		toplevel->setWorkspace(workspace);
+
+		if (oldWorkspace) {
+			oldWorkspace->removeToplevel(toplevel);
+		}
+
+		workspace->insertToplevel(toplevel);
+	} else if (event->name == "windowtitlev2") {
+		auto args = event->parseView(2);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+		auto windowTitle = QString::fromUtf8(args.at(1));
+
+		if (!ok) return;
+
+		// It happens that Hyprland sends windowtitlev2 events before event
+		// "openwindow" is emitted, so let's preemptively create it
+		auto* toplevel = this->findToplevelByAddress(windowAddress, true);
+		if (!toplevel) {
+			qCWarning(logHyprlandIpc) << "Got windowtitlev2 event for client with address"
+			                          << windowAddress << "which was not previously tracked.";
+			return;
+		}
+
+		toplevel->bindableTitle().setValue(windowTitle);
+	} else if (event->name == "activewindowv2") {
+		auto args = event->parseView(1);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+
+		if (!ok) return;
+
+		// Did not observe "activewindowv2" event before "openwindow",
+		// but better safe than sorry, so create if missing.
+		auto* toplevel = this->findToplevelByAddress(windowAddress, true);
+		this->bActiveToplevel = toplevel;
+	} else if (event->name == "urgent") {
+		auto args = event->parseView(1);
+		auto ok = false;
+		auto windowAddress = args.at(0).toULongLong(&ok, 16);
+
+		if (!ok) return;
+
+		// It happens that Hyprland sends urgent before "openwindow"
+		auto* toplevel = this->findToplevelByAddress(windowAddress, true);
+		toplevel->bindableUrgent().setValue(true);
 	}
 }
 
@@ -492,6 +662,71 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 				this->mWorkspaces.removeObject(workspace);
 				delete workspace;
 			}
+		}
+	});
+}
+
+HyprlandToplevel* HyprlandIpc::findToplevelByAddress(quint64 address, bool createIfMissing) {
+	const auto& mList = this->mToplevels.valueList();
+	HyprlandToplevel* toplevel = nullptr;
+
+	auto toplevelIter =
+	    std::ranges::find_if(mList, [&](HyprlandToplevel* m) { return m->address() == address; });
+
+	toplevel = toplevelIter == mList.end() ? nullptr : *toplevelIter;
+
+	if (!toplevel && createIfMissing) {
+		qCDebug(logHyprlandIpc) << "Toplevel with address" << address
+		                        << "requested before creation, performing early init";
+
+		toplevel = new HyprlandToplevel(this);
+		toplevel->updateInitial(address, "", "");
+		this->mToplevels.insertObject(toplevel);
+	}
+
+	return toplevel;
+}
+
+void HyprlandIpc::refreshToplevels() {
+	if (this->requestingToplevels) return;
+	this->requestingToplevels = true;
+
+	this->makeRequest("j/clients", [this](bool success, const QByteArray& resp) {
+		this->requestingToplevels = false;
+		if (!success) return;
+
+		qCDebug(logHyprlandIpc) << "Parsing j/clients response";
+		auto json = QJsonDocument::fromJson(resp).array();
+
+		const auto& mList = this->mToplevels.valueList();
+
+		for (auto entry: json) {
+			auto object = entry.toObject().toVariantMap();
+
+			bool ok = false;
+			auto address = object.value("address").toString().toULongLong(&ok, 16);
+
+			if (!ok) {
+				qCWarning(logHyprlandIpc) << "Invalid address in j/clients entry:" << object;
+				continue;
+			}
+
+			auto toplevelsIter =
+			    std::ranges::find_if(mList, [&](HyprlandToplevel* m) { return m->address() == address; });
+
+			auto* toplevel = toplevelsIter == mList.end() ? nullptr : *toplevelsIter;
+			auto exists = toplevel != nullptr;
+
+			if (!exists) toplevel = new HyprlandToplevel(this);
+			toplevel->updateFromObject(object);
+
+			if (!exists) {
+				qCDebug(logHyprlandIpc) << "New toplevel created with address" << address;
+				this->mToplevels.insertObject(toplevel);
+			}
+
+			auto* workspace = toplevel->bindableWorkspace().value();
+			workspace->insertToplevel(toplevel);
 		}
 	});
 }
