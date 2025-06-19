@@ -1,5 +1,6 @@
 #include "session_lock.hpp"
 
+#include <private/qwaylandscreen_p.h>
 #include <qcolor.h>
 #include <qcoreapplication.h>
 #include <qguiapplication.h>
@@ -51,6 +52,17 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 
 void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 	auto screens = QGuiApplication::screens();
+
+	screens.removeIf([](QScreen* screen) {
+		if (dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle()) == nullptr) {
+			qDebug() << "Not creating lock surface for screen" << screen
+			         << "as it is not backed by a wayland screen.";
+
+			return true;
+		}
+
+		return false;
+	});
 
 	auto map = this->surfaces.toStdMap();
 	for (auto& [screen, surface]: map) {
