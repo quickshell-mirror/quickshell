@@ -203,9 +203,10 @@ signals:
 
 private slots:
 	void onDeviceReady();
+	void onDeviceVolumesChanged(qint32 routeDevice, const PwVolumeProps& props);
 
 private:
-	void updateVolumeProps(const spa_pod* param);
+	void updateVolumeProps(const PwVolumeProps& volumeProps);
 
 	bool mMuted = false;
 	QVector<PwAudioChannel::Enum> mChannels;

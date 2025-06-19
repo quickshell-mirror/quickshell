@@ -255,6 +255,13 @@ void PwNode::onParam(
 PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): node(node) {
 	if (node->device) {
 		QObject::connect(node->device, &PwDevice::deviceReady, this, &PwNodeBoundAudio::onDeviceReady);
+
+		QObject::connect(
+		    node->device,
+		    &PwDevice::routeVolumesChanged,
+		    this,
+		    &PwNodeBoundAudio::onDeviceVolumesChanged
+		);
 	}
 }
 
@@ -278,13 +285,17 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* param) {
 	if (id == SPA_PARAM_Props && index == 0) {
-		this->updateVolumeProps(param);
+		if (this->node->device) {
+			qCDebug(logNode) << "Skipping node volume props update for" << this->node
+			                 << "in favor of device updates.";
+			return;
+		}
+
+		this->updateVolumeProps(PwVolumeProps::parseSpaPod(param));
 	}
 }
 
-void PwNodeBoundAudio::updateVolumeProps(const spa_pod* param) {
-	auto volumeProps = PwVolumeProps::parseSpaPod(param);
-
+void PwNodeBoundAudio::updateVolumeProps(const PwVolumeProps& volumeProps) {
 	if (volumeProps.volumes.size() != volumeProps.channels.size()) {
 		qCWarning(logNode) << "Cannot update volume props of" << this->node
 		                   << "- channelVolumes and channelMap are not the same size. Sizes:"
@@ -486,6 +497,18 @@ void PwNodeBoundAudio::onDeviceReady() {
 		}
 
 		this->waitingVolumes.clear();
+	}
+}
+
+void PwNodeBoundAudio::onDeviceVolumesChanged(
+    qint32 routeDevice,
+    const PwVolumeProps& volumeProps
+) {
+	if (this->node->device && this->node->routeDevice == routeDevice) {
+		qCDebug(logNode) << "Got updated device volume props for" << this->node << "via"
+		                 << this->node->device;
+
+		this->updateVolumeProps(volumeProps);
 	}
 }
 
