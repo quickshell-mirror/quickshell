@@ -2,6 +2,10 @@
 See the [website](https://quickshell.outfoxxed.me) for more information
 and installation instructions.
 
+This repo is hosted at:
+- https://git.outfoxxed.me/quickshell/quickshell
+- https://github.com/quickshell-mirror/quickshell
+
 # Contributing / Development
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
