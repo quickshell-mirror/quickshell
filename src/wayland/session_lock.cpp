@@ -109,6 +109,13 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 
 void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 	if (this->lockTarget) {
+		if (!SessionLockManager::lockAvailable()) {
+			qCritical() << "Cannot start session lock: The current compositor does not support the "
+			               "ext-session-lock-v1 protocol.";
+			this->unlock();
+			return;
+		}
+
 		if (this->mSurfaceComponent == nullptr) {
 			qWarning() << "WlSessionLock.surface is null. Aborting lock.";
 			this->unlock();
