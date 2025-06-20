@@ -145,8 +145,8 @@ public:
 		// @@PwNodeType.Video and @@PwNodeType.Sink flags.
 		VideoSink = Video | Sink,
 	};
-	Q_ENUM(Flag)
-	Q_DECLARE_FLAGS(Flags, Flag)
+	Q_ENUM(Flag);
+	Q_DECLARE_FLAGS(Flags, Flag);
 	Q_INVOKABLE static QString toString(qs::service::pipewire::PwNodeType::Flags type);
 };
 
