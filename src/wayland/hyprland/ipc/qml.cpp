@@ -47,6 +47,7 @@ HyprlandMonitor* HyprlandIpcQml::monitorFor(QuickshellScreenInfo* screen) {
 
 void HyprlandIpcQml::refreshMonitors() { HyprlandIpc::instance()->refreshMonitors(false); }
 void HyprlandIpcQml::refreshWorkspaces() { HyprlandIpc::instance()->refreshWorkspaces(false); }
+void HyprlandIpcQml::refreshToplevels() { HyprlandIpc::instance()->refreshToplevels(); }
 QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->requestSocketPath(); }
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 

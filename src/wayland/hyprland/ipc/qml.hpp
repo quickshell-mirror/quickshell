@@ -62,6 +62,12 @@ public:
 	/// so this function is available if required.
 	Q_INVOKABLE static void refreshWorkspaces();
 
+	/// Refresh toplevel information.
+	///
+	/// Many actions that will invalidate workspace state don't send events,
+	/// so this function is available if required.
+	Q_INVOKABLE static void refreshToplevels();
+
 	[[nodiscard]] static QString requestSocketPath();
 	[[nodiscard]] static QString eventSocketPath();
 	[[nodiscard]] static QBindable<HyprlandMonitor*> bindableFocusedMonitor();
