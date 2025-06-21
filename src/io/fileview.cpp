@@ -492,7 +492,10 @@ void FileView::updatePath() {
 void FileView::updateWatchedFiles() {
 	// If inotify events are sent to the watcher after deletion and deleteLater
 	// isn't used, a use after free in the QML engine will occur.
-	if (this->watcher) this->watcher->deleteLater();
+	if (this->watcher) {
+		this->watcher->deleteLater();
+		this->watcher = nullptr;
+	}
 
 	if (!this->targetPath.isEmpty() && this->bWatchChanges) {
 		qCDebug(logFileView) << "Creating watcher for" << this << "at" << this->targetPath;
