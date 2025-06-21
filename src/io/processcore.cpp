@@ -7,7 +7,7 @@
 
 #include "../core/common.hpp"
 
-namespace qs::core::process {
+namespace qs::io::process {
 
 void setupProcessEnvironment(
     QProcess* process,
@@ -34,4 +34,4 @@ void setupProcessEnvironment(
 	process->setProcessEnvironment(env);
 }
 
-} // namespace qs::core::process
+} // namespace qs::io::process

@@ -250,10 +250,10 @@ QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 }
 
 void QuickshellGlobal::execDetached(QList<QString> command) {
-	QuickshellGlobal::execDetached(ProcessContext(std::move(command)));
+	QuickshellGlobal::execDetached(qs::io::process::ProcessContext(std::move(command)));
 }
 
-void QuickshellGlobal::execDetached(const ProcessContext& context) {
+void QuickshellGlobal::execDetached(const qs::io::process::ProcessContext& context) {
 	if (context.command.isEmpty()) {
 		qWarning() << "Cannot start process as command is empty.";
 		return;
@@ -264,11 +264,7 @@ void QuickshellGlobal::execDetached(const ProcessContext& context) {
 
 	QProcess process;
 
-	qs::core::process::setupProcessEnvironment(
-	    &process,
-	    context.clearEnvironment,
-	    context.environment
-	);
+	qs::io::process::setupProcessEnvironment(&process, context.clearEnvironment, context.environment);
 
 	if (!context.workingDirectory.isEmpty()) {
 		process.setWorkingDirectory(context.workingDirectory);

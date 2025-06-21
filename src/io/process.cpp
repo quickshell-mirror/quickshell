@@ -46,17 +46,7 @@ void Process::setCommand(QList<QString> command) {
 	if (this->mCommand == command) return;
 	this->mCommand = std::move(command);
 
-	auto& cmd = this->mCommand.first();
-	if (cmd.startsWith("file://")) {
-		cmd = cmd.sliced(7);
-	} else if (cmd.startsWith("root://")) {
-		cmd = cmd.sliced(7);
-		auto& root = EngineGeneration::findObjectGeneration(this)->rootPath;
-		cmd = root.filePath(cmd.startsWith('/') ? cmd.sliced(1) : cmd);
-	}
-
 	emit this->commandChanged();
-
 	this->startProcessIfReady();
 }
 
@@ -82,7 +72,6 @@ void Process::onGlobalWorkingDirectoryChanged() {
 QHash<QString, QVariant> Process::environment() const { return this->mEnvironment; }
 
 void Process::setEnvironment(QHash<QString, QVariant> environment) {
-	qDebug() << "setEnv" << environment;
 	if (environment == this->mEnvironment) return;
 	this->mEnvironment = std::move(environment);
 	emit this->environmentChanged();
@@ -180,6 +169,14 @@ void Process::startProcessIfReady() {
 	this->targetRunning = false;
 
 	auto& cmd = this->mCommand.first();
+	if (cmd.startsWith("file://")) {
+		cmd = cmd.sliced(7);
+	} else if (cmd.startsWith("root://")) {
+		cmd = cmd.sliced(7);
+		auto& root = EngineGeneration::findObjectGeneration(this)->rootPath;
+		cmd = root.filePath(cmd.startsWith('/') ? cmd.sliced(1) : cmd);
+	}
+
 	auto args = this->mCommand.sliced(1);
 
 	this->process = new QProcess(this);
@@ -201,6 +198,25 @@ void Process::startProcessIfReady() {
 
 	this->setupEnvironment(this->process);
 	this->process->start(cmd, args);
+}
+
+void Process::exec(QList<QString> command) {
+	this->exec(qs::io::process::ProcessContext(std::move(command)));
+}
+
+void Process::exec(const qs::io::process::ProcessContext& context) {
+	this->setRunning(false);
+	if (context.commandSet) this->setCommand(context.command);
+	if (context.environmentSet) this->setEnvironment(context.environment);
+	if (context.clearEnvironmentSet) this->setEnvironmentCleared(context.clearEnvironment);
+	if (context.workingDirectorySet) this->setWorkingDirectory(context.workingDirectory);
+
+	if (this->mCommand.isEmpty()) {
+		qmlWarning(this) << "Cannot start process as command is empty.";
+		return;
+	}
+
+	this->setRunning(true);
 }
 
 void Process::startDetached() {
@@ -225,7 +241,7 @@ void Process::setupEnvironment(QProcess* process) {
 		process->setWorkingDirectory(this->mWorkingDirectory);
 	}
 
-	qs::core::process::setupProcessEnvironment(process, this->mClearEnvironment, this->mEnvironment);
+	qs::io::process::setupProcessEnvironment(process, this->mClearEnvironment, this->mEnvironment);
 }
 
 void Process::onStarted() {
@@ -245,6 +261,8 @@ void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
 	emit this->exited(exitCode, exitStatus);
 	emit this->runningChanged();
 	emit this->processIdChanged();
+
+	this->startProcessIfReady(); // for `running = false; running = true`
 }
 
 void Process::onErrorOccurred(QProcess::ProcessError error) {
