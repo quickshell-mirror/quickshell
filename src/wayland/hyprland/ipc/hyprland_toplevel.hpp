@@ -37,6 +37,12 @@ class HyprlandToplevel: public QObject {
 	Q_PROPERTY(bool activated READ default NOTIFY activatedChanged BINDABLE bindableActivated);
 	/// Whether the client is urgent or not
 	Q_PROPERTY(bool urgent READ default NOTIFY urgentChanged BINDABLE bindableUrgent);
+	/// Last json returned for this toplevel, as a javascript object.
+	///
+	/// > [!WARNING] This is *not* updated unless the toplevel object is fetched again from
+	/// > Hyprland. If you need a value that is subject to change and does not have a dedicated
+	/// > property, run @@Hyprland.refreshToplevels() and wait for this property to update.
+	Q_PROPERTY(QVariantMap lastIpcObject READ default BINDABLE bindableLastIpcObject NOTIFY lastIpcObjectChanged);
 	/// The current workspace of the toplevel (might be null)
 	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspace* workspace READ default NOTIFY workspaceChanged BINDABLE bindableWorkspace);
 	/// The current monitor of the toplevel (might be null)
@@ -71,6 +77,10 @@ public:
 	[[nodiscard]] QBindable<bool> bindableActivated() { return &this->bActivated; }
 	[[nodiscard]] QBindable<bool> bindableUrgent() { return &this->bUrgent; }
 
+	[[nodiscard]] QBindable<QVariantMap> bindableLastIpcObject() const {
+		return &this->bLastIpcObject;
+	};
+
 	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableWorkspace() { return &this->bWorkspace; }
 	void setWorkspace(HyprlandWorkspace* workspace);
 
@@ -86,6 +96,7 @@ signals:
 	void urgentChanged();
 	void workspaceChanged();
 	void monitorChanged();
+	void lastIpcObjectChanged();
 
 private slots:
 	void onActivatedChanged();
@@ -103,6 +114,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandToplevel, bool, bUrgent, &HyprlandToplevel::urgentChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandToplevel, HyprlandWorkspace*, bWorkspace, &HyprlandToplevel::workspaceChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandToplevel, HyprlandMonitor*, bMonitor, &HyprlandToplevel::monitorChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandToplevel, QVariantMap, bLastIpcObject, &HyprlandToplevel::lastIpcObjectChanged);
 	// clang-format on
 };
 
