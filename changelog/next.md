@@ -26,6 +26,7 @@ set shell id.
 - Added Quickshell version checking and version gated preprocessing.
 - Added a way to detect if an icon is from the system icon theme or not.
 - Added vulkan support to screencopy.
+- Added generic WindowManager interface implementing ext-workspace.
 
 ## Other Changes
 
