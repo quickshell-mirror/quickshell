@@ -77,6 +77,7 @@ qt_add_library(quickshell-wayland STATIC
 	popupanchor.cpp
 	xdgshell.cpp
 	util.cpp
+	output_tracking.cpp
 )
 
 # required to make sure the constructor is linked
