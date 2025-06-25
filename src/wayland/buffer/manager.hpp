@@ -40,6 +40,7 @@ struct WlBufferTransform {
 
 	[[nodiscard]] int degrees() const { return 90 * (this->transform & 0b11111011); }
 	[[nodiscard]] bool flip() const { return this->transform & 0b00000100; }
+	[[nodiscard]] bool flipSize() const { return this->transform & 0b00000001; }
 
 	void apply(QMatrix4x4& matrix) const {
 		matrix.rotate(this->flip() ? 180 : 0, 0, 1, 0);

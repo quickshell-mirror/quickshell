@@ -120,8 +120,14 @@ void ScreencopyView::captureFrame() {
 void ScreencopyView::onFrameCaptured() {
 	this->setFlag(QQuickItem::ItemHasContents);
 	this->update();
+
+	const auto& frontbuffer = this->context->swapchain().frontbuffer();
+
+	auto size = frontbuffer->size();
+	if (frontbuffer->transform.flipSize()) size.transpose();
+
+	this->bSourceSize = size;
 	this->bHasContent = true;
-	this->bSourceSize = this->context->swapchain().frontbuffer()->size();
 }
 
 void ScreencopyView::componentComplete() {
