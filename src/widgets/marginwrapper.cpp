@@ -1,4 +1,5 @@
 #include "marginwrapper.hpp"
+#include <cmath>
 
 #include <qobject.h>
 #include <qquickitem.h>
@@ -39,7 +40,7 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 		auto total = this->bLeftMargin + this->bRightMargin;
 		auto mul = total == 0 ? 0.5 : this->bLeftMargin / total;
 		auto margin = this->bWrapperWidth - this->bChildImplicitWidth;
-		return margin * mul;
+		return std::round(margin * mul);
 	});
 
 	this->bChildY.setBinding([this] {
@@ -48,7 +49,7 @@ MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(pare
 		auto total = this->bTopMargin + this->bBottomMargin;
 		auto mul = total == 0 ? 0.5 : this->bTopMargin / total;
 		auto margin = this->bWrapperHeight - this->bChildImplicitHeight;
-		return margin * mul;
+		return std::round(margin * mul);
 	});
 
 	this->bChildWidth.setBinding([this] {
