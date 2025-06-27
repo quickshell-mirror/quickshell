@@ -69,6 +69,7 @@ void HyprlandToplevel::updateFromObject(const QVariantMap& object) {
 	auto addressStr = object.value("address").value<QString>();
 	auto title = object.value("title").value<QString>();
 
+	Qt::beginPropertyUpdateGroup();
 	bool ok = false;
 	auto address = addressStr.toULongLong(&ok, 16);
 	if (!ok || !address) {
@@ -85,6 +86,8 @@ void HyprlandToplevel::updateFromObject(const QVariantMap& object) {
 	if (!workspace) return;
 
 	this->setWorkspace(workspace);
+	this->bLastIpcObject = object;
+	Qt::endPropertyUpdateGroup();
 }
 
 void HyprlandToplevel::setWorkspace(HyprlandWorkspace* workspace) {
