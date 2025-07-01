@@ -7,7 +7,6 @@
 #include <qlogging.h>
 #include <qmetatype.h>
 #include <qsysinfo.h>
-#include <qtversionchecks.h>
 #include <qtypes.h>
 
 bool DBusSniIconPixmap::operator==(const DBusSniIconPixmap& other) const {
@@ -122,10 +121,3 @@ QDebug operator<<(QDebug debug, const DBusSniTooltip& tooltip) {
 
 	return debug;
 }
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
-QDebug operator<<(QDebug debug, const QDBusObjectPath& path) {
-	debug.nospace() << "QDBusObjectPath(" << path.path() << ")";
-	return debug;
-}
-#endif

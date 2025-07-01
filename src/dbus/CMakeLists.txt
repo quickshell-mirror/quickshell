@@ -2,13 +2,24 @@ set_source_files_properties(org.freedesktop.DBus.Properties.xml PROPERTIES
 	CLASSNAME DBusPropertiesInterface
 )
 
+set_source_files_properties(org.freedesktop.DBus.ObjectManager.xml PROPERTIES
+	CLASSNAME DBusObjectManagerInterface
+	INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/dbus_objectmanager_types.hpp
+)
+
 qt_add_dbus_interface(DBUS_INTERFACES
 	org.freedesktop.DBus.Properties.xml
 	dbus_properties
 )
 
+qt_add_dbus_interface(DBUS_INTERFACES
+	org.freedesktop.DBus.ObjectManager.xml
+	dbus_objectmanager
+)
+
 qt_add_library(quickshell-dbus STATIC
 	properties.cpp
+	objectmanager.cpp
 	bus.cpp
 	${DBUS_INTERFACES}
 )

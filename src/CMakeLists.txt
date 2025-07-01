@@ -29,3 +29,7 @@ if (X11)
 endif()
 
 add_subdirectory(services)
+
+if (BLUETOOTH)
+	add_subdirectory(bluetooth)
+endif()

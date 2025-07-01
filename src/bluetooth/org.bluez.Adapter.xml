@@ -1,0 +1,9 @@
+<node>
+	<interface name="org.bluez.Adapter1">
+		<method name="StartDiscovery"/>
+		<method name="StopDiscovery"/>
+		<method name="RemoveDevice">
+			<arg name="device" type="o"/>
+		</method>
+	</interface>
+</node>
