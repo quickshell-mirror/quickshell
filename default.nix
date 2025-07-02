@@ -5,18 +5,20 @@
   keepDebugInfo,
   buildStdenv ? pkgs.clangStdenv,
 
+  pkg-config,
   cmake,
   ninja,
-  qt6,
   spirv-tools,
-  cli11,
+  qt6,
   breakpad,
   jemalloc,
+  cli11,
   wayland,
   wayland-protocols,
+  wayland-scanner,
+  xorg,
   libdrm,
   libgbm ? null,
-  xorg,
   pipewire,
   networkmanager,
   pam,
@@ -46,29 +48,28 @@
 }: buildStdenv.mkDerivation {
   pname = "quickshell${lib.optionalString debug "-debug"}";
   version = "0.1.0";
-  src = nix-gitignore.gitignoreSource "/docs\n/examples\n" ./.;
+  src = nix-gitignore.gitignoreSource [] ./.;
 
-  nativeBuildInputs = with pkgs; [
+  nativeBuildInputs = [
     cmake
     ninja
     qt6.qtshadertools
     spirv-tools
     qt6.wrapQtAppsHook
     pkg-config
-  ] ++ (lib.optionals withWayland [
-    wayland-protocols
-    wayland-scanner
-  ]);
+  ]
+  ++ lib.optional withWayland wayland-scanner;
 
   buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
     cli11
   ]
+  ++ lib.optional withQtSvg qt6.qtsvg
   ++ lib.optional withCrashReporter breakpad
   ++ lib.optional withJemalloc jemalloc
-  ++ lib.optional withQtSvg qt6.qtsvg
-  ++ lib.optionals withWayland ([ qt6.qtwayland wayland ] ++ (if libgbm != null then [ libdrm libgbm ] else []))
+  ++ lib.optionals withWayland [ qt6.qtwayland wayland wayland-protocols ]
+  ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
   ++ lib.optional withX11 xorg.libxcb
   ++ lib.optional withPam pam
   ++ lib.optional withPipewire pipewire
@@ -100,9 +101,10 @@
   dontStrip = debug;
 
   meta = with lib; {
-    homepage = "https://git.outfoxxed.me/outfoxxed/quickshell";
+    homepage = "https://quickshell.outfoxxed.me";
     description = "Flexbile QtQuick based desktop shell toolkit";
     license = licenses.lgpl3Only;
     platforms = platforms.linux;
+    mainProgram = "quickshell";
   };
 }

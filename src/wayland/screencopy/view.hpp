@@ -36,10 +36,13 @@ class ScreencopyView: public QQuickItem {
 	Q_PROPERTY(bool hasContent READ default NOTIFY hasContentChanged BINDABLE bindableHasContent);
 	/// The size of the source image. Valid when @@hasContent is true.
 	Q_PROPERTY(QSize sourceSize READ default NOTIFY sourceSizeChanged BINDABLE bindableSourceSize);
+	/// If nonzero, the width and height constraints set for this property will constrain those
+	/// dimensions of the ScreencopyView's implicit size, maintaining the image's aspect ratio.
+	Q_PROPERTY(QSizeF constraintSize READ default WRITE default NOTIFY constraintSizeChanged BINDABLE bindableConstraintSize);
 	// clang-format on
 
 public:
-	explicit ScreencopyView(QQuickItem* parent = nullptr): QQuickItem(parent) {}
+	explicit ScreencopyView(QQuickItem* parent = nullptr);
 
 	void componentComplete() override;
 
@@ -57,6 +60,7 @@ public:
 
 	[[nodiscard]] QBindable<bool> bindableHasContent() { return &this->bHasContent; }
 	[[nodiscard]] QBindable<QSize> bindableSourceSize() { return &this->bSourceSize; }
+	[[nodiscard]] QBindable<QSizeF> bindableConstraintSize() { return &this->bConstraintSize; }
 
 signals:
 	/// The compositor has ended the video stream. Attempting to restart it may or may not work.
@@ -67,6 +71,7 @@ signals:
 	void liveChanged();
 	void hasContentChanged();
 	void sourceSizeChanged();
+	void constraintSizeChanged();
 
 protected:
 	QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
@@ -80,10 +85,13 @@ private slots:
 private:
 	void destroyContext(bool update = true);
 	void createContext();
+	void updateImplicitSize();
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(ScreencopyView, bool, bHasContent, &ScreencopyView::hasContentChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(ScreencopyView, QSize, bSourceSize, &ScreencopyView::sourceSizeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(ScreencopyView, QSizeF, bConstraintSize, &ScreencopyView::constraintSizeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(ScreencopyView, QSizeF, bImplicitSize, &ScreencopyView::updateImplicitSize);
 	// clang-format on
 
 	QObject* mCaptureSource = nullptr;

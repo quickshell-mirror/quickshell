@@ -11,6 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qstringliteral.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
@@ -85,6 +86,20 @@ QString PwAudioChannel::toString(Enum value) {
 	}
 }
 
+QString PwNodeType::toString(PwNodeType::Flags type) {
+	switch (type) {
+	case PwNodeType::VideoSource: return QStringLiteral("VideoSource");
+	case PwNodeType::VideoSink: return QStringLiteral("VideoSink");
+	case PwNodeType::AudioSource: return QStringLiteral("AudioSource");
+	case PwNodeType::AudioSink: return QStringLiteral("AudioSink");
+	case PwNodeType::AudioDuplex: return QStringLiteral("AudioDuplex");
+	case PwNodeType::AudioOutStream: return QStringLiteral("AudioOutStream");
+	case PwNodeType::AudioInStream: return QStringLiteral("AudioInStream");
+	case PwNodeType::Untracked: return QStringLiteral("Untracked");
+	default: return QStringLiteral("Invalid");
+	}
+}
+
 void PwNode::bindHooks() {
 	// Bind the device first as pw is in order, meaning the device should be bound before
 	// we want to do anything with it.
@@ -116,21 +131,19 @@ void PwNode::unbindHooks() {
 void PwNode::initProps(const spa_dict* props) {
 	if (const auto* mediaClass = spa_dict_lookup(props, SPA_KEY_MEDIA_CLASS)) {
 		if (strcmp(mediaClass, "Audio/Sink") == 0) {
-			this->type = PwNodeType::Audio;
-			this->isSink = true;
-			this->isStream = false;
+			this->type = PwNodeType::AudioSink;
 		} else if (strcmp(mediaClass, "Audio/Source") == 0) {
-			this->type = PwNodeType::Audio;
-			this->isSink = false;
-			this->isStream = false;
+			this->type = PwNodeType::AudioSource;
+		} else if (strcmp(mediaClass, "Audio/Duplex") == 0) {
+			this->type = PwNodeType::AudioDuplex;
 		} else if (strcmp(mediaClass, "Stream/Output/Audio") == 0) {
-			this->type = PwNodeType::Audio;
-			this->isSink = false;
-			this->isStream = true;
+			this->type = PwNodeType::AudioOutStream;
 		} else if (strcmp(mediaClass, "Stream/Input/Audio") == 0) {
-			this->type = PwNodeType::Audio;
-			this->isSink = true;
-			this->isStream = true;
+			this->type = PwNodeType::AudioInStream;
+		} else if (strcmp(mediaClass, "Video/Sink") == 0) {
+			this->type = PwNodeType::VideoSink;
+		} else if (strcmp(mediaClass, "Video/Source") == 0) {
+			this->type = PwNodeType::VideoSource;
 		}
 	}
 
@@ -164,7 +177,7 @@ void PwNode::initProps(const spa_dict* props) {
 		}
 	}
 
-	if (this->type == PwNodeType::Audio) {
+	if (this->type.testFlags(PwNodeType::Audio)) {
 		this->boundData = new PwNodeBoundAudio(this);
 	}
 }
@@ -242,6 +255,13 @@ void PwNode::onParam(
 PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): node(node) {
 	if (node->device) {
 		QObject::connect(node->device, &PwDevice::deviceReady, this, &PwNodeBoundAudio::onDeviceReady);
+
+		QObject::connect(
+		    node->device,
+		    &PwDevice::routeVolumesChanged,
+		    this,
+		    &PwNodeBoundAudio::onDeviceVolumesChanged
+		);
 	}
 }
 
@@ -265,13 +285,17 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* param) {
 	if (id == SPA_PARAM_Props && index == 0) {
-		this->updateVolumeProps(param);
+		if (this->node->device) {
+			qCDebug(logNode) << "Skipping node volume props update for" << this->node
+			                 << "in favor of device updates.";
+			return;
+		}
+
+		this->updateVolumeProps(PwVolumeProps::parseSpaPod(param));
 	}
 }
 
-void PwNodeBoundAudio::updateVolumeProps(const spa_pod* param) {
-	auto volumeProps = PwVolumeProps::parseSpaPod(param);
-
+void PwNodeBoundAudio::updateVolumeProps(const PwVolumeProps& volumeProps) {
 	if (volumeProps.volumes.size() != volumeProps.channels.size()) {
 		qCWarning(logNode) << "Cannot update volume props of" << this->node
 		                   << "- channelVolumes and channelMap are not the same size. Sizes:"
@@ -473,6 +497,18 @@ void PwNodeBoundAudio::onDeviceReady() {
 		}
 
 		this->waitingVolumes.clear();
+	}
+}
+
+void PwNodeBoundAudio::onDeviceVolumesChanged(
+    qint32 routeDevice,
+    const PwVolumeProps& volumeProps
+) {
+	if (this->node->device && this->node->routeDevice == routeDevice) {
+		qCDebug(logNode) << "Got updated device volume props for" << this->node << "via"
+		                 << this->node->device;
+
+		this->updateVolumeProps(volumeProps);
 	}
 }
 

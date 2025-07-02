@@ -18,6 +18,27 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 	auto iter = this->mValues.begin();
 	auto newIter = newValues.begin();
 
+	// TODO: cache this
+	auto getCmpKey = [&](const QVariant& v) {
+		if (v.canConvert<QVariantMap>()) {
+			auto vMap = v.value<QVariantMap>();
+			if (vMap.contains(this->cmpKey)) {
+				return vMap.value(this->cmpKey);
+			}
+		}
+
+		return v;
+	};
+
+	auto variantCmp = [&](const QVariant& a, const QVariant& b) {
+		if (!this->cmpKey.isEmpty()) return getCmpKey(a) == getCmpKey(b);
+		else return a == b;
+	};
+
+	auto eqPredicate = [&](const QVariant& b) {
+		return [&](const QVariant& a) { return variantCmp(a, b); };
+	};
+
 	while (true) {
 		if (newIter == newValues.end()) {
 			if (iter == this->mValues.end()) break;
@@ -40,18 +61,19 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 			this->endInsertRows();
 
 			break;
-		} else if (*newIter != *iter) {
-			auto oldIter = std::find(iter, this->mValues.end(), *newIter);
+		} else if (!variantCmp(*newIter, *iter)) {
+			auto oldIter = std::find_if(iter, this->mValues.end(), eqPredicate(*newIter));
 
 			if (oldIter != this->mValues.end()) {
-				if (std::find(newIter, newValues.end(), *iter) == newValues.end()) {
+				if (std::find_if(newIter, newValues.end(), eqPredicate(*iter)) == newValues.end()) {
 					// Remove any entries we would otherwise move around that aren't in the new list.
 					auto startIter = iter;
 
 					do {
 						++iter;
 					} while (iter != this->mValues.end()
-					         && std::find(newIter, newValues.end(), *iter) == newValues.end());
+					         && std::find_if(newIter, newValues.end(), eqPredicate(*iter)) == newValues.end()
+					);
 
 					auto index = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 					auto startIndex = static_cast<qint32>(std::distance(this->mValues.begin(), startIter));
@@ -66,7 +88,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 						++oldIter;
 						++newIter;
 					} while (oldIter != this->mValues.end() && newIter != newValues.end()
-					         && *oldIter == *newIter);
+					         && variantCmp(*oldIter, *newIter));
 
 					auto index = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 					auto oldStartIndex =
@@ -90,7 +112,8 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 				do {
 					newIter++;
 				} while (newIter != newValues.end()
-				         && std::find(iter, this->mValues.end(), *newIter) == this->mValues.end());
+				         && std::find_if(iter, this->mValues.end(), eqPredicate(*newIter))
+				                == this->mValues.end());
 
 				auto index = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 				auto newIndex = static_cast<qint32>(std::distance(newValues.begin(), newIter));
@@ -108,6 +131,22 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 				iter = std::copy(startNewIter, newIter, iter);
 				this->endInsertRows();
 			}
+		} else if (*newIter != *iter) {
+			auto first = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
+			auto index = first;
+
+			do {
+				this->mValues.replace(index, *newIter);
+				++iter;
+				++newIter;
+				++index;
+			} while (iter != this->mValues.end() && newIter != newValues.end() && *newIter != *iter);
+
+			this->dataChanged(
+			    this->index(first, 0, QModelIndex()),
+			    this->index(index - 1, 0, QModelIndex()),
+			    {Qt::UserRole}
+			);
 		} else {
 			++iter;
 			++newIter;
@@ -121,6 +160,13 @@ void ScriptModel::setValues(const QVariantList& newValues) {
 	if (newValues == this->mValues) return;
 	this->updateValuesUnique(newValues);
 	emit this->valuesChanged();
+}
+
+void ScriptModel::setObjectProp(const QString& objectProp) {
+	if (objectProp == this->cmpKey) return;
+	this->cmpKey = objectProp;
+	this->updateValuesUnique(this->mValues);
+	emit this->objectPropChanged();
 }
 
 qint32 ScriptModel::rowCount(const QModelIndex& parent) const {

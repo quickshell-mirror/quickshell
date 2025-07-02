@@ -1,5 +1,7 @@
 #include "surface.hpp"
+#include <algorithm>
 #include <any>
+#include <utility>
 
 #include <private/qhighdpiscaling_p.h>
 #include <private/qwaylanddisplay_p.h>
@@ -12,15 +14,19 @@
 #include <qsize.h>
 #include <qtversionchecks.h>
 #include <qtypes.h>
+#include <qvariant.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
+#include <qwindow.h>
 
 #include "../../window/panelinterface.hpp"
 #include "shell_integration.hpp"
-#include "window.hpp"
+#include "wlr_layershell.hpp"
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
 #include <qpoint.h>
 #endif
+
+namespace qs::wayland::layershell {
 
 namespace {
 
@@ -61,28 +67,79 @@ toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
 
 [[nodiscard]] QSize constrainedSize(const Anchors& anchors, const QSize& size) noexcept {
 	return QSize(
-	    anchors.horizontalConstraint() ? 0 : size.width(),
-	    anchors.verticalConstraint() ? 0 : size.height()
+	    anchors.horizontalConstraint() ? 0 : std::max(1, size.width()),
+	    anchors.verticalConstraint() ? 0 : std::max(1, size.height())
 	);
 }
 
 } // namespace
 
-QSWaylandLayerSurface::QSWaylandLayerSurface(
-    QSWaylandLayerShellIntegration* shell,
-    QtWaylandClient::QWaylandWindow* window
-)
+void LayerSurfaceBridge::commitState() {
+	if (this->surface) this->surface->commit();
+}
+
+LayerSurfaceBridge* LayerSurfaceBridge::get(QWindow* window) {
+	auto v = window->property("layershell_bridge");
+
+	if (v.canConvert<LayerSurfaceBridge*>()) {
+		return v.value<LayerSurfaceBridge*>();
+	}
+
+	return nullptr;
+}
+
+LayerSurfaceBridge* LayerSurfaceBridge::init(QWindow* window, LayerSurfaceState state) {
+	auto* bridge = LayerSurfaceBridge::get(window);
+
+	if (!bridge) {
+		bridge = new LayerSurfaceBridge(window);
+		window->setProperty("layershell_bridge", QVariant::fromValue(bridge));
+	} else if (!bridge->state.isCompatible(state)) {
+		return nullptr;
+	}
+
+	if (!bridge->surface) {
+		// Qt appears to be resetting the window's screen on creation on some systems. This works around it.
+		auto* screen = window->screen();
+		window->create();
+		window->setScreen(screen);
+
+		auto* waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow*>(window->handle());
+		if (waylandWindow == nullptr) {
+			qWarning() << window << "is not a wayland window. Cannot create layershell surface.";
+			return nullptr;
+		}
+
+		static LayerShellIntegration* layershellIntegration = nullptr; // NOLINT
+		if (layershellIntegration == nullptr) {
+			layershellIntegration = new LayerShellIntegration();
+			if (!layershellIntegration->initialize(waylandWindow->display())) {
+				delete layershellIntegration;
+				layershellIntegration = nullptr;
+				qWarning() << "Failed to initialize layershell integration";
+			}
+		}
+
+		waylandWindow->setShellIntegration(layershellIntegration);
+	}
+
+	bridge->state = std::move(state);
+	bridge->commitState();
+
+	return bridge;
+}
+
+LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWaylandWindow* window)
     : QtWaylandClient::QWaylandShellSurface(window) {
 
 	auto* qwindow = window->window();
-	this->ext = LayershellWindowExtension::get(qwindow);
 
-	if (this->ext == nullptr) {
-		qFatal() << "QSWaylandLayerSurface created with null LayershellWindowExtension";
-	}
+	this->bridge = LayerSurfaceBridge::get(qwindow);
+	if (this->bridge == nullptr) qFatal() << "LayerSurface created with null bridge";
+	const auto& s = this->bridge->state;
 
 	wl_output* output = nullptr; // NOLINT (include)
-	if (this->ext->useWindowScreen) {
+	if (!s.compositorPickesScreen) {
 		auto* waylandScreen =
 		    dynamic_cast<QtWaylandClient::QWaylandScreen*>(qwindow->screen()->handle());
 
@@ -97,36 +154,34 @@ QSWaylandLayerSurface::QSWaylandLayerSurface(
 	this->init(shell->get_layer_surface(
 	    window->waylandSurface()->object(),
 	    output,
-	    toWaylandLayer(this->ext->mLayer),
-	    this->ext->mNamespace
+	    toWaylandLayer(s.layer),
+	    s.mNamespace
 	));
 
-	this->updateAnchors();
-	this->updateLayer();
-	this->updateMargins();
-	this->updateExclusiveZone();
-	this->updateKeyboardFocus();
-
-	// new updates will be sent from the extension
-	this->ext->surface = this;
-
-	auto size = constrainedSize(this->ext->mAnchors, window->surfaceSize());
+	auto size = constrainedSize(s.anchors, QHighDpi::toNativePixels(s.implicitSize, qwindow));
 	this->set_size(size.width(), size.height());
+	this->set_anchor(toWaylandAnchors(s.anchors));
+	this->set_margin(
+	    QHighDpi::toNativePixels(s.margins.top, qwindow),
+	    QHighDpi::toNativePixels(s.margins.right, qwindow),
+	    QHighDpi::toNativePixels(s.margins.bottom, qwindow),
+	    QHighDpi::toNativePixels(s.margins.left, qwindow)
+	);
+	this->set_exclusive_zone(QHighDpi::toNativePixels(s.exclusiveZone, qwindow));
+	this->set_keyboard_interactivity(toWaylandKeyboardFocus(s.keyboardFocus));
+
+	this->bridge->surface = this;
 }
 
-QSWaylandLayerSurface::~QSWaylandLayerSurface() {
-	if (this->ext != nullptr) {
-		this->ext->surface = nullptr;
+LayerSurface::~LayerSurface() {
+	if (this->bridge && this->bridge->surface == this) {
+		this->bridge->surface = nullptr;
 	}
 
 	this->destroy();
 }
 
-void QSWaylandLayerSurface::zwlr_layer_surface_v1_configure(
-    quint32 serial,
-    quint32 width,
-    quint32 height
-) {
+void LayerSurface::zwlr_layer_surface_v1_configure(quint32 serial, quint32 width, quint32 height) {
 	this->ack_configure(serial);
 
 	this->size = QSize(static_cast<qint32>(width), static_cast<qint32>(height));
@@ -145,51 +200,53 @@ void QSWaylandLayerSurface::zwlr_layer_surface_v1_configure(
 	}
 }
 
-void QSWaylandLayerSurface::zwlr_layer_surface_v1_closed() { this->window()->window()->close(); }
+void LayerSurface::zwlr_layer_surface_v1_closed() { this->window()->window()->close(); }
 
-bool QSWaylandLayerSurface::isExposed() const { return this->configured; }
+bool LayerSurface::isExposed() const { return this->configured; }
 
-void QSWaylandLayerSurface::applyConfigure() {
-	this->window()->resizeFromApplyConfigure(this->size);
+void LayerSurface::applyConfigure() { this->window()->resizeFromApplyConfigure(this->size); }
+
+QWindow* LayerSurface::qwindow() { return this->window()->window(); }
+
+void LayerSurface::commit() {
+	const auto& p = this->bridge->state;
+	auto& c = this->committed;
+
+	if (p.implicitSize != c.implicitSize || p.anchors != c.anchors) {
+		auto size =
+		    constrainedSize(p.anchors, QHighDpi::toNativePixels(p.implicitSize, this->qwindow()));
+		this->set_size(size.width(), size.height());
+	}
+
+	if (p.anchors != c.anchors) {
+		this->set_anchor(toWaylandAnchors(p.anchors));
+	}
+
+	if (p.margins != c.margins) {
+		this->set_margin(
+		    QHighDpi::toNativePixels(p.margins.top, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.right, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.bottom, this->qwindow()),
+		    QHighDpi::toNativePixels(p.margins.left, this->qwindow())
+		);
+	}
+
+	if (p.layer != c.layer) {
+		this->set_layer(p.layer);
+	}
+
+	if (p.exclusiveZone != c.exclusiveZone) {
+		this->set_exclusive_zone(QHighDpi::toNativePixels(p.exclusiveZone, this->qwindow()));
+	}
+
+	if (p.keyboardFocus != c.keyboardFocus) {
+		this->set_keyboard_interactivity(toWaylandKeyboardFocus(p.keyboardFocus));
+	}
+
+	c = p;
 }
 
-void QSWaylandLayerSurface::setWindowGeometry(const QRect& geometry) {
-	if (this->ext == nullptr) return;
-	auto size = constrainedSize(this->ext->mAnchors, geometry.size());
-	this->set_size(size.width(), size.height());
-}
-
-QWindow* QSWaylandLayerSurface::qwindow() { return this->window()->window(); }
-
-void QSWaylandLayerSurface::updateLayer() {
-	this->set_layer(toWaylandLayer(this->ext->mLayer));
-	this->window()->waylandSurface()->commit();
-}
-
-void QSWaylandLayerSurface::updateAnchors() {
-	this->set_anchor(toWaylandAnchors(this->ext->mAnchors));
-	this->setWindowGeometry(this->window()->windowContentGeometry());
-	this->window()->waylandSurface()->commit();
-}
-
-void QSWaylandLayerSurface::updateMargins() {
-	auto& margins = this->ext->mMargins;
-	this->set_margin(margins.mTop, margins.mRight, margins.mBottom, margins.mLeft);
-	this->window()->waylandSurface()->commit();
-}
-
-void QSWaylandLayerSurface::updateExclusiveZone() {
-	auto nativeZone = QHighDpi::toNativePixels(this->ext->mExclusiveZone, this->window()->window());
-	this->set_exclusive_zone(nativeZone);
-	this->window()->waylandSurface()->commit();
-}
-
-void QSWaylandLayerSurface::updateKeyboardFocus() {
-	this->set_keyboard_interactivity(toWaylandKeyboardFocus(this->ext->mKeyboardFocus));
-	this->window()->waylandSurface()->commit();
-}
-
-void QSWaylandLayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {
+void LayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {
 	std::any role = popup->surfaceRole();
 
 	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) { // NOLINT
@@ -199,3 +256,5 @@ void QSWaylandLayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* p
 		           << "as the popup is not an xdg_popup.";
 	}
 }
+
+} // namespace qs::wayland::layershell

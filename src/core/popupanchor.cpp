@@ -4,8 +4,10 @@
 #include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qquickitem.h>
 #include <qsize.h>
 #include <qtmetamacros.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
@@ -25,14 +27,11 @@ bool PopupAnchor::isDirty() const {
 void PopupAnchor::markClean() { this->lastState = this->state; }
 void PopupAnchor::markDirty() { this->lastState.reset(); }
 
-QObject* PopupAnchor::window() const { return this->mWindow; }
-ProxyWindowBase* PopupAnchor::proxyWindow() const { return this->mProxyWindow; }
-
 QWindow* PopupAnchor::backingWindow() const {
 	return this->mProxyWindow ? this->mProxyWindow->backingWindow() : nullptr;
 }
 
-void PopupAnchor::setWindow(QObject* window) {
+void PopupAnchor::setWindowInternal(QObject* window) {
 	if (window == this->mWindow) return;
 
 	if (this->mWindow) {
@@ -78,6 +77,27 @@ setnull:
 	}
 }
 
+void PopupAnchor::setWindow(QObject* window) {
+	this->setItem(nullptr);
+	this->setWindowInternal(window);
+}
+
+void PopupAnchor::setItem(QQuickItem* item) {
+	if (item == this->mItem) return;
+
+	if (this->mItem) {
+		QObject::disconnect(this->mItem, nullptr, this, nullptr);
+	}
+
+	this->mItem = item;
+	this->onItemWindowChanged();
+
+	if (item) {
+		QObject::connect(item, &QObject::destroyed, this, &PopupAnchor::onItemDestroyed);
+		QObject::connect(item, &QQuickItem::windowChanged, this, &PopupAnchor::onItemWindowChanged);
+	}
+}
+
 void PopupAnchor::onWindowDestroyed() {
 	this->mWindow = nullptr;
 	this->mProxyWindow = nullptr;
@@ -85,18 +105,50 @@ void PopupAnchor::onWindowDestroyed() {
 	emit this->backingWindowVisibilityChanged();
 }
 
-Box PopupAnchor::rect() const { return this->state.rect; }
-
-void PopupAnchor::setRect(Box rect) {
-	if (rect == this->state.rect) return;
-	if (rect.w <= 0) rect.w = 1;
-	if (rect.h <= 0) rect.h = 1;
-
-	this->state.rect = rect;
-	emit this->rectChanged();
+void PopupAnchor::onItemDestroyed() {
+	this->mItem = nullptr;
+	emit this->itemChanged();
+	this->setWindowInternal(nullptr);
 }
 
-Edges::Flags PopupAnchor::edges() const { return this->state.edges; }
+void PopupAnchor::onItemWindowChanged() {
+	if (auto* window = qobject_cast<ProxiedWindow*>(this->mItem->window())) {
+		this->setWindowInternal(window->proxy());
+	} else {
+		this->setWindowInternal(nullptr);
+	}
+}
+
+void PopupAnchor::setRect(Box rect) {
+	if (rect.w <= 0) rect.w = 1;
+	if (rect.h <= 0) rect.h = 1;
+	if (rect == this->mUserRect) return;
+
+	this->mUserRect = rect;
+	emit this->rectChanged();
+
+	this->setWindowRect(rect.qrect().marginsRemoved(this->mMargins.qmargins()));
+}
+
+void PopupAnchor::setMargins(Margins margins) {
+	if (margins == this->mMargins) return;
+
+	this->mMargins = margins;
+	emit this->marginsChanged();
+
+	this->setWindowRect(this->mUserRect.qrect().marginsRemoved(margins.qmargins()));
+}
+
+void PopupAnchor::setWindowRect(QRect rect) {
+	if (rect.width() <= 0) rect.setWidth(1);
+	if (rect.height() <= 0) rect.setHeight(1);
+	if (rect == this->state.rect) return;
+
+	this->state.rect = rect;
+	emit this->windowRectChanged();
+}
+
+void PopupAnchor::resetRect() { this->mUserRect = Box(); }
 
 void PopupAnchor::setEdges(Edges::Flags edges) {
 	if (edges == this->state.edges) return;
@@ -110,8 +162,6 @@ void PopupAnchor::setEdges(Edges::Flags edges) {
 	emit this->edgesChanged();
 }
 
-Edges::Flags PopupAnchor::gravity() const { return this->state.gravity; }
-
 void PopupAnchor::setGravity(Edges::Flags gravity) {
 	if (gravity == this->state.gravity) return;
 
@@ -124,8 +174,6 @@ void PopupAnchor::setGravity(Edges::Flags gravity) {
 	emit this->gravityChanged();
 }
 
-PopupAdjustment::Flags PopupAnchor::adjustment() const { return this->state.adjustment; }
-
 void PopupAnchor::setAdjustment(PopupAdjustment::Flags adjustment) {
 	if (adjustment == this->state.adjustment) return;
 	this->state.adjustment = adjustment;
@@ -135,6 +183,25 @@ void PopupAnchor::setAdjustment(PopupAdjustment::Flags adjustment) {
 void PopupAnchor::updatePlacement(const QPoint& anchorpoint, const QSize& size) {
 	this->state.anchorpoint = anchorpoint;
 	this->state.size = size;
+}
+
+void PopupAnchor::updateAnchor() {
+	if (this->mItem && this->mProxyWindow) {
+		auto baseRect =
+		    this->mUserRect.isEmpty() ? this->mItem->boundingRect() : this->mUserRect.qrect();
+
+		auto rect = this->mProxyWindow->contentItem()->mapFromItem(
+		    this->mItem,
+		    baseRect.marginsRemoved(this->mMargins.qmargins())
+		);
+
+		if (rect.width() < 1) rect.setWidth(1);
+		if (rect.height() < 1) rect.setHeight(1);
+
+		this->setWindowRect(rect.toRect());
+	}
+
+	emit this->anchoring();
 }
 
 static PopupPositioner* POSITIONER = nullptr; // NOLINT
@@ -148,7 +215,7 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 	auto parentGeometry = parentWindow->geometry();
 	auto windowGeometry = window->geometry();
 
-	emit anchor->anchoring();
+	anchor->updateAnchor();
 	anchor->updatePlacement(parentGeometry.topLeft(), windowGeometry.size());
 
 	if (onlyIfDirty && !anchor->isDirty()) return;
@@ -156,7 +223,7 @@ void PopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool only
 
 	auto adjustment = anchor->adjustment();
 	auto screenGeometry = parentWindow->screen()->geometry();
-	auto anchorRectGeometry = anchor->rect().qrect().translated(parentGeometry.topLeft());
+	auto anchorRectGeometry = anchor->windowRect().translated(parentGeometry.topLeft());
 
 	auto anchorEdges = anchor->edges();
 	auto anchorGravity = anchor->gravity();

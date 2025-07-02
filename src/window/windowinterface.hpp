@@ -42,6 +42,9 @@ public:
 /// It provides the following properties
 /// - `window` - the `QSWindow` object.
 /// - `contentItem` - the `contentItem` property of the window.
+///
+/// @@itemPosition(), @@itemRect(), and @@mapFromItem() can also be called directly
+/// on the attached object.
 class WindowInterface: public Reloadable {
 	Q_OBJECT;
 	// clang-format off
@@ -53,7 +56,17 @@ class WindowInterface: public Reloadable {
 	/// This property is useful for ensuring windows spawn in a specific order, and you should
 	/// not use it in place of [visible](#prop.visible).
 	Q_PROPERTY(bool backingWindowVisible READ isBackingWindowVisible NOTIFY backingWindowVisibleChanged);
+	/// The window's desired width.
+	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged);
+	/// The window's desired height.
+	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged);
+	/// The window's actual width.
+	///
+	/// Setting this property is deprecated. Set @@implicitWidth instead.
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
+	/// The window's actual height.
+	///
+	/// Setting this property is deprecated. Set @@implicitHeight instead.
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	/// The ratio between logical pixels and monitor pixels.
 	///
@@ -140,12 +153,61 @@ class WindowInterface: public Reloadable {
 public:
 	explicit WindowInterface(QObject* parent = nullptr): Reloadable(parent) {}
 
+	/// Returns the given Item's position relative to the window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, 0, 0)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	/// Returns the given Item's geometry relative to the window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, 0, 0, 0, 0)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	/// Maps the given point in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, point)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	/// Maps the given point in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, x, y)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	/// Maps the given rect in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, rect)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+	// clang-format off
+	/// Maps the given rect in the coordinate space of `item` to one in the coordinate space
+	/// of this window. Does not update reactively.
+	///
+	/// Equivalent to calling `window.contentItem.mapFromItem(item, x, y, width, height)`
+	///
+	/// See also: @@QtQuick.Item.mapFromItem()
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
+	// clang-format on
+
 	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
 
 	[[nodiscard]] virtual bool isVisible() const = 0;
 	[[nodiscard]] virtual bool isBackingWindowVisible() const = 0;
 	virtual void setVisible(bool visible) = 0;
+
+	[[nodiscard]] virtual qint32 implicitWidth() const = 0;
+	virtual void setImplicitWidth(qint32 implicitWidth) = 0;
+
+	[[nodiscard]] virtual qint32 implicitHeight() const = 0;
+	virtual void setImplicitHeight(qint32 implicitHeight) = 0;
 
 	[[nodiscard]] virtual qint32 width() const = 0;
 	virtual void setWidth(qint32 width) = 0;
@@ -177,6 +239,8 @@ signals:
 	void windowConnected();
 	void visibleChanged();
 	void backingWindowVisibleChanged();
+	void implicitWidthChanged();
+	void implicitHeightChanged();
 	void widthChanged();
 	void heightChanged();
 	void devicePixelRatioChanged();
@@ -195,7 +259,17 @@ class QsWindowAttached: public QObject {
 
 public:
 	[[nodiscard]] virtual QObject* window() const = 0;
+	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
 	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
+
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+
+	Q_INVOKABLE [[nodiscard]] QRectF
+	mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
 
 signals:
 	void windowChanged();

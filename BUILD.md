@@ -41,10 +41,15 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `cmake`
 - `qt6base`
 - `qt6declarative`
-- `qtshadertools` (build-time only)
-- `spirv-tools` (build-time only)
-- `pkg-config` (build-time only)
-- `cli11`
+- `qtshadertools` (build-time)
+- `spirv-tools` (build-time)
+- `pkg-config` (build-time)
+- `cli11` (static library)
+
+Build time dependencies and static libraries don't have to exist at runtime,
+however build time dependencies must be compiled for the architecture of
+the builder, while static libraries must be compiled for the architecture
+of the target.
 
 On some distros, private Qt headers are in separate packages which you may have to install.
 We currently require private headers for the following libraries:
@@ -66,7 +71,7 @@ enable us to fix bugs far more easily.
 
 To disable: `-DCRASH_REPORTER=OFF`
 
-Dependencies: `google-breakpad`
+Dependencies: `google-breakpad` (static library)
 
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused
@@ -101,8 +106,11 @@ To disable: `-DWAYLAND=OFF`
 Dependencies:
  - `qt6wayland`
  - `wayland` (libwayland-client)
- - `wayland-scanner` (may be part of your distro's wayland package)
- - `wayland-protocols`
+ - `wayland-scanner` (build time)
+ - `wayland-protocols` (static library)
+
+Note that one or both of `wayland-scanner` and `wayland-protocols` may be bundled
+with you distro's wayland package.
 
 #### Wlroots Layershell
 Enables wlroots layershell integration through the [zwlr-layer-shell-v1] protocol,
@@ -220,7 +228,7 @@ To disable: `-DI3_IPC=OFF`
 ## Building
 *For developers and prospective contributors: See [CONTRIBUTING.md](CONTRIBUTING.md).*
 
-We highly recommend using `ninja` to run the build, but you can use makefiles if you must.
+Only `ninja` builds are tested, but makefiles may work.
 
 #### Configuring the build
 ```sh

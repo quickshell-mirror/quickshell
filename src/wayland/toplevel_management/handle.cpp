@@ -23,7 +23,6 @@ namespace qs::wayland::toplevel_management::impl {
 
 QString ToplevelHandle::appId() const { return this->mAppId; }
 QString ToplevelHandle::title() const { return this->mTitle; }
-QVector<QScreen*> ToplevelHandle::visibleScreens() const { return this->mVisibleScreens; }
 ToplevelHandle* ToplevelHandle::parent() const { return this->mParent; }
 bool ToplevelHandle::activated() const { return this->mActivated; }
 bool ToplevelHandle::maximized() const { return this->mMaximized; }
@@ -181,59 +180,13 @@ void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_state(wl_array* stateArray)
 }
 
 void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_output_enter(wl_output* output) {
-	auto* display = QtWaylandClient::QWaylandIntegration::instance()->display();
-
-	auto* platformScreen = display->screenForOutput(output);
-	if (!platformScreen) {
-		qCDebug(logToplevelManagement) << this << "got pending output enter" << output;
-
-		if (this->mPendingVisibleScreens.isEmpty()) {
-			QObject::connect(
-			    static_cast<QGuiApplication*>(QGuiApplication::instance()), // NOLINT
-			    &QGuiApplication::screenAdded,
-			    this,
-			    &ToplevelHandle::onScreenAdded
-			);
-		}
-
-		this->mPendingVisibleScreens.append(output);
-		return;
-	}
-
-	auto* screen = platformScreen->screen();
-
-	qCDebug(logToplevelManagement) << this << "got output enter" << screen;
-
-	this->mVisibleScreens.append(screen);
-	emit this->visibleScreenAdded(screen);
+	qCDebug(logToplevelManagement) << this << "got output enter" << output;
+	this->visibleScreens.addOutput(output);
 }
 
 void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_output_leave(wl_output* output) {
-	auto* display = QtWaylandClient::QWaylandIntegration::instance()->display();
-	auto* platformScreen = display->screenForOutput(output);
-
-	if (!this->mPendingVisibleScreens.isEmpty()) {
-		this->mPendingVisibleScreens.removeOne(output);
-
-		if (this->mPendingVisibleScreens.isEmpty()) {
-			qCDebug(logToplevelManagement) << this << "got pending output leave" << output;
-
-			QObject::disconnect(
-			    static_cast<QGuiApplication*>(QGuiApplication::instance()), // NOLINT
-			    nullptr,
-			    this,
-			    nullptr
-			);
-		}
-	}
-
-	if (!platformScreen) return;
-	auto* screen = platformScreen->screen();
-
-	qCDebug(logToplevelManagement) << this << "got output leave" << screen;
-
-	this->mVisibleScreens.removeOne(screen);
-	emit this->visibleScreenRemoved(screen);
+	qCDebug(logToplevelManagement) << this << "got output leave" << output;
+	this->visibleScreens.removeOutput(output);
 }
 
 void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_parent(
@@ -260,28 +213,6 @@ void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_parent(
 void ToplevelHandle::onParentClosed() {
 	this->mParent = nullptr;
 	emit this->parentChanged();
-}
-
-void ToplevelHandle::onScreenAdded(QScreen* screen) {
-	auto* waylandScreen = dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle());
-	if (!waylandScreen) return;
-
-	auto* output = waylandScreen->output();
-
-	if (this->mPendingVisibleScreens.removeOne(output)) {
-		qCDebug(logToplevelManagement) << this << "got pending entered output init" << screen;
-		this->mVisibleScreens.append(screen);
-		emit this->visibleScreenAdded(screen);
-	}
-
-	if (this->mPendingVisibleScreens.isEmpty()) {
-		QObject::disconnect(
-		    static_cast<QGuiApplication*>(QGuiApplication::instance()), // NOLINT
-		    nullptr,
-		    this,
-		    nullptr
-		);
-	}
 }
 
 } // namespace qs::wayland::toplevel_management::impl

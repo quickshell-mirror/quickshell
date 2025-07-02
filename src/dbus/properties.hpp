@@ -20,6 +20,7 @@
 #include <qstringview.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtversionchecks.h>
 #include <qvariant.h>
 
 #include "../core/util.hpp"
@@ -234,7 +235,9 @@ public:
 	void attachProperty(DBusPropertyCore* property);
 	void updateAllDirect();
 	void updateAllViaGetAll();
+	void updatePropertySet(const QVariantMap& properties, bool complainMissing = true);
 	[[nodiscard]] QString toString() const;
+	[[nodiscard]] bool isConnected() const { return this->interface; }
 
 	void pushPropertyUpdate(DBusPropertyCore* property);
 	void requestPropertyUpdate(DBusPropertyCore* property);
@@ -251,7 +254,6 @@ private slots:
 	);
 
 private:
-	void updatePropertySet(const QVariantMap& properties, bool complainMissing);
 	void tryUpdateProperty(DBusPropertyCore* property, const QVariant& variant) const;
 	[[nodiscard]] QString propertyString(const DBusPropertyCore* property) const;
 
@@ -263,6 +265,10 @@ private:
 };
 
 } // namespace qs::dbus
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+QDebug operator<<(QDebug debug, const QDBusObjectPath& path);
+#endif
 
 // NOLINTBEGIN
 #define QS_DBUS_BINDABLE_PROPERTY_GROUP(Class, name) qs::dbus::DBusPropertyGroup name {this};

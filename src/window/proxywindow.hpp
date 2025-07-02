@@ -5,6 +5,8 @@
 #include <qevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
+#include <qproperty.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
 #include <qquickitem.h>
@@ -12,6 +14,8 @@
 #include <qsurfaceformat.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
+#include <qvectornd.h>
 #include <qwindow.h>
 
 #include "../core/qmlscreen.hpp"
@@ -42,6 +46,8 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QQuickWindow* _backingWindow READ backingWindow);
 	Q_PROPERTY(QQuickItem* contentItem READ contentItem CONSTANT);
 	Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
+	Q_PROPERTY(qint32 implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged);
+	Q_PROPERTY(qint32 implicitHeight READ implicitHeight WRITE setImplicitHeight NOTIFY implicitHeightChanged);
 	Q_PROPERTY(qint32 width READ width WRITE setWidth NOTIFY widthChanged);
 	Q_PROPERTY(qint32 height READ height WRITE setHeight NOTIFY heightChanged);
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY devicePixelRatioChanged);
@@ -63,6 +69,14 @@ public:
 	ProxyWindowBase(ProxyWindowBase&&) = delete;
 	void operator=(ProxyWindowBase&) = delete;
 	void operator=(ProxyWindowBase&&) = delete;
+
+	Q_INVOKABLE [[nodiscard]] QPointF itemPosition(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QRectF itemRect(QQuickItem* item) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, QPointF point) const;
+	Q_INVOKABLE [[nodiscard]] QPointF mapFromItem(QQuickItem* item, qreal x, qreal y) const;
+	Q_INVOKABLE [[nodiscard]] QRectF mapFromItem(QQuickItem* item, QRectF rect) const;
+	Q_INVOKABLE [[nodiscard]] QRectF
+	mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const;
 
 	void onReload(QObject* oldInstance) override;
 	void ensureQWindow();
@@ -92,11 +106,20 @@ public:
 	[[nodiscard]] virtual qint32 x() const;
 	[[nodiscard]] virtual qint32 y() const;
 
+	[[nodiscard]] qint32 implicitWidth() const { return this->bImplicitWidth; }
+	void setImplicitWidth(qint32 implicitWidth);
+
+	[[nodiscard]] qint32 implicitHeight() const { return this->bImplicitHeight; }
+	void setImplicitHeight(qint32 implicitHeight);
+
 	[[nodiscard]] virtual qint32 width() const;
-	virtual void setWidth(qint32 width);
+	void setWidth(qint32 width);
 
 	[[nodiscard]] virtual qint32 height() const;
-	virtual void setHeight(qint32 height);
+	void setHeight(qint32 height);
+
+	virtual void trySetWidth(qint32 implicitWidth);
+	virtual void trySetHeight(qint32 implicitHeight);
 
 	[[nodiscard]] qreal devicePixelRatio() const;
 
@@ -124,6 +147,8 @@ signals:
 	void backerVisibilityChanged();
 	void xChanged();
 	void yChanged();
+	void implicitWidthChanged();
+	void implicitHeightChanged();
 	void widthChanged();
 	void heightChanged();
 	void devicePixelRatioChanged();
@@ -140,13 +165,11 @@ protected slots:
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
-	void onPolished();
+	virtual void onPolished();
 	void runLints();
 
 protected:
 	bool mVisible = true;
-	qint32 mWidth = 100;
-	qint32 mHeight = 100;
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	PendingRegion* mMask = nullptr;
@@ -161,6 +184,22 @@ protected:
 		bool inputMask : 1 = false;
 	} pendingPolish;
 
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
+	    ProxyWindowBase,
+	    qint32,
+	    bImplicitWidth,
+	    100,
+	    &ProxyWindowBase::implicitWidthChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
+	    ProxyWindowBase,
+	    qint32,
+	    bImplicitHeight,
+	    100,
+	    &ProxyWindowBase::implicitHeightChanged
+	);
+
 private:
 	void polishItems();
 	void updateMask();
@@ -173,6 +212,7 @@ public:
 	explicit ProxyWindowAttached(QQuickItem* parent);
 
 	[[nodiscard]] QObject* window() const override;
+	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
 	[[nodiscard]] QQuickItem* contentItem() const override;
 
 protected:
@@ -180,6 +220,7 @@ protected:
 
 private:
 	ProxyWindowBase* mWindow = nullptr;
+	WindowInterface* mWindowInterface = nullptr;
 
 	void setWindow(ProxyWindowBase* window);
 };

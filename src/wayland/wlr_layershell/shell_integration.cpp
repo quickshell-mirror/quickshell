@@ -6,16 +6,20 @@
 
 #include "surface.hpp"
 
-QSWaylandLayerShellIntegration::QSWaylandLayerShellIntegration()
-    : QtWaylandClient::QWaylandShellIntegrationTemplate<QSWaylandLayerShellIntegration>(4) {}
+namespace qs::wayland::layershell {
 
-QSWaylandLayerShellIntegration::~QSWaylandLayerShellIntegration() {
+LayerShellIntegration::LayerShellIntegration()
+    : QtWaylandClient::QWaylandShellIntegrationTemplate<LayerShellIntegration>(4) {}
+
+LayerShellIntegration::~LayerShellIntegration() {
 	if (this->isInitialized()) {
 		this->destroy();
 	}
 }
 
 QtWaylandClient::QWaylandShellSurface*
-QSWaylandLayerShellIntegration::createShellSurface(QtWaylandClient::QWaylandWindow* window) {
-	return new QSWaylandLayerSurface(this, window);
+LayerShellIntegration::createShellSurface(QtWaylandClient::QWaylandWindow* window) {
+	return new LayerSurface(this, window);
 }
+
+} // namespace qs::wayland::layershell

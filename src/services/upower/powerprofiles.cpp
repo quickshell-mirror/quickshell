@@ -101,6 +101,12 @@ void PowerProfiles::init() {
 }
 
 void PowerProfiles::setProfile(PowerProfile::Enum profile) {
+	if (!this->properties.isConnected()) {
+		qCCritical(logPowerProfiles
+		) << "Cannot set power profile: power-profiles-daemon not accessible or not running";
+		return;
+	}
+
 	if (profile == PowerProfile::Performance && !this->bHasPerformanceProfile) {
 		qCCritical(logPowerProfiles
 		) << "Cannot request performance profile as it is not present for this device.";

@@ -22,6 +22,8 @@ QSWaylandSessionLockManager* manager() {
 }
 } // namespace
 
+bool SessionLockManager::lockAvailable() { return manager()->isActive(); }
+
 bool SessionLockManager::lock() {
 	if (this->isLocked() || SessionLockManager::sessionLocked()) return false;
 	this->mLock = manager()->acquireLock();

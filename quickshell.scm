@@ -35,9 +35,9 @@
                          pkg-config
                          qtshadertools
                          spirv-tools
-                         wayland-protocols))
-    (inputs (list cli11
-                  jemalloc
+                         wayland-protocols
+                         cli11))
+    (inputs (list jemalloc
                   libdrm
                   libxcb
                   libxkbcommon

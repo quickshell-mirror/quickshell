@@ -1,7 +1,10 @@
 #pragma once
 
+#include <private/qwayland-wayland.h>
 #include <private/qwaylandscreen_p.h>
+#include <qcontainerfwd.h>
 #include <qtclasshelpermacros.h>
+#include <qtypes.h>
 #include <qwayland-wlr-screencopy-unstable-v1.h>
 
 #include "../manager.hpp"
@@ -24,6 +27,7 @@ public:
 	Q_DISABLE_COPY_MOVE(WlrScreencopyContext);
 
 	void captureFrame() override;
+	void updateTransform(bool previouslyUnset);
 
 protected:
 	// clang-format off
@@ -39,9 +43,38 @@ private slots:
 	void onScreenDestroyed();
 
 private:
+	void submitFrame();
+
+	class OutputTransformQuery: public QtWayland::wl_output {
+	public:
+		OutputTransformQuery(WlrScreencopyContext* context);
+		~OutputTransformQuery() override;
+		Q_DISABLE_COPY_MOVE(OutputTransformQuery);
+
+		qint32 transform = -1;
+		void setScreen(QtWaylandClient::QWaylandScreen* screen);
+
+	protected:
+		void output_geometry(
+		    qint32 x,
+		    qint32 y,
+		    qint32 width,
+		    qint32 height,
+		    qint32 subpixel,
+		    const QString& make,
+		    const QString& model,
+		    qint32 transform
+		) override;
+
+	private:
+		WlrScreencopyContext* context;
+	};
+
 	WlrScreencopyManager* manager;
 	buffer::WlBufferRequest request;
 	bool copiedFirstFrame = false;
+	OutputTransformQuery transform {this};
+	bool yInvert = false;
 
 	QtWaylandClient::QWaylandScreen* screen;
 	bool paintCursors;

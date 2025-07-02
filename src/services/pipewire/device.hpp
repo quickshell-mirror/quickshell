@@ -8,9 +8,11 @@
 #include <qcontainerfwd.h>
 #include <qhash.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <spa/pod/builder.h>
 
 #include "core.hpp"
+#include "node.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
@@ -32,6 +34,7 @@ public:
 
 signals:
 	void deviceReady();
+	void routeVolumesChanged(qint32 routeDevice, const PwVolumeProps& volumeProps);
 
 private slots:
 	void polled();
@@ -43,7 +46,7 @@ private:
 	onParam(void* data, qint32 seq, quint32 id, quint32 index, quint32 next, const spa_pod* param);
 
 	QHash<qint32, qint32> routeDeviceIndexes;
-	QHash<qint32, qint32> stagingIndexes;
+	QList<qint32> stagingIndexes;
 	void addDeviceIndexPairs(const spa_pod* param);
 
 	bool

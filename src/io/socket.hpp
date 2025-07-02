@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qcontainerfwd.h>
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
 #include <qloggingcategory.h>
@@ -90,9 +91,7 @@ private:
 ///   }
 /// }
 /// ```
-class SocketServer
-    : public QObject
-    , public PostReloadHook {
+class SocketServer: public Reloadable {
 	Q_OBJECT;
 	/// If the socket server is currently active. Defaults to false.
 	///
@@ -115,11 +114,11 @@ class SocketServer
 	QML_ELEMENT;
 
 public:
-	explicit SocketServer(QObject* parent = nullptr): QObject(parent) {}
+	explicit SocketServer(QObject* parent = nullptr): Reloadable(parent) {}
 	~SocketServer() override;
 	Q_DISABLE_COPY_MOVE(SocketServer);
 
-	void onPostReload() override;
+	void onReload(QObject* oldInstance) override;
 
 	[[nodiscard]] bool isActive() const;
 	void setActive(bool active);
@@ -149,4 +148,5 @@ private:
 	bool activeTarget = false;
 	bool postReload = false;
 	QString mPath;
+	QString activePath;
 };

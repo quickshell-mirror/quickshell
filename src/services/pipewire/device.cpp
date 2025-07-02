@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <utility>
 
 #include <pipewire/device.h>
 #include <qcontainerfwd.h>
@@ -20,6 +21,7 @@
 #include <spa/utils/type.h>
 
 #include "core.hpp"
+#include "node.hpp"
 
 namespace qs::service::pipewire {
 
@@ -104,30 +106,43 @@ void PwDevice::addDeviceIndexPairs(const spa_pod* param) {
 	qint32 device = 0;
 	qint32 index = 0;
 
+	spa_pod* props = nullptr;
+
 	// clang-format off
 	quint32 id = SPA_PARAM_Route;
 	spa_pod_parser_get_object(
 			&parser, SPA_TYPE_OBJECT_ParamRoute, &id,
 			SPA_PARAM_ROUTE_device, SPA_POD_Int(&device),
-			SPA_PARAM_ROUTE_index, SPA_POD_Int(&index)
+			SPA_PARAM_ROUTE_index, SPA_POD_Int(&index),
+			SPA_PARAM_ROUTE_props, SPA_POD_PodObject(&props)
 	);
 	// clang-format on
 
-	this->stagingIndexes.insert(device, index);
+	auto volumeProps = PwVolumeProps::parseSpaPod(props);
+
+	this->stagingIndexes.append(device);
 	// Insert into the main map as well, staging's purpose is to remove old entries.
 	this->routeDeviceIndexes.insert(device, index);
 
 	qCDebug(logDevice).nospace() << "Registered device/index pair for " << this
 	                             << ": [device: " << device << ", index: " << index << ']';
+
+	emit this->routeVolumesChanged(device, volumeProps);
 }
 
 void PwDevice::polled() {
 	// It is far more likely that the list content has not come in yet than it having no entries,
 	// and there isn't a way to check in the case that there *aren't* actually any entries.
-	if (!this->stagingIndexes.isEmpty() && this->stagingIndexes != this->routeDeviceIndexes) {
-		this->routeDeviceIndexes = this->stagingIndexes;
-		qCDebug(logDevice) << "Updated device/index pair list for" << this << "to"
-		                   << this->routeDeviceIndexes;
+	if (!this->stagingIndexes.isEmpty()) {
+		this->routeDeviceIndexes.removeIf([&](const std::pair<qint32, qint32>& entry) {
+			if (!stagingIndexes.contains(entry.first)) {
+				qCDebug(logDevice).nospace() << "Removed device/index pair [device: " << entry.first
+				                             << ", index: " << entry.second << "] for" << this;
+				return true;
+			}
+
+			return false;
+		});
 	}
 }
 

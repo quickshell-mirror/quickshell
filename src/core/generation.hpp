@@ -4,8 +4,10 @@
 #include <qdir.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qqmlengine.h>
+#include <qqmlerror.h>
 #include <qqmlincubator.h>
 #include <qtclasshelpermacros.h>
 
@@ -28,6 +30,7 @@ class EngineGeneration: public QObject {
 	Q_OBJECT;
 
 public:
+	explicit EngineGeneration();
 	explicit EngineGeneration(const QDir& rootPath, QmlScanner scanner);
 	~EngineGeneration() override;
 	Q_DISABLE_COPY_MOVE(EngineGeneration);
@@ -35,6 +38,7 @@ public:
 	// assumes root has been initialized, consumes old generation
 	void onReload(EngineGeneration* old);
 	void setWatchingFiles(bool watching);
+	bool setExtraWatchedFiles(const QVector<QString>& files);
 
 	void registerIncubationController(QQmlIncubationController* controller);
 	void deregisterIncubationController(QQmlIncubationController* controller);
@@ -60,6 +64,7 @@ public:
 	SingletonRegistry singletonRegistry;
 	QFileSystemWatcher* watcher = nullptr;
 	QVector<QString> deletedWatchedFiles;
+	QVector<QString> extraWatchedFiles;
 	DelayedQmlIncubationController delayedIncubationController;
 	bool reloadComplete = false;
 	QuickshellGlobal* qsgInstance = nullptr;
@@ -79,6 +84,7 @@ private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void incubationControllerDestroyed();
+	void onEngineWarnings(const QList<QQmlError>& warnings) const;
 
 private:
 	void postReload();

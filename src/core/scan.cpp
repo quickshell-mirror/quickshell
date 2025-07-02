@@ -1,11 +1,18 @@
 #include "scan.hpp"
+#include <cmath>
 
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qjsonarray.h>
+#include <qjsondocument.h>
+#include <qjsonobject.h>
+#include <qjsonvalue.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qpair.h>
 #include <qstring.h>
+#include <qstringliteral.h>
 #include <qtextstream.h>
 
 Q_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
@@ -32,6 +39,9 @@ void QmlScanner::scanDir(const QString& path) {
 			} else {
 				entries.push_back(entry);
 			}
+		} else if (entry.at(0).isUpper() && entry.endsWith(".qml.json")) {
+			this->scanQmlJson(dir.filePath(entry));
+			singletons.push_back(entry.first(entry.length() - 5));
 		}
 	}
 
@@ -53,7 +63,7 @@ void QmlScanner::scanDir(const QString& path) {
 		}
 
 		qCDebug(logQmlScanner) << "Synthesized qmldir for" << path << qPrintable("\n" + qmldir);
-		this->qmldirIntercepts.insert(QDir(path).filePath("qmldir"), qmldir);
+		this->fileIntercepts.insert(QDir(path).filePath("qmldir"), qmldir);
 	}
 }
 
@@ -124,4 +134,85 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 	}
 
 	return singleton;
+}
+
+void QmlScanner::scanQmlJson(const QString& path) {
+	qCDebug(logQmlScanner) << "Scanning qml.json file" << path;
+
+	auto file = QFile(path);
+	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+		qCWarning(logQmlScanner) << "Failed to open file" << path;
+		return;
+	}
+
+	auto data = file.readAll();
+
+	// Importing this makes CI builds fail for some reason.
+	QJsonParseError error; // NOLINT (misc-include-cleaner)
+	auto json = QJsonDocument::fromJson(data, &error);
+
+	if (error.error != QJsonParseError::NoError) {
+		qCCritical(logQmlScanner).nospace()
+		    << "Failed to parse qml.json file at " << path << ": " << error.errorString();
+		return;
+	}
+
+	const QString body =
+	    "pragma Singleton\nimport QtQuick as Q\n\n" % QmlScanner::jsonToQml(json.object()).second;
+
+	qCDebug(logQmlScanner) << "Synthesized qml file for" << path << qPrintable("\n" + body);
+
+	this->fileIntercepts.insert(path.first(path.length() - 5), body);
+	this->scannedFiles.push_back(path);
+}
+
+QPair<QString, QString> QmlScanner::jsonToQml(const QJsonValue& value, int indent) {
+	if (value.isObject()) {
+		const auto& object = value.toObject();
+
+		auto valIter = object.constBegin();
+
+		QString accum = "Q.QtObject {\n";
+		for (const auto& key: object.keys()) {
+			const auto& val = *valIter++;
+			auto [type, repr] = QmlScanner::jsonToQml(val, indent + 2);
+			accum += QString(' ').repeated(indent + 2) % "readonly property " % type % ' ' % key % ": "
+			       % repr % ";\n";
+		}
+
+		accum += QString(' ').repeated(indent) % '}';
+		return qMakePair(QStringLiteral("Q.QtObject"), accum);
+	} else if (value.isArray()) {
+		return qMakePair(
+		    QStringLiteral("var"),
+		    QJsonDocument(value.toArray()).toJson(QJsonDocument::Compact)
+		);
+	} else if (value.isString()) {
+		const auto& str = value.toString();
+
+		if (str.startsWith('#') && (str.length() == 4 || str.length() == 7 || str.length() == 9)) {
+			for (auto c: str.sliced(1)) {
+				if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+					goto noncolor;
+				}
+			}
+
+			return qMakePair(QStringLiteral("Q.color"), '"' % str % '"');
+		}
+
+	noncolor:
+		return qMakePair(QStringLiteral("string"), '"' % QString(str).replace("\"", "\\\"") % '"');
+	} else if (value.isDouble()) {
+		auto num = value.toDouble();
+		double whole = 0;
+		if (std::modf(num, &whole) == 0.0) {
+			return qMakePair(QStringLiteral("int"), QString::number(static_cast<int>(whole)));
+		} else {
+			return qMakePair(QStringLiteral("real"), QString::number(num));
+		}
+	} else if (value.isBool()) {
+		return qMakePair(QStringLiteral("bool"), value.toBool() ? "true" : "false");
+	} else {
+		return qMakePair(QStringLiteral("var"), "null");
+	}
 }

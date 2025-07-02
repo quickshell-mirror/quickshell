@@ -18,6 +18,7 @@
 
 #include "../core/generation.hpp"
 #include "../core/qmlscreen.hpp"
+#include "../core/types.hpp"
 #include "../window/panelinterface.hpp"
 #include "../window/proxywindow.hpp"
 #include "util.hpp"
@@ -39,17 +40,20 @@ public:
 	}
 
 	void addPanel(XPanelWindow* panel) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(panel)];
+		panel->engineGeneration = EngineGeneration::findObjectGeneration(panel);
+		auto& panels = this->mPanels[panel->engineGeneration];
 		if (!panels.contains(panel)) {
 			panels.push_back(panel);
 		}
 	}
 
 	void removePanel(XPanelWindow* panel) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(panel)];
+		if (!panel->engineGeneration) return;
+
+		auto& panels = this->mPanels[panel->engineGeneration];
 		if (panels.removeOne(panel)) {
 			if (panels.isEmpty()) {
-				this->mPanels.erase(EngineGeneration::findObjectGeneration(panel));
+				this->mPanels.erase(panel->engineGeneration);
 			}
 
 			// from the bottom up, update all panels
@@ -60,7 +64,8 @@ public:
 	}
 
 	void updateLowerDimensions(XPanelWindow* exclude) {
-		auto& panels = this->mPanels[EngineGeneration::findObjectGeneration(exclude)];
+		if (!exclude->engineGeneration) return;
+		auto& panels = this->mPanels[exclude->engineGeneration];
 
 		// update all panels lower than the one we start from
 		auto found = false;
@@ -126,22 +131,18 @@ void XPanelWindow::connectWindow() {
 	}
 }
 
-void XPanelWindow::setWidth(qint32 width) {
-	this->mWidth = width;
-
+void XPanelWindow::trySetWidth(qint32 implicitWidth) {
 	// only update the actual size if not blocked by anchors
 	if (!this->mAnchors.horizontalConstraint()) {
-		this->ProxyWindowBase::setWidth(width);
+		this->ProxyWindowBase::trySetWidth(implicitWidth);
 		this->updateDimensions();
 	}
 }
 
-void XPanelWindow::setHeight(qint32 height) {
-	this->mHeight = height;
-
+void XPanelWindow::trySetHeight(qint32 implicitHeight) {
 	// only update the actual size if not blocked by anchors
 	if (!this->mAnchors.verticalConstraint()) {
-		this->ProxyWindowBase::setHeight(height);
+		this->ProxyWindowBase::trySetHeight(implicitHeight);
 		this->updateDimensions();
 	}
 }
@@ -300,37 +301,38 @@ void XPanelWindow::updateDimensions(bool propagate) {
 	auto geometry = QRect();
 
 	if (this->mAnchors.horizontalConstraint()) {
-		geometry.setX(screenGeometry.x() + this->mMargins.mLeft);
-		geometry.setWidth(screenGeometry.width() - this->mMargins.mLeft - this->mMargins.mRight);
+		geometry.setX(screenGeometry.x() + this->mMargins.left);
+		geometry.setWidth(screenGeometry.width() - this->mMargins.left - this->mMargins.right);
 	} else {
 		if (this->mAnchors.mLeft) {
-			geometry.setX(screenGeometry.x() + this->mMargins.mLeft);
+			geometry.setX(screenGeometry.x() + this->mMargins.left);
 		} else if (this->mAnchors.mRight) {
 			geometry.setX(
-			    screenGeometry.x() + screenGeometry.width() - this->mWidth - this->mMargins.mRight
+			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth() - this->mMargins.right
 			);
 		} else {
-			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->mWidth / 2);
+			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->implicitWidth() / 2);
 		}
 
-		geometry.setWidth(this->mWidth);
+		geometry.setWidth(this->implicitWidth());
 	}
 
 	if (this->mAnchors.verticalConstraint()) {
-		geometry.setY(screenGeometry.y() + this->mMargins.mTop);
-		geometry.setHeight(screenGeometry.height() - this->mMargins.mTop - this->mMargins.mBottom);
+		geometry.setY(screenGeometry.y() + this->mMargins.top);
+		geometry.setHeight(screenGeometry.height() - this->mMargins.top - this->mMargins.bottom);
 	} else {
 		if (this->mAnchors.mTop) {
-			geometry.setY(screenGeometry.y() + this->mMargins.mTop);
+			geometry.setY(screenGeometry.y() + this->mMargins.top);
 		} else if (this->mAnchors.mBottom) {
 			geometry.setY(
-			    screenGeometry.y() + screenGeometry.height() - this->mHeight - this->mMargins.mBottom
+			    screenGeometry.y() + screenGeometry.height() - this->implicitHeight()
+			    - this->mMargins.bottom
 			);
 		} else {
-			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->mHeight / 2);
+			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->implicitHeight() / 2);
 		}
 
-		geometry.setHeight(this->mHeight);
+		geometry.setHeight(this->implicitHeight());
 	}
 
 	this->window->setGeometry(geometry);
@@ -378,9 +380,11 @@ void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
 
 	if (autoExclude) {
 		if (side == 0 || side == 1) {
-			exclusiveZone = this->mWidth + (side == 0 ? this->mMargins.mLeft : this->mMargins.mRight);
+			exclusiveZone =
+			    this->implicitWidth() + (side == 0 ? this->mMargins.left : this->mMargins.right);
 		} else {
-			exclusiveZone = this->mHeight + (side == 2 ? this->mMargins.mTop : this->mMargins.mBottom);
+			exclusiveZone =
+			    this->implicitHeight() + (side == 2 ? this->mMargins.top : this->mMargins.bottom);
 		}
 	} else {
 		exclusiveZone = this->mExclusiveZone;
@@ -476,6 +480,8 @@ XPanelInterface::XPanelInterface(QObject* parent)
 	QObject::connect(this->panel, &ProxyWindowBase::windowConnected, this, &XPanelInterface::windowConnected);
 	QObject::connect(this->panel, &ProxyWindowBase::visibleChanged, this, &XPanelInterface::visibleChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::backerVisibilityChanged, this, &XPanelInterface::backingWindowVisibleChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::implicitHeightChanged, this, &XPanelInterface::implicitHeightChanged);
+	QObject::connect(this->panel, &ProxyWindowBase::implicitWidthChanged, this, &XPanelInterface::implicitWidthChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::heightChanged, this, &XPanelInterface::heightChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::widthChanged, this, &XPanelInterface::widthChanged);
 	QObject::connect(this->panel, &ProxyWindowBase::devicePixelRatioChanged, this, &XPanelInterface::devicePixelRatioChanged);
@@ -514,6 +520,8 @@ qreal XPanelInterface::devicePixelRatio() const { return this->panel->devicePixe
 	void XPanelInterface::set(type value) { this->panel->set(value); }
 
 proxyPair(bool, isVisible, setVisible);
+proxyPair(qint32, implicitWidth, setImplicitWidth);
+proxyPair(qint32, implicitHeight, setImplicitHeight);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);

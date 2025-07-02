@@ -16,7 +16,7 @@ QDataStream& operator>>(QDataStream& stream, InstanceLockInfo& info);
 class QsPaths {
 public:
 	static QsPaths* instance();
-	static void init(QString shellId, QString pathId);
+	static void init(QString shellId, QString pathId, QString dataOverride, QString stateOverride);
 	static QDir crashDir(const QString& id);
 	static QString basePath(const QString& id);
 	static QString ipcPath(const QString& id);
@@ -24,13 +24,16 @@ public:
 	checkLock(const QString& path, InstanceLockInfo* info = nullptr, bool allowDead = false);
 	static QVector<InstanceLockInfo> collectInstances(const QString& path, bool fallbackDead = false);
 
-	QDir* cacheDir();
 	QDir* baseRunDir();
 	QDir* shellRunDir();
 	QDir* instanceRunDir();
 	void linkRunDir();
 	void linkPathDir();
 	void createLock();
+
+	QDir shellDataDir();
+	QDir shellStateDir();
+	QDir shellCacheDir();
 
 private:
 	enum class DirState : quint8 {
@@ -41,12 +44,20 @@ private:
 
 	QString shellId;
 	QString pathId;
-	QDir mCacheDir;
 	QDir mBaseRunDir;
 	QDir mShellRunDir;
 	QDir mInstanceRunDir;
-	DirState cacheState = DirState::Unknown;
 	DirState baseRunState = DirState::Unknown;
 	DirState shellRunState = DirState::Unknown;
 	DirState instanceRunState = DirState::Unknown;
+
+	QDir mShellDataDir;
+	QDir mShellStateDir;
+	QDir mShellCacheDir;
+	DirState shellDataState = DirState::Unknown;
+	DirState shellStateState = DirState::Unknown;
+	DirState shellCacheState = DirState::Unknown;
+
+	QString shellDataOverride;
+	QString shellStateOverride;
 };

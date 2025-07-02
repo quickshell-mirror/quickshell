@@ -26,7 +26,7 @@ class QsInterceptDataReply: public QNetworkReply {
 	Q_OBJECT;
 
 public:
-	QsInterceptDataReply(const QString& qmldir, QObject* parent = nullptr);
+	QsInterceptDataReply(const QString& data, QObject* parent = nullptr);
 
 	qint64 readData(char* data, qint64 maxSize) override;
 
@@ -43,7 +43,7 @@ class QsInterceptNetworkAccessManager: public QNetworkAccessManager {
 
 public:
 	QsInterceptNetworkAccessManager(
-	    const QHash<QString, QString>& qmldirIntercepts,
+	    const QHash<QString, QString>& fileIntercepts,
 	    QObject* parent = nullptr
 	);
 
@@ -55,15 +55,15 @@ protected:
 	) override;
 
 private:
-	const QHash<QString, QString>& qmldirIntercepts;
+	const QHash<QString, QString>& fileIntercepts;
 };
 
 class QsInterceptNetworkAccessManagerFactory: public QQmlNetworkAccessManagerFactory {
 public:
-	QsInterceptNetworkAccessManagerFactory(const QHash<QString, QString>& qmldirIntercepts)
-	    : qmldirIntercepts(qmldirIntercepts) {}
+	QsInterceptNetworkAccessManagerFactory(const QHash<QString, QString>& fileIntercepts)
+	    : fileIntercepts(fileIntercepts) {}
 	QNetworkAccessManager* create(QObject* parent) override;
 
 private:
-	const QHash<QString, QString>& qmldirIntercepts;
+	const QHash<QString, QString>& fileIntercepts;
 };

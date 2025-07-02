@@ -16,6 +16,7 @@
 #include <qtenvironmentvariables.h>
 #include <ranges>
 
+#include "common.hpp"
 #include "model.hpp"
 
 namespace {
@@ -260,6 +261,7 @@ void DesktopEntry::doExec(const QString& execString, const QString& workingDirec
 	process.setProgram(args.at(0));
 	process.setArguments(args.sliced(1));
 	if (!workingDirectory.isEmpty()) process.setWorkingDirectory(workingDirectory);
+	process.setProcessEnvironment(qs::Common::INITIAL_ENVIRONMENT);
 	process.startDetached();
 }
 
@@ -275,9 +277,15 @@ DesktopEntryManager::DesktopEntryManager() {
 void DesktopEntryManager::scanDesktopEntries() {
 	QList<QString> dataPaths;
 
+	if (qEnvironmentVariableIsSet("XDG_DATA_HOME")) {
+		dataPaths.push_back(qEnvironmentVariable("XDG_DATA_HOME"));
+	} else if (qEnvironmentVariableIsSet("HOME")) {
+		dataPaths.push_back(qEnvironmentVariable("HOME") + "/.local/share");
+	}
+
 	if (qEnvironmentVariableIsSet("XDG_DATA_DIRS")) {
 		auto var = qEnvironmentVariable("XDG_DATA_DIRS");
-		dataPaths = var.split(u':', Qt::SkipEmptyParts);
+		dataPaths += var.split(u':', Qt::SkipEmptyParts);
 	} else {
 		dataPaths.push_back("/usr/local/share");
 		dataPaths.push_back("/usr/share");

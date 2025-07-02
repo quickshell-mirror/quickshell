@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qlist.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
@@ -30,6 +31,11 @@ class Toplevel: public QObject {
 	///
 	/// Activation can be requested with the @@activate() function.
 	Q_PROPERTY(bool activated READ activated NOTIFY activatedChanged);
+	/// Screens the toplevel is currently visible on.
+	/// Screens are listed in the order they have been added by the compositor.
+	///
+	/// > [!NOTE]	Some compositors only list a single screen, even if a window is visible on multiple.
+	Q_PROPERTY(QList<QuickshellScreenInfo*> screens READ screens NOTIFY screensChanged);
 	/// If the window is currently maximized.
 	///
 	/// Maximization can be requested by setting this property, though it may
@@ -56,6 +62,10 @@ public:
 	/// The request may be ignored by the compositor.
 	Q_INVOKABLE void activate();
 
+	/// Request that this toplevel is closed.
+	/// The request may be ignored by the compositor or the application.
+	Q_INVOKABLE void close();
+
 	/// Request that this toplevel is fullscreened on a specific screen.
 	/// The request may be ignored by the compositor.
 	Q_INVOKABLE void fullscreenOn(QuickshellScreenInfo* screen);
@@ -70,6 +80,7 @@ public:
 	[[nodiscard]] QString title() const;
 	[[nodiscard]] Toplevel* parent() const;
 	[[nodiscard]] bool activated() const;
+	[[nodiscard]] QList<QuickshellScreenInfo*> screens() const;
 
 	[[nodiscard]] bool maximized() const;
 	void setMaximized(bool maximized);
@@ -88,6 +99,7 @@ signals:
 	void titleChanged();
 	void parentChanged();
 	void activatedChanged();
+	void screensChanged();
 	void maximizedChanged();
 	void minimizedChanged();
 	void fullscreenChanged();

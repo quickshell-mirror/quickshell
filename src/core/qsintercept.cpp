@@ -49,9 +49,9 @@ QUrl QsUrlInterceptor::intercept(
 	return url;
 }
 
-QsInterceptDataReply::QsInterceptDataReply(const QString& qmldir, QObject* parent)
+QsInterceptDataReply::QsInterceptDataReply(const QString& data, QObject* parent)
     : QNetworkReply(parent)
-    , content(qmldir.toUtf8()) {
+    , content(data.toUtf8()) {
 	this->setOpenMode(QIODevice::ReadOnly);
 	this->setFinished(true);
 }
@@ -65,11 +65,11 @@ qint64 QsInterceptDataReply::readData(char* data, qint64 maxSize) {
 }
 
 QsInterceptNetworkAccessManager::QsInterceptNetworkAccessManager(
-    const QHash<QString, QString>& qmldirIntercepts,
+    const QHash<QString, QString>& fileIntercepts,
     QObject* parent
 )
     : QNetworkAccessManager(parent)
-    , qmldirIntercepts(qmldirIntercepts) {}
+    , fileIntercepts(fileIntercepts) {}
 
 QNetworkReply* QsInterceptNetworkAccessManager::createRequest(
     QNetworkAccessManager::Operation op,
@@ -80,10 +80,10 @@ QNetworkReply* QsInterceptNetworkAccessManager::createRequest(
 	if (url.scheme() == "qsintercept") {
 		auto path = url.path();
 		qCDebug(logQsIntercept) << "Got intercept for" << path << "contains"
-		                        << this->qmldirIntercepts.value(path);
-		auto qmldir = this->qmldirIntercepts.value(path);
-		if (qmldir != nullptr) {
-			return new QsInterceptDataReply(qmldir, this);
+		                        << this->fileIntercepts.value(path);
+		auto data = this->fileIntercepts.value(path);
+		if (data != nullptr) {
+			return new QsInterceptDataReply(data, this);
 		}
 
 		auto fileReq = req;
@@ -98,5 +98,5 @@ QNetworkReply* QsInterceptNetworkAccessManager::createRequest(
 }
 
 QNetworkAccessManager* QsInterceptNetworkAccessManagerFactory::create(QObject* parent) {
-	return new QsInterceptNetworkAccessManager(this->qmldirIntercepts, parent);
+	return new QsInterceptNetworkAccessManager(this->fileIntercepts, parent);
 }

@@ -15,6 +15,8 @@ class SessionLockManager: public QObject {
 public:
 	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
 
+	[[nodiscard]] static bool lockAvailable();
+
 	// Returns true if a lock was acquired.
 	// If true is returned the caller must watch the global screen list and create/destroy
 	// windows with an attached LockWindowExtension to match it.

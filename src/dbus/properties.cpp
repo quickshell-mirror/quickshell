@@ -17,6 +17,7 @@
 #include <qmetatype.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
+#include <qtversionchecks.h>
 #include <qvariant.h>
 
 #include "dbus_properties.h"
@@ -326,3 +327,10 @@ void DBusPropertyGroup::onPropertiesChanged(
 }
 
 } // namespace qs::dbus
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+QDebug operator<<(QDebug debug, const QDBusObjectPath& path) {
+	debug.nospace() << "QDBusObjectPath(" << path.path() << ")";
+	return debug;
+}
+#endif

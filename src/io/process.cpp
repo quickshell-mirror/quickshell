@@ -3,9 +3,9 @@
 #include <utility>
 
 #include <qdir.h>
+#include <qhash.h>
 #include <qlist.h>
 #include <qlogging.h>
-#include <qmap.h>
 #include <qobject.h>
 #include <qprocess.h>
 #include <qqmlinfo.h>
@@ -16,6 +16,7 @@
 #include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
 #include "datastream.hpp"
+#include "processcore.hpp"
 
 Process::Process(QObject* parent): QObject(parent) {
 	QObject::connect(
@@ -45,17 +46,7 @@ void Process::setCommand(QList<QString> command) {
 	if (this->mCommand == command) return;
 	this->mCommand = std::move(command);
 
-	auto& cmd = this->mCommand.first();
-	if (cmd.startsWith("file://")) {
-		cmd = cmd.sliced(7);
-	} else if (cmd.startsWith("root://")) {
-		cmd = cmd.sliced(7);
-		auto& root = EngineGeneration::findObjectGeneration(this)->rootPath;
-		cmd = root.filePath(cmd.startsWith('/') ? cmd.sliced(1) : cmd);
-	}
-
 	emit this->commandChanged();
-
 	this->startProcessIfReady();
 }
 
@@ -78,9 +69,9 @@ void Process::onGlobalWorkingDirectoryChanged() {
 	}
 }
 
-QMap<QString, QVariant> Process::environment() const { return this->mEnvironment; }
+QHash<QString, QVariant> Process::environment() const { return this->mEnvironment; }
 
-void Process::setEnvironment(QMap<QString, QVariant> environment) {
+void Process::setEnvironment(QHash<QString, QVariant> environment) {
 	if (environment == this->mEnvironment) return;
 	this->mEnvironment = std::move(environment);
 	emit this->environmentChanged();
@@ -178,6 +169,14 @@ void Process::startProcessIfReady() {
 	this->targetRunning = false;
 
 	auto& cmd = this->mCommand.first();
+	if (cmd.startsWith("file://")) {
+		cmd = cmd.sliced(7);
+	} else if (cmd.startsWith("root://")) {
+		cmd = cmd.sliced(7);
+		auto& root = EngineGeneration::findObjectGeneration(this)->rootPath;
+		cmd = root.filePath(cmd.startsWith('/') ? cmd.sliced(1) : cmd);
+	}
+
 	auto args = this->mCommand.sliced(1);
 
 	this->process = new QProcess(this);
@@ -199,6 +198,25 @@ void Process::startProcessIfReady() {
 
 	this->setupEnvironment(this->process);
 	this->process->start(cmd, args);
+}
+
+void Process::exec(QList<QString> command) {
+	this->exec(qs::io::process::ProcessContext(std::move(command)));
+}
+
+void Process::exec(const qs::io::process::ProcessContext& context) {
+	this->setRunning(false);
+	if (context.commandSet) this->setCommand(context.command);
+	if (context.environmentSet) this->setEnvironment(context.environment);
+	if (context.clearEnvironmentSet) this->setEnvironmentCleared(context.clearEnvironment);
+	if (context.workingDirectorySet) this->setWorkingDirectory(context.workingDirectory);
+
+	if (this->mCommand.isEmpty()) {
+		qmlWarning(this) << "Cannot start process as command is empty.";
+		return;
+	}
+
+	this->setRunning(true);
 }
 
 void Process::startDetached() {
@@ -223,26 +241,7 @@ void Process::setupEnvironment(QProcess* process) {
 		process->setWorkingDirectory(this->mWorkingDirectory);
 	}
 
-	if (!this->mEnvironment.isEmpty() || this->mClearEnvironment) {
-		auto sysenv = QProcessEnvironment::systemEnvironment();
-		auto env = this->mClearEnvironment ? QProcessEnvironment() : sysenv;
-
-		for (auto& name: this->mEnvironment.keys()) {
-			auto value = this->mEnvironment.value(name);
-			if (!value.isValid()) continue;
-
-			if (this->mClearEnvironment) {
-				if (value.isNull()) {
-					if (sysenv.contains(name)) env.insert(name, sysenv.value(name));
-				} else env.insert(name, value.toString());
-			} else {
-				if (value.isNull()) env.remove(name);
-				else env.insert(name, value.toString());
-			}
-		}
-
-		process->setProcessEnvironment(env);
-	}
+	qs::io::process::setupProcessEnvironment(process, this->mClearEnvironment, this->mEnvironment);
 }
 
 void Process::onStarted() {
@@ -254,12 +253,16 @@ void Process::onStarted() {
 void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
 	this->process->deleteLater();
 	this->process = nullptr;
+	if (this->mStdoutParser) this->mStdoutParser->streamEnded(this->stdoutBuffer);
+	if (this->mStderrParser) this->mStderrParser->streamEnded(this->stderrBuffer);
 	this->stdoutBuffer.clear();
 	this->stderrBuffer.clear();
 
 	emit this->exited(exitCode, exitStatus);
 	emit this->runningChanged();
 	emit this->processIdChanged();
+
+	this->startProcessIfReady(); // for `running = false; running = true`
 }
 
 void Process::onErrorOccurred(QProcess::ProcessError error) {

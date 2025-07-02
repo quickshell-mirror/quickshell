@@ -107,7 +107,11 @@ void Socket::flush() {
 
 SocketServer::~SocketServer() { this->disableServer(); }
 
-void SocketServer::onPostReload() {
+void SocketServer::onReload(QObject* oldInstance) {
+	if (auto* old = qobject_cast<SocketServer*>(oldInstance)) {
+		old->disableServer();
+	}
+
 	this->postReload = true;
 	if (this->isActivatable()) this->enableServer();
 }
@@ -152,6 +156,8 @@ bool SocketServer::isActivatable() {
 void SocketServer::enableServer() {
 	this->disableServer();
 
+	qCDebug(logSocket) << "Enabling socket server" << this << "at" << this->mPath;
+
 	this->server = new QLocalServer(this);
 	QObject::connect(
 	    this->server,
@@ -160,31 +166,38 @@ void SocketServer::enableServer() {
 	    &SocketServer::onNewConnection
 	);
 
+	if (QFile::remove(this->mPath)) {
+		qCWarning(logSocket) << "Deleted existing file at" << this->mPath << "to create socket";
+	}
+
 	if (!this->server->listen(this->mPath)) {
-		qWarning() << "could not start socket server at" << this->mPath;
+		qCWarning(logSocket) << "Could not start socket server at" << this->mPath;
 		this->disableServer();
 	}
 
 	this->activeTarget = false;
+	this->activePath = this->mPath;
 	emit this->activeStatusChanged();
 }
 
 void SocketServer::disableServer() {
 	auto wasActive = this->server != nullptr;
 
-	if (this->server != nullptr) {
+	if (wasActive) {
+		qCDebug(logSocket) << "Disabling socket server" << this << "at" << this->activePath;
 		for (auto* socket: this->mSockets) {
 			socket->deleteLater();
 		}
 
 		this->mSockets.clear();
+		this->server->close();
 		this->server->deleteLater();
 		this->server = nullptr;
-	}
 
-	if (this->mPath != nullptr) {
-		if (QFile::exists(this->mPath) && !QFile::remove(this->mPath)) {
-			qWarning() << "failed to delete socket file at" << this->mPath;
+		if (!this->activePath.isEmpty()) {
+			if (QFile::exists(this->activePath) && !QFile::remove(this->activePath)) {
+				qWarning() << "Failed to delete socket file at" << this->activePath;
+			}
 		}
 	}
 
