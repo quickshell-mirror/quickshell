@@ -1,4 +1,5 @@
 #pragma once
+
 #include <qobject.h>
 #include <qdbusextratypes.h>
 #include "dbus_service.h"

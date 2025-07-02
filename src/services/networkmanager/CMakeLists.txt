@@ -20,7 +20,7 @@ qt_add_library(quickshell-service-networkmanager STATIC
 target_include_directories(quickshell-service-networkmanager PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 qt_add_qml_module(quickshell-service-networkmanager
-	URI Quickshell.Services.Networkmanager
+	URI Quickshell.Services.NetworkManager
 	VERSION 0.1
 	DEPENDENCIES QtQml
 )
@@ -35,5 +35,7 @@ target_link_libraries(quickshell-service-networkmanager PRIVATE
 	#Qt::Quick # pch
 	Qt::DBus
 )
+qs_add_link_dependencies(quickshell-service-networkmanager quickshell-dbus)
+target_link_libraries(quickshell PRIVATE quickshell-service-networkmanagerplugin)
 
 qs_module_pch(quickshell-service-networkmanager)
