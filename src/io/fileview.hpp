@@ -14,6 +14,7 @@
 #include <qqmlparserstatus.h>
 #include <qrunnable.h>
 #include <qstringview.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
 #include "../core/doc.hpp"
@@ -140,11 +141,13 @@ public:
 	bool doAtomicWrite;
 };
 
-///! Simplified reader for small files.
+class FileViewAdapter;
+
+///! Simple accessor for small files.
 /// A reader for small to medium files that don't need seeking/cursor access,
 /// suitable for most text files.
 ///
-/// #### Example: Reading a JSON
+/// #### Example: Reading a JSON as text
 /// ```qml
 /// FileView {
 ///   id: jsonFile
@@ -156,6 +159,8 @@ public:
 ///
 /// readonly property var jsonData: JSON.parse(jsonFile.text())
 /// ```
+///
+/// Also see @@JsonAdapter for an alternative way to handle reading and writing JSON files.
 class FileView: public QObject {
 	Q_OBJECT;
 	// clang-format off
@@ -215,6 +220,14 @@ class FileView: public QObject {
 	/// > }
 	/// > ```
 	Q_PROPERTY(bool watchChanges READ default WRITE default NOTIFY watchChangesChanged BINDABLE bindableWatchChanges);
+	/// In addition to directly reading/writing the file as text, *adapters* can be used to
+	/// expose a file's content in new ways.
+	///
+	/// An adapter will automatically be given the loaded file's content.
+	/// Its state may be saved with @@writeAdapter().
+	///
+	/// Currently the only adapter is @@JsonAdapter.
+	Q_PROPERTY(FileViewAdapter* adapter READ adapter WRITE setAdapter NOTIFY adapterChanged);
 
 	QSDOC_HIDE Q_PROPERTY(QString __path READ path WRITE setPath NOTIFY pathChanged);
 	QSDOC_HIDE Q_PROPERTY(QString __text READ text NOTIFY internalTextChanged);
@@ -230,11 +243,14 @@ class FileView: public QObject {
 	QSDOC_HIDE Q_PROPERTY(bool __blockAllReads READ blockAllReads WRITE setBlockAllReads NOTIFY blockAllReadsChanged);
 	QSDOC_HIDE Q_PROPERTY(bool __printErrors READ default WRITE default NOTIFY printErrorsChanged BINDABLE bindablePrintErrors);
 	// clang-format on
+	Q_CLASSINFO("DefaultProperty", "adapter");
 	QML_NAMED_ELEMENT(FileViewInternal);
 	QSDOC_NAMED_ELEMENT(FileView);
 
 public:
 	explicit FileView(QObject* parent = nullptr): QObject(parent) {}
+	~FileView() override;
+	Q_DISABLE_COPY_MOVE(FileView);
 
 	/// Returns the data of the file specified by @@path as text.
 	///
@@ -280,6 +296,8 @@ public:
 	/// This will not block if @@blockLoading is set, only if @@blockAllReads is true.
 	/// It acts the same as changing @@path to a new file, except loading the same file.
 	Q_INVOKABLE void reload();
+	/// Write the content of the current @@adapter to the selected file.
+	Q_INVOKABLE void writeAdapter();
 
 	[[nodiscard]] QString path() const;
 	void setPath(const QString& path);
@@ -312,6 +330,9 @@ public:
 	[[nodiscard]] QBindable<bool> bindablePrintErrors() { return &this->bPrintErrors; }
 	[[nodiscard]] QBindable<bool> bindableWatchChanges() { return &this->bWatchChanges; }
 
+	[[nodiscard]] FileViewAdapter* adapter() const;
+	void setAdapter(FileViewAdapter* adapter);
+
 signals:
 	/// Emitted if the file was loaded successfully.
 	void loaded();
@@ -323,6 +344,8 @@ signals:
 	void saveFailed(qs::io::FileViewError::Enum error);
 	/// Emitted if the file changes on disk and @@watchChanges is true.
 	void fileChanged();
+	/// Emitted when the active @@adapter$'s data is changed.
+	void adapterUpdated();
 
 	void pathChanged();
 	QSDOC_HIDE void internalTextChanged();
@@ -337,9 +360,11 @@ signals:
 	void atomicWritesChanged();
 	void printErrorsChanged();
 	void watchChangesChanged();
+	void adapterChanged();
 
 private slots:
 	void operationFinished();
+	void onAdapterDestroyed();
 
 private:
 	void loadAsync(bool doStringConversion);
@@ -373,6 +398,7 @@ private:
 	bool mBlockLoading = false;
 	bool mBlockAllReads = false;
 
+	FileViewAdapter* mAdapter = nullptr;
 	QFileSystemWatcher* watcher = nullptr;
 
 	GuardedEmitter<&FileView::internalTextChanged> textChangedEmitter;
@@ -404,6 +430,28 @@ public:
 	void setPreload(bool preload);
 	void setBlockLoading(bool blockLoading);
 	void setBlockAllReads(bool blockAllReads);
+};
+
+/// See @@FileView.adapter.
+class FileViewAdapter: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("");
+
+public:
+	void setFileView(FileView* fileView);
+	virtual void deserializeAdapter(const QByteArray& data) = 0;
+	[[nodiscard]] virtual QByteArray serializeAdapter() = 0;
+
+signals:
+	/// This signal is fired when data in the adapter changes, and triggers @@FileView.adapterUpdated(s).
+	void adapterUpdated();
+
+private slots:
+	void onDataChanged();
+
+protected:
+	FileView* mFileView = nullptr;
 };
 
 } // namespace qs::io

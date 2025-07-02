@@ -4,8 +4,10 @@
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qguiapplication.h>
+#include <qlogging.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
@@ -134,6 +136,7 @@ void ProxyWindowBase::ensureQWindow() {
 
 	if (useOldWindow) return;
 	delete this->window;
+	this->window = nullptr; // createQQuickWindow may indirectly reference this->window
 	this->window = this->createQQuickWindow();
 	this->window->setFormat(format);
 }
@@ -203,8 +206,8 @@ void ProxyWindowBase::completeWindow() {
 		this->window->setScreen(this->mScreen);
 	}
 
-	this->setWidth(this->mWidth);
-	this->setHeight(this->mHeight);
+	this->trySetWidth(this->implicitWidth());
+	this->trySetHeight(this->implicitHeight());
 	this->setColor(this->mColor);
 	this->updateMask();
 
@@ -299,28 +302,46 @@ qint32 ProxyWindowBase::y() const {
 	else return this->window->y();
 }
 
+void ProxyWindowBase::setImplicitWidth(qint32 implicitWidth) {
+	if (implicitWidth == this->bImplicitWidth) return;
+	this->bImplicitWidth = implicitWidth;
+
+	if (this->window) this->trySetWidth(implicitWidth);
+	else emit this->widthChanged();
+}
+
+void ProxyWindowBase::trySetWidth(qint32 implicitWidth) { this->window->setWidth(implicitWidth); }
+
+void ProxyWindowBase::setImplicitHeight(qint32 implicitHeight) {
+	if (implicitHeight == this->bImplicitHeight) return;
+	this->bImplicitHeight = implicitHeight;
+
+	if (this->window) this->trySetHeight(implicitHeight);
+	else emit this->heightChanged();
+}
+
+void ProxyWindowBase::trySetHeight(qint32 implicitHeight) {
+	this->window->setHeight(implicitHeight);
+}
+
 qint32 ProxyWindowBase::width() const {
-	if (this->window == nullptr) return this->mWidth;
+	if (this->window == nullptr) return this->implicitWidth();
 	else return this->window->width();
 }
 
 void ProxyWindowBase::setWidth(qint32 width) {
-	this->mWidth = width;
-	if (this->window == nullptr) {
-		emit this->widthChanged();
-	} else this->window->setWidth(width);
+	this->setImplicitWidth(width);
+	qmlWarning(this) << "Setting `width` is deprecated. Set `implicitWidth` instead.";
 }
 
 qint32 ProxyWindowBase::height() const {
-	if (this->window == nullptr) return this->mHeight;
+	if (this->window == nullptr) return this->implicitHeight();
 	else return this->window->height();
 }
 
 void ProxyWindowBase::setHeight(qint32 height) {
-	this->mHeight = height;
-	if (this->window == nullptr) {
-		emit this->heightChanged();
-	} else this->window->setHeight(height);
+	this->setImplicitHeight(height);
+	qmlWarning(this) << "Setting `height` is deprecated. Set `implicitHeight` instead.";
 }
 
 void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
@@ -442,12 +463,71 @@ QQmlListProperty<QObject> ProxyWindowBase::data() {
 void ProxyWindowBase::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
 void ProxyWindowBase::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
 
+QPointF ProxyWindowBase::itemPosition(QQuickItem* item) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, 0, 0);
+}
+
+QRectF ProxyWindowBase::itemRect(QQuickItem* item) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, item->boundingRect());
+}
+
+QPointF ProxyWindowBase::mapFromItem(QQuickItem* item, QPointF point) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, point);
+}
+
+QPointF ProxyWindowBase::mapFromItem(QQuickItem* item, qreal x, qreal y) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, x, y);
+}
+
+QRectF ProxyWindowBase::mapFromItem(QQuickItem* item, QRectF rect) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, rect);
+}
+
+QRectF
+ProxyWindowBase::mapFromItem(QQuickItem* item, qreal x, qreal y, qreal width, qreal height) const {
+	if (!item) {
+		qCritical() << "Cannot map position of null item.";
+		return {};
+	}
+
+	return this->mContentItem->mapFromItem(item, x, y, width, height);
+}
+
 ProxyWindowAttached::ProxyWindowAttached(QQuickItem* parent): QsWindowAttached(parent) {
 	this->updateWindow();
 }
 
-QObject* ProxyWindowAttached::window() const { return this->mWindow; }
-QQuickItem* ProxyWindowAttached::contentItem() const { return this->mWindow->contentItem(); }
+QObject* ProxyWindowAttached::window() const { return this->mWindowInterface; }
+ProxyWindowBase* ProxyWindowAttached::proxyWindow() const { return this->mWindow; }
+
+QQuickItem* ProxyWindowAttached::contentItem() const {
+	return this->mWindow ? this->mWindow->contentItem() : nullptr;
+}
 
 void ProxyWindowAttached::updateWindow() {
 	auto* window = static_cast<QQuickItem*>(this->parent())->window(); // NOLINT
@@ -462,6 +542,7 @@ void ProxyWindowAttached::updateWindow() {
 void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 	if (window == this->mWindow) return;
 	this->mWindow = window;
+	this->mWindowInterface = window ? qobject_cast<WindowInterface*>(window->parent()) : nullptr;
 	emit this->windowChanged();
 }
 

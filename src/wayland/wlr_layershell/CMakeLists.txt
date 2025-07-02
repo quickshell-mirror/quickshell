@@ -1,7 +1,7 @@
 qt_add_library(quickshell-wayland-layershell STATIC
+	wlr_layershell.cpp
 	shell_integration.cpp
 	surface.cpp
-	window.cpp
 )
 
 qt_add_qml_module(quickshell-wayland-layershell

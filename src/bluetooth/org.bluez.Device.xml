@@ -1,0 +1,8 @@
+<node>
+	<interface name="org.bluez.Device1">
+		<method name="Connect"/>
+		<method name="Disconnect"/>
+		<method name="Pair"/>
+		<method name="CancelPairing"/>
+	</interface>
+</node>

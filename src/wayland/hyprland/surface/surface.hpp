@@ -24,7 +24,6 @@ public:
 	void setVisibleRegion(const QRegion& region);
 
 private:
-	QtWaylandClient::QWaylandWindow* backer;
 	wl_surface* backerSurface = nullptr;
 };
 

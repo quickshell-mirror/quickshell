@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qhash.h>
 #include <qobject.h>
 #include <qprocess.h>
 #include <qqmlintegration.h>
@@ -9,7 +10,9 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../core/doc.hpp"
 #include "datastream.hpp"
+#include "processcore.hpp"
 
 // Needed when compiling with clang musl-libc++.
 // Default include paths contain macros that cause name collisions.
@@ -22,8 +25,8 @@
 /// Process {
 ///   running: true
 ///   command: [ "some-command", "arg" ]
-///   stdout: SplitParser {
-///     onRead: data => console.log(`line read: ${data}`)
+///   stdout: @@StdioCollector {
+///     onStreamFinished: console.log(`line read: ${this.text}`)
 ///   }
 /// }
 /// ```
@@ -98,7 +101,7 @@ class Process: public QObject {
 	/// If the process is already running changing this property will affect the next
 	/// started process. If the property has been changed after starting a process it will
 	/// return the new value, not the one for the currently running process.
-	Q_PROPERTY(QMap<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
+	Q_PROPERTY(QHash<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
 	/// If the process's environment should be cleared prior to applying @@environment.
 	/// Defaults to false.
 	///
@@ -134,16 +137,52 @@ class Process: public QObject {
 public:
 	explicit Process(QObject* parent = nullptr);
 
+	// MUST be before exec(ctx) or the other will be called with a default constructed obj.
+	QSDOC_HIDE Q_INVOKABLE void exec(QList<QString> command);
+	/// Launch a process with the given arguments, stopping any currently running process.
+	///
+	/// The context parameter can either be a list of command arguments or a JS object with the following fields:
+	/// - `command`: A list containing the command and all its arguments. See @@Quickshell.Io.Process.command.
+	/// - `environment`: Changes to make to the process environment. See @@Quickshell.Io.Process.environment.
+	/// - `clearEnvironment`: Removes all variables from the environment if true.
+	/// - `workingDirectory`: The working directory the command should run in.
+	///
+	/// Passed parameters will change the values currently set in the process.
+	///
+	/// > [!WARNING] This does not run command in a shell. All arguments to the command
+	/// > must be in separate values in the list, e.g. `["echo", "hello"]`
+	/// > and not `["echo hello"]`.
+	/// >
+	/// > Additionally, shell scripts must be run by your shell,
+	/// > e.g. `["sh", "script.sh"]` instead of `["script.sh"]` unless the script
+	/// > has a shebang.
+	///
+	/// > [!INFO] You can use `["sh", "-c", <your command>]` to execute your command with
+	/// > the system shell.
+	///
+	/// Calling this function is equivalent to running:
+	/// ```qml
+	/// process.running = false;
+	/// process.command = ...
+	/// process.environment = ...
+	/// process.clearEnvironment = ...
+	/// process.workingDirectory = ...
+	/// process.running = true;
+	/// ```
+	Q_INVOKABLE void exec(const qs::io::process::ProcessContext& context);
+
 	/// Sends a signal to the process if @@running is true, otherwise does nothing.
 	Q_INVOKABLE void signal(qint32 signal);
 
 	/// Writes to the process's stdin. Does nothing if @@running is false.
 	Q_INVOKABLE void write(const QString& data);
 
-	/// Launches an instance of the process detached from quickshell.
+	/// Launches an instance of the process detached from Quickshell.
 	///
 	/// The subprocess will not be tracked, @@running will be false,
 	/// and the subprocess will not be killed by Quickshell.
+	///
+	/// This function is equivalent to @@Quickshell.Quickshell.execDetached().
 	Q_INVOKABLE void startDetached();
 
 	[[nodiscard]] bool isRunning() const;
@@ -157,8 +196,8 @@ public:
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(const QString& workingDirectory);
 
-	[[nodiscard]] QMap<QString, QVariant> environment() const;
-	void setEnvironment(QMap<QString, QVariant> environment);
+	[[nodiscard]] QHash<QString, QVariant> environment() const;
+	void setEnvironment(QHash<QString, QVariant> environment);
 
 	[[nodiscard]] bool environmentCleared() const;
 	void setEnvironmentCleared(bool cleared);
@@ -203,7 +242,7 @@ private:
 	QProcess* process = nullptr;
 	QList<QString> mCommand;
 	QString mWorkingDirectory;
-	QMap<QString, QVariant> mEnvironment;
+	QHash<QString, QVariant> mEnvironment;
 	DataStreamParser* mStdoutParser = nullptr;
 	DataStreamParser* mStderrParser = nullptr;
 	QByteArray stdoutBuffer;

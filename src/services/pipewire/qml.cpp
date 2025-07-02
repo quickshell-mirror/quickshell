@@ -328,11 +328,13 @@ QString PwNodeIface::description() const { return this->mNode->description; }
 
 QString PwNodeIface::nickname() const { return this->mNode->nick; }
 
-bool PwNodeIface::isSink() const { return this->mNode->isSink; }
+bool PwNodeIface::isSink() const { return this->mNode->type.testFlags(PwNodeType::Sink); }
 
-bool PwNodeIface::isStream() const { return this->mNode->isStream; }
+bool PwNodeIface::isStream() const { return this->mNode->type.testFlags(PwNodeType::Stream); }
 
 bool PwNodeIface::isReady() const { return this->mNode->ready; }
+
+PwNodeType::Flags PwNodeIface::type() const { return this->mNode->type; };
 
 QVariantMap PwNodeIface::properties() const {
 	auto map = QVariantMap();

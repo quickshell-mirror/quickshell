@@ -115,7 +115,7 @@ void TestScriptModel::unique_data() {
 void TestScriptModel::unique() {
 	QFETCH(const QString, oldstr);
 	QFETCH(const QString, newstr);
-	QFETCH(OpList, operations);
+	QFETCH(const OpList, operations);
 
 	auto strToVariantList = [](const QString& str) -> QVariantList {
 		QVariantList list;

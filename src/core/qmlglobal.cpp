@@ -1,14 +1,17 @@
 #include "qmlglobal.hpp"
 #include <utility>
 
+#include <qclipboard.h>
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qdir.h>
 #include <qguiapplication.h>
 #include <qicon.h>
 #include <qjsengine.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qprocess.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
@@ -17,10 +20,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <qwindowdefs.h>
 #include <unistd.h>
 
+#include "../io/processcore.hpp"
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
+#include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 
@@ -131,6 +137,13 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 	QObject::connect(QuickshellTracked::instance(), &QuickshellTracked::screensChanged, this, &QuickshellGlobal::screensChanged);
 	// clang-format on
+
+	QObject::connect(
+	    static_cast<QGuiApplication*>(QGuiApplication::instance())->clipboard(), // NOLINT
+	    &QClipboard::changed,
+	    this,
+	    &QuickshellGlobal::onClipboardChanged
+	);
 }
 
 qint32 QuickshellGlobal::processId() const { // NOLINT
@@ -167,12 +180,6 @@ void QuickshellGlobal::reload(bool hard) {
 	root->reloadGraph(hard);
 }
 
-QString QuickshellGlobal::shellRoot() const {
-	auto* generation = EngineGeneration::findObjectGeneration(this);
-	// already canonical
-	return generation->rootPath.path();
-}
-
 QString QuickshellGlobal::workingDirectory() const { // NOLINT
 	return QuickshellSettings::instance()->workingDirectory();
 }
@@ -189,11 +196,83 @@ void QuickshellGlobal::setWatchFiles(bool watchFiles) { // NOLINT
 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
 }
 
+QString QuickshellGlobal::clipboardText() {
+	return static_cast<QGuiApplication*>(QGuiApplication::instance())->clipboard()->text(); // NOLINT
+}
+
+void QuickshellGlobal::setClipboardText(const QString& text) {
+	return static_cast<QGuiApplication*>(QGuiApplication::instance()) // NOLINT
+	    ->clipboard()
+	    ->setText(text);
+}
+
+void QuickshellGlobal::onClipboardChanged(QClipboard::Mode mode) {
+	if (mode == QClipboard::Clipboard) emit this->clipboardTextChanged();
+}
+
+QString QuickshellGlobal::configDir() const {
+	return EngineGeneration::findObjectGeneration(this)->rootPath.path();
+}
+
+QString QuickshellGlobal::dataDir() const { // NOLINT
+	return QsPaths::instance()->shellDataDir().path();
+}
+
+QString QuickshellGlobal::stateDir() const { // NOLINT
+	return QsPaths::instance()->shellStateDir().path();
+}
+
+QString QuickshellGlobal::cacheDir() const { // NOLINT
+	return QsPaths::instance()->shellCacheDir().path();
+}
+
+QString QuickshellGlobal::configPath(const QString& path) const {
+	return this->configDir() % '/' % path;
+}
+
+QString QuickshellGlobal::dataPath(const QString& path) const {
+	return this->dataDir() % '/' % path;
+}
+
+QString QuickshellGlobal::statePath(const QString& path) const {
+	return this->stateDir() % '/' % path;
+}
+
+QString QuickshellGlobal::cachePath(const QString& path) const {
+	return this->cacheDir() % '/' % path;
+}
+
 QVariant QuickshellGlobal::env(const QString& variable) { // NOLINT
 	auto vstr = variable.toStdString();
 	if (!qEnvironmentVariableIsSet(vstr.data())) return QVariant::fromValue(nullptr);
 
 	return qEnvironmentVariable(vstr.data());
+}
+
+void QuickshellGlobal::execDetached(QList<QString> command) {
+	QuickshellGlobal::execDetached(qs::io::process::ProcessContext(std::move(command)));
+}
+
+void QuickshellGlobal::execDetached(const qs::io::process::ProcessContext& context) {
+	if (context.command.isEmpty()) {
+		qWarning() << "Cannot start process as command is empty.";
+		return;
+	}
+
+	const auto& cmd = context.command.first();
+	auto args = context.command.sliced(1);
+
+	QProcess process;
+
+	qs::io::process::setupProcessEnvironment(&process, context.clearEnvironment, context.environment);
+
+	if (!context.workingDirectory.isEmpty()) {
+		process.setWorkingDirectory(context.workingDirectory);
+	}
+
+	process.setProgram(cmd);
+	process.setArguments(args);
+	process.startDetached();
 }
 
 QString QuickshellGlobal::iconPath(const QString& icon) {

@@ -28,6 +28,13 @@ HyprlandIpcQml::HyprlandIpcQml() {
 	    this,
 	    &HyprlandIpcQml::focusedMonitorChanged
 	);
+
+	QObject::connect(
+	    instance,
+	    &HyprlandIpc::activeToplevelChanged,
+	    this,
+	    &HyprlandIpcQml::activeToplevelChanged
+	);
 }
 
 void HyprlandIpcQml::dispatch(const QString& request) {
@@ -40,6 +47,7 @@ HyprlandMonitor* HyprlandIpcQml::monitorFor(QuickshellScreenInfo* screen) {
 
 void HyprlandIpcQml::refreshMonitors() { HyprlandIpc::instance()->refreshMonitors(false); }
 void HyprlandIpcQml::refreshWorkspaces() { HyprlandIpc::instance()->refreshWorkspaces(false); }
+void HyprlandIpcQml::refreshToplevels() { HyprlandIpc::instance()->refreshToplevels(); }
 QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->requestSocketPath(); }
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 
@@ -51,12 +59,20 @@ QBindable<HyprlandWorkspace*> HyprlandIpcQml::bindableFocusedWorkspace() {
 	return HyprlandIpc::instance()->bindableFocusedWorkspace();
 }
 
+QBindable<HyprlandToplevel*> HyprlandIpcQml::bindableActiveToplevel() {
+	return HyprlandIpc::instance()->bindableActiveToplevel();
+}
+
 ObjectModel<HyprlandMonitor>* HyprlandIpcQml::monitors() {
 	return HyprlandIpc::instance()->monitors();
 }
 
 ObjectModel<HyprlandWorkspace>* HyprlandIpcQml::workspaces() {
 	return HyprlandIpc::instance()->workspaces();
+}
+
+ObjectModel<HyprlandToplevel>* HyprlandIpcQml::toplevels() {
+	return HyprlandIpc::instance()->toplevels();
 }
 
 } // namespace qs::hyprland::ipc

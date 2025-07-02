@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -555,23 +556,88 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
 
 	auto* display = qEglContext->display();
 
+	// Ref https://github.com/hyprwm/hyprlock/blob/da1d076d849fc0f298c1d287bddd04802bf7d0f9/src/renderer/Screencopy.cpp#L194
+	struct AttribNameSet {
+		EGLAttrib fd;
+		EGLAttrib offset;
+		EGLAttrib pitch;
+		EGLAttrib modlo;
+		EGLAttrib modhi;
+	};
+
+	static auto attribNames = std::array<AttribNameSet, 4> {
+	    AttribNameSet {
+	        .fd = EGL_DMA_BUF_PLANE0_FD_EXT,
+	        .offset = EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+	        .pitch = EGL_DMA_BUF_PLANE0_PITCH_EXT,
+	        .modlo = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT,
+	        .modhi = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT
+	    },
+	    AttribNameSet {
+	        .fd = EGL_DMA_BUF_PLANE1_FD_EXT,
+	        .offset = EGL_DMA_BUF_PLANE1_OFFSET_EXT,
+	        .pitch = EGL_DMA_BUF_PLANE1_PITCH_EXT,
+	        .modlo = EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT,
+	        .modhi = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT
+	    },
+	    AttribNameSet {
+	        .fd = EGL_DMA_BUF_PLANE2_FD_EXT,
+	        .offset = EGL_DMA_BUF_PLANE2_OFFSET_EXT,
+	        .pitch = EGL_DMA_BUF_PLANE2_PITCH_EXT,
+	        .modlo = EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT,
+	        .modhi = EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT
+	    },
+	    AttribNameSet {
+	        .fd = EGL_DMA_BUF_PLANE3_FD_EXT,
+	        .offset = EGL_DMA_BUF_PLANE3_OFFSET_EXT,
+	        .pitch = EGL_DMA_BUF_PLANE3_PITCH_EXT,
+	        .modlo = EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT,
+	        .modhi = EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT
+	    }
+	};
+
 	// clang-format off
-	auto attribs = std::array<EGLAttrib, 6 * 2 + 1> {
+	auto attribs = std::vector<EGLAttrib> {
 		EGL_WIDTH, this->width,
 		EGL_HEIGHT, this->height,
 		EGL_LINUX_DRM_FOURCC_EXT, this->format,
-		EGL_DMA_BUF_PLANE0_FD_EXT, this->planes[0].fd, // NOLINT
-		EGL_DMA_BUF_PLANE0_OFFSET_EXT, this->planes[0].offset, // NOLINT
-		EGL_DMA_BUF_PLANE0_PITCH_EXT, this->planes[0].stride, // NOLINT
-		EGL_NONE
 	};
 	// clang-format on
+
+	if (this->planeCount > 4) {
+		qFatal(logDmabuf) << "Could not create EGL attrib array with more than 4 planes. Count:"
+		                  << this->planeCount;
+	}
+
+	for (auto i = 0; i != this->planeCount; i++) {
+		const auto& names = attribNames[i];
+		const auto& plane = this->planes[i]; // NOLINT
+
+		// clang-format off
+		attribs.insert(attribs.end(), {
+		    names.fd, plane.fd,
+		    names.offset, plane.offset,
+		    names.pitch, plane.stride,
+		});
+		// clang-format on
+
+		// clang-format off
+		if (this->modifier != DRM_FORMAT_MOD_INVALID) {
+			attribs.insert(attribs.end(), {
+			    names.modlo, static_cast<EGLAttrib>(this->modifier & 0xFFFFFFFF),
+			    names.modhi, static_cast<EGLAttrib>(this->modifier >> 32),
+			});
+		}
+		// clang-format on
+	}
+
+	attribs.emplace_back(EGL_NONE);
 
 	auto* eglImage =
 	    eglCreateImage(display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs.data());
 
 	if (eglImage == EGL_NO_IMAGE) {
-		qFatal() << "failed to make egl image" << eglGetError();
+		qFatal() << "Failed to create egl image" << eglGetError();
 		return nullptr;
 	}
 

@@ -12,8 +12,10 @@
 #include <qtmetamacros.h>
 #include <qurl.h>
 
+#include "../ui/reload_popup.hpp"
 #include "../window/floatingwindow.hpp"
 #include "generation.hpp"
+#include "instanceinfo.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
 
@@ -29,7 +31,6 @@ RootWrapper::RootWrapper(QString rootPath, QString shellId)
 	this->reloadGraph(true);
 
 	if (this->generation == nullptr) {
-		qCritical() << "could not create scene graph, exiting";
 		exit(-1); // NOLINT
 	}
 }
@@ -51,6 +52,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {
+		qInfo() << "Reloading configuration...";
 		QuickshellSettings::reset();
 	}
 
@@ -61,19 +63,46 @@ void RootWrapper::reloadGraph(bool hard) {
 	url.setScheme("qsintercept");
 	auto component = QQmlComponent(generation->engine, url);
 
-	auto* newRoot = component.beginCreate(generation->engine->rootContext());
+	if (!component.isReady()) {
+		qCritical() << "Failed to load configuration";
+		QString errorString = "Failed to load configuration";
 
-	if (newRoot == nullptr) {
-		const QString error = "failed to create root component\n" + component.errorString();
-		qWarning().noquote() << error;
+		auto errors = component.errors();
+		for (auto& error: errors) {
+			auto rel = "**/" % rootPath.relativeFilePath(error.url().path());
+			auto msg = "  caused by " % rel % '[' % QString::number(error.line()) % ':'
+			         % QString::number(error.column()) % "]: " % error.description();
+			errorString += '\n' % msg;
+			qCritical().noquote() << msg;
+		}
+
+		auto newFiles = generation->scanner.scannedFiles;
 		generation->destroy();
 
+		if (this->generation != nullptr) {
+			if (this->generation->setExtraWatchedFiles(newFiles)) {
+				qInfo() << "Watching additional files picked up in reload for changes...";
+			}
+
+			auto showPopup = true;
+			if (this->generation->qsgInstance != nullptr) {
+				this->generation->qsgInstance->clearReloadPopupInhibit();
+				emit this->generation->qsgInstance->reloadFailed(errorString);
+				showPopup = !this->generation->qsgInstance->isReloadPopupInhibited();
+			}
+
+			if (showPopup)
+				qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, true, errorString);
+		}
+
 		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
-			emit this->generation->qsgInstance->reloadFailed(error);
+			emit this->generation->qsgInstance->reloadFailed(errorString);
 		}
 
 		return;
 	}
+
+	auto* newRoot = component.beginCreate(generation->engine->rootContext());
 
 	if (auto* item = qobject_cast<QQuickItem*>(newRoot)) {
 		auto* window = new FloatingWindowInterface();
@@ -113,8 +142,16 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	this->onWatchFilesChanged();
 
-	if (isReload && this->generation->qsgInstance != nullptr) {
-		emit this->generation->qsgInstance->reloadCompleted();
+	if (isReload) {
+		auto showPopup = true;
+
+		if (this->generation->qsgInstance != nullptr) {
+			this->generation->qsgInstance->clearReloadPopupInhibit();
+			emit this->generation->qsgInstance->reloadCompleted();
+			showPopup = !this->generation->qsgInstance->isReloadPopupInhibited();
+		}
+
+		if (showPopup) qs::ui::ReloadPopup::spawnPopup(InstanceInfo::CURRENT.instanceId, false, "");
 	}
 }
 

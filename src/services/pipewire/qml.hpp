@@ -219,22 +219,22 @@ class PwNodeAudioIface: public QObject {
 	// clang-format off
 	/// If the node is currently muted. Setting this property changes the mute state.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY mutedChanged);
 	/// The average volume over all channels of the node.
 	/// Setting this property modifies the volume of all channels proportionately.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(float volume READ averageVolume WRITE setAverageVolume NOTIFY volumesChanged);
 	/// The audio channels present on the node.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(QVector<qs::service::pipewire::PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
 	/// The volumes of each audio channel individually. Each entry corrosponds to
 	/// the volume of the channel at the same index in @@channels. @@volumes and @@channels
 	/// will always be the same length.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(QVector<float> volumes READ volumes WRITE setVolumes NOTIFY volumesChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(PwNodeAudio);
@@ -287,6 +287,8 @@ class PwNodeIface: public PwObjectIface {
 	/// If `true` then the node is likely to be a program, if `false` it is likely to be
 	/// a hardware device.
 	Q_PROPERTY(bool isStream READ isStream CONSTANT);
+	/// The type of this node. Reflects Pipewire's [media.class](https://docs.pipewire.org/page_man_pipewire-props_7.html).
+	Q_PROPERTY(qs::service::pipewire::PwNodeType::Flags type READ type CONSTANT);
 	/// The property set present on the node, as an object containing key-value pairs.
 	/// You can inspect this directly with `pw-cli i <id>`.
 	///
@@ -298,7 +300,7 @@ class PwNodeIface: public PwObjectIface {
 	/// - `media.title` - The title of the currently playing media.
 	/// - `media.artist` - The artist of the currently playing media.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(QVariantMap properties READ properties NOTIFY propertiesChanged);
 	/// Extra information present only if the node sends or receives audio.
 	///
@@ -324,6 +326,7 @@ public:
 	[[nodiscard]] bool isSink() const;
 	[[nodiscard]] bool isStream() const;
 	[[nodiscard]] bool isReady() const;
+	[[nodiscard]] PwNodeType::Flags type() const;
 	[[nodiscard]] QVariantMap properties() const;
 	[[nodiscard]] PwNodeAudioIface* audio() const;
 
@@ -354,7 +357,7 @@ class PwLinkIface: public PwObjectIface {
 	Q_PROPERTY(qs::service::pipewire::PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLink);
 	QML_UNCREATABLE("PwLinks cannot be created directly");
@@ -389,7 +392,7 @@ class PwLinkGroupIface
 	Q_PROPERTY(qs::service::pipewire::PwNodeIface* source READ source CONSTANT);
 	/// The current state of the link group.
 	///
-	/// > [!WARNING] This property is invalid unless the node is [bound](../pwobjecttracker).
+	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(qs::service::pipewire::PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLinkGroup);
 	QML_UNCREATABLE("PwLinkGroups cannot be created directly");

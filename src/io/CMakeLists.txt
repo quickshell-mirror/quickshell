@@ -1,7 +1,9 @@
 qt_add_library(quickshell-io STATIC
 	datastream.cpp
+	processcore.cpp
 	process.cpp
 	fileview.cpp
+	jsonadapter.cpp
 	ipccomm.cpp
 	ipc.cpp
 	ipchandler.cpp

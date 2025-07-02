@@ -1,5 +1,6 @@
 #include "session_lock.hpp"
 
+#include <private/qwaylandscreen_p.h>
 #include <qcolor.h>
 #include <qcoreapplication.h>
 #include <qguiapplication.h>
@@ -52,6 +53,17 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 	auto screens = QGuiApplication::screens();
 
+	screens.removeIf([](QScreen* screen) {
+		if (dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle()) == nullptr) {
+			qDebug() << "Not creating lock surface for screen" << screen
+			         << "as it is not backed by a wayland screen.";
+
+			return true;
+		}
+
+		return false;
+	});
+
 	auto map = this->surfaces.toStdMap();
 	for (auto& [screen, surface]: map) {
 		if (!screens.contains(screen)) {
@@ -97,6 +109,13 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 
 void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 	if (this->lockTarget) {
+		if (!SessionLockManager::lockAvailable()) {
+			qCritical() << "Cannot start session lock: The current compositor does not support the "
+			               "ext-session-lock-v1 protocol.";
+			this->unlock();
+			return;
+		}
+
 		if (this->mSurfaceComponent == nullptr) {
 			qWarning() << "WlSessionLock.surface is null. Aborting lock.";
 			this->unlock();

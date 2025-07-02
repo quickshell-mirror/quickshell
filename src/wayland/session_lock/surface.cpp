@@ -169,6 +169,7 @@ void QSWaylandSessionLockSurface::initVisible() {
 	auto& surfacePointer = reinterpret_cast<SurfaceAccessor*>(this->window())->surfacePointer();
 
 	// Swap out the surface for a dummy during initWindow.
+	QT_WARNING_PUSH
 	QT_WARNING_DISABLE_DEPRECATED // swap()
 	{
 		surfacePointer.swap(*tempSurface);

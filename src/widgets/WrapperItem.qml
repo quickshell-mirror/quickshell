@@ -6,7 +6,7 @@ import QtQuick
 /// for positioning multiple items.
 ///
 /// > [!NOTE] WrapperItem is a @@MarginWrapperManager based component.
-/// > You should read its documentation as well.
+/// > See its documentation for information on how margins and sizes are calculated.
 ///
 /// ### Example: Adding a margin to an item
 /// The snippet below adds a 10px margin to all sides of the @@QtQuick.Text item.
@@ -30,12 +30,41 @@ import QtQuick
 ///
 /// [QtQuick.Layouts]: https://doc.qt.io/qt-6/qtquicklayouts-index.html
 Item {
-	/// The minimum margin between the child item and the WrapperItem's edges.
+	/// The default for @@topMargin, @@bottomMargin, @@leftMargin and @@rightMargin.
 	/// Defaults to 0.
 	property /*real*/alias margin: manager.margin
-	/// If the child item should be resized larger than its implicit size if
-	/// the WrapperItem is resized larger than its implicit size. Defaults to false.
+	/// An extra margin applied in addition to @@topMargin, @@bottomMargin,
+	/// @@leftMargin, and @@rightMargin. Defaults to 0.
+	property /*real*/alias extraMargin: manager.extraMargin
+	/// The requested top margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias topMargin: manager.topMargin
+	/// The requested bottom margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias bottomMargin: manager.bottomMargin
+	/// The requested left margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias leftMargin: manager.leftMargin
+	/// The requested right margin of the content item, not counting @@extraMargin.
+	///
+	/// Defaults to @@margin, and may be reset by assigning `undefined`.
+	property /*real*/alias rightMargin: manager.rightMargin
+	/// Determines if child item should be resized larger than its implicit size if
+	/// the parent is resized larger than its implicit size. Defaults to true.
 	property /*bool*/alias resizeChild: manager.resizeChild
+	/// Overrides the implicit width of the wrapper.
+	///
+	/// Defaults to the implicit width of the content item plus its left and right margin,
+	/// and may be reset by assigning `undefined`.
+	property /*real*/alias implicitWidth: manager.implicitWidth
+	/// Overrides the implicit height of the wrapper.
+	///
+	/// Defaults to the implicit width of the content item plus its top and bottom margin,
+	/// and may be reset by assigning `undefined`.
+	property /*real*/alias implicitHeight: manager.implicitHeight
 	/// See @@WrapperManager.child for details.
 	property /*Item*/alias child: manager.child
 

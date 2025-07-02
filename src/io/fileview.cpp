@@ -289,6 +289,12 @@ void FileViewWriter::write(
 	}
 }
 
+FileView::~FileView() {
+	if (this->mAdapter) {
+		this->mAdapter->setFileView(nullptr);
+	}
+}
+
 void FileView::loadAsync(bool doStringConversion) {
 	// Writes update via operationFinished, making a read both invalid and outdated.
 	if (!this->liveOperation || this->pathInFlight != this->targetPath) {
@@ -484,7 +490,12 @@ void FileView::updatePath() {
 }
 
 void FileView::updateWatchedFiles() {
-	delete this->watcher;
+	// If inotify events are sent to the watcher after deletion and deleteLater
+	// isn't used, a use after free in the QML engine will occur.
+	if (this->watcher) {
+		this->watcher->deleteLater();
+		this->watcher = nullptr;
+	}
 
 	if (!this->targetPath.isEmpty() && this->bWatchChanges) {
 		qCDebug(logFileView) << "Creating watcher for" << this << "at" << this->targetPath;
@@ -635,5 +646,56 @@ void FileView::setBlockAllReads(bool blockAllReads) {
 		}
 	}
 }
+
+FileViewAdapter* FileView::adapter() const { return this->mAdapter; }
+
+void FileView::setAdapter(FileViewAdapter* adapter) {
+	if (adapter == this->mAdapter) return;
+
+	if (this->mAdapter) {
+		this->mAdapter->setFileView(nullptr);
+		QObject::disconnect(this->mAdapter, nullptr, this, nullptr);
+	}
+
+	this->mAdapter = adapter;
+
+	if (adapter) {
+		this->mAdapter->setFileView(this);
+		QObject::connect(adapter, &FileViewAdapter::adapterUpdated, this, &FileView::adapterUpdated);
+		QObject::connect(adapter, &QObject::destroyed, this, &FileView::onAdapterDestroyed);
+	}
+
+	emit this->adapterChanged();
+}
+
+void FileView::writeAdapter() {
+	if (!this->mAdapter) {
+		qmlWarning(this) << "Cannot call writeAdapter without an adapter.";
+		return;
+	}
+
+	this->setData(this->mAdapter->serializeAdapter());
+}
+
+void FileView::onAdapterDestroyed() { this->mAdapter = nullptr; }
+
+void FileViewAdapter::setFileView(FileView* fileView) {
+	if (fileView == this->mFileView) return;
+
+	if (this->mFileView) {
+		QObject::disconnect(this->mFileView, nullptr, this, nullptr);
+	}
+
+	this->mFileView = fileView;
+
+	if (fileView) {
+		QObject::connect(fileView, &FileView::dataChanged, this, &FileViewAdapter::onDataChanged);
+		this->setFileView(fileView);
+	} else {
+		this->setFileView(nullptr);
+	}
+}
+
+void FileViewAdapter::onDataChanged() { this->deserializeAdapter(this->mFileView->data()); }
 
 } // namespace qs::io

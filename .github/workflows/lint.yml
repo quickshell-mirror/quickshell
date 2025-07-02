@@ -22,4 +22,4 @@ jobs:
           just build
 
       - name: Run lints
-        run: just lint-ci
+        run: LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 just lint-ci

@@ -6,6 +6,7 @@
 #include <qwayland-wlr-foreign-toplevel-management-unstable-v1.h>
 #include <qwindow.h>
 
+#include "../output_tracking.hpp"
 #include "wayland-wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
 
 namespace qs::wayland::toplevel_management::impl {
@@ -18,7 +19,6 @@ class ToplevelHandle
 public:
 	[[nodiscard]] QString appId() const;
 	[[nodiscard]] QString title() const;
-	[[nodiscard]] QVector<QScreen*> visibleScreens() const;
 	[[nodiscard]] ToplevelHandle* parent() const;
 	[[nodiscard]] bool activated() const;
 	[[nodiscard]] bool maximized() const;
@@ -32,6 +32,8 @@ public:
 	void fullscreenOn(QScreen* screen);
 	void setRectangle(QWindow* window, QRect rect);
 
+	WlOutputTracker visibleScreens;
+
 signals:
 	// sent after the first done event.
 	void ready();
@@ -40,8 +42,6 @@ signals:
 
 	void appIdChanged();
 	void titleChanged();
-	void visibleScreenAdded(QScreen* screen);
-	void visibleScreenRemoved(QScreen* screen);
 	void parentChanged();
 	void activatedChanged();
 	void maximizedChanged();
@@ -51,7 +51,6 @@ signals:
 private slots:
 	void onParentClosed();
 	void onRectWindowDestroyed();
-	void onScreenAdded(QScreen* screen);
 
 private:
 	void zwlr_foreign_toplevel_handle_v1_done() override;
@@ -66,8 +65,6 @@ private:
 	bool isReady = false;
 	QString mAppId;
 	QString mTitle;
-	QVector<QScreen*> mVisibleScreens;
-	QVector<wl_output*> mPendingVisibleScreens;
 	ToplevelHandle* mParent = nullptr;
 	bool mActivated = false;
 	bool mMaximized = false;

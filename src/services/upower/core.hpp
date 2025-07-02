@@ -22,7 +22,7 @@ class UPower: public QObject {
 public:
 	[[nodiscard]] UPowerDevice* displayDevice();
 	[[nodiscard]] ObjectModel<UPowerDevice>* devices();
-	QS_BINDABLE_GETTER(bool, bOnBattery, onBattery, bindableOnBattery);
+	[[nodiscard]] QBindable<bool> bindableOnBattery() const { return &this->bOnBattery; };
 
 	static UPower* instance();
 
@@ -77,7 +77,7 @@ class UPowerQml: public QObject {
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::upower::UPowerDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	/// If the system is currently running on battery power, or discharging.
-	Q_PROPERTY(bool onBattery READ onBattery NOTIFY onBatteryChanged BINDABLE bindableOnBattery);
+	Q_PROPERTY(bool onBattery READ default NOTIFY onBatteryChanged BINDABLE bindableOnBattery);
 	// clang-format on
 
 public:
@@ -85,7 +85,6 @@ public:
 
 	[[nodiscard]] UPowerDevice* displayDevice();
 	[[nodiscard]] ObjectModel<UPowerDevice>* devices();
-	[[nodiscard]] static bool onBattery() { return UPower::instance()->onBattery(); }
 
 	[[nodiscard]] static QBindable<bool> bindableOnBattery() {
 		return UPower::instance()->bindableOnBattery();

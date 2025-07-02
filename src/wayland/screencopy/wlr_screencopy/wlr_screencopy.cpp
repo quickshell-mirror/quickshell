@@ -1,12 +1,14 @@
 #include "wlr_screencopy.hpp"
 #include <cstdint>
 
+#include <private/qwaylanddisplay_p.h>
 #include <private/qwaylandscreen_p.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qscreen.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qwaylandclientextension.h>
 #include <wayland-wlr-screencopy-unstable-v1-client-protocol.h>
 
@@ -45,6 +47,7 @@ WlrScreencopyContext::WlrScreencopyContext(
     , screen(dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle()))
     , paintCursors(paintCursors)
     , region(region) {
+	this->transform.setScreen(this->screen);
 	QObject::connect(screen, &QObject::destroyed, this, &WlrScreencopyContext::onScreenDestroyed);
 }
 
@@ -99,9 +102,7 @@ void WlrScreencopyContext::zwlr_screencopy_frame_v1_linux_dmabuf(
 }
 
 void WlrScreencopyContext::zwlr_screencopy_frame_v1_flags(uint32_t flags) {
-	if (flags & ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT) {
-		this->mSwapchain.backbuffer()->transform = buffer::WlBufferTransform::Flipped180;
-	}
+	this->yInvert = flags & ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT;
 }
 
 void WlrScreencopyContext::zwlr_screencopy_frame_v1_buffer_done() {
@@ -119,15 +120,69 @@ void WlrScreencopyContext::zwlr_screencopy_frame_v1_ready(
     uint32_t /*tvSecLo*/,
     uint32_t /*tvNsec*/
 ) {
-	this->destroy();
-	this->copiedFirstFrame = true;
-	this->mSwapchain.swapBuffers();
-	emit this->frameCaptured();
+	this->submitFrame();
 }
 
 void WlrScreencopyContext::zwlr_screencopy_frame_v1_failed() {
 	qCWarning(logScreencopy) << "Ending recording due to screencopy failure for" << this;
 	emit this->stopped();
+}
+
+void WlrScreencopyContext::updateTransform(bool previouslyUnset) {
+	if (previouslyUnset && this->copiedFirstFrame) this->submitFrame();
+}
+
+void WlrScreencopyContext::submitFrame() {
+	this->copiedFirstFrame = true;
+	if (this->transform.transform == -1) return;
+
+	auto flipTransform =
+	    this->yInvert ? buffer::WlBufferTransform::Flipped180 : buffer::WlBufferTransform::Normal0;
+
+	this->mSwapchain.backbuffer()->transform = this->transform.transform ^ flipTransform;
+
+	this->destroy();
+	this->mSwapchain.swapBuffers();
+	emit this->frameCaptured();
+}
+
+WlrScreencopyContext::OutputTransformQuery::OutputTransformQuery(WlrScreencopyContext* context)
+    : context(context) {}
+
+WlrScreencopyContext::OutputTransformQuery::~OutputTransformQuery() {
+	if (this->isInitialized()) this->release();
+}
+
+void WlrScreencopyContext::OutputTransformQuery::setScreen(QtWaylandClient::QWaylandScreen* screen
+) {
+	// cursed hack
+	class QWaylandScreenReflector: public QtWaylandClient::QWaylandScreen {
+	public:
+		[[nodiscard]] int globalId() const { return this->m_outputId; }
+	};
+
+	if (this->isInitialized()) this->release();
+
+	this->init(
+	    screen->display()->wl_registry(),
+	    static_cast<QWaylandScreenReflector*>(screen)->globalId(), // NOLINT
+	    3
+	);
+}
+
+void WlrScreencopyContext::OutputTransformQuery::output_geometry(
+    qint32 /*x*/,
+    qint32 /*y*/,
+    qint32 /*width*/,
+    qint32 /*height*/,
+    qint32 /*subpixel*/,
+    const QString& /*make*/,
+    const QString& /*model*/,
+    qint32 transform
+) {
+	auto newTransform = this->transform == -1;
+	this->transform = transform;
+	this->context->updateTransform(newTransform);
 }
 
 } // namespace qs::wayland::screencopy::wlr

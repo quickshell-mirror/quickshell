@@ -1,6 +1,7 @@
 #include "types.hpp"
 
 #include <qdebug.h>
+#include <qmargins.h>
 #include <qnamespace.h>
 #include <qrect.h>
 
@@ -21,3 +22,5 @@ Qt::Edges Edges::toQt(Edges::Flags edges) { return Qt::Edges(edges.toInt()); }
 bool Edges::isOpposing(Edges::Flags edges) {
 	return edges.testFlags(Edges::Top | Edges::Bottom) || edges.testFlags(Edges::Left | Edges::Right);
 }
+
+QMargins Margins::qmargins() const { return {this->left, this->top, this->right, this->bottom}; }

@@ -1,29 +1,42 @@
 #include "wlr_layershell.hpp"
-#include <utility>
 
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
-#include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/qmlscreen.hpp"
-#include "../window/panelinterface.hpp"
-#include "../window/proxywindow.hpp"
-#include "wlr_layershell/window.hpp"
+#include "../../core/qmlscreen.hpp"
+#include "../../window/panelinterface.hpp"
+#include "../../window/proxywindow.hpp"
+#include "surface.hpp"
 
-WlrLayershell::WlrLayershell(QObject* parent)
-    : ProxyWindowBase(parent)
-    , ext(new LayershellWindowExtension(this)) {}
+namespace qs::wayland::layershell {
+
+WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
+	this->bcExclusiveZone.setBinding([this]() -> qint32 {
+		switch (this->bExclusionMode.value()) {
+		case ExclusionMode::Ignore: return -1;
+		case ExclusionMode::Normal: return this->bExclusiveZone;
+		case ExclusionMode::Auto:
+			const auto anchors = this->bAnchors.value();
+
+			if (anchors.horizontalConstraint()) return this->bImplicitHeight;
+			else if (anchors.verticalConstraint()) return this->bImplicitWidth;
+			else return 0;
+		}
+	});
+}
 
 ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 	auto* old = qobject_cast<WlrLayershell*>(oldInstance);
 	auto* window = old == nullptr ? nullptr : old->disownWindow();
 
 	if (window != nullptr) {
-		if (this->ext->attach(window)) {
+		this->connectBridge(LayerSurfaceBridge::init(window, this->computeState()));
+
+		if (this->bridge) {
 			return window;
 		} else {
 			window->deleteLater();
@@ -36,7 +49,8 @@ ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
 ProxiedWindow* WlrLayershell::createQQuickWindow() {
 	auto* window = this->ProxyWindowBase::createQQuickWindow();
 
-	if (!this->ext->attach(window)) {
+	this->connectBridge(LayerSurfaceBridge::init(window, this->computeState()));
+	if (!this->bridge) {
 		qWarning() << "Could not attach Layershell extension to new QQuickWindow. Layer will not "
 		              "behave correctly.";
 	}
@@ -47,20 +61,41 @@ ProxiedWindow* WlrLayershell::createQQuickWindow() {
 void WlrLayershell::connectWindow() {
 	this->ProxyWindowBase::connectWindow();
 
-	// clang-format off
-	QObject::connect(this->ext, &LayershellWindowExtension::layerChanged, this, &WlrLayershell::layerChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::keyboardFocusChanged, this, &WlrLayershell::keyboardFocusChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::anchorsChanged, this, &WlrLayershell::anchorsChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::exclusiveZoneChanged, this, &WlrLayershell::exclusiveZoneChanged);
-	QObject::connect(this->ext, &LayershellWindowExtension::marginsChanged, this, &WlrLayershell::marginsChanged);
-
 	QObject::connect(this, &ProxyWindowBase::widthChanged, this, &WlrLayershell::updateAutoExclusion);
-	QObject::connect(this, &ProxyWindowBase::heightChanged, this, &WlrLayershell::updateAutoExclusion);
-	QObject::connect(this, &WlrLayershell::anchorsChanged, this, &WlrLayershell::updateAutoExclusion);
-	// clang-format on
+
+	QObject::connect(
+	    this,
+	    &ProxyWindowBase::heightChanged,
+	    this,
+	    &WlrLayershell::updateAutoExclusion
+	);
 
 	this->updateAutoExclusion();
 }
+
+ProxiedWindow* WlrLayershell::disownWindow(bool keepItemOwnership) {
+	auto* window = this->ProxyWindowBase::disownWindow(keepItemOwnership);
+
+	if (this->bridge) {
+		this->connectBridge(nullptr);
+	}
+
+	return window;
+}
+
+void WlrLayershell::connectBridge(LayerSurfaceBridge* bridge) {
+	if (this->bridge) {
+		QObject::disconnect(this->bridge, nullptr, this, nullptr);
+	}
+
+	this->bridge = bridge;
+
+	if (bridge) {
+		QObject::connect(this->bridge, &QObject::destroyed, this, &WlrLayershell::onBridgeDestroyed);
+	}
+}
+
+void WlrLayershell::onBridgeDestroyed() { this->bridge = nullptr; }
 
 bool WlrLayershell::deleteOnInvisible() const {
 	// Qt windows behave weirdly when geometry is modified and setVisible(false)
@@ -71,48 +106,24 @@ bool WlrLayershell::deleteOnInvisible() const {
 	return true;
 }
 
-void WlrLayershell::setWidth(qint32 width) {
-	this->mWidth = width;
-
-	// only update the actual size if not blocked by anchors
-	if (!this->ext->anchors().horizontalConstraint()) {
-		this->ProxyWindowBase::setWidth(width);
+void WlrLayershell::onPolished() {
+	if (this->bridge) {
+		this->bridge->state = this->computeState();
+		this->bridge->commitState();
 	}
+
+	this->ProxyWindowBase::onPolished();
 }
 
-void WlrLayershell::setHeight(qint32 height) {
-	this->mHeight = height;
-
-	// only update the actual size if not blocked by anchors
-	if (!this->ext->anchors().verticalConstraint()) {
-		this->ProxyWindowBase::setHeight(height);
-	}
-}
+void WlrLayershell::trySetWidth(qint32 /*implicitWidth*/) { this->onStateChanged(); }
+void WlrLayershell::trySetHeight(qint32 /*implicitHeight*/) { this->onStateChanged(); }
 
 void WlrLayershell::setScreen(QuickshellScreenInfo* screen) {
-	this->ext->setUseWindowScreen(screen != nullptr);
+	this->compositorPicksScreen = screen == nullptr;
 	this->ProxyWindowBase::setScreen(screen);
 }
 
-// NOLINTBEGIN
-#define extPair(type, get, set)                                                                    \
-	type WlrLayershell::get() const { return this->ext->get(); }                                     \
-	void WlrLayershell::set(type value) { this->ext->set(value); }
-
-extPair(WlrLayer::Enum, layer, setLayer);
-extPair(WlrKeyboardFocus::Enum, keyboardFocus, setKeyboardFocus);
-extPair(Margins, margins, setMargins);
-// NOLINTEND
-
-Anchors WlrLayershell::anchors() const { return this->ext->anchors(); }
-
-void WlrLayershell::setAnchors(Anchors anchors) {
-	this->ext->setAnchors(anchors);
-
-	// explicitly set width values are tracked so the entire screen isn't covered if an anchor is removed.
-	if (!anchors.horizontalConstraint()) this->ProxyWindowBase::setWidth(this->mWidth);
-	if (!anchors.verticalConstraint()) this->ProxyWindowBase::setHeight(this->mHeight);
-}
+void WlrLayershell::onStateChanged() { this->schedulePolish(); }
 
 bool WlrLayershell::aboveWindows() const { return this->layer() > WlrLayer::Bottom; }
 
@@ -126,51 +137,20 @@ void WlrLayershell::setFocusable(bool focusable) {
 	this->setKeyboardFocus(focusable ? WlrKeyboardFocus::OnDemand : WlrKeyboardFocus::None);
 }
 
-QString WlrLayershell::ns() const { return this->ext->ns(); }
-
-void WlrLayershell::setNamespace(QString ns) {
-	this->ext->setNamespace(std::move(ns));
-	emit this->namespaceChanged();
+LayerSurfaceState WlrLayershell::computeState() const {
+	return LayerSurfaceState {
+	    .implicitSize = QSize(this->implicitWidth(), this->implicitHeight()),
+	    .anchors = this->bAnchors,
+	    .margins = this->bMargins,
+	    .layer = this->bLayer,
+	    .exclusiveZone = this->bcExclusiveZone,
+	    .keyboardFocus = this->bKeyboardFocus,
+	    .compositorPickesScreen = this->compositorPicksScreen,
+	    .mNamespace = this->bNamespace,
+	};
 }
 
-qint32 WlrLayershell::exclusiveZone() const { return this->ext->exclusiveZone(); }
-
-void WlrLayershell::setExclusiveZone(qint32 exclusiveZone) {
-	this->mExclusiveZone = exclusiveZone;
-	this->setExclusionMode(ExclusionMode::Normal);
-	this->ext->setExclusiveZone(exclusiveZone);
-}
-
-ExclusionMode::Enum WlrLayershell::exclusionMode() const { return this->mExclusionMode; }
-
-void WlrLayershell::setExclusionMode(ExclusionMode::Enum exclusionMode) {
-	if (exclusionMode == this->mExclusionMode) return;
-	this->mExclusionMode = exclusionMode;
-
-	if (exclusionMode == ExclusionMode::Normal) {
-		this->ext->setExclusiveZone(this->mExclusiveZone);
-	} else if (exclusionMode == ExclusionMode::Ignore) {
-		this->ext->setExclusiveZone(-1);
-	} else {
-		this->setAutoExclusion();
-	}
-}
-
-void WlrLayershell::setAutoExclusion() {
-	const auto anchors = this->anchors();
-	auto zone = 0;
-
-	if (anchors.horizontalConstraint()) zone = this->height();
-	else if (anchors.verticalConstraint()) zone = this->width();
-
-	this->ext->setExclusiveZone(zone);
-}
-
-void WlrLayershell::updateAutoExclusion() {
-	if (this->mExclusionMode == ExclusionMode::Auto) {
-		this->setAutoExclusion();
-	}
-}
+void WlrLayershell::updateAutoExclusion() { this->bcExclusiveZone.notify(); }
 
 WlrLayershell* WlrLayershell::qmlAttachedProperties(QObject* object) {
 	if (auto* obj = qobject_cast<WaylandPanelInterface*>(object)) {
@@ -190,6 +170,8 @@ WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
 	QObject::connect(this->layer, &ProxyWindowBase::windowConnected, this, &WaylandPanelInterface::windowConnected);
 	QObject::connect(this->layer, &ProxyWindowBase::visibleChanged, this, &WaylandPanelInterface::visibleChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::backerVisibilityChanged, this, &WaylandPanelInterface::backingWindowVisibleChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::implicitHeightChanged, this, &WaylandPanelInterface::implicitHeightChanged);
+	QObject::connect(this->layer, &ProxyWindowBase::implicitWidthChanged, this, &WaylandPanelInterface::implicitWidthChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::heightChanged, this, &WaylandPanelInterface::heightChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::widthChanged, this, &WaylandPanelInterface::widthChanged);
 	QObject::connect(this->layer, &ProxyWindowBase::devicePixelRatioChanged, this, &WaylandPanelInterface::devicePixelRatioChanged);
@@ -232,6 +214,8 @@ qreal WaylandPanelInterface::devicePixelRatio() const { return this->layer->devi
 	void WaylandPanelInterface::set(type value) { this->layer->set(value); }
 
 proxyPair(bool, isVisible, setVisible);
+proxyPair(qint32, implicitWidth, setImplicitWidth);
+proxyPair(qint32, implicitHeight, setImplicitHeight);
 proxyPair(qint32, width, setWidth);
 proxyPair(qint32, height, setHeight);
 proxyPair(QuickshellScreenInfo*, screen, setScreen);
@@ -249,3 +233,5 @@ proxyPair(bool, aboveWindows, setAboveWindows);
 
 #undef proxyPair
 // NOLINTEND
+
+} // namespace qs::wayland::layershell

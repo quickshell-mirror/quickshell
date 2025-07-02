@@ -58,7 +58,7 @@ void HyprlandFocusGrab::onProxyConnected() {
 }
 
 void HyprlandFocusGrab::tryActivate() {
-	if (!this->targetActive || this->isActive()) return;
+	if (!this->targetActive || this->grab) return;
 
 	auto* manager = FocusGrabManager::instance();
 	if (!manager->isActive()) {

@@ -14,16 +14,19 @@
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
+#include "../../../wayland/toplevel_management/handle.hpp"
 
 namespace qs::hyprland::ipc {
 
 class HyprlandMonitor;
 class HyprlandWorkspace;
+class HyprlandToplevel;
 
 } // namespace qs::hyprland::ipc
 
 Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandWorkspace*);
 Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandMonitor*);
+Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandToplevel*);
 
 namespace qs::hyprland::ipc {
 
@@ -85,18 +88,25 @@ public:
 		return &this->bFocusedWorkspace;
 	}
 
+	[[nodiscard]] QBindable<HyprlandToplevel*> bindableActiveToplevel() const {
+		return &this->bActiveToplevel;
+	}
+
 	void setFocusedMonitor(HyprlandMonitor* monitor);
 
 	[[nodiscard]] ObjectModel<HyprlandMonitor>* monitors();
 	[[nodiscard]] ObjectModel<HyprlandWorkspace>* workspaces();
+	[[nodiscard]] ObjectModel<HyprlandToplevel>* toplevels();
 
 	// No byId because these preemptively create objects. The given id is set if created.
 	HyprlandWorkspace* findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id = -1);
 	HyprlandMonitor* findMonitorByName(const QString& name, bool createIfMissing, qint32 id = -1);
+	HyprlandToplevel* findToplevelByAddress(quint64 address, bool createIfMissing);
 
 	// canCreate avoids making ghost workspaces when the connection races
 	void refreshWorkspaces(bool canCreate);
 	void refreshMonitors(bool canCreate);
+	void refreshToplevels();
 
 	// The last argument may contain commas, so the count is required.
 	[[nodiscard]] static QVector<QByteArrayView> parseEventArgs(QByteArrayView event, quint16 count);
@@ -107,11 +117,17 @@ signals:
 
 	void focusedMonitorChanged();
 	void focusedWorkspaceChanged();
+	void activeToplevelChanged();
 
 private slots:
 	void eventSocketError(QLocalSocket::LocalSocketError error) const;
 	void eventSocketStateChanged(QLocalSocket::LocalSocketState state);
 	void eventSocketReady();
+
+	void toplevelAddressed(
+	    qs::wayland::toplevel_management::impl::ToplevelHandle* handle,
+	    quint64 address
+	);
 
 	void onFocusedMonitorDestroyed();
 
@@ -128,10 +144,12 @@ private:
 	bool valid = false;
 	bool requestingMonitors = false;
 	bool requestingWorkspaces = false;
+	bool requestingToplevels = false;
 	bool monitorsRequested = false;
 
 	ObjectModel<HyprlandMonitor> mMonitors {this};
 	ObjectModel<HyprlandWorkspace> mWorkspaces {this};
+	ObjectModel<HyprlandToplevel> mToplevels {this};
 
 	HyprlandIpcEvent event {this};
 
@@ -147,6 +165,13 @@ private:
 	    HyprlandWorkspace*,
 	    bFocusedWorkspace,
 	    &HyprlandIpc::focusedWorkspaceChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    HyprlandIpc,
+	    HyprlandToplevel*,
+	    bActiveToplevel,
+	    &HyprlandIpc::activeToplevelChanged
 	);
 };
 

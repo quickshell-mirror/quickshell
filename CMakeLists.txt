@@ -71,6 +71,7 @@ boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NETWORKMANAGER "NetworkManager" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
+boption(BLUETOOTH "Bluetooth" ON)
 
 include(cmake/install-qml-module.cmake)
 include(cmake/util.cmake)
@@ -117,7 +118,7 @@ if (WAYLAND)
 	list(APPEND QT_FPDEPS WaylandClient)
 endif()
 
-if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS)
+if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS OR BLUETOOTH)
 	set(DBUS ON)
 endif()
 
