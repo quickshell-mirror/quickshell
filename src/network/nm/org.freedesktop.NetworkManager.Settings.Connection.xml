@@ -1,0 +1,11 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Settings.Connection">
+    <method name="GetSettings">
+			<arg name="settings" type="a{sa{sv}}" direction="out"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConnectionSettingsMap"/>
+    </method>
+		<method name="Delete"/>
+    <signal name="Updated"/>
+		<signal name="Removed"/>
+  </interface>
+</node>

@@ -20,6 +20,7 @@ set shell id.
 - Added the ability to handle move and resize events to FloatingWindow.
 - Pipewire service now reconnects if pipewire dies or a protocol error occurs.
 - Added pipewire audio peak detection.
+- Added initial support for network management.
 
 ## Other Changes
 

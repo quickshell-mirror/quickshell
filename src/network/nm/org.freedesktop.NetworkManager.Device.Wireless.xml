@@ -1,0 +1,15 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Device.Wireless">
+		<method name="GetAllAccessPoints" type="ao"/>
+    <method name="RequestScan">
+			<arg name="options" type="a{sv}" direction="in"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
+    </method>
+    <signal name="AccessPointAdded">
+      <arg name="access_point" type="o"/>
+    </signal>
+		<signal name="AccessPointRemoved">
+			<arg name="access_point" type="o"/>
+		</signal>
+  </interface>
+</node>
