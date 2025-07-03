@@ -9,6 +9,7 @@
 #include <qdir.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qpair.h>
 #include <qstandardpaths.h>
 #include <qtenvironmentvariables.h>
 #include <qtversionchecks.h>
@@ -367,29 +368,30 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 	return true;
 }
 
-QVector<InstanceLockInfo> QsPaths::collectInstances(const QString& path, bool fallbackDead) {
+QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
+QsPaths::collectInstances(const QString& path) {
 	qCDebug(logPaths) << "Collecting instances from" << path;
-	auto instances = QVector<InstanceLockInfo>();
+	auto liveInstances = QVector<InstanceLockInfo>();
+	auto deadInstances = QVector<InstanceLockInfo>();
 	auto dir = QDir(path);
 
 	InstanceLockInfo info;
 	for (auto& entry: dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
 		auto path = dir.filePath(entry);
 
-		if (QsPaths::checkLock(path, &info, fallbackDead)) {
-			if (fallbackDead && info.pid != -1) {
-				fallbackDead = false;
-				instances.clear();
-			}
-
+		if (QsPaths::checkLock(path, &info, true)) {
 			qCDebug(logPaths).nospace() << "Found instance " << info.instance.instanceId << " (pid "
 			                            << info.pid << ") at " << path;
 
-			instances.push_back(info);
+			if (info.pid == -1) {
+				deadInstances.push_back(info);
+			} else {
+				liveInstances.push_back(info);
+			}
 		} else {
 			qCDebug(logPaths) << "Skipped potential instance at" << path;
 		}
 	}
 
-	return instances;
+	return qMakePair(liveInstances, deadInstances);
 }

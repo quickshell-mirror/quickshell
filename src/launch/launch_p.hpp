@@ -61,6 +61,7 @@ struct CommandState {
 		QStringOption id;
 		pid_t pid = -1; // NOLINT (include)
 		bool all = false;
+		bool includeDead = false;
 	} instance;
 
 	struct {

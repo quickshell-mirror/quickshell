@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 #include <qconfig.h>
 #include <qcontainerfwd.h>
@@ -177,14 +178,33 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto instances = QsPaths::collectInstances(path, deadFallback);
+		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
 
-		instances.removeIf([&](const InstanceLockInfo& info) {
+		liveInstances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
 		});
 
+		deadInstances.removeIf([&](const InstanceLockInfo& info) {
+			return !info.instance.instanceId.startsWith(*cmd.instance.id);
+		});
+
+		auto instances = liveInstances.isEmpty() && deadFallback ? deadInstances : liveInstances;
+
 		if (instances.isEmpty()) {
-			qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
+			if (deadFallback) {
+				qCInfo(logBare) << "No instances start with" << *cmd.instance.id;
+			} else {
+				qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
+
+				if (!deadInstances.isEmpty()) {
+					qCInfo(logBare) << "Some dead instances match:";
+
+					for (auto& instance: deadInstances) {
+						qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+					}
+				}
+			}
+
 			return -1;
 		} else if (instances.length() != 1) {
 			qCInfo(logBare) << "More than one instance starts with" << *cmd.instance.id;
@@ -208,14 +228,29 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto instances = QsPaths::collectInstances(path, deadFallback);
+		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+
+		auto instances = liveInstances;
+		if (instances.isEmpty() && deadFallback) {
+			instances = deadInstances;
+		}
+
 		sortInstances(
 		    instances,
 		    cmd.config.newest || (!instances.empty() && instances.first().pid == -1)
 		);
 
 		if (instances.isEmpty()) {
-			qCInfo(logBare) << "No running instances for" << configFilePath;
+			if (liveInstances.isEmpty() && deadInstances.length() > 1) {
+				qCInfo(logBare) << "No running instances for" << configFilePath;
+				qCInfo(logBare) << "Dead instances:";
+				sortInstances(deadInstances, cmd.config.newest);
+				for (auto& instance: deadInstances) {
+					qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+				}
+			} else {
+				qCInfo(logBare) << "No running instances for" << configFilePath;
+			}
 			return -1;
 		}
 
@@ -276,7 +311,18 @@ int listInstances(CommandState& cmd) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	auto instances = QsPaths::collectInstances(path);
+	auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+
+	sortInstances(liveInstances, cmd.config.newest);
+
+	QList<InstanceLockInfo> instances;
+	if (cmd.instance.includeDead) {
+		sortInstances(deadInstances, cmd.config.newest);
+		instances = std::move(deadInstances);
+		instances.append(liveInstances);
+	} else {
+		instances = std::move(liveInstances);
+	}
 
 	if (instances.isEmpty()) {
 		if (cmd.instance.all) {
@@ -286,7 +332,6 @@ int listInstances(CommandState& cmd) {
 			qCInfo(logBare) << "Use --all to list all instances.";
 		}
 	} else {
-		sortInstances(instances, cmd.config.newest);
 
 		if (cmd.output.json) {
 			auto array = QJsonArray();
@@ -295,7 +340,7 @@ int listInstances(CommandState& cmd) {
 				auto json = QJsonObject();
 
 				json["id"] = instance.instance.instanceId;
-				json["pid"] = instance.pid;
+				json["pid"] = instance.instance.pid;
 				json["shell_id"] = instance.instance.shellId;
 				json["config_path"] = instance.instance.configPath;
 				json["launch_time"] = instance.instance.launchTime.toString(Qt::ISODate);
@@ -319,12 +364,18 @@ int listInstances(CommandState& cmd) {
 				                      .arg(remMinutes)
 				                      .arg(remSeconds);
 
+				auto isDead = instance.pid == -1;
+				auto gray = !cmd.log.noColor && isDead;
+
 				qCInfo(logBare).noquote().nospace()
-				    << "Instance " << instance.instance.instanceId << ":\n"
-				    << "  Process ID: " << instance.pid << '\n'
+				    << (gray ? "\033[90m" : "") << "Instance " << instance.instance.instanceId
+				    << (isDead ? " (dead)" : "") << ":\n"
+				    << "  Process ID: " << instance.instance.pid << '\n'
 				    << "  Shell ID: " << instance.instance.shellId << '\n'
 				    << "  Config path: " << instance.instance.configPath << '\n'
-				    << "  Launch time: " << launchTimeStr << " (running for " << runtimeStr << ")\n";
+				    << "  Launch time: " << launchTimeStr
+				    << (isDead ? "" : " (running for " + runtimeStr + ")") << '\n'
+				    << (gray ? "\033[0m" : "");
 			}
 		}
 	}

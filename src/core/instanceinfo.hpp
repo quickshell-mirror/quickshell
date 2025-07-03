@@ -3,12 +3,14 @@
 #include <qdatetime.h>
 #include <qlogging.h>
 #include <qstring.h>
+#include <sys/types.h>
 
 struct InstanceInfo {
 	QString instanceId;
 	QString configPath;
 	QString shellId;
 	QDateTime launchTime;
+	pid_t pid = -1;
 
 	static InstanceInfo CURRENT; // NOLINT
 };

@@ -1,6 +1,7 @@
 #pragma once
 #include <qdatetime.h>
 #include <qdir.h>
+#include <qpair.h>
 #include <qtypes.h>
 
 #include "instanceinfo.hpp"
@@ -22,7 +23,8 @@ public:
 	static QString ipcPath(const QString& id);
 	static bool
 	checkLock(const QString& path, InstanceLockInfo* info = nullptr, bool allowDead = false);
-	static QVector<InstanceLockInfo> collectInstances(const QString& path, bool fallbackDead = false);
+	static QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
+	collectInstances(const QString& path);
 
 	QDir* baseRunDir();
 	QDir* shellRunDir();

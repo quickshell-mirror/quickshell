@@ -3,12 +3,12 @@
 #include <qdatastream.h>
 
 QDataStream& operator<<(QDataStream& stream, const InstanceInfo& info) {
-	stream << info.instanceId << info.configPath << info.shellId << info.launchTime;
+	stream << info.instanceId << info.configPath << info.shellId << info.launchTime << info.pid;
 	return stream;
 }
 
 QDataStream& operator>>(QDataStream& stream, InstanceInfo& info) {
-	stream >> info.instanceId >> info.configPath >> info.shellId >> info.launchTime;
+	stream >> info.instanceId >> info.configPath >> info.shellId >> info.launchTime >> info.pid;
 	return stream;
 }
 

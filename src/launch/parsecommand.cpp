@@ -163,6 +163,9 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 
 		sub->add_flag("-j,--json", state.output.json, "Output the list as a json.");
 
+		sub->add_flag("--show-dead", state.instance.includeDead)
+		    ->description("Include dead instances in the list.");
+
 		addConfigSelection(sub, true)->excludes(all);
 		addLoggingOptions(sub, false, true);
 
