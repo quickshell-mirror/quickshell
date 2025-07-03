@@ -27,6 +27,21 @@ Process::Process(QObject* parent): QObject(parent) {
 	);
 }
 
+Process::~Process() {
+	if (this->process != nullptr && this->process->processId() != 0) {
+		// Deleting after the process finishes hides the process destroyed warning in logs
+		QObject::connect(this->process, &QProcess::finished, [p = this->process] { delete p; });
+
+		this->process->setParent(nullptr);
+		this->process->kill();
+	}
+}
+
+void Process::onPostReload() {
+	this->postReload = true;
+	this->startProcessIfReady();
+}
+
 bool Process::isRunning() const { return this->process != nullptr; }
 
 void Process::setRunning(bool running) {
@@ -165,7 +180,9 @@ void Process::setStdinEnabled(bool enabled) {
 }
 
 void Process::startProcessIfReady() {
-	if (this->process != nullptr || !this->targetRunning || this->mCommand.isEmpty()) return;
+	if (this->process != nullptr || !this->postReload || !this->targetRunning
+	    || this->mCommand.isEmpty())
+		return;
 	this->targetRunning = false;
 
 	auto& cmd = this->mCommand.first();

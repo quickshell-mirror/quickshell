@@ -11,6 +11,7 @@
 #include <qvariant.h>
 
 #include "../core/doc.hpp"
+#include "../core/reload.hpp"
 #include "datastream.hpp"
 #include "processcore.hpp"
 
@@ -30,7 +31,9 @@
 ///   }
 /// }
 /// ```
-class Process: public QObject {
+class Process
+    : public QObject
+    , public PostReloadHook {
 	Q_OBJECT;
 	// clang-format off
 	/// If the process is currently running. Defaults to false.
@@ -136,6 +139,10 @@ class Process: public QObject {
 
 public:
 	explicit Process(QObject* parent = nullptr);
+	~Process() override;
+	Q_DISABLE_COPY_MOVE(Process);
+
+	void onPostReload() override;
 
 	// MUST be before exec(ctx) or the other will be called with a default constructed obj.
 	QSDOC_HIDE Q_INVOKABLE void exec(QList<QString> command);
@@ -251,4 +258,5 @@ private:
 	bool targetRunning = false;
 	bool mStdinEnabled = false;
 	bool mClearEnvironment = false;
+	bool postReload = false;
 };
