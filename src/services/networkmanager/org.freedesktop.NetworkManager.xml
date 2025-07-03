@@ -1,0 +1,20 @@
+<node>
+	<interface name="org.freedesktop.NetworkManager">
+		<method name="GetAllDevices">
+			<arg direction="out" type="ao" name="devices"/>
+		</method>
+		<method name="GetDevices">
+			<arg direction="out" type="ao" name="devices"/>
+		</method>
+
+		<signal name="DeviceAdded">
+			<arg type="o" name="device_path"/>
+		</signal> 
+		<signal name="DeviceRemoved">
+			<arg type="o" name="device_path"/>
+		</signal>
+		<signal name="StateChanged">
+			<arg type="u" name="state"/>
+		</signal>
+	</interface>
+</node>
