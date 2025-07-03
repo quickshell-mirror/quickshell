@@ -46,6 +46,7 @@
   withHyprland ? true,
   withI3 ? true,
   withPolkit ? true,
+  withNetworkManager ? true,
 }: let
   unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
@@ -95,6 +96,7 @@
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
       (lib.cmakeBool "SERVICE_PAM" withPam)
+      (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
       (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
       (lib.cmakeBool "HYPRLAND" withHyprland)
       (lib.cmakeBool "I3" withI3)
