@@ -32,7 +32,7 @@ qt_add_qml_module(quickshell-service-networkmanager
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-networkmanager NetworkManager)
+qs_add_module_deps_light(quickshell-service-networkmanager Quickshell)
 install_qml_module(quickshell-service-networkmanager)
 
 target_link_libraries(quickshell-service-networkmanager PRIVATE Qt::Qml Qt::DBus)
