@@ -32,9 +32,7 @@ namespace qs::hyprland::global_shortcuts {
 ///
 /// [hyprland_global_shortcuts_v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-global-shortcuts-v1.xml
 /// [the wiki]: https://wiki.hyprland.org/Configuring/Binds/#dbus-global-shortcuts
-class GlobalShortcut
-    : public QObject
-    , public PostReloadHook {
+class GlobalShortcut: public PostReloadHook {
 	using ShortcutImpl = impl::GlobalShortcut;
 
 	Q_OBJECT;
@@ -59,7 +57,7 @@ class GlobalShortcut
 	QML_ELEMENT;
 
 public:
-	explicit GlobalShortcut(QObject* parent = nullptr): QObject(parent) {}
+	explicit GlobalShortcut(QObject* parent = nullptr): PostReloadHook(parent) {}
 	~GlobalShortcut() override;
 	Q_DISABLE_COPY_MOVE(GlobalShortcut);
 

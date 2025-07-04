@@ -21,9 +21,7 @@ namespace qs::service::notifications {
 /// The server does not advertise most capabilities by default. See the individual properties for details.
 ///
 /// [Desktop Notifications Specification]: https://specifications.freedesktop.org/notification-spec/notification-spec-latest.html
-class NotificationServerQml
-    : public QObject
-    , public PostReloadHook {
+class NotificationServerQml: public PostReloadHook {
 	Q_OBJECT;
 	// clang-format off
 	/// If notifications should be re-emitted when quickshell reloads. Defaults to true.

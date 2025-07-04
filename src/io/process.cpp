@@ -15,10 +15,11 @@
 
 #include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
+#include "../core/reload.hpp"
 #include "datastream.hpp"
 #include "processcore.hpp"
 
-Process::Process(QObject* parent): QObject(parent) {
+Process::Process(QObject* parent): PostReloadHook(parent) {
 	QObject::connect(
 	    QuickshellSettings::instance(),
 	    &QuickshellSettings::workingDirectoryChanged,
@@ -37,10 +38,7 @@ Process::~Process() {
 	}
 }
 
-void Process::onPostReload() {
-	this->postReload = true;
-	this->startProcessIfReady();
-}
+void Process::onPostReload() { this->startProcessIfReady(); }
 
 bool Process::isRunning() const { return this->process != nullptr; }
 
@@ -180,9 +178,10 @@ void Process::setStdinEnabled(bool enabled) {
 }
 
 void Process::startProcessIfReady() {
-	if (this->process != nullptr || !this->postReload || !this->targetRunning
+	if (this->process != nullptr || !this->isPostReload || !this->targetRunning
 	    || this->mCommand.isEmpty())
 		return;
+
 	this->targetRunning = false;
 
 	auto& cmd = this->mCommand.first();

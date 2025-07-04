@@ -119,16 +119,19 @@ private:
 };
 
 /// Hook that runs after the old widget tree is dropped during a reload.
-class PostReloadHook {
+class PostReloadHook
+    : public QObject
+    , public QQmlParserStatus {
 public:
-	PostReloadHook() = default;
-	virtual ~PostReloadHook() = default;
-	PostReloadHook(PostReloadHook&&) = default;
-	PostReloadHook(const PostReloadHook&) = default;
-	PostReloadHook& operator=(PostReloadHook&&) = default;
-	PostReloadHook& operator=(const PostReloadHook&) = default;
+	PostReloadHook(QObject* parent = nullptr): QObject(parent) {}
+	void classBegin() override {}
+	void componentComplete() override;
 
+	void postReload();
 	virtual void onPostReload() = 0;
 
 	static void postReloadTree(QObject* root);
+
+protected:
+	bool isPostReload = false;
 };

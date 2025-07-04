@@ -18,7 +18,7 @@ void TestProcess::startAfterReload() {
 	QVERIFY(!process.isRunning());
 	QCOMPARE(startedSpy.count(), 0);
 
-	process.onPostReload();
+	process.postReload();
 
 	QVERIFY(process.isRunning());
 	QVERIFY(startedSpy.wait(100));
@@ -29,7 +29,7 @@ void TestProcess::testExec() {
 	auto startedSpy = QSignalSpy(&process, &Process::started);
 	auto exitedSpy = QSignalSpy(&process, &Process::exited);
 
-	process.onPostReload();
+	process.postReload();
 
 	process.setCommand({"sleep", "30"});
 	process.setRunning(true);

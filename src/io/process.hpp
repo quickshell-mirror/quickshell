@@ -31,9 +31,7 @@
 ///   }
 /// }
 /// ```
-class Process
-    : public QObject
-    , public PostReloadHook {
+class Process: public PostReloadHook {
 	Q_OBJECT;
 	// clang-format off
 	/// If the process is currently running. Defaults to false.
@@ -258,5 +256,4 @@ private:
 	bool targetRunning = false;
 	bool mStdinEnabled = false;
 	bool mClearEnvironment = false;
-	bool postReload = false;
 };

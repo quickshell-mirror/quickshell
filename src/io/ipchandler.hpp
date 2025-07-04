@@ -154,9 +154,7 @@ class IpcHandlerRegistry;
 /// #### Properties
 /// Properties of an IpcHanlder can be read using `qs ipc prop get` as long as they are
 /// of an IPC compatible type. See the table above for compatible types.
-class IpcHandler
-    : public QObject
-    , public PostReloadHook {
+class IpcHandler: public PostReloadHook {
 	Q_OBJECT;
 	/// If the handler should be able to receive calls. Defaults to true.
 	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged);
@@ -166,7 +164,7 @@ class IpcHandler
 	QML_ELEMENT;
 
 public:
-	explicit IpcHandler(QObject* parent = nullptr): QObject(parent) {};
+	explicit IpcHandler(QObject* parent = nullptr): PostReloadHook(parent) {};
 	~IpcHandler() override;
 	Q_DISABLE_COPY_MOVE(IpcHandler);
 
