@@ -182,17 +182,18 @@ void LogManager::filterCategory(QLoggingCategory* category) {
 	auto categoryName = QLatin1StringView(category->categoryName());
 	auto isQs = categoryName.startsWith(QLatin1StringView("quickshell."));
 
-	if (instance->lastCategoryFilter) {
-		instance->lastCategoryFilter(category);
-	}
+	CategoryFilter filter;
 
-	auto filter = CategoryFilter(category);
-
+	// We don't respect log filters for qs logs because some distros like to ship
+	// default configs that hide everything. QT_LOGGING_RULES is considered via the filter list.
 	if (isQs) {
-		filter.debug = filter.debug || instance->mDefaultLevel == QtDebugMsg;
-		filter.info = filter.debug || instance->mDefaultLevel == QtInfoMsg;
-		filter.warn = filter.info || instance->mDefaultLevel == QtWarningMsg;
-		filter.critical = filter.warn || instance->mDefaultLevel == QtCriticalMsg;
+		filter.debug = instance->mDefaultLevel == QtDebugMsg;
+		filter.info = instance->mDefaultLevel == QtInfoMsg;
+		filter.warn = instance->mDefaultLevel == QtWarningMsg;
+		filter.critical = instance->mDefaultLevel == QtCriticalMsg;
+	} else if (instance->lastCategoryFilter) {
+		instance->lastCategoryFilter(category);
+		filter = CategoryFilter(category);
 	}
 
 	for (const auto& rule: *instance->rules) {
@@ -235,8 +236,12 @@ void LogManager::init(
 
 	{
 		QLoggingSettingsParser parser;
-		parser.setContent(rules);
+		// Load QT_LOGGING_RULES because we ignore the last category filter for QS messages
+		// due to disk config files.
+		parser.setContent(qEnvironmentVariable("QT_LOGGING_RULES"));
 		instance->rules = new QList(parser.rules());
+		parser.setContent(rules);
+		instance->rules->append(parser.rules());
 	}
 
 	qInstallMessageHandler(&LogManager::messageHandler);
