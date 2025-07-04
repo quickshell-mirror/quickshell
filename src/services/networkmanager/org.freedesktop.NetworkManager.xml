@@ -7,14 +7,13 @@
 			<arg direction="out" type="ao" name="devices"/>
 		</method>
 
+		<property name="State" type="u" access="read"/>
+
 		<signal name="DeviceAdded">
 			<arg type="o" name="device_path"/>
 		</signal> 
 		<signal name="DeviceRemoved">
 			<arg type="o" name="device_path"/>
-		</signal>
-		<signal name="StateChanged">
-			<arg type="u" name="state"/>
 		</signal>
 	</interface>
 </node>
