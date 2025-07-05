@@ -20,6 +20,7 @@
   libdrm,
   libgbm ? null,
   pipewire,
+  networkmanager,
   pam,
 
   gitRev ? (let
@@ -40,6 +41,7 @@
   withWayland ? true,
   withX11 ? true,
   withPipewire ? true,
+  withNetworkmanager ? true,
   withPam ? true,
   withHyprland ? true,
   withI3 ? true,
@@ -70,7 +72,8 @@
   ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
   ++ lib.optional withX11 xorg.libxcb
   ++ lib.optional withPam pam
-  ++ lib.optional withPipewire pipewire;
+  ++ lib.optional withPipewire pipewire
+  ++ lib.optional withNetworkmanager networkmanager;
 
   cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
@@ -84,6 +87,7 @@
     (lib.cmakeBool "WAYLAND" withWayland)
     (lib.cmakeBool "SCREENCOPY" (libgbm != null))
     (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
+    (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkmanager)
     (lib.cmakeBool "SERVICE_PAM" withPam)
     (lib.cmakeBool "HYPRLAND" withHyprland)
     (lib.cmakeBool "I3" withI3)
