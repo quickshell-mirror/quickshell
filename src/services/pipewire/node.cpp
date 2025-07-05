@@ -252,7 +252,7 @@ void PwNode::onParam(
 	}
 }
 
-PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): node(node) {
+PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): QObject(node), node(node) {
 	if (node->device) {
 		QObject::connect(node->device, &PwDevice::deviceReady, this, &PwNodeBoundAudio::onDeviceReady);
 
