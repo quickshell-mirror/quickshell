@@ -542,7 +542,8 @@ void ProxyWindowAttached::updateWindow() {
 void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 	if (window == this->mWindow) return;
 	this->mWindow = window;
-	this->mWindowInterface = window ? qobject_cast<WindowInterface*>(window->parent()) : nullptr;
+	auto* parentInterface = window ? qobject_cast<WindowInterface*>(window->parent()) : nullptr;
+	this->mWindowInterface = parentInterface ? static_cast<QObject*>(parentInterface) : window;
 	emit this->windowChanged();
 }
 

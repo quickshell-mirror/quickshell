@@ -220,7 +220,7 @@ protected:
 
 private:
 	ProxyWindowBase* mWindow = nullptr;
-	WindowInterface* mWindowInterface = nullptr;
+	QObject* mWindowInterface = nullptr;
 
 	void setWindow(ProxyWindowBase* window);
 };
