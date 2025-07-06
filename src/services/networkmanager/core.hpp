@@ -10,8 +10,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/model.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_service.h"
+#include "device.hpp"
 
 namespace qs::service::networkmanager {
 
@@ -54,6 +56,8 @@ class NetworkManager: public QObject {
 	Q_OBJECT;
 
 public:
+	[[nodiscard]] NetworkManagerDevice* wifiDevice();
+	[[nodiscard]] ObjectModel<NetworkManagerDevice>* devices();
 	[[nodiscard]] QBindable<NetworkManagerState::Enum> bindableState() const {
 		return &this->bState;
 	};
@@ -64,15 +68,19 @@ signals:
 	void stateChanged();
 
 private slots:
-	// void onDeviceAdded(const QDBusObjectPath& path);
-	// void onDeviceRemoved(const QDBusObjectPath& path);
+	void onDeviceAdded(const QDBusObjectPath& path);
+	void onDeviceRemoved(const QDBusObjectPath& path);
 
 private:
 	explicit NetworkManager();
 
 	void init();
-	void registerDevices();
 	void registerDevice(const QString& path);
+	void registerDevices();
+
+	QHash<QString, NetworkManagerDevice*> mDeviceHash;
+	ObjectModel<NetworkManagerDevice> mDevices {this};
+	NetworkManagerDevice* mWifiDevice = nullptr;
 
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    NetworkManager,
@@ -98,12 +106,22 @@ class NetworkManagerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(NetworkManager);
 	QML_SINGLETON;
+	Q_PROPERTY(qs::service::networkmanager::NetworkManagerDevice* wifiDevice READ wifiDevice);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::networkmanager::NetworkManagerService>*);
+	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	// clang-format off
 	Q_PROPERTY(NetworkManagerState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	// clang-format on
 
 public:
 	explicit NetworkManagerQml(QObject* parent = nullptr);
+	[[nodiscard]] static NetworkManagerDevice* wifiDevice() {
+		return NetworkManager::instance()->wifiDevice();
+	}
+
+	[[nodiscard]] static ObjectModel<NetworkManagerDevice>* devices() {
+		return NetworkManager::instance()->devices();
+	}
 
 	[[nodiscard]] static QBindable<NetworkManagerState::Enum> bindableState() {
 		return NetworkManager::instance()->bindableState();

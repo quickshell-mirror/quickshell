@@ -20,6 +20,7 @@ qt_add_dbus_interface(DBUS_INTERFACES
 
 qt_add_library(quickshell-service-networkmanager STATIC
 	core.cpp
+	device.cpp
 	${DBUS_INTERFACES}
 )
 

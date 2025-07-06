@@ -85,13 +85,6 @@ void UPowerDevice::init(const QString& path) {
 		return;
 	}
 
-	QObject::connect(
-	    &this->deviceProperties,
-	    &DBusPropertyGroup::getAllFinished,
-	    this,
-	    &UPowerDevice::onGetAllFinished
-	);
-
 	this->deviceProperties.setInterface(this->device);
 	this->deviceProperties.updateAllViaGetAll();
 }
