@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 
@@ -22,7 +23,6 @@ class Bluez: public QObject {
 public:
 	[[nodiscard]] ObjectModel<BluetoothAdapter>* adapters() { return &this->mAdapters; }
 	[[nodiscard]] ObjectModel<BluetoothDevice>* devices() { return &this->mDevices; }
-	[[nodiscard]] BluetoothAdapter* defaultAdapter() const;
 
 	[[nodiscard]] BluetoothAdapter* adapter(const QString& path) {
 		return this->mAdapterMap.value(path);
@@ -30,10 +30,14 @@ public:
 
 	static Bluez* instance();
 
+signals:
+	void defaultAdapterChanged();
+
 private slots:
 	void
 	onInterfacesAdded(const QDBusObjectPath& path, const DBusObjectManagerInterfaces& interfaces);
 	void onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& interfaces);
+	void updateDefaultAdapter();
 
 private:
 	explicit Bluez();
@@ -44,6 +48,9 @@ private:
 	QHash<QString, BluetoothDevice*> mDeviceMap;
 	ObjectModel<BluetoothAdapter> mAdapters {this};
 	ObjectModel<BluetoothDevice> mDevices {this};
+
+public:
+	Q_OBJECT_BINDABLE_PROPERTY(Bluez, BluetoothAdapter*, bDefaultAdapter, &Bluez::defaultAdapterChanged);
 };
 
 ///! Bluetooth manager
@@ -51,7 +58,7 @@ private:
 class BluezQml: public QObject {
 	Q_OBJECT;
 	/// The default bluetooth adapter. Usually there is only one.
-	Q_PROPERTY(BluetoothAdapter* defaultAdapter READ defaultAdapter CONSTANT);
+	Q_PROPERTY(BluetoothAdapter* defaultAdapter READ default NOTIFY defaultAdapterChanged BINDABLE bindableDefaultAdapter);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::bluetooth::BluetoothAdapter>*);
 	/// A list of all bluetooth adapters. See @@defaultAdapter for the default.
 	Q_PROPERTY(UntypedObjectModel* adapters READ adapters CONSTANT);
@@ -62,8 +69,11 @@ class BluezQml: public QObject {
 	QML_NAMED_ELEMENT(Bluetooth);
 	QML_SINGLETON;
 
+signals:
+	void defaultAdapterChanged();
+
 public:
-	explicit BluezQml(QObject* parent = nullptr): QObject(parent) {}
+	explicit BluezQml();
 
 	[[nodiscard]] static ObjectModel<BluetoothAdapter>* adapters() {
 		return Bluez::instance()->adapters();
@@ -73,8 +83,8 @@ public:
 		return Bluez::instance()->devices();
 	}
 
-	[[nodiscard]] static BluetoothAdapter* defaultAdapter() {
-		return Bluez::instance()->defaultAdapter();
+	[[nodiscard]] static QBindable<BluetoothAdapter*> bindableDefaultAdapter() {
+		return &Bluez::instance()->bDefaultAdapter;
 	}
 };
 

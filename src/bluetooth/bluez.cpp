@@ -26,6 +26,11 @@ Bluez* Bluez::instance() {
 
 Bluez::Bluez() { this->init(); }
 
+void Bluez::updateDefaultAdapter() {
+	const auto& adapters = this->mAdapters.valueList();
+	this->bDefaultAdapter = adapters.empty() ? nullptr : adapters.first();
+}
+
 void Bluez::init() {
 	qCDebug(logBluetooth) << "Connecting to BlueZ";
 
@@ -95,6 +100,7 @@ void Bluez::onInterfacesAdded(
 
 		this->mAdapterMap.insert(path.path(), adapter);
 		this->mAdapters.insertObject(adapter);
+		this->updateDefaultAdapter();
 	} else if (interfaces.contains("org.bluez.Device1")) {
 		auto* device = new BluetoothDevice(path.path(), this);
 
@@ -127,6 +133,7 @@ void Bluez::onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& 
 
 			this->mAdapterMap.remove(path.path());
 			this->mAdapters.removeObject(adapter);
+			this->updateDefaultAdapter();
 			delete adapter;
 		}
 	} else if (auto* device = this->mDeviceMap.value(path.path())) {
@@ -148,9 +155,8 @@ void Bluez::onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& 
 	}
 }
 
-BluetoothAdapter* Bluez::defaultAdapter() const {
-	const auto& adapters = this->mAdapters.valueList();
-	return adapters.isEmpty() ? nullptr : adapters.first();
+BluezQml::BluezQml() {
+	QObject::connect(Bluez::instance(), &Bluez::defaultAdapterChanged, this, &BluezQml::defaultAdapterChanged);
 }
 
 } // namespace qs::bluetooth
