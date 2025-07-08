@@ -1,11 +1,12 @@
 #pragma once
 
-#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qqmlincubator.h>
 #include <qtmetamacros.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logIncubator);
+#include "logcat.hpp"
+
+QS_DECLARE_LOGGING_CATEGORY(logIncubator);
 
 class QsQmlIncubator
     : public QObject

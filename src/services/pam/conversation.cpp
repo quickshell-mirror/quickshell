@@ -8,9 +8,10 @@
 #include <qtmetamacros.h>
 #include <sys/wait.h>
 
+#include "../../core/logcat.hpp"
 #include "ipc.hpp"
 
-Q_LOGGING_CATEGORY(logPam, "quickshell.service.pam", QtWarningMsg);
+QS_LOGGING_CATEGORY(logPam, "quickshell.service.pam", QtWarningMsg);
 
 QString PamError::toString(PamError::Enum value) {
 	switch (value) {

@@ -10,10 +10,11 @@
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
+#include "../core/logcat.hpp"
 #include "../core/reload.hpp"
 #include "datastream.hpp"
 
-Q_DECLARE_LOGGING_CATEGORY(logSocket);
+QS_DECLARE_LOGGING_CATEGORY(logSocket);
 
 ///! Unix socket listener.
 class Socket: public DataStream {

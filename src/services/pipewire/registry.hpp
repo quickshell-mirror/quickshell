@@ -12,12 +12,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/util.hpp"
 #include "core.hpp"
 
 namespace qs::service::pipewire {
 
-Q_DECLARE_LOGGING_CATEGORY(logRegistry);
+QS_DECLARE_LOGGING_CATEGORY(logRegistry);
 
 class PwRegistry;
 class PwMetadata;

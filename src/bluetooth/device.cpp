@@ -12,6 +12,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/logcat.hpp"
 #include "../dbus/properties.hpp"
 #include "adapter.hpp"
 #include "bluez.hpp"
@@ -20,7 +21,7 @@
 namespace qs::bluetooth {
 
 namespace {
-Q_LOGGING_CATEGORY(logDevice, "quickshell.bluetooth.device", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDevice, "quickshell.bluetooth.device", QtWarningMsg);
 }
 
 QString BluetoothDeviceState::toString(BluetoothDeviceState::Enum state) {

@@ -17,10 +17,11 @@
 #include <ranges>
 
 #include "common.hpp"
+#include "logcat.hpp"
 #include "model.hpp"
 
 namespace {
-Q_LOGGING_CATEGORY(logDesktopEntry, "quickshell.desktopentry", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDesktopEntry, "quickshell.desktopentry", QtWarningMsg);
 }
 
 struct Locale {

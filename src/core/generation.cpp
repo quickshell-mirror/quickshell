@@ -21,13 +21,14 @@
 #include "iconimageprovider.hpp"
 #include "imageprovider.hpp"
 #include "incubator.hpp"
+#include "logcat.hpp"
 #include "plugin.hpp"
 #include "qsintercept.hpp"
 #include "reload.hpp"
 #include "scan.hpp"
 
 namespace {
-Q_LOGGING_CATEGORY(logScene, "scene");
+QS_LOGGING_CATEGORY(logScene, "scene");
 }
 
 static QHash<const QQmlEngine*, EngineGeneration*> g_generations; // NOLINT

@@ -8,9 +8,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "ipc.hpp"
 
-Q_DECLARE_LOGGING_CATEGORY(logPam);
+QS_DECLARE_LOGGING_CATEGORY(logPam);
 
 ///! The result of an authentication.
 /// See @@PamContext.completed(s).

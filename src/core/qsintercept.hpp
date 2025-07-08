@@ -10,7 +10,9 @@
 #include <qqmlnetworkaccessmanagerfactory.h>
 #include <qurl.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logQsIntercept);
+#include "logcat.hpp"
+
+QS_DECLARE_LOGGING_CATEGORY(logQsIntercept);
 
 class QsUrlInterceptor: public QQmlAbstractUrlInterceptor {
 public:

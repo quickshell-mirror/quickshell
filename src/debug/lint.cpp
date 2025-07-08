@@ -11,10 +11,12 @@
 #include <qquickwindow.h>
 #include <qstringliteral.h>
 
+#include "../core/logcat.hpp"
+
 namespace qs::debug {
 
 namespace {
-Q_LOGGING_CATEGORY(logLint, "quickshell.linter", QtWarningMsg);
+QS_LOGGING_CATEGORY(logLint, "quickshell.linter", QtWarningMsg);
 
 void lintZeroSized(QQuickItem* item);
 bool isRenderable(QQuickItem* item);

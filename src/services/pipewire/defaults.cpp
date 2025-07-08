@@ -11,6 +11,7 @@
 #include <qtmetamacros.h>
 #include <spa/utils/json.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/util.hpp"
 #include "metadata.hpp"
 #include "node.hpp"
@@ -22,7 +23,7 @@ struct spa_json;
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logDefaults, "quickshell.service.pipewire.defaults", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDefaults, "quickshell.service.pipewire.defaults", QtWarningMsg);
 }
 
 PwDefaultTracker::PwDefaultTracker(PwRegistry* registry): registry(registry) {

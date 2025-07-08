@@ -50,13 +50,21 @@ private:
 	ObjectModel<BluetoothDevice> mDevices {this};
 
 public:
-	Q_OBJECT_BINDABLE_PROPERTY(Bluez, BluetoothAdapter*, bDefaultAdapter, &Bluez::defaultAdapterChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    Bluez,
+	    BluetoothAdapter*,
+	    bDefaultAdapter,
+	    &Bluez::defaultAdapterChanged
+	);
 };
 
 ///! Bluetooth manager
 /// Provides access to bluetooth devices and adapters.
 class BluezQml: public QObject {
 	Q_OBJECT;
+	QML_NAMED_ELEMENT(Bluetooth);
+	QML_SINGLETON;
+	// clang-format off
 	/// The default bluetooth adapter. Usually there is only one.
 	Q_PROPERTY(BluetoothAdapter* defaultAdapter READ default NOTIFY defaultAdapterChanged BINDABLE bindableDefaultAdapter);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::bluetooth::BluetoothAdapter>*);
@@ -66,8 +74,7 @@ class BluezQml: public QObject {
 	/// A list of all connected bluetooth devices across all adapters.
 	/// See @@BluetoothAdapter.devices for the devices connected to a single adapter.
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
-	QML_NAMED_ELEMENT(Bluetooth);
-	QML_SINGLETON;
+	// clang-format on
 
 signals:
 	void defaultAdapterChanged();

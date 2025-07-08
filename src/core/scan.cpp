@@ -15,7 +15,9 @@
 #include <qstringliteral.h>
 #include <qtextstream.h>
 
-Q_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
+#include "logcat.hpp"
+
+QS_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
 
 void QmlScanner::scanDir(const QString& path) {
 	if (this->scannedDirs.contains(path)) return;

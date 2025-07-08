@@ -12,6 +12,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/model.hpp"
 #include "dbus_notifications.h"
 #include "dbusimage.hpp"
@@ -20,7 +21,7 @@
 namespace qs::service::notifications {
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-Q_LOGGING_CATEGORY(logNotifications, "quickshell.service.notifications");
+QS_LOGGING_CATEGORY(logNotifications, "quickshell.service.notifications");
 
 NotificationServer::NotificationServer() {
 	qDBusRegisterMetaType<DBusNotificationImage>();

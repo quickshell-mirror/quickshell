@@ -15,6 +15,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "core.hpp"
 #include "device.hpp"
 #include "link.hpp"
@@ -23,7 +24,7 @@
 
 namespace qs::service::pipewire {
 
-Q_LOGGING_CATEGORY(logRegistry, "quickshell.service.pipewire.registry", QtWarningMsg);
+QS_LOGGING_CATEGORY(logRegistry, "quickshell.service.pipewire.registry", QtWarningMsg);
 
 PwBindableObject::~PwBindableObject() {
 	if (this->id != 0) {

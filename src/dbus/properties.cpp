@@ -20,9 +20,10 @@
 #include <qtversionchecks.h>
 #include <qvariant.h>
 
+#include "../core/logcat.hpp"
 #include "dbus_properties.h"
 
-Q_LOGGING_CATEGORY(logDbusProperties, "quickshell.dbus.properties", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDbusProperties, "quickshell.dbus.properties", QtWarningMsg);
 
 namespace qs::dbus {
 

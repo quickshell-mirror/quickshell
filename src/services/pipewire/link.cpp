@@ -10,12 +10,13 @@
 #include <qtypes.h>
 #include <spa/utils/dict.h>
 
+#include "../../core/logcat.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logLink, "quickshell.service.pipewire.link", QtWarningMsg);
+QS_LOGGING_CATEGORY(logLink, "quickshell.service.pipewire.link", QtWarningMsg);
 }
 
 QString PwLinkState::toString(Enum value) {

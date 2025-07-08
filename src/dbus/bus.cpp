@@ -12,10 +12,12 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../core/logcat.hpp"
+
 namespace qs::dbus {
 
 namespace {
-Q_LOGGING_CATEGORY(logDbus, "quickshell.dbus", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDbus, "quickshell.dbus", QtWarningMsg);
 }
 
 void tryLaunchService(

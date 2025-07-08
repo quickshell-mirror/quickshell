@@ -12,6 +12,7 @@
 #include <qwaylandclientextension.h>
 #include <wayland-wlr-screencopy-unstable-v1-client-protocol.h>
 
+#include "../../../core/logcat.hpp"
 #include "../../buffer/manager.hpp"
 #include "../manager.hpp"
 #include "wlr_screencopy_p.hpp"
@@ -19,7 +20,7 @@
 namespace qs::wayland::screencopy::wlr {
 
 namespace {
-Q_LOGGING_CATEGORY(logScreencopy, "quickshell.wayland.screencopy.wlr", QtWarningMsg);
+QS_LOGGING_CATEGORY(logScreencopy, "quickshell.wayland.screencopy.wlr", QtWarningMsg);
 }
 
 WlrScreencopyManager::WlrScreencopyManager(): QWaylandClientExtensionTemplate(3) {

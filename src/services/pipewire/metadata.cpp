@@ -11,12 +11,13 @@
 #include <qtypes.h>
 #include <spa/utils/dict.h>
 
+#include "../../core/logcat.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logMeta, "quickshell.service.pipewire.metadata", QtWarningMsg);
+QS_LOGGING_CATEGORY(logMeta, "quickshell.service.pipewire.metadata", QtWarningMsg);
 }
 
 void PwMetadata::bindHooks() {

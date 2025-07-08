@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "../core/instanceinfo.hpp"
+#include "../core/logcat.hpp"
 
 extern char** environ; // NOLINT
 
@@ -23,7 +24,7 @@ using namespace google_breakpad;
 namespace qs::crash {
 
 namespace {
-Q_LOGGING_CATEGORY(logCrashHandler, "quickshell.crashhandler", QtWarningMsg);
+QS_LOGGING_CATEGORY(logCrashHandler, "quickshell.crashhandler", QtWarningMsg);
 }
 
 struct CrashHandlerPrivate {

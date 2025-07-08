@@ -11,9 +11,10 @@
 #include <qqmlengine.h>
 #include <qtmetamacros.h>
 
+#include "../core/logcat.hpp"
 #include "datastream.hpp"
 
-Q_LOGGING_CATEGORY(logSocket, "quickshell.io.socket", QtWarningMsg);
+QS_LOGGING_CATEGORY(logSocket, "quickshell.io.socket", QtWarningMsg);
 
 void Socket::setSocket(QLocalSocket* socket) {
 	if (this->socket != nullptr) this->socket->deleteLater();

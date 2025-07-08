@@ -9,11 +9,12 @@
 #include <qloggingcategory.h>
 #include <qtmetamacros.h>
 
+#include "../core/logcat.hpp"
 #include "dbus_objectmanager.h"
 #include "dbus_objectmanager_types.hpp"
 
 namespace {
-Q_LOGGING_CATEGORY(logDbusObjectManager, "quickshell.dbus.objectmanager", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDbusObjectManager, "quickshell.dbus.objectmanager", QtWarningMsg);
 }
 
 namespace qs::dbus {

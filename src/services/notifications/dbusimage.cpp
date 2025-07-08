@@ -7,10 +7,12 @@
 #include <qsysinfo.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
+
 namespace qs::service::notifications {
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-Q_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
+QS_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
 
 QImage DBusNotificationImage::createImage() const {
 	auto format = this->hasAlpha ? QImage::Format_RGBA8888 : QImage::Format_RGB888;

@@ -20,12 +20,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/logcat.hpp"
 #include "../core/util.hpp"
 
 namespace qs::io {
 
 namespace {
-Q_LOGGING_CATEGORY(logFileView, "quickshell.io.fileview", QtWarningMsg);
+QS_LOGGING_CATEGORY(logFileView, "quickshell.io.fileview", QtWarningMsg);
 }
 
 QString FileViewError::toString(FileViewError::Enum value) {

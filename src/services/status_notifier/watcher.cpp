@@ -10,7 +10,9 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
-Q_LOGGING_CATEGORY(logStatusNotifierWatcher, "quickshell.service.sni.watcher", QtWarningMsg);
+#include "../../core/logcat.hpp"
+
+QS_LOGGING_CATEGORY(logStatusNotifierWatcher, "quickshell.service.sni.watcher", QtWarningMsg);
 
 namespace qs::service::sni {
 

@@ -9,7 +9,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logStatusNotifierWatcher);
+#include "../../core/logcat.hpp"
+
+QS_DECLARE_LOGGING_CATEGORY(logStatusNotifierWatcher);
 
 namespace qs::service::sni {
 

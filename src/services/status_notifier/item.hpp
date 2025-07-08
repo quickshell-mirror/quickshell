@@ -11,12 +11,13 @@
 #include <qtypes.h>
 
 #include "../../core/imageprovider.hpp"
+#include "../../core/logcat.hpp"
 #include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_item.h"
 #include "dbus_item_types.hpp"
 
-Q_DECLARE_LOGGING_CATEGORY(logStatusNotifierItem);
+QS_DECLARE_LOGGING_CATEGORY(logStatusNotifierItem);
 
 namespace qs::service::sni {
 

@@ -10,6 +10,7 @@
 #include <qtmetamacros.h>
 #include <qvectornd.h>
 
+#include "../../core/logcat.hpp"
 #include "dmabuf.hpp"
 #include "manager_p.hpp"
 #include "qsg.hpp"
@@ -18,7 +19,7 @@
 namespace qs::wayland::buffer {
 
 namespace {
-Q_LOGGING_CATEGORY(logBuffer, "quickshell.wayland.buffer", QtWarningMsg);
+QS_LOGGING_CATEGORY(logBuffer, "quickshell.wayland.buffer", QtWarningMsg);
 }
 
 WlBuffer* WlBufferSwapchain::createBackbuffer(const WlBufferRequest& request, bool* newBuffer) {

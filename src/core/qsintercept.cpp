@@ -14,7 +14,9 @@
 #include <qtypes.h>
 #include <qurl.h>
 
-Q_LOGGING_CATEGORY(logQsIntercept, "quickshell.interceptor", QtWarningMsg);
+#include "logcat.hpp"
+
+QS_LOGGING_CATEGORY(logQsIntercept, "quickshell.interceptor", QtWarningMsg);
 
 QUrl QsUrlInterceptor::intercept(
     const QUrl& originalUrl,

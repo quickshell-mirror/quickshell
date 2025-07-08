@@ -6,13 +6,14 @@
 #include <qwayland-wlr-foreign-toplevel-management-unstable-v1.h>
 #include <qwaylandclientextension.h>
 
+#include "../../core/logcat.hpp"
 #include "wayland-wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
 
 namespace qs::wayland::toplevel_management::impl {
 
 class ToplevelHandle;
 
-Q_DECLARE_LOGGING_CATEGORY(logToplevelManagement);
+QS_DECLARE_LOGGING_CATEGORY(logToplevelManagement);
 
 class ToplevelManager
     : public QWaylandClientExtensionTemplate<ToplevelManager>

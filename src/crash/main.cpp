@@ -17,6 +17,7 @@
 #include <sys/types.h>
 
 #include "../core/instanceinfo.hpp"
+#include "../core/logcat.hpp"
 #include "../core/logging.hpp"
 #include "../core/paths.hpp"
 #include "build.hpp"
@@ -24,7 +25,7 @@
 
 namespace {
 
-Q_LOGGING_CATEGORY(logCrashReporter, "quickshell.crashreporter", QtWarningMsg);
+QS_LOGGING_CATEGORY(logCrashReporter, "quickshell.crashreporter", QtWarningMsg);
 
 int tryDup(int fd, const QString& path) {
 	QFile sourceFile;

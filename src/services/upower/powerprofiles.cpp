@@ -12,13 +12,14 @@
 #include <qobject.h>
 #include <qstringliteral.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/bus.hpp"
 #include "../../dbus/properties.hpp"
 
 namespace qs::service::upower {
 
 namespace {
-Q_LOGGING_CATEGORY(logPowerProfiles, "quickshell.service.powerprofiles", QtWarningMsg);
+QS_LOGGING_CATEGORY(logPowerProfiles, "quickshell.service.powerprofiles", QtWarningMsg);
 }
 
 QString PowerProfile::toString(PowerProfile::Enum profile) {

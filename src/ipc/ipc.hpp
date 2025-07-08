@@ -15,6 +15,8 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/logcat.hpp"
+
 template <typename... Types>
 constexpr void assertSerializable() {
 	// monostate being zero ensures transactional reads wont break
@@ -109,7 +111,7 @@ DEFINE_SIMPLE_DATASTREAM_OPS(std::monostate);
 
 namespace qs::ipc {
 
-Q_DECLARE_LOGGING_CATEGORY(logIpc);
+QS_DECLARE_LOGGING_CATEGORY(logIpc);
 
 template <typename T>
 class MessageStream {

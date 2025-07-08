@@ -10,12 +10,13 @@
 #include <qobject.h>
 
 #include "../core/generation.hpp"
+#include "../core/logcat.hpp"
 #include "../core/paths.hpp"
 #include "ipccommand.hpp"
 
 namespace qs::ipc {
 
-Q_LOGGING_CATEGORY(logIpc, "quickshell.ipc", QtWarningMsg);
+QS_LOGGING_CATEGORY(logIpc, "quickshell.ipc", QtWarningMsg);
 
 IpcServer::IpcServer(const QString& path) {
 	QObject::connect(&this->server, &QLocalServer::newConnection, this, &IpcServer::onNewConnection);

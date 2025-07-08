@@ -13,13 +13,14 @@
 #include <wayland-ext-image-copy-capture-v1-client-protocol.h>
 #include <wayland-util.h>
 
+#include "../../../core/logcat.hpp"
 #include "../manager.hpp"
 #include "image_copy_capture_p.hpp"
 
 namespace qs::wayland::screencopy::icc {
 
 namespace {
-Q_LOGGING_CATEGORY(logIcc, "quickshell.wayland.screencopy.icc", QtWarningMsg);
+QS_LOGGING_CATEGORY(logIcc, "quickshell.wayland.screencopy.icc", QtWarningMsg);
 }
 
 using IccCaptureSession = QtWayland::ext_image_copy_capture_session_v1;

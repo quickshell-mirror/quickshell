@@ -8,6 +8,7 @@
 #include <qwaylandclientextension.h>
 #include <wayland-hyprland-toplevel-export-v1-client-protocol.h>
 
+#include "../../../core/logcat.hpp"
 #include "../../toplevel_management/handle.hpp"
 #include "../manager.hpp"
 #include "hyprland_screencopy_p.hpp"
@@ -15,7 +16,7 @@
 namespace qs::wayland::screencopy::hyprland {
 
 namespace {
-Q_LOGGING_CATEGORY(logScreencopy, "quickshell.wayland.screencopy.hyprland", QtWarningMsg);
+QS_LOGGING_CATEGORY(logScreencopy, "quickshell.wayland.screencopy.hyprland", QtWarningMsg);
 }
 
 HyprlandScreencopyManager::HyprlandScreencopyManager(): QWaylandClientExtensionTemplate(2) {

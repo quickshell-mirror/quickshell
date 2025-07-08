@@ -36,6 +36,7 @@
 #include <wayland-util.h>
 #include <xf86drm.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/stacklist.hpp"
 #include "manager.hpp"
 #include "manager_p.hpp"
@@ -44,7 +45,7 @@ namespace qs::wayland::buffer::dmabuf {
 
 namespace {
 
-Q_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg);
 
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
 

@@ -14,9 +14,10 @@
 #include <qtypes.h>
 
 #include "../../core/generation.hpp"
+#include "../../core/logcat.hpp"
 
 namespace {
-Q_LOGGING_CATEGORY(logGreetd, "quickshell.service.greetd");
+QS_LOGGING_CATEGORY(logGreetd, "quickshell.service.greetd");
 }
 
 QString GreetdState::toString(GreetdState::Enum value) {

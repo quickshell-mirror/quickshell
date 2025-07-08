@@ -23,11 +23,12 @@
 #include <qtversionchecks.h>
 #include <qvariant.h>
 
+#include "../core/logcat.hpp"
 #include "../core/util.hpp"
 
 class DBusPropertiesInterface;
 
-Q_DECLARE_LOGGING_CATEGORY(logDbusProperties);
+QS_DECLARE_LOGGING_CATEGORY(logDbusProperties);
 
 namespace qs::dbus {
 

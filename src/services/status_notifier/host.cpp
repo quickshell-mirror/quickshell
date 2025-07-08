@@ -12,12 +12,13 @@
 #include <unistd.h>
 
 #include "../../core/common.hpp"
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_watcher_interface.h"
 #include "item.hpp"
 #include "watcher.hpp"
 
-Q_LOGGING_CATEGORY(logStatusNotifierHost, "quickshell.service.sni.host", QtWarningMsg);
+QS_LOGGING_CATEGORY(logStatusNotifierHost, "quickshell.service.sni.host", QtWarningMsg);
 
 namespace qs::service::sni {
 

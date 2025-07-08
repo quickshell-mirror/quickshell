@@ -20,7 +20,7 @@
 #include "../properties.hpp"
 #include "dbus_menu_types.hpp"
 
-Q_DECLARE_LOGGING_CATEGORY(logDbusMenu);
+QS_DECLARE_LOGGING_CATEGORY(logDbusMenu);
 
 class DBusMenuInterface;
 

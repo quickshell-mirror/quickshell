@@ -12,13 +12,14 @@
 #include <qstringliteral.h>
 #include <qtypes.h>
 
+#include "../core/logcat.hpp"
 #include "../dbus/properties.hpp"
 #include "dbus_adapter.h"
 
 namespace qs::bluetooth {
 
 namespace {
-Q_LOGGING_CATEGORY(logAdapter, "quickshell.bluetooth.adapter", QtWarningMsg);
+QS_LOGGING_CATEGORY(logAdapter, "quickshell.bluetooth.adapter", QtWarningMsg);
 }
 
 QString BluetoothAdapterState::toString(BluetoothAdapterState::Enum state) {

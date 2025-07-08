@@ -7,12 +7,13 @@
 #include <qtmetamacros.h>
 #include <qwaylandclientextension.h>
 
+#include "../../core/logcat.hpp"
 #include "handle.hpp"
 #include "wayland-wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
 
 namespace qs::wayland::toplevel_management::impl {
 
-Q_LOGGING_CATEGORY(logToplevelManagement, "quickshell.wayland.toplevelManagement", QtWarningMsg);
+QS_LOGGING_CATEGORY(logToplevelManagement, "quickshell.wayland.toplevelManagement", QtWarningMsg);
 
 ToplevelManager::ToplevelManager(): QWaylandClientExtensionTemplate(3) { this->initialize(); }
 

@@ -12,6 +12,7 @@
 #include <qobject.h>
 #include <qqmllist.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/model.hpp"
 #include "../../dbus/bus.hpp"
 #include "../../dbus/properties.hpp"
@@ -21,7 +22,7 @@
 namespace qs::service::upower {
 
 namespace {
-Q_LOGGING_CATEGORY(logUPower, "quickshell.service.upower", QtWarningMsg);
+QS_LOGGING_CATEGORY(logUPower, "quickshell.service.upower", QtWarningMsg);
 }
 
 UPower::UPower() {

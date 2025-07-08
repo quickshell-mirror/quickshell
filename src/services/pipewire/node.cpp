@@ -25,6 +25,7 @@
 #include <spa/utils/keys.h>
 #include <spa/utils/type.h>
 
+#include "../../core/logcat.hpp"
 #include "connection.hpp"
 #include "core.hpp"
 #include "device.hpp"
@@ -32,7 +33,7 @@
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logNode, "quickshell.service.pipewire.node", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNode, "quickshell.service.pipewire.node", QtWarningMsg);
 }
 
 QString PwAudioChannel::toString(Enum value) {

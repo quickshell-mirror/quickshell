@@ -16,9 +16,10 @@
 #include <unistd.h>
 
 #include "instanceinfo.hpp"
+#include "logcat.hpp"
 
 namespace {
-Q_LOGGING_CATEGORY(logPaths, "quickshell.paths", QtWarningMsg);
+QS_LOGGING_CATEGORY(logPaths, "quickshell.paths");
 }
 
 QsPaths* QsPaths::instance() {

@@ -8,6 +8,7 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
+#include "../core/logcat.hpp"
 #include "../dbus/dbus_objectmanager_types.hpp"
 #include "../dbus/objectmanager.hpp"
 #include "adapter.hpp"
@@ -16,7 +17,7 @@
 namespace qs::bluetooth {
 
 namespace {
-Q_LOGGING_CATEGORY(logBluetooth, "quickshell.bluetooth", QtWarningMsg);
+QS_LOGGING_CATEGORY(logBluetooth, "quickshell.bluetooth", QtWarningMsg);
 }
 
 Bluez* Bluez::instance() {
@@ -156,7 +157,12 @@ void Bluez::onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& 
 }
 
 BluezQml::BluezQml() {
-	QObject::connect(Bluez::instance(), &Bluez::defaultAdapterChanged, this, &BluezQml::defaultAdapterChanged);
+	QObject::connect(
+	    Bluez::instance(),
+	    &Bluez::defaultAdapterChanged,
+	    this,
+	    &BluezQml::defaultAdapterChanged
+	);
 }
 
 } // namespace qs::bluetooth

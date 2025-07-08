@@ -20,13 +20,14 @@
 #include <spa/pod/vararg.h>
 #include <spa/utils/type.h>
 
+#include "../../core/logcat.hpp"
 #include "core.hpp"
 #include "node.hpp"
 
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logDevice, "quickshell.service.pipewire.device", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDevice, "quickshell.service.pipewire.device", QtWarningMsg);
 }
 
 // https://github.com/PipeWire/wireplumber/blob/895c1c7286e8809fad869059179e53ab39c807e9/modules/module-mixer-api.c#L397

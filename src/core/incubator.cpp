@@ -1,11 +1,12 @@
 #include "incubator.hpp"
 
 #include <qlogging.h>
-#include <qloggingcategory.h>
 #include <qqmlincubator.h>
 #include <qtmetamacros.h>
 
-Q_LOGGING_CATEGORY(logIncubator, "quickshell.incubator", QtWarningMsg);
+#include "logcat.hpp"
+
+QS_LOGGING_CATEGORY(logIncubator, "quickshell.incubator", QtWarningMsg);
 
 void QsQmlIncubator::statusChanged(QQmlIncubator::Status status) {
 	switch (status) {

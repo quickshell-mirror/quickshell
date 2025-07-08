@@ -6,7 +6,9 @@
 #include <qloggingcategory.h>
 #include <qvector.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logQmlScanner);
+#include "logcat.hpp"
+
+QS_DECLARE_LOGGING_CATEGORY(logQmlScanner);
 
 // expects canonical paths
 class QmlScanner {

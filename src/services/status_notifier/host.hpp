@@ -8,10 +8,11 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
+#include "../../core/logcat.hpp"
 #include "dbus_watcher_interface.h"
 #include "item.hpp"
 
-Q_DECLARE_LOGGING_CATEGORY(logStatusNotifierHost);
+QS_DECLARE_LOGGING_CATEGORY(logStatusNotifierHost);
 
 namespace qs::service::sni {
 

@@ -22,6 +22,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../../core/logcat.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "connection.hpp"
@@ -31,8 +32,8 @@
 namespace qs::i3::ipc {
 
 namespace {
-Q_LOGGING_CATEGORY(logI3Ipc, "quickshell.I3.ipc", QtWarningMsg);
-Q_LOGGING_CATEGORY(logI3IpcEvents, "quickshell.I3.ipc.events", QtWarningMsg);
+QS_LOGGING_CATEGORY(logI3Ipc, "quickshell.I3.ipc", QtWarningMsg);
+QS_LOGGING_CATEGORY(logI3IpcEvents, "quickshell.I3.ipc.events", QtWarningMsg);
 } // namespace
 
 void I3Ipc::makeRequest(const QByteArray& request) {

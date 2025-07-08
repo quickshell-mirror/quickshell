@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include <qbytearrayview.h>
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
 #include <qfile.h>
@@ -12,7 +13,9 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
-Q_DECLARE_LOGGING_CATEGORY(logBare);
+#include "logcat.hpp"
+
+QS_DECLARE_LOGGING_CATEGORY(logBare);
 
 namespace qs::log {
 
@@ -127,11 +130,14 @@ private:
 	QString mRulesString;
 	QList<qt_logging_registry::QLoggingRule>* rules = nullptr;
 	QtMsgType mDefaultLevel = QtWarningMsg;
+	QHash<QLatin1StringView, QtMsgType> defaultLevels;
 	QHash<const void*, CategoryFilter> sparseFilters;
 	QHash<QLatin1StringView, CategoryFilter> allFilters;
 
 	QTextStream stdoutStream;
 	LoggingThreadProxy threadProxy;
+
+	friend void initLogCategoryLevel(const char* name, QtMsgType defaultLevel);
 };
 
 bool readEncodedLogs(

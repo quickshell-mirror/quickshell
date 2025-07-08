@@ -22,6 +22,7 @@
 
 #include "../../core/iconimageprovider.hpp"
 #include "../../core/imageprovider.hpp"
+#include "../../core/logcat.hpp"
 #include "../../core/platformmenu.hpp"
 #include "../../dbus/dbusmenu/dbusmenu.hpp"
 #include "../../dbus/properties.hpp"
@@ -34,7 +35,7 @@ using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
 using namespace qs::menu::platform;
 
-Q_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
+QS_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
 
 namespace qs::service::sni {
 

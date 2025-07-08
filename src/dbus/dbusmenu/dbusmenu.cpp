@@ -21,13 +21,14 @@
 #include <qvariant.h>
 
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/logcat.hpp"
 #include "../../core/model.hpp"
 #include "../../core/qsmenu.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_menu.h"
 #include "dbus_menu_types.hpp"
 
-Q_LOGGING_CATEGORY(logDbusMenu, "quickshell.dbus.dbusmenu", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDbusMenu, "quickshell.dbus.dbusmenu", QtWarningMsg);
 
 using namespace qs::menu;
 

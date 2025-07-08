@@ -9,13 +9,14 @@
 #include <qobject.h>
 #include <qqmllist.h>
 
+#include "../../core/logcat.hpp"
 #include "../../core/model.hpp"
 #include "player.hpp"
 
 namespace qs::service::mpris {
 
 namespace {
-Q_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mpris.watcher", QtWarningMsg);
+QS_LOGGING_CATEGORY(logMprisWatcher, "quickshell.service.mpris.watcher", QtWarningMsg);
 }
 
 MprisWatcher::MprisWatcher() {

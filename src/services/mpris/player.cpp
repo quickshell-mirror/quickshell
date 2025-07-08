@@ -14,6 +14,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_player.h"
 #include "dbus_player_app.h"
@@ -23,7 +24,7 @@ using namespace qs::dbus;
 namespace qs::service::mpris {
 
 namespace {
-Q_LOGGING_CATEGORY(logMprisPlayer, "quickshell.service.mp.player", QtWarningMsg);
+QS_LOGGING_CATEGORY(logMprisPlayer, "quickshell.service.mp.player", QtWarningMsg);
 }
 
 QString MprisPlaybackState::toString(MprisPlaybackState::Enum status) {

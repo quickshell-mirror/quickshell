@@ -18,8 +18,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "logcat.hpp"
+
 namespace {
-Q_LOGGING_CATEGORY(logColorQuantizer, "quickshell.colorquantizer", QtWarningMsg);
+QS_LOGGING_CATEGORY(logColorQuantizer, "quickshell.colorquantizer", QtWarningMsg);
 }
 
 ColorQuantizerOperation::ColorQuantizerOperation(QUrl* source, qreal depth, qreal rescaleSize)

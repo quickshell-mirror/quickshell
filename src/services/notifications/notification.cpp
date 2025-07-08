@@ -12,13 +12,14 @@
 
 #include "../../core/desktopentry.hpp"
 #include "../../core/iconimageprovider.hpp"
+#include "../../core/logcat.hpp"
 #include "dbusimage.hpp"
 #include "server.hpp"
 
 namespace qs::service::notifications {
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-Q_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
+QS_DECLARE_LOGGING_CATEGORY(logNotifications); // server.cpp
 
 QString NotificationUrgency::toString(NotificationUrgency::Enum value) {
 	switch (value) {

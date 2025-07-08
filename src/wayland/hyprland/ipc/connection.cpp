@@ -21,6 +21,7 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
+#include "../../../core/logcat.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "../../toplevel_management/handle.hpp"
@@ -32,8 +33,8 @@
 namespace qs::hyprland::ipc {
 
 namespace {
-Q_LOGGING_CATEGORY(logHyprlandIpc, "quickshell.hyprland.ipc", QtWarningMsg);
-Q_LOGGING_CATEGORY(logHyprlandIpcEvents, "quickshell.hyprland.ipc.events", QtWarningMsg);
+QS_LOGGING_CATEGORY(logHyprlandIpc, "quickshell.hyprland.ipc", QtWarningMsg);
+QS_LOGGING_CATEGORY(logHyprlandIpcEvents, "quickshell.hyprland.ipc.events", QtWarningMsg);
 } // namespace
 
 HyprlandIpc::HyprlandIpc() {

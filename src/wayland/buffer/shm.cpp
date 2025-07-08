@@ -13,12 +13,13 @@
 #include <qsize.h>
 #include <wayland-client-protocol.h>
 
+#include "../../core/logcat.hpp"
 #include "manager.hpp"
 
 namespace qs::wayland::buffer::shm {
 
 namespace {
-Q_LOGGING_CATEGORY(logShm, "quickshell.wayland.buffer.shm", QtWarningMsg);
+QS_LOGGING_CATEGORY(logShm, "quickshell.wayland.buffer.shm", QtWarningMsg);
 }
 
 bool WlShmBuffer::isCompatible(const WlBufferRequest& request) const {

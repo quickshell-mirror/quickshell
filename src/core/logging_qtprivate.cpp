@@ -16,10 +16,11 @@
 #include <qstringview.h>
 #include <qtypes.h>
 
+#include "logcat.hpp"
 #include "logging_qtprivate.hpp"
 
 namespace qs::log {
-Q_DECLARE_LOGGING_CATEGORY(logLogging);
+QS_DECLARE_LOGGING_CATEGORY(logLogging);
 
 namespace qt_logging_registry {
 

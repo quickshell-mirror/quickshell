@@ -14,10 +14,12 @@
 #include <spa/utils/defs.h>
 #include <spa/utils/hook.h>
 
+#include "../../core/logcat.hpp"
+
 namespace qs::service::pipewire {
 
 namespace {
-Q_LOGGING_CATEGORY(logLoop, "quickshell.service.pipewire.loop", QtWarningMsg);
+QS_LOGGING_CATEGORY(logLoop, "quickshell.service.pipewire.loop", QtWarningMsg);
 }
 
 const pw_core_events PwCore::EVENTS = {

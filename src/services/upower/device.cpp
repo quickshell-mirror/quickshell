@@ -8,6 +8,7 @@
 #include <qstring.h>
 #include <qtypes.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_device.h"
 
@@ -16,7 +17,7 @@ using namespace qs::dbus;
 namespace qs::service::upower {
 
 namespace {
-Q_LOGGING_CATEGORY(logUPowerDevice, "quickshell.service.upower.device", QtWarningMsg);
+QS_LOGGING_CATEGORY(logUPowerDevice, "quickshell.service.upower.device", QtWarningMsg);
 }
 
 QString UPowerDeviceState::toString(UPowerDeviceState::Enum status) {
