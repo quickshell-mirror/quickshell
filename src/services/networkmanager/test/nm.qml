@@ -20,7 +20,7 @@ FloatingWindow {
 				font.bold: true
 			}
 
-			Label { text: "Current state: " + NetworkManagerState.toString(NetworkManager.state) }
+			Label { text: "Current state: " + NMState.toString(NetworkManager.state) }
 		}
 
 		ListView {
@@ -40,8 +40,8 @@ FloatingWindow {
 						text: `Device ${index}: ${modelData.interface}`
 						font.bold: true
 					}
-					Label { text: "Type: " + NetworkManagerDeviceType.toString(modelData.type) }
-					Label { text: "State: " + NetworkManagerDeviceState.toString(modelData.state) }
+					Label { text: "Type: " + NMState.toString(modelData.type) }
+					Label { text: "State: " + NMState.toString(modelData.state) }
 					Label { text: `Managed: ${modelData.managed}` }
 				}
 			}
