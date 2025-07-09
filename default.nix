@@ -20,6 +20,7 @@
   libdrm,
   libgbm ? null,
   pipewire,
+  networkmanager,
   pam,
   polkit,
   glib,
@@ -42,6 +43,7 @@
   withWayland ? true,
   withX11 ? true,
   withPipewire ? true,
+  withNetworkManager ? true,
   withPam ? true,
   withHyprland ? true,
   withI3 ? true,
@@ -64,7 +66,8 @@
     ++ lib.optionals withWayland [
       qt6.qtwayland # qtwaylandscanner required at build time
       wayland-scanner
-    ];
+    ]
+    ++ lib.optional withNetworkManager networkmanager;
 
     buildInputs = [
       qt6.qtbase
@@ -95,6 +98,7 @@
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
       (lib.cmakeBool "SERVICE_PAM" withPam)
+      (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
       (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
       (lib.cmakeBool "HYPRLAND" withHyprland)
       (lib.cmakeBool "I3" withI3)
