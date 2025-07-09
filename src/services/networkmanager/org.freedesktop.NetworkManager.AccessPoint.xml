@@ -1,0 +1,11 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.AccessPoint">
+    <property name="Ssid" type="ay" access="read"/>
+    <property name="Frequency" type="u" access="read"/>
+    <property name="HwAddress" type="s" access="read"/>
+    <property name="Mode" type="u" access="read"/>
+    <property name="MaxBirate" type="u" access="read"/>
+    <property name="Bandwidth" type="u" access="read"/>
+    <property name="Strength" type="y" access="read"/>
+	</interface>
+</node>
