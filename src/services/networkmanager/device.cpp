@@ -18,32 +18,32 @@ namespace qs::service::networkmanager {
 
 namespace {
 Q_LOGGING_CATEGORY(
-    logNetworkManagerDevice,
+    logNMDevice,
     "quickshell.service.networkmanager.device",
     QtWarningMsg
 );
 }
 
-QString NetworkManagerDeviceState::toString(NetworkManagerDeviceState::Enum state) {
-	auto metaEnum = QMetaEnum::fromType<NetworkManagerDeviceState::Enum>();
+QString NMDeviceState::toString(NMDeviceState::Enum state) {
+	auto metaEnum = QMetaEnum::fromType<NMDeviceState::Enum>();
 	if (metaEnum.valueToKey(state)) {
 		return QString(metaEnum.valueToKey(state));
 	}
 	return "Invalid state";
 }
 
-QString NetworkManagerDeviceType::toString(NetworkManagerDeviceType::Enum type) {
-	auto metaEnum = QMetaEnum::fromType<NetworkManagerDeviceType::Enum>();
+QString NMDeviceType::toString(NMDeviceType::Enum type) {
+	auto metaEnum = QMetaEnum::fromType<NMDeviceType::Enum>();
 	if (metaEnum.valueToKey(type)) {
 		return QString(metaEnum.valueToKey(type));
 	}
 	return "Invalid type";
 }
 
-NetworkManagerDevice::NetworkManagerDevice(QObject* parent): QObject(parent) {}
+NMDevice::NMDevice(QObject* parent): QObject(parent) {}
 
-void NetworkManagerDevice::init(const QString& path) {
-	this->device = new DBusNetworkManagerDevice(
+void NMDevice::init(const QString& path) {
+	this->device = new DBusNMDevice(
 	    "org.freedesktop.NetworkManager",
 	    path,
 	    QDBusConnection::systemBus(),
@@ -51,7 +51,7 @@ void NetworkManagerDevice::init(const QString& path) {
 	);
 
 	if (!this->device->isValid()) {
-		qCWarning(logNetworkManagerDevice) << "Cannot create NetworkManagerDevice for" << path;
+		qCWarning(logNMDevice) << "Cannot create NMDevice for" << path;
 		return;
 	}
 
@@ -59,11 +59,11 @@ void NetworkManagerDevice::init(const QString& path) {
 	this->deviceProperties.updateAllViaGetAll();
 }
 
-bool NetworkManagerDevice::isValid() const { return this->device && this->device->isValid(); }
-QString NetworkManagerDevice::address() const {
+bool NMDevice::isValid() const { return this->device && this->device->isValid(); }
+QString NMDevice::address() const {
 	return this->device ? this->device->service() : QString();
 }
-QString NetworkManagerDevice::path() const {
+QString NMDevice::path() const {
 	return this->device ? this->device->path() : QString();
 }
 
@@ -73,14 +73,14 @@ namespace qs::dbus {
 
 using namespace qs::service::networkmanager;
 
-DBusResult<NetworkManagerDeviceState::Enum>
-DBusDataTransform<NetworkManagerDeviceState::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<NetworkManagerDeviceState::Enum>(wire));
+DBusResult<NMDeviceState::Enum>
+DBusDataTransform<NMDeviceState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<NMDeviceState::Enum>(wire));
 }
 
-DBusResult<NetworkManagerDeviceType::Enum>
-DBusDataTransform<NetworkManagerDeviceType::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<NetworkManagerDeviceType::Enum>(wire));
+DBusResult<NMDeviceType::Enum>
+DBusDataTransform<NMDeviceType::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<NMDeviceType::Enum>(wire));
 }
 
 } // namespace qs::dbus

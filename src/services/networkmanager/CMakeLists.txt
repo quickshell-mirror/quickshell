@@ -9,7 +9,7 @@ qt_add_dbus_interface(DBUS_INTERFACES
 )
 
 set_source_files_properties(org.freedesktop.NetworkManager.Device.xml PROPERTIES
-	CLASSNAME DBusNetworkManagerDevice
+	CLASSNAME DBusNMDevice
 	NO_NAMESPACE TRUE
 )
 

@@ -56,8 +56,8 @@ class NetworkManager: public QObject {
 	Q_OBJECT;
 
 public:
-	[[nodiscard]] NetworkManagerDevice* wifiDevice();
-	[[nodiscard]] ObjectModel<NetworkManagerDevice>* devices();
+	[[nodiscard]] NMDevice* wifiDevice();
+	[[nodiscard]] ObjectModel<NMDevice>* devices();
 	[[nodiscard]] QBindable<NetworkManagerState::Enum> bindableState() const {
 		return &this->bState;
 	};
@@ -76,11 +76,12 @@ private:
 
 	void init();
 	void registerDevice(const QString& path);
+	void createDevice(const QString& path);
 	void registerDevices();
 
-	QHash<QString, NetworkManagerDevice*> mDeviceHash;
-	ObjectModel<NetworkManagerDevice> mDevices {this};
-	NetworkManagerDevice* mWifiDevice = nullptr;
+	QHash<QString, NMDevice*> mDeviceHash;
+	ObjectModel<NMDevice> mDevices {this};
+	NMDevice* mWifiDevice = nullptr;
 
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    NetworkManager,
@@ -106,7 +107,7 @@ class NetworkManagerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(NetworkManager);
 	QML_SINGLETON;
-	Q_PROPERTY(qs::service::networkmanager::NetworkManagerDevice* wifiDevice READ wifiDevice);
+	Q_PROPERTY(qs::service::networkmanager::NMDevice* wifiDevice READ wifiDevice);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::networkmanager::NetworkManagerService>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	// clang-format off
@@ -115,11 +116,11 @@ class NetworkManagerQml: public QObject {
 
 public:
 	explicit NetworkManagerQml(QObject* parent = nullptr);
-	[[nodiscard]] static NetworkManagerDevice* wifiDevice() {
+	[[nodiscard]] static NMDevice* wifiDevice() {
 		return NetworkManager::instance()->wifiDevice();
 	}
 
-	[[nodiscard]] static ObjectModel<NetworkManagerDevice>* devices() {
+	[[nodiscard]] static ObjectModel<NMDevice>* devices() {
 		return NetworkManager::instance()->devices();
 	}
 

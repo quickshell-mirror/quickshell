@@ -10,7 +10,7 @@
 
 namespace qs::service::networkmanager {
 
-class NetworkManagerDeviceType: public QObject {
+class NMDeviceType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -54,10 +54,10 @@ public:
 		Ipvlan = 34,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkManagerDeviceType::Enum type);
+	Q_INVOKABLE static QString toString(NMDeviceType::Enum type);
 };
 
-class NetworkManagerDeviceState: public QObject {
+class NMDeviceState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_SINGLETON;
@@ -79,7 +79,7 @@ public:
 		Failed = 120,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkManagerDeviceState::Enum state);
+	Q_INVOKABLE static QString toString(NMDeviceState::Enum state);
 };
 
 } // namespace qs::service::networkmanager
@@ -87,16 +87,16 @@ public:
 namespace qs::dbus {
 
 template <>
-struct DBusDataTransform<qs::service::networkmanager::NetworkManagerDeviceState::Enum> {
+struct DBusDataTransform<qs::service::networkmanager::NMDeviceState::Enum> {
 	using Wire = quint32;
-	using Data = qs::service::networkmanager::NetworkManagerDeviceState::Enum;
+	using Data = qs::service::networkmanager::NMDeviceState::Enum;
 	static DBusResult<Data> fromWire(Wire wire);
 };
 
 template <>
-struct DBusDataTransform<qs::service::networkmanager::NetworkManagerDeviceType::Enum> {
+struct DBusDataTransform<qs::service::networkmanager::NMDeviceType::Enum> {
 	using Wire = quint32;
-	using Data = qs::service::networkmanager::NetworkManagerDeviceType::Enum;
+	using Data = qs::service::networkmanager::NMDeviceType::Enum;
 	static DBusResult<Data> fromWire(Wire wire);
 };
 
@@ -104,19 +104,19 @@ struct DBusDataTransform<qs::service::networkmanager::NetworkManagerDeviceType::
 
 namespace qs::service::networkmanager {
 
-class NetworkManagerDevice: public QObject {
+class NMDevice: public QObject {
 	Q_OBJECT;
 	// clang-format off
-	Q_PROPERTY(NetworkManagerDeviceType::Enum type READ default NOTIFY typeChanged BINDABLE	bindableType);
-	Q_PROPERTY(NetworkManagerDeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(NMDeviceType::Enum type READ default NOTIFY typeChanged BINDABLE	bindableType);
+	Q_PROPERTY(NMDeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	Q_PROPERTY(QString interface READ default NOTIFY interfaceChanged BINDABLE bindableInterface);
 	Q_PROPERTY(bool managed READ default NOTIFY managedChanged BINDABLE bindableManaged);
 	// clang-format on
 	QML_ELEMENT;
-	QML_UNCREATABLE("NetworkManagerDevices can only be acquired from NetworkManager");
+	QML_UNCREATABLE("NMDevices can only be acquired from NetworkManager");
 
 public:
-	explicit NetworkManagerDevice(QObject* parent = nullptr);
+	explicit NMDevice(QObject* parent = nullptr);
 
 	void init(const QString& path);
 
@@ -124,10 +124,10 @@ public:
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 
-	[[nodiscard]] QBindable<NetworkManagerDeviceType::Enum> bindableType() const {
+	[[nodiscard]] QBindable<NMDeviceType::Enum> bindableType() const {
 		return &this->bType;
 	};
-	[[nodiscard]] QBindable<NetworkManagerDeviceState::Enum> bindableState() const {
+	[[nodiscard]] QBindable<NMDeviceState::Enum> bindableState() const {
 		return &this->bState;
 	};
 	[[nodiscard]] QBindable<bool> bindableManaged() const { return &this->bManaged; };
@@ -141,19 +141,19 @@ signals:
 
 private:
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkManagerDevice, NetworkManagerDeviceType::Enum, bType, &NetworkManagerDevice::typeChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkManagerDevice, NetworkManagerDeviceState::Enum, bState, &NetworkManagerDevice::stateChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkManagerDevice, bool, bManaged, &NetworkManagerDevice::managedChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkManagerDevice, QString, bInterface, &NetworkManagerDevice::interfaceChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceType::Enum, bType, &NMDevice::typeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceState::Enum, bState, &NMDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bManaged, &NMDevice::managedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QString, bInterface, &NMDevice::interfaceChanged);
 
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManagerDevice, deviceProperties);
-	QS_DBUS_PROPERTY_BINDING(NetworkManagerDevice, pType, bType, deviceProperties, "DeviceType");
-	QS_DBUS_PROPERTY_BINDING(NetworkManagerDevice, pState, bState, deviceProperties, "State");
-	QS_DBUS_PROPERTY_BINDING(NetworkManagerDevice, pManaged, bManaged, deviceProperties, "Managed");
-	QS_DBUS_PROPERTY_BINDING(NetworkManagerDevice, pInterface, bInterface, deviceProperties, "Interface");
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDevice, deviceProperties);
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pType, bType, deviceProperties, "DeviceType");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pState, bState, deviceProperties, "State");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pManaged, bManaged, deviceProperties, "Managed");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pInterface, bInterface, deviceProperties, "Interface");
 	// clang-format on
 
-	DBusNetworkManagerDevice* device = nullptr;
+	DBusNMDevice* device = nullptr;
 };
 
 } // namespace qs::service::networkmanager

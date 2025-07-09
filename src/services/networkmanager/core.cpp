@@ -116,35 +116,35 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		auto* device = iter.value();
 		this->mDeviceHash.erase(iter);
 		this->mDevices.removeObject(device);
-		qCDebug(logNetworkManager) << "NetworkManagerDevice" << device->path() << "removed.";
+		qCDebug(logNetworkManager) << "NMDevice" << device->path() << "removed.";
 	}
 }
 
 void NetworkManager::registerDevice(const QString& path) {
 	if (this->mDeviceHash.contains(path)) {
-		qCDebug(logNetworkManager) << "Skipping duplicate registration of NetworkManagerDevice" << path;
+		qCDebug(logNetworkManager) << "Skipping duplicate registration of NMDevice" << path;
 		return;
 	}
 
-	auto* device = new NetworkManagerDevice(this);
+	auto* device = new NMDevice(this);
 	device->init(path);
 
 	if (!device->isValid()) {
-		qCWarning(logNetworkManager) << "Ignoring invalid NetworkManagerDevice registration of" << path;
+		qCWarning(logNetworkManager) << "Ignoring invalid NMDevice registration of" << path;
 		delete device;
 		return;
 	}
-	if (device->bindableType().value() == NetworkManagerDeviceType::Wifi) {
+	if (device->bindableType().value() == NMDeviceType::Wifi) {
 		mWifiDevice = device;
 	}
 
 	this->mDeviceHash.insert(path, device);
 	this->mDevices.insertObject(device);
-	qCDebug(logNetworkManager) << "Registered NetworkManagerDevice" << path;
+	qCDebug(logNetworkManager) << "Registered NMDevice" << path;
 }
 
-ObjectModel<NetworkManagerDevice>* NetworkManager::devices() { return &this->mDevices; }
-NetworkManagerDevice* NetworkManager::wifiDevice() { return this->mWifiDevice; }
+ObjectModel<NMDevice>* NetworkManager::devices() { return &this->mDevices; }
+NMDevice* NetworkManager::wifiDevice() { return this->mWifiDevice; }
 
 NetworkManager* NetworkManager::instance() {
 	static NetworkManager* instance = new NetworkManager(); // NOLINT
