@@ -107,7 +107,7 @@ class NetworkManagerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(NetworkManager);
 	QML_SINGLETON;
-	Q_PROPERTY(qs::service::networkmanager::NMDevice* wifiDevice READ wifiDevice);
+	Q_PROPERTY(qs::service::networkmanager::NMDevice* wifiDevice READ wifiDevice CONSTANT);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::networkmanager::NetworkManagerService>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	// clang-format off
@@ -116,9 +116,7 @@ class NetworkManagerQml: public QObject {
 
 public:
 	explicit NetworkManagerQml(QObject* parent = nullptr);
-	[[nodiscard]] static NMDevice* wifiDevice() {
-		return NetworkManager::instance()->wifiDevice();
-	}
+	[[nodiscard]] static NMDevice* wifiDevice() { return NetworkManager::instance()->wifiDevice(); }
 
 	[[nodiscard]] static ObjectModel<NMDevice>* devices() {
 		return NetworkManager::instance()->devices();

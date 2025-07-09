@@ -18,9 +18,20 @@ qt_add_dbus_interface(DBUS_INTERFACES
 	dbus_device
 )
 
+set_source_files_properties(org.freedesktop.NetworkManager.Device.Wireless.xml PROPERTIES
+	CLASSNAME DBusNMWireless
+	NO_NAMESPACE TRUE
+)
+
+qt_add_dbus_interface(DBUS_INTERFACES
+	org.freedesktop.NetworkManager.Device.Wireless.xml
+	dbus_wireless
+)
+
 qt_add_library(quickshell-service-networkmanager STATIC
 	core.cpp
 	device.cpp
+	wireless.cpp
 	${DBUS_INTERFACES}
 )
 

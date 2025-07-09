@@ -117,19 +117,14 @@ class NMDevice: public QObject {
 
 public:
 	explicit NMDevice(QObject* parent = nullptr);
-
 	void init(const QString& path);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 
-	[[nodiscard]] QBindable<NMDeviceType::Enum> bindableType() const {
-		return &this->bType;
-	};
-	[[nodiscard]] QBindable<NMDeviceState::Enum> bindableState() const {
-		return &this->bState;
-	};
+	[[nodiscard]] QBindable<NMDeviceType::Enum> bindableType() const { return &this->bType; };
+	[[nodiscard]] QBindable<NMDeviceState::Enum> bindableState() const { return &this->bState; };
 	[[nodiscard]] QBindable<bool> bindableManaged() const { return &this->bManaged; };
 	[[nodiscard]] QBindable<QString> bindableInterface() const { return &this->bInterface; };
 
