@@ -19,7 +19,7 @@
 #include "logcat.hpp"
 
 namespace {
-QS_LOGGING_CATEGORY(logPaths, "quickshell.paths");
+QS_LOGGING_CATEGORY(logPaths, "quickshell.paths", QtWarningMsg);
 }
 
 QsPaths* QsPaths::instance() {
