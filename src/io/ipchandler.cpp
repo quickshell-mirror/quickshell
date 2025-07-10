@@ -4,6 +4,7 @@
 #include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qmetaobject.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
@@ -14,9 +15,14 @@
 #include <qtypes.h>
 
 #include "../core/generation.hpp"
+#include "../core/logcat.hpp"
 #include "ipc.hpp"
 
 namespace qs::io::ipc {
+
+namespace {
+QS_LOGGING_CATEGORY(logIpcHandler, "quickshell.ipchandler", QtWarningMsg)
+}
 
 bool IpcFunction::resolve(QString& error) {
 	if (this->method.parameterCount() > 10) {
@@ -210,6 +216,7 @@ IpcHandlerRegistry* IpcHandlerRegistry::forGeneration(EngineGeneration* generati
 	if (!ext) {
 		ext = new IpcHandlerRegistry();
 		generation->registerExtension(&key, ext);
+		qCDebug(logIpcHandler) << "Created new IPC handler registry" << ext << "for" << generation;
 	}
 
 	return dynamic_cast<IpcHandlerRegistry*>(ext);
@@ -232,10 +239,12 @@ void IpcHandler::updateRegistration(bool destroying) {
 
 	if (this->registeredState.enabled) {
 		registry->deregisterHandler(this);
+		qCDebug(logIpcHandler) << "Deregistered" << this << "from registry" << registry;
 	}
 
 	if (this->targetState.enabled && !this->targetState.target.isEmpty()) {
 		registry->registerHandler(this);
+		qCDebug(logIpcHandler) << "Registered" << this << "to registry" << registry;
 	}
 }
 
