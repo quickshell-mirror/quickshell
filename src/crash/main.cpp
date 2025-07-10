@@ -152,7 +152,6 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 void qsCheckCrash(int argc, char** argv) {
 	auto fd = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_FD");
 	if (fd.isEmpty()) return;
-	auto app = QApplication(argc, argv);
 
 	RelaunchInfo info;
 
@@ -176,6 +175,8 @@ void qsCheckCrash(int argc, char** argv) {
 	    info.defaultLogLevel,
 	    info.logRules
 	);
+
+	auto app = QApplication(argc, argv);
 
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 
