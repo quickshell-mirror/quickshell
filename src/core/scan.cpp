@@ -65,8 +65,8 @@ void QmlScanner::scanDir(const QString& path) {
 				         || c == '_')
 				{
 				} else {
-					qCWarning(logQmlScanner)
-					    << "Module path contains invalid characters for a module name: " << end;
+					qCWarning(logQmlScanner) << "Module path contains invalid characters for a module name: "
+					                         << path.sliced(this->rootPath.path().length());
 					goto skipadd;
 				}
 			}
@@ -170,10 +170,16 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 			ipath = currentdir.filePath(import);
 		}
 
-		auto cpath = QFileInfo(ipath).canonicalFilePath();
+		auto pathInfo = QFileInfo(ipath);
+		auto cpath = pathInfo.canonicalFilePath();
 
 		if (cpath.isEmpty()) {
 			qCWarning(logQmlScanner) << "Ignoring unresolvable import" << ipath << "from" << path;
+			continue;
+		}
+
+		if (!pathInfo.isDir()) {
+			qCDebug(logQmlScanner) << "Ignoring non-directory import" << ipath << "from" << path;
 			continue;
 		}
 
