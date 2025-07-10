@@ -37,7 +37,7 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
     : rootPath(rootPath)
     , scanner(std::move(scanner))
     , urlInterceptor(this->rootPath)
-    , interceptNetFactory(this->scanner.fileIntercepts)
+    , interceptNetFactory(this->rootPath, this->scanner.fileIntercepts)
     , engine(new QQmlEngine()) {
 	g_generations.insert(this->engine, this);
 
@@ -45,6 +45,8 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	QObject::connect(this->engine, &QQmlEngine::warnings, this, &EngineGeneration::onEngineWarnings);
 
 	this->engine->addUrlInterceptor(&this->urlInterceptor);
+	this->engine->addImportPath("qs:@/");
+
 	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
 	this->engine->setIncubationController(&this->delayedIncubationController);
 
@@ -322,9 +324,11 @@ void EngineGeneration::incubationControllerDestroyed() {
 	}
 }
 
-void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) const {
+void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) {
 	for (const auto& error: warnings) {
-		auto rel = "**/" % this->rootPath.relativeFilePath(error.url().path());
+		const auto& url = error.url();
+		auto rel = url.scheme() == "qs" && url.path().startsWith("@/qs/") ? "@" % url.path().sliced(5)
+		                                                                  : url.toString();
 
 		QString objectName;
 		auto desc = error.description();

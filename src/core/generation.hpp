@@ -84,7 +84,7 @@ private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void incubationControllerDestroyed();
-	void onEngineWarnings(const QList<QQmlError>& warnings) const;
+	static void onEngineWarnings(const QList<QQmlError>& warnings);
 
 private:
 	void postReload();

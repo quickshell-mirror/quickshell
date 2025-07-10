@@ -43,7 +43,8 @@ RootWrapper::~RootWrapper() {
 }
 
 void RootWrapper::reloadGraph(bool hard) {
-	auto rootPath = QFileInfo(this->rootPath).dir();
+	auto rootFile = QFileInfo(this->rootPath);
+	auto rootPath = rootFile.dir();
 	auto scanner = QmlScanner(rootPath);
 	scanner.scanQmlFile(this->rootPath);
 
@@ -58,9 +59,9 @@ void RootWrapper::reloadGraph(bool hard) {
 
 	QDir::setCurrent(this->originalWorkingDirectory);
 
-	auto url = QUrl::fromLocalFile(this->rootPath);
-	// unless the original file comes from the qsintercept scheme
-	url.setScheme("qsintercept");
+	QUrl url;
+	url.setScheme("qs");
+	url.setPath("@/qs/" % rootFile.fileName());
 	auto component = QQmlComponent(generation->engine, url);
 
 	if (!component.isReady()) {
@@ -69,7 +70,9 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		auto errors = component.errors();
 		for (auto& error: errors) {
-			auto rel = "**/" % rootPath.relativeFilePath(error.url().path());
+			const auto& url = error.url();
+			auto rel = url.scheme() == "qs" && url.path().startsWith("@/qs/") ? "@" % url.path().sliced(5)
+			                                                                  : url.toString();
 			auto msg = "  caused by " % rel % '[' % QString::number(error.line()) % ':'
 			         % QString::number(error.column()) % "]: " % error.description();
 			errorString += '\n' % msg;

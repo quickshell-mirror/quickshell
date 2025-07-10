@@ -45,6 +45,7 @@ class QsInterceptNetworkAccessManager: public QNetworkAccessManager {
 
 public:
 	QsInterceptNetworkAccessManager(
+	    const QDir& configRoot,
 	    const QHash<QString, QString>& fileIntercepts,
 	    QObject* parent = nullptr
 	);
@@ -57,15 +58,21 @@ protected:
 	) override;
 
 private:
+	QDir configRoot;
 	const QHash<QString, QString>& fileIntercepts;
 };
 
 class QsInterceptNetworkAccessManagerFactory: public QQmlNetworkAccessManagerFactory {
 public:
-	QsInterceptNetworkAccessManagerFactory(const QHash<QString, QString>& fileIntercepts)
-	    : fileIntercepts(fileIntercepts) {}
+	QsInterceptNetworkAccessManagerFactory(
+	    const QDir& configRoot,
+	    const QHash<QString, QString>& fileIntercepts
+	)
+	    : configRoot(configRoot)
+	    , fileIntercepts(fileIntercepts) {}
 	QNetworkAccessManager* create(QObject* parent) override;
 
 private:
+	QDir configRoot;
 	const QHash<QString, QString>& fileIntercepts;
 };

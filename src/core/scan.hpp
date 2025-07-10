@@ -16,6 +16,7 @@ public:
 	QmlScanner() = default;
 	QmlScanner(const QDir& rootPath): rootPath(rootPath) {}
 
+	// path must be canonical
 	void scanDir(const QString& path);
 	// returns if the file has a singleton
 	bool scanQmlFile(const QString& path);

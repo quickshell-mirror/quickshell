@@ -47,13 +47,35 @@ void QmlScanner::scanDir(const QString& path) {
 		}
 	}
 
-	// Due to the qsintercept:// protocol a qmldir is always required, even without singletons.
 	if (!seenQmldir) {
 		qCDebug(logQmlScanner) << "Synthesizing qmldir for directory" << path << "singletons"
 		                       << singletons;
 
 		QString qmldir;
 		auto stream = QTextStream(&qmldir);
+
+		// cant derive a module name if not in shell path
+		if (path.startsWith(this->rootPath.path())) {
+			auto end = path.sliced(this->rootPath.path().length());
+
+			// verify we have a valid module name.
+			for (auto& c: end) {
+				if (c == '/') c = '.';
+				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+				         || c == '_')
+				{
+				} else {
+					qCWarning(logQmlScanner)
+					    << "Module path contains invalid characters for a module name: " << end;
+					goto skipadd;
+				}
+			}
+
+			stream << "module qs" << end << '\n';
+		skipadd:;
+		} else {
+			qCWarning(logQmlScanner) << "Module path" << path << "is outside of the config folder.";
+		}
 
 		for (auto& singleton: singletons) {
 			stream << "singleton " << singleton.sliced(0, singleton.length() - 4) << " 1.0 " << singleton
@@ -92,15 +114,39 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 			qCDebug(logQmlScanner) << "Discovered singleton" << path;
 			singleton = true;
 		} else if (line.startsWith("import")) {
+			// we dont care about "import qs" as we always load the root folder
+			if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
+				importCursor += 4;
+				QString path;
 
-			auto startQuot = line.indexOf('"');
-			if (startQuot == -1 || line.length() < startQuot + 3) continue;
-			auto endQuot = line.indexOf('"', startQuot + 1);
-			if (endQuot == -1) continue;
+				while (importCursor != line.length()) {
+					auto c = line.at(importCursor);
+					if (c == '.') c = '/';
+					else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+					         || c == '_')
+					{
+					} else {
+						qCWarning(logQmlScanner) << "Import line contains invalid characters: " << line;
+						goto next;
+					}
 
-			auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
-			imports.push_back(name);
+					path.append(c);
+					importCursor += 1;
+				}
+
+				imports.append(this->rootPath.filePath(path));
+			} else if (auto startQuot = line.indexOf('"');
+			           startQuot != -1 && line.length() >= startQuot + 3)
+			{
+				auto endQuot = line.indexOf('"', startQuot + 1);
+				if (endQuot == -1) continue;
+
+				auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
+				imports.push_back(name);
+			}
 		} else if (line.contains('{')) break;
+
+	next:;
 	}
 
 	file.close();
