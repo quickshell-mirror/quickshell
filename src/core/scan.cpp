@@ -122,6 +122,7 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 				while (importCursor != line.length()) {
 					auto c = line.at(importCursor);
 					if (c == '.') c = '/';
+					else if (c == ' ') break;
 					else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 					         || c == '_')
 					{
