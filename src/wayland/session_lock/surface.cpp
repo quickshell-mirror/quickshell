@@ -81,6 +81,8 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
     quint32 width,
     quint32 height
 ) {
+	if (!this->window()) return;
+
 	this->ack_configure(serial);
 
 	this->size = QSize(static_cast<qint32>(width), static_cast<qint32>(height));
