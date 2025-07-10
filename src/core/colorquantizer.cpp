@@ -47,7 +47,7 @@ void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCa
 	}
 
 	if (image.isNull()) {
-		qCWarning(logColorQuantizer) << "Failed to load image from" << source;
+		qCWarning(logColorQuantizer) << "Failed to load image from" << source->toString();
 		return;
 	}
 
