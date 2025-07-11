@@ -146,3 +146,14 @@ install(CODE "
 		${CMAKE_INSTALL_FULL_BINDIR}/quickshell \$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/qs
 	)
 ")
+
+install(
+	FILES ${CMAKE_SOURCE_DIR}/assets/org.quickshell.desktop
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(
+	FILES ${CMAKE_SOURCE_DIR}/assets/quickshell.svg
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+	RENAME org.quickshell.svg
+)

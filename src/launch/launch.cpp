@@ -219,6 +219,8 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		app = new QGuiApplication(qArgC, argv);
 	}
 
+	QGuiApplication::setDesktopFileName("org.quickshell");
+
 	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);
 		auto wait = args.waitForDebug ? QQmlDebuggingEnabler::WaitForClient
