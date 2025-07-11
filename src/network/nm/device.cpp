@@ -16,7 +16,7 @@ using namespace qs::dbus;
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNMDevice, "quickshell.service.networkmanager.device", QtWarningMsg);
+Q_LOGGING_CATEGORY(logNMDevice, "quickshell.network.networkmanager.device", QtWarningMsg);
 }
 
 NMDevice::NMDevice(QObject* parent): Device(parent) {}

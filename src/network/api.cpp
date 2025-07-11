@@ -13,7 +13,7 @@
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetwork, "quickshell.service.network", QtWarningMsg);
+Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 }
 
 Device::Device(QObject* parent): QObject(parent) {};
@@ -25,11 +25,12 @@ Network::Network(QObject* parent): QObject(parent) {
 	auto* nm = new NetworkManager();
 	if (nm->isAvailable()) {
 		this->backend = nm;
-	} else {
-		// None found
-		this->backend = nullptr;
-		qCDebug(logNetwork) << "Network will not work. Could not find an available backend.";
+		return;
 	}
+
+	// None found
+	this->backend = nullptr;
+	qCDebug(logNetwork) << "Network will not work. Could not find an available backend.";
 }
 
 } // namespace qs::network
