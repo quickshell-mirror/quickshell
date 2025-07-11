@@ -1,4 +1,4 @@
-#include "nm.hpp"
+#include "backend.hpp"
 
 #include <qcontainerfwd.h>
 #include <qdbusextratypes.h>
@@ -10,10 +10,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../dbus/bus.hpp"
-#include "../dbus/properties.hpp"
-#include "api.hpp"
-#include "dbus_nm_service.h"
+#include "../../dbus/bus.hpp"
+#include "../../dbus/properties.hpp"
+#include "../api.hpp"
+#include "dbus_nm_backend.h"
 
 namespace qs::network {
 

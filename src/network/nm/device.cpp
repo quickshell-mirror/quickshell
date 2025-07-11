@@ -1,4 +1,4 @@
-#include "nmdevice.hpp"
+#include "device.hpp"
 
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
