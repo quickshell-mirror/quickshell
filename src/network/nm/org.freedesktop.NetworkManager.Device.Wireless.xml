@@ -1,0 +1,18 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Device.Wireless">
+    <property name="Mode" type="u" access="read"/>
+    <property name="Bitrate" type="u" access="read"/>
+    <property name="LastScan" type="x" access="read"/>
+    <property name="ActiveAccessPoint" type="o" access="read"/>
+    
+		<method name="GetAllAccessPoints" type="ao"/>
+		<method name="RequestScan" type="a"/>
+    
+    <signal name="AccessPointAdded">
+      <arg name="access_point" type="o"/>
+    </signal>
+		<signal name="AccessPointRemoved">
+			arg name="access_ponit" type="o"/>
+		</signal>
+  </interface>
+</node>

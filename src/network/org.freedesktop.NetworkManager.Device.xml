@@ -1,0 +1,8 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Device">
+    <property name="Interface" type="s" access="read"/>
+		<property name="HwAddress" type="s" access="read"/>   
+    <method name="Disconnect"/>
+    
+  </interface>
+</node>
