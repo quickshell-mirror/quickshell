@@ -1,0 +1,17 @@
+<node>
+	<interface name="org.freedesktop.UPower">
+		<method name="EnumerateDevices">
+			<arg direction="out" type="ao" name="devices"/>
+		</method>
+		<method name="GetDisplayDevice">
+			<arg direction="out" type="o" name="devices"/>
+		</method>
+
+		<signal name="DeviceAdded">
+			<arg direction="out" type="o" name="device"/>
+		</signal>
+		<signal name="DeviceRemoved">
+			<arg direction="out" type="o" name="device"/>
+		</signal>
+	</interface>
+</node>
