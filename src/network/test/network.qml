@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import Quickshell.Services.NetworkManager
+import Quickshell.Network
 
 FloatingWindow {
 	color: contentItem.palette.window
@@ -13,20 +13,10 @@ FloatingWindow {
 		anchors.margins: 10
 		spacing: 10
 
-
-		ColumnLayout {
-			Label { 
-				text: "NetworkManager Service Test"
-				font.bold: true
-			}
-
-			Label { text: "Current state: " + NetworkManagerState.toString(NetworkManager.state) }
-		}
-
 		ListView {
 			Layout.fillWidth: true
 			Layout.fillHeight: true
-			model: NetworkManager.devices
+			model: Network.allDevices
 
 			delegate: WrapperRectangle {
 				width: parent.width
@@ -37,12 +27,10 @@ FloatingWindow {
 
 				ColumnLayout {
 					Label { 
-						text: `Device ${index}: ${modelData.interface}`
+						text: `Device ${index}: ${modelData.name}`
 						font.bold: true
 					}
-					Label { text: "Type: " + NMDeviceType.toString(modelData.type) }
-					Label { text: "State: " + NMDeviceState.toString(modelData.state) }
-					Label { text: `Managed: ${modelData.managed}` }
+					Label { text: "Hardware Address: " + modelData.address }
 				}
 			}
 		}
