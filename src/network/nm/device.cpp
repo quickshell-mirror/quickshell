@@ -10,6 +10,7 @@
 
 #include "../dbus/properties.hpp"
 #include "dbus_nm_device.h"
+#include "wireless.hpp"
 
 using namespace qs::dbus;
 
@@ -30,8 +31,25 @@ void NMDevice::init(const QString& path) {
 		return;
 	}
 
+	// If device type is wifi
+	if (this->device->property("type").toUInt() == 2) {
+		registerWireless(path);
+	}
 	this->deviceProperties.setInterface(this->device);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDevice::registerWireless(const QString& path) {
+	auto* device = new NMDevice(this);
+	device->init(path);
+
+	if (!device->isValid()) {
+		qCWarning(logNMDevice) << "Ignoring invalid NMWireless registration of" << path;
+		delete device;
+		return;
+	}
+
+	qCDebug(logNMDevice) << "Registered NMDevice" << path;
 }
 
 bool NMDevice::isValid() const { return this->device && this->device->isValid(); }

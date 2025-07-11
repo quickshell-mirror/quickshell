@@ -18,7 +18,7 @@
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.service.networkmanager", QtWarningMsg);
+Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
 const QString NM_SERVICE = "org.freedesktop.NetworkManager";
@@ -34,9 +34,9 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 		return;
 	}
 
-	this->service = new DBusNetworkManager(NM_SERVICE, NM_PATH, bus, this);
+	this->dbus = new DBusNetworkManager(NM_SERVICE, NM_PATH, bus, this);
 
-	if (!this->service->isValid()) {
+	if (!this->dbus->isValid()) {
 		qCDebug(logNetworkManager
 		) << "NetworkManager service is not currently running, attempting to start it.";
 
@@ -56,27 +56,27 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 
 void NetworkManager::init() {
 	QObject::connect(
-	    this->service,
+	    this->dbus,
 	    &DBusNetworkManager::DeviceAdded,
 	    this,
 	    &NetworkManager::onDeviceAdded
 	);
 
 	QObject::connect(
-	    this->service,
+	    this->dbus,
 	    &DBusNetworkManager::DeviceRemoved,
 	    this,
 	    &NetworkManager::onDeviceRemoved
 	);
 
-	this->serviceProperties.setInterface(this->service);
-	this->serviceProperties.updateAllViaGetAll();
+	this->dbusProperties.setInterface(this->dbus);
+	this->dbusProperties.updateAllViaGetAll();
 
 	this->registerDevices();
 }
 
 void NetworkManager::registerDevices() {
-	auto pending = this->service->GetAllDevices();
+	auto pending = this->dbus->GetAllDevices();
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
@@ -134,8 +134,8 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 	}
 }
 
-UntypedObjectModel* NetworkManager::allDevices() { return &this->mDevices; }
-NMDevice* NetworkManager::wireless() { return &this->mWireless; }
-bool NetworkManager::isAvailable() const { return this->service && this->service->isValid(); }
+UntypedObjectModel* NetworkManager::devices() { return &this->mDevices; }
+NMDevice* NetworkManager::wifiDevice() { return &this->mWifi; }
+bool NetworkManager::isAvailable() const { return this->dbus && this->dbus->isValid(); }
 
 } // namespace qs::network

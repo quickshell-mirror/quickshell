@@ -16,7 +16,7 @@ FloatingWindow {
 		ListView {
 			Layout.fillWidth: true
 			Layout.fillHeight: true
-			model: Network.allDevices
+			model: Network.devices
 
 			delegate: WrapperRectangle {
 				width: parent.width

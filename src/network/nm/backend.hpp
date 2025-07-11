@@ -23,9 +23,12 @@ class NetworkManager: public NetworkBackend {
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
 
-	UntypedObjectModel* allDevices() override;
-	NMDevice* wireless() override;
+	UntypedObjectModel* devices() override;
+	NMDevice* wifiDevice() override;
 	[[nodiscard]] bool isAvailable() const override;
+
+signals:
+	void wifiPoweredChanged();
 
 private slots:
 	void onDeviceAdded(const QDBusObjectPath& path);
@@ -38,11 +41,11 @@ private:
 
 	QHash<QString, NMDevice*> mDeviceHash;
 	ObjectModel<NMDevice> mDevices {this};
-	NMDevice mWireless;
+	NMDevice mWifi;
 
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, serviceProperties);
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
 
-	DBusNetworkManager* service = nullptr;
+	DBusNetworkManager* dbus = nullptr;
 };
 
 } // namespace qs::network
