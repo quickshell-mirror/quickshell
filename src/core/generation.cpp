@@ -11,6 +11,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
@@ -238,23 +239,24 @@ void EngineGeneration::onDirectoryChanged() {
 void EngineGeneration::registerIncubationController(QQmlIncubationController* controller) {
 	// We only want controllers that we can swap out if destroyed.
 	// This happens if the window owning the active controller dies.
-	if (auto* obj = dynamic_cast<QObject*>(controller)) {
-		QObject::connect(
-		    obj,
-		    &QObject::destroyed,
-		    this,
-		    &EngineGeneration::incubationControllerDestroyed
-		);
-	} else {
+	auto* obj = dynamic_cast<QObject*>(controller);
+	if (!obj) {
 		qCWarning(logIncubator) << "Could not register incubation controller as it is not a QObject"
 		                        << controller;
 
 		return;
 	}
 
-	this->incubationControllers.push_back(controller);
-	qCDebug(logIncubator) << "Registered incubation controller" << controller << "to generation"
-	                      << this;
+	QObject::connect(
+	    obj,
+	    &QObject::destroyed,
+	    this,
+	    &EngineGeneration::incubationControllerDestroyed,
+	    Qt::UniqueConnection
+	);
+
+	this->incubationControllers.push_back(obj);
+	qCDebug(logIncubator) << "Registered incubation controller" << obj << "to generation" << this;
 
 	// This function can run during destruction.
 	if (this->engine == nullptr) return;
@@ -264,21 +266,25 @@ void EngineGeneration::registerIncubationController(QQmlIncubationController* co
 	}
 }
 
+// Multiple controllers may be destroyed at once. Dynamic casts must be performed before working
+// with any controllers. The QQmlIncubationController destructor will already have run by the
+// point QObject::destroyed is called, so we can't cast to that.
 void EngineGeneration::deregisterIncubationController(QQmlIncubationController* controller) {
-	if (auto* obj = dynamic_cast<QObject*>(controller)) {
-		QObject::disconnect(obj, nullptr, this, nullptr);
-	} else {
+	auto* obj = dynamic_cast<QObject*>(controller);
+	if (!obj) {
 		qCCritical(logIncubator) << "Deregistering incubation controller which is not a QObject, "
 		                            "however only QObject controllers should be registered.";
 	}
 
-	if (!this->incubationControllers.removeOne(controller)) {
-		qCCritical(logIncubator) << "Failed to deregister incubation controller" << controller << "from"
+	QObject::disconnect(obj, nullptr, this, nullptr);
+
+	if (this->incubationControllers.removeOne(obj)) {
+		qCDebug(logIncubator) << "Deregistered incubation controller" << obj << "from" << this;
+	} else {
+		qCCritical(logIncubator) << "Failed to deregister incubation controller" << obj << "from"
 		                         << this << "as it was not registered to begin with";
 		qCCritical(logIncubator) << "Current registered incuabation controllers"
 		                         << this->incubationControllers;
-	} else {
-		qCDebug(logIncubator) << "Deregistered incubation controller" << controller << "from" << this;
 	}
 
 	// This function can run during destruction.
@@ -293,22 +299,12 @@ void EngineGeneration::deregisterIncubationController(QQmlIncubationController* 
 
 void EngineGeneration::incubationControllerDestroyed() {
 	auto* sender = this->sender();
-	auto* controller = dynamic_cast<QQmlIncubationController*>(sender);
 
-	if (controller == nullptr) {
-		qCCritical(logIncubator) << "Destroyed incubation controller" << sender << "is not known to"
-		                         << this << ", this may cause memory corruption";
-		qCCritical(logIncubator) << "Current registered incuabation controllers"
-		                         << this->incubationControllers;
-
-		return;
-	}
-
-	if (this->incubationControllers.removeOne(controller)) {
-		qCDebug(logIncubator) << "Destroyed incubation controller" << controller << "deregistered from"
+	if (this->incubationControllers.removeAll(sender) != 0) {
+		qCDebug(logIncubator) << "Destroyed incubation controller" << sender << "deregistered from"
 		                      << this;
 	} else {
-		qCCritical(logIncubator) << "Destroyed incubation controller" << controller
+		qCCritical(logIncubator) << "Destroyed incubation controller" << sender
 		                         << "was not registered, but its destruction was observed by" << this;
 
 		return;
@@ -317,7 +313,7 @@ void EngineGeneration::incubationControllerDestroyed() {
 	// This function can run during destruction.
 	if (this->engine == nullptr) return;
 
-	if (this->engine->incubationController() == controller) {
+	if (dynamic_cast<QObject*>(this->engine->incubationController()) == sender) {
 		qCDebug(logIncubator
 		) << "Destroyed incubation controller was currently active, reassigning from pool";
 		this->assignIncubationController();
@@ -371,7 +367,7 @@ void EngineGeneration::assignIncubationController() {
 	if (this->incubationControllersLocked || this->incubationControllers.isEmpty()) {
 		controller = &this->delayedIncubationController;
 	} else {
-		controller = this->incubationControllers.first();
+		controller = dynamic_cast<QQmlIncubationController*>(this->incubationControllers.first());
 	}
 
 	qCDebug(logIncubator) << "Assigning incubation controller" << controller << "to generation"

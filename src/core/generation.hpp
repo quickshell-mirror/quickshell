@@ -89,7 +89,7 @@ private slots:
 private:
 	void postReload();
 	void assignIncubationController();
-	QVector<QQmlIncubationController*> incubationControllers;
+	QVector<QObject*> incubationControllers;
 	bool incubationControllersLocked = false;
 	QHash<const void*, EngineGenerationExt*> extensions;
 
