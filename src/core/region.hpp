@@ -82,7 +82,7 @@ class PendingRegion: public QObject {
 	///   }
 	/// }
 	/// ```
-	Q_PROPERTY(QQmlListProperty<PendingRegion> regions READ regions);
+	Q_PROPERTY(QList<PendingRegion*> regions READ regions WRITE setRegions NOTIFY regionsChanged);
 	Q_CLASSINFO("DefaultProperty", "regions");
 	QML_NAMED_ELEMENT(Region);
 
@@ -91,7 +91,8 @@ public:
 
 	void setItem(QQuickItem* item);
 
-	QQmlListProperty<PendingRegion> regions();
+	[[nodiscard]] const QList<PendingRegion*>& regions() const;
+	void setRegions(const QList<PendingRegion*>& regions);
 
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] QRegion build() const;
@@ -109,6 +110,7 @@ signals:
 	void yChanged();
 	void widthChanged();
 	void heightChanged();
+	void regionsChanged();
 	void childrenChanged();
 
 	/// Triggered when the region's geometry changes.
@@ -122,14 +124,6 @@ private slots:
 	void onChildDestroyed();
 
 private:
-	static void regionsAppend(QQmlListProperty<PendingRegion>* prop, PendingRegion* region);
-	static PendingRegion* regionAt(QQmlListProperty<PendingRegion>* prop, qsizetype i);
-	static void regionsClear(QQmlListProperty<PendingRegion>* prop);
-	static qsizetype regionsCount(QQmlListProperty<PendingRegion>* prop);
-	static void regionsRemoveLast(QQmlListProperty<PendingRegion>* prop);
-	static void
-	regionsReplace(QQmlListProperty<PendingRegion>* prop, qsizetype i, PendingRegion* region);
-
 	QQuickItem* mItem = nullptr;
 
 	qint32 mX = 0;
