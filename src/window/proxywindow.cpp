@@ -283,6 +283,7 @@ void ProxyWindowBase::polishItems() {
 	// This hack manually polishes the item tree right before showing the window so it will
 	// always be created with the correct size.
 	QQuickWindowPrivate::get(this->window)->polishItems();
+	this->onPolished();
 }
 
 void ProxyWindowBase::runLints() {
