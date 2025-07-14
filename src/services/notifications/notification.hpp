@@ -107,6 +107,12 @@ class Notification
 	///
 	/// This image is often something like a profile picture in instant messaging applications.
 	Q_PROPERTY(QString image READ default NOTIFY imageChanged BINDABLE bindableImage);
+	/// If true, the notification has an inline reply action.
+	/// 
+	/// A quick reply text field should be displayed and the reply can be sent using @@sendInlineReply().
+	Q_PROPERTY(bool hasInlineReply READ default NOTIFY hasInlineReplyChanged BINDABLE bindableHasInlineReply);
+	/// The placeholder text/button caption for the inline reply.
+	Q_PROPERTY(QString inlineReplyPlaceholder READ default NOTIFY inlineReplyPlaceholderChanged BINDABLE bindableInlineReplyPlaceholder);
 	/// All hints sent by the client application as a javascript object.
 	/// Many common hints are exposed via other properties.
 	Q_PROPERTY(QVariantMap hints READ default NOTIFY hintsChanged BINDABLE bindableHints);
@@ -123,6 +129,12 @@ public:
 	/// Destroy the notification and hint to the remote application that it was
 	/// explicitly closed by the user.
 	Q_INVOKABLE void dismiss();
+
+	/// Send an inline reply to the notification with an inline reply action.
+	/// > [!WARNING] This method can only be called if
+	/// > @@hasInlineReply is true
+	/// > and the server has @@NotificationServer.inlineReplySupported set to true.
+	Q_INVOKABLE void sendInlineReply(const QString& replyText);
 
 	void updateProperties(
 	    const QString& appName,
@@ -158,6 +170,8 @@ public:
 	[[nodiscard]] QBindable<bool> bindableTransient() const { return &this->bTransient; };
 	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; };
 	[[nodiscard]] QBindable<QString> bindableImage() const { return &this->bImage; };
+	[[nodiscard]] QBindable<bool> bindableHasInlineReply() const { return &this->bHasInlineReply; };
+	[[nodiscard]] QBindable<QString> bindableInlineReplyPlaceholder() const { return &this->bInlineReplyPlaceholder; };
 	[[nodiscard]] QBindable<QVariantMap> bindableHints() const { return &this->bHints; };
 
 	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;
@@ -182,6 +196,8 @@ signals:
 	void transientChanged();
 	void desktopEntryChanged();
 	void imageChanged();
+	void hasInlineReplyChanged();
+	void inlineReplyPlaceholderChanged();
 	void hintsChanged();
 
 private:
@@ -202,6 +218,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(Notification, bool, bTransient, &Notification::transientChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bDesktopEntry, &Notification::desktopEntryChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bImage, &Notification::imageChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, bool, bHasInlineReply, &Notification::hasInlineReplyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Notification, QString, bInlineReplyPlaceholder, &Notification::inlineReplyPlaceholderChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Notification, QVariantMap, bHints, &Notification::hintsChanged);
 	// clang-format on
 

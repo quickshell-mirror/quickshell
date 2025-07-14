@@ -78,6 +78,29 @@ void Notification::close(NotificationCloseReason::Enum reason) {
 	}
 }
 
+void Notification::sendInlineReply(const QString& replyText) {
+	if (!NotificationServer::instance()->support.inlineReply) {
+		qCritical() << "Inline reply support disabled on server";
+		return;
+	}
+
+	if (!this->bHasInlineReply) {
+		qCritical() << "Cannot send reply to notification without inline-reply action";
+		return;
+	}
+
+	if (this->isRetained()) {
+		qCritical() << "Cannot send reply to destroyed notification" << this;
+		return;
+	}
+
+	NotificationServer::instance()->NotificationReplied(this->id(), replyText);
+
+	if (!this->bindableResident().value()) {
+		this->close(NotificationCloseReason::Dismissed);
+	}
+}
+
 void Notification::updateProperties(
     const QString& appName,
     QString appIcon,
@@ -147,17 +170,27 @@ void Notification::updateProperties(
 	this->bImage = imagePath;
 	this->bHints = hints;
 
-	Qt::endPropertyUpdateGroup();
-
 	bool actionsChanged = false;
 	auto deletedActions = QVector<NotificationAction*>();
 
 	if (actions.length() % 2 == 0) {
 		int ai = 0;
 		for (auto i = 0; i != actions.length(); i += 2) {
-			ai = i / 2;
 			const auto& identifier = actions.at(i);
 			const auto& text = actions.at(i + 1);
+
+			if (identifier == "inline-reply" && NotificationServer::instance()->support.inlineReply) {
+				if (this->bHasInlineReply) {
+					qCWarning(logNotifications) << this << '(' << appName << ')'
+					                            << "sent an action set with duplicate inline-reply actions.";
+				} else {
+					this->bHasInlineReply = true;
+					this->bInlineReplyPlaceholder = text;
+				}
+				// skip inserting this action into action list
+				continue;
+			}
+
 			auto* action = ai < this->mActions.length() ? this->mActions.at(ai) : nullptr;
 
 			if (action && identifier == action->identifier()) {
@@ -187,6 +220,8 @@ void Notification::updateProperties(
 		qCWarning(logNotifications) << this << '(' << appName << ')'
 		                            << "sent an action set of an invalid length.";
 	}
+
+	Qt::endPropertyUpdateGroup();
 
 	if (actionsChanged) emit this->actionsChanged();
 

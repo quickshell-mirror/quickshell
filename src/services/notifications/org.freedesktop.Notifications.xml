@@ -38,6 +38,11 @@
 			<arg name="actionKey" type="s" direction="out"/>
 		</signal>
 
+		<signal name="NotificationReplied">
+			<arg name="id" type="u" direction="out"/>
+			<arg name="replyText" type="s" direction="out"/>
+		</signal>
+
 		<signal name="ActivationToken">
 			<arg name="id" type="u" direction="out"/>
 			<arg name="activationToken" type="s" direction="out"/>

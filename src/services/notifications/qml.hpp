@@ -65,6 +65,8 @@ class NotificationServerQml: public PostReloadHook {
 	Q_PROPERTY(bool actionIconsSupported READ actionIconsSupported WRITE setActionIconsSupported NOTIFY actionIconsSupportedChanged);
 	/// If the notification server should advertise that it supports images. Defaults to false.
 	Q_PROPERTY(bool imageSupported READ imageSupported WRITE setImageSupported NOTIFY imageSupportedChanged);
+	/// If the notification server should advertise that it supports inline replies. Defaults to false.
+	Q_PROPERTY(bool inlineReplySupported READ inlineReplySupported WRITE setInlineReplySupported NOTIFY inlineReplySupportedChanged);
 	/// All notifications currently tracked by the server.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::notifications::Notification>*);
 	Q_PROPERTY(UntypedObjectModel* trackedNotifications READ trackedNotifications NOTIFY trackedNotificationsChanged);
@@ -103,6 +105,9 @@ public:
 	[[nodiscard]] bool imageSupported() const;
 	void setImageSupported(bool imageSupported);
 
+	[[nodiscard]] bool inlineReplySupported() const;
+	void setInlineReplySupported(bool inlineReplySupported);
+
 	[[nodiscard]] QVector<QString> extraHints() const;
 	void setExtraHints(QVector<QString> extraHints);
 
@@ -123,6 +128,7 @@ signals:
 	void actionsSupportedChanged();
 	void actionIconsSupportedChanged();
 	void imageSupportedChanged();
+	void inlineReplySupportedChanged();
 	void extraHintsChanged();
 	void trackedNotificationsChanged();
 

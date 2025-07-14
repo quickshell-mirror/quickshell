@@ -155,6 +155,7 @@ QStringList NotificationServer::GetCapabilities() const {
 	}
 
 	if (this->support.image) capabilities += "icon-static";
+	if (this->support.inlineReply) capabilities += "inline-reply";
 
 	capabilities += this->support.extraHints;
 

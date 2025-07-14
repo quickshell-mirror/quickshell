@@ -23,6 +23,7 @@ struct NotificationServerSupport {
 	bool actions = false;
 	bool actionIcons = false;
 	bool image = false;
+	bool inlineReply = false;
 	QVector<QString> extraHints;
 };
 
@@ -60,6 +61,7 @@ signals:
 	// NOLINTBEGIN
 	void NotificationClosed(quint32 id, quint32 reason);
 	void ActionInvoked(quint32 id, QString action);
+	void NotificationReplied(quint32 id, QString replyText);
 	// NOLINTEND
 
 private slots:

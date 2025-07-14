@@ -115,6 +115,15 @@ void NotificationServerQml::setImageSupported(bool imageSupported) {
 	emit this->imageSupportedChanged();
 }
 
+bool NotificationServerQml::inlineReplySupported() const { return this->support.inlineReply; }
+
+void NotificationServerQml::setInlineReplySupported(bool inlineReplySupported) {
+	if (inlineReplySupported == this->support.inlineReply) return;
+	this->support.inlineReply = inlineReplySupported;
+	this->updateSupported();
+	emit this->inlineReplySupportedChanged();
+}
+
 QVector<QString> NotificationServerQml::extraHints() const { return this->support.extraHints; }
 
 void NotificationServerQml::setExtraHints(QVector<QString> extraHints) {
