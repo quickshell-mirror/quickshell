@@ -18,6 +18,24 @@ Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 
 Device::Device(QObject* parent): QObject(parent) {};
 
+void Device::setName(const QString& name) {
+	if (name != this->bName) {
+		this->bName = name;
+	}
+}
+
+void Device::setAddress(const QString& address) {
+	if (address != this->bAddress) {
+		this->bAddress = address;
+	}
+}
+
+void WirelessDevice::setState(WirelessState::Enum state) {
+	if (state != this->bState) {
+		this->bState = state;
+	}
+}
+
 Network::Network(QObject* parent): QObject(parent) {
 	// Try each backend
 

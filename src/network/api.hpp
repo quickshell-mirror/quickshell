@@ -11,7 +11,6 @@
 #include <qtypes.h>
 
 #include "../core/model.hpp"
-#include "../dbus/properties.hpp"
 
 namespace qs::network {
 
@@ -27,19 +26,22 @@ class Device: public QObject {
 	Q_PROPERTY(QString address READ default NOTIFY addressChanged BINDABLE bindableAddress);
 	// clang-format on
 
-public:
-	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; };
-	[[nodiscard]] QBindable<QString> bindableAddress() const { return &this->bAddress; };
-
 signals:
 	void nameChanged();
 	void addressChanged();
 
-protected:
+public slots:
+	void setName(const QString& name);
+	void setAddress(const QString& address);
+
+public:
 	explicit Device(QObject* parent = nullptr);
+	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; };
+	[[nodiscard]] QBindable<QString> bindableAddress() const { return &this->bAddress; };
+
+private:
 	Q_OBJECT_BINDABLE_PROPERTY(Device, QString, bName, &Device::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Device, QString, bAddress, &Device::addressChanged);
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(Device, deviceProperties);
 };
 
 // -- Wireless Device --
@@ -60,14 +62,24 @@ public:
 	Q_ENUM(Enum);
 };
 
-class Wireless: public QObject {
+class WirelessDevice: public Device {
 	Q_OBJECT;
+
 	// clang-format off
 	Q_PROPERTY(bool powered READ powered WRITE setPowered NOTIFY poweredChanged);
 	Q_PROPERTY(WirelessState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	//clang-format on
 
+signals:
+	void poweredChanged();
+	void stateChanged();
+
+private slots:
+	void setState(WirelessState::Enum state);
+
 public:
+	explicit WirelessDevice(QObject* parent = nullptr);
+
 	Q_INVOKABLE virtual void disconnect() = 0;
 	Q_INVOKABLE virtual void scan() = 0;
 
@@ -77,20 +89,14 @@ public:
 	[[nodiscard]] QBindable<bool> bindablePowered() { return &this->bPowered; };
 	[[nodiscard]] QBindable<WirelessState::Enum> bindableState() const { return &this->bState; };
 
-signals:
-	void poweredChanged();
-	void stateChanged();
-
-protected:
-	explicit Wireless(QObject* parent = nullptr);
-	Q_OBJECT_BINDABLE_PROPERTY(Wireless, bool, bPowered, &Wireless::poweredChanged);
+private:
+	Q_OBJECT_BINDABLE_PROPERTY(WirelessDevice, bool, bPowered, &WirelessDevice::poweredChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(
-	    Wireless,
+	    WirelessDevice,
 	    WirelessState::Enum,
 	    bState,
-	    &Wireless::stateChanged
+	    &WirelessDevice::stateChanged
 	);
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(Wireless, wirelessProperties);
 };
 
 // -- Network --
@@ -100,7 +106,7 @@ class NetworkBackend: public QObject {
 
 public:
 	[[nodiscard]] virtual bool isAvailable() const = 0;
-	virtual Device* wifiDevice() = 0;
+	// virtual WirelessDevice* wifiDevice() = 0;
 	virtual UntypedObjectModel* devices() = 0;
 
 protected:
@@ -112,16 +118,15 @@ class Network: public QObject {
 	QML_NAMED_ELEMENT(Network);
 	QML_SINGLETON;
 
-	Q_PROPERTY(Device* wifiDevice READ wifiDevice CONSTANT);
+	// Q_PROPERTY(WirelessDevice* wifi READ wifiDevice CONSTANT);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 
 public:
 	explicit Network(QObject* parent = nullptr);
-	[[nodiscard]] Device* wifiDevice() { return backend ? backend->wifiDevice() : nullptr; }
+	// [[nodiscard]] WirelessDevice* wifi() { return backend ? backend->wifiDevice() : nullptr; }
 	[[nodiscard]] UntypedObjectModel* devices() { return backend ? backend->devices() : nullptr; }
 
 private:
-	void findBackend();
 	class NetworkBackend* backend = nullptr;
 };
 

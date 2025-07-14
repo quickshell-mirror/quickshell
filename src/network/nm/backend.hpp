@@ -13,7 +13,6 @@
 #include "../../dbus/properties.hpp"
 #include "../api.hpp"
 #include "dbus_nm_backend.h"
-#include "device.hpp"
 
 namespace qs::network {
 
@@ -24,11 +23,8 @@ public:
 	explicit NetworkManager(QObject* parent = nullptr);
 
 	UntypedObjectModel* devices() override;
-	NMDevice* wifiDevice() override;
+	// WirelessDevice* wifiDevice() override;
 	[[nodiscard]] bool isAvailable() const override;
-
-signals:
-	void wifiPoweredChanged();
 
 private slots:
 	void onDeviceAdded(const QDBusObjectPath& path);
@@ -39,13 +35,12 @@ private:
 	void registerDevice(const QString& path);
 	void registerDevices();
 
-	QHash<QString, NMDevice*> mDeviceHash;
-	ObjectModel<NMDevice> mDevices {this};
-	NMDevice mWifi;
+	QHash<QString, Device*> mDeviceHash;
+	ObjectModel<Device> mDevices {this};
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
 
-	DBusNetworkManager* dbus = nullptr;
+	DBusNetworkManagerProxy* proxy = nullptr;
 };
 
 } // namespace qs::network

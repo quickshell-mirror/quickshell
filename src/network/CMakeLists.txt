@@ -1,6 +1,6 @@
 # NetworkManager DBus
 set_source_files_properties(org.freedesktop.NetworkManager.xml PROPERTIES
-	CLASSNAME DBusNetworkManager
+	CLASSNAME DBusNetworkManagerProxy
 	NO_NAMESPACE TRUE
 )
 
@@ -10,7 +10,7 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 )
 
 set_source_files_properties(org.freedesktop.NetworkManager.Device.xml PROPERTIES
-	CLASSNAME DBusNMDevice
+	CLASSNAME DBusNMDeviceProxy
 	NO_NAMESPACE TRUE
 )
 
@@ -20,7 +20,7 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 )
 
 set_source_files_properties(org.freedesktop.NetworkManager.Device.Wireless.xml PROPERTIES
-	CLASSNAME DBusNMWireless
+	CLASSNAME DBusNMWirelessProxy
 	NO_NAMESPACE TRUE
 )
 
@@ -32,7 +32,7 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 qt_add_library(quickshell-network STATIC
 	api.cpp
 	nm/backend.cpp
-	nm/device.cpp
+	nm/adapters.cpp
 	${NM_DBUS_INTERFACES}
 )
 

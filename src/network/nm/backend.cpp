@@ -14,6 +14,7 @@
 #include "../../dbus/properties.hpp"
 #include "../api.hpp"
 #include "dbus_nm_backend.h"
+#include "adapters.hpp"
 
 namespace qs::network {
 
@@ -34,9 +35,9 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 		return;
 	}
 
-	this->dbus = new DBusNetworkManager(NM_SERVICE, NM_PATH, bus, this);
+	this->proxy = new DBusNetworkManagerProxy(NM_SERVICE, NM_PATH, bus, this);
 
-	if (!this->dbus->isValid()) {
+	if (!this->proxy->isValid()) {
 		qCDebug(logNetworkManager
 		) << "NetworkManager service is not currently running, attempting to start it.";
 
@@ -56,27 +57,27 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 
 void NetworkManager::init() {
 	QObject::connect(
-	    this->dbus,
-	    &DBusNetworkManager::DeviceAdded,
+	    this->proxy,
+	    &DBusNetworkManagerProxy::DeviceAdded,
 	    this,
 	    &NetworkManager::onDeviceAdded
 	);
 
 	QObject::connect(
-	    this->dbus,
-	    &DBusNetworkManager::DeviceRemoved,
+	    this->proxy,
+	    &DBusNetworkManagerProxy::DeviceRemoved,
 	    this,
 	    &NetworkManager::onDeviceRemoved
 	);
 
-	this->dbusProperties.setInterface(this->dbus);
+	this->dbusProperties.setInterface(this->proxy);
 	this->dbusProperties.updateAllViaGetAll();
 
 	this->registerDevices();
 }
 
 void NetworkManager::registerDevices() {
-	auto pending = this->dbus->GetAllDevices();
+	auto pending = this->proxy->GetAllDevices();
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
@@ -98,22 +99,30 @@ void NetworkManager::registerDevices() {
 
 void NetworkManager::registerDevice(const QString& path) {
 	if (this->mDeviceHash.contains(path)) {
-		qCDebug(logNetworkManager) << "Skipping duplicate registration of NMDevice" << path;
+		qCDebug(logNetworkManager) << "Skipping duplicate registration of device" << path;
 		return;
 	}
 
-	auto* device = new NMDevice(this);
-	device->init(path);
+	auto* device = new Device(this);
+	auto* deviceAdapter = new NMDeviceAdapter(device);
 
-	if (!device->isValid()) {
-		qCWarning(logNetworkManager) << "Ignoring invalid NMDevice registration of" << path;
+	deviceAdapter->init(path);
+
+	if (!deviceAdapter->isValid()) {
+		qCWarning(logNetworkManager) << "Ignoring invalid Device registration of" << path;
 		delete device;
 		return;
 	}
+	
+	device->setAddress(deviceAdapter->getHwAddress());
+	device->setName(deviceAdapter->getInterface());
+	QObject::connect(deviceAdapter, &NMDeviceAdapter::hwAddressChanged, device, &Device::setAddress);
+	QObject::connect(deviceAdapter, &NMDeviceAdapter::interfaceChanged, device, &Device::setName);
+
 
 	this->mDeviceHash.insert(path, device);
 	this->mDevices.insertObject(device);
-	qCDebug(logNetworkManager) << "Registered NMDevice" << path;
+	qCDebug(logNetworkManager) << "Registered Device" << path;
 }
 
 void NetworkManager::onDeviceAdded(const QDBusObjectPath& path) {
@@ -130,12 +139,12 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		auto* device = iter.value();
 		this->mDeviceHash.erase(iter);
 		this->mDevices.removeObject(device);
-		qCDebug(logNetworkManager) << "NMDevice" << device->path() << "removed.";
+		qCDebug(logNetworkManager) << "Device" << path.path() << "removed.";
 	}
 }
 
 UntypedObjectModel* NetworkManager::devices() { return &this->mDevices; }
-NMDevice* NetworkManager::wifiDevice() { return &this->mWifi; }
-bool NetworkManager::isAvailable() const { return this->dbus && this->dbus->isValid(); }
+// WirelessDevice* NetworkManager::wifiDevice() { return &this->mWifi; }
+bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); }
 
 } // namespace qs::network
