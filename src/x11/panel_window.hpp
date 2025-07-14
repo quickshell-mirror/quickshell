@@ -92,7 +92,7 @@ private slots:
 	void onScreenVirtualGeometryChanged();
 
 private:
-	void connectScreen();
+	void updateScreen();
 	void updateStrut(bool propagate = true);
 	void updateStrutCb() { this->updateStrut(); }
 	void updateAboveWindows();

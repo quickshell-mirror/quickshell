@@ -126,7 +126,7 @@ void XPanelWindow::connectWindow() {
 	this->ProxyWindowBase::connectWindow();
 
 	this->window->installEventFilter(&this->eventFilter);
-	this->connectScreen();
+	this->updateScreen();
 
 	QObject::connect(
 	    this->window,
@@ -169,7 +169,7 @@ void XPanelWindow::trySetHeight(qint32 implicitHeight) {
 
 void XPanelWindow::setScreen(QuickshellScreenInfo* screen) {
 	this->ProxyWindowBase::setScreen(screen);
-	this->connectScreen();
+	this->updateScreen();
 }
 
 void XPanelWindow::xInit() {
@@ -192,12 +192,17 @@ void XPanelWindow::xInit() {
 	);
 }
 
-void XPanelWindow::connectScreen() {
+void XPanelWindow::updateScreen() {
+	auto* newScreen =
+	    this->mScreen ? this->mScreen : (this->window ? this->window->screen() : nullptr);
+
+	if (newScreen == this->mTrackedScreen) return;
+
 	if (this->mTrackedScreen != nullptr) {
 		QObject::disconnect(this->mTrackedScreen, nullptr, this, nullptr);
 	}
 
-	this->mTrackedScreen = this->mScreen;
+	this->mTrackedScreen = newScreen;
 
 	if (this->mTrackedScreen != nullptr) {
 		QObject::connect(
@@ -212,7 +217,6 @@ void XPanelWindow::connectScreen() {
 		    &QScreen::virtualGeometryChanged,
 		    this,
 		    &XPanelWindow::onScreenVirtualGeometryChanged
-
 		);
 	}
 
@@ -231,10 +235,11 @@ void XPanelWindow::onScreenVirtualGeometryChanged() {
 void XPanelWindow::updateDimensionsSlot() { this->updateDimensions(); }
 
 void XPanelWindow::updateDimensions(bool propagate) {
-	if (this->window == nullptr || this->window->handle() == nullptr || this->mScreen == nullptr)
+	if (this->window == nullptr || this->window->handle() == nullptr
+	    || this->mTrackedScreen == nullptr)
 		return;
 
-	auto screenGeometry = this->mScreen->geometry();
+	auto screenGeometry = this->mTrackedScreen->geometry();
 
 	if (this->bExclusionMode != ExclusionMode::Ignore) {
 		for (auto* panel: XPanelStack::instance()->panels(this)) {
@@ -244,7 +249,7 @@ void XPanelWindow::updateDimensions(bool propagate) {
 			// we only care about windows in the same layer
 			if (panel->bAboveWindows != this->bAboveWindows) continue;
 
-			if (panel->mScreen != this->mScreen) continue;
+			if (panel->mTrackedScreen != this->mTrackedScreen) continue;
 
 			auto edge = this->bcExclusionEdge.value();
 			auto exclusiveZone = this->bcExclusiveZone.value();
