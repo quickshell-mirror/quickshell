@@ -31,6 +31,7 @@ FloatingWindow {
 						font.bold: true
 					}
 					Label { text: "Hardware Address: " + modelData.address }
+					Label { text: "State: " + DeviceState.toString(modelData.state) }
 				}
 			}
 		}

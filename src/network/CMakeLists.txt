@@ -31,8 +31,8 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 
 qt_add_library(quickshell-network STATIC
 	api.cpp
-	nm/backend.cpp
-	nm/adapters.cpp
+	nm_backend.cpp
+	nm_adapters.cpp
 	${NM_DBUS_INTERFACES}
 )
 

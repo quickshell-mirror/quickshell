@@ -8,7 +8,7 @@
 #include <qdbusservicewatcher.h>
 #include <qlogging.h>
 
-#include "nm/backend.hpp"
+#include "nm_backend.hpp"
 
 namespace qs::network {
 
@@ -17,6 +17,18 @@ Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 }
 
 Device::Device(QObject* parent): QObject(parent) {};
+WirelessDevice::WirelessDevice(QObject* parent): Device(parent) {};
+
+QString DeviceState::toString(DeviceState::Enum state) {
+	switch (state) {
+	case DeviceState::Unknown: return QStringLiteral("Unknown");
+	case DeviceState::Disconnected: return QStringLiteral("Disconnected");
+	case DeviceState::Connecting: return QStringLiteral("Connecting");
+	case DeviceState::Connected: return QStringLiteral("Connected");
+	case DeviceState::Disconnecting: return QStringLiteral("Disconnecting");
+	default: return QStringLiteral("Unknown");
+	}
+}
 
 void Device::setName(const QString& name) {
 	if (name != this->bName) {
@@ -30,9 +42,15 @@ void Device::setAddress(const QString& address) {
 	}
 }
 
-void WirelessDevice::setState(WirelessState::Enum state) {
+void Device::setState(DeviceState::Enum state) {
 	if (state != this->bState) {
 		this->bState = state;
+	}
+}
+
+void WirelessDevice::setLastScan(qint64 lastScan) {
+	if (lastScan != this->bLastScan) {
+		this->bLastScan = lastScan;
 	}
 }
 

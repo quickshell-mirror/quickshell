@@ -1,4 +1,4 @@
-#include "backend.hpp"
+#include "nm_backend.hpp"
 
 #include <qcontainerfwd.h>
 #include <qdbusextratypes.h>
@@ -10,11 +10,11 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../dbus/bus.hpp"
-#include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../dbus/bus.hpp"
+#include "../dbus/properties.hpp"
+#include "api.hpp"
 #include "dbus_nm_backend.h"
-#include "adapters.hpp"
+#include "nm_adapters.hpp"
 
 namespace qs::network {
 
@@ -87,7 +87,7 @@ void NetworkManager::registerDevices() {
 			qCWarning(logNetworkManager) << "Failed to get devices: " << reply.error().message();
 		} else {
 			for (const QDBusObjectPath& devicePath: reply.value()) {
-				this->registerDevice(devicePath.path());
+				this->queueDeviceRegistration(devicePath.path());
 			}
 		}
 
@@ -97,36 +97,87 @@ void NetworkManager::registerDevices() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void NetworkManager::registerDevice(const QString& path) {
+void NetworkManager::queueDeviceRegistration(const QString& path) {
 	if (this->mDeviceHash.contains(path)) {
 		qCDebug(logNetworkManager) << "Skipping duplicate registration of device" << path;
 		return;
 	}
 
-	auto* device = new Device(this);
-	auto* deviceAdapter = new NMDeviceAdapter(device);
-
+	// Create a device adapter
+	auto* deviceAdapter = new NMDeviceAdapter();
 	deviceAdapter->init(path);
 
 	if (!deviceAdapter->isValid()) {
-		qCWarning(logNetworkManager) << "Ignoring invalid Device registration of" << path;
-		delete device;
+		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
 		return;
 	}
-	
-	device->setAddress(deviceAdapter->getHwAddress());
-	device->setName(deviceAdapter->getInterface());
+
+	// Wait for DBus to tell us the device type
+	QObject::connect(
+	    deviceAdapter,
+	    &NMDeviceAdapter::typeChanged,
+	    this,
+	    [this, deviceAdapter, path](NMDeviceType::Enum type) {
+		    this->registerDevice(deviceAdapter, type, path);
+	    }
+	);
+}
+
+// Register the device
+void NetworkManager::registerDevice(
+    NMDeviceAdapter* deviceAdapter,
+    NMDeviceType::Enum type,
+    const QString& path
+) {
+	Device* device = createDeviceVariant(type, path);
+
+	// Bind backend NMDeviceAdapter to frontend Device
+	deviceAdapter->setParent(device);
 	QObject::connect(deviceAdapter, &NMDeviceAdapter::hwAddressChanged, device, &Device::setAddress);
 	QObject::connect(deviceAdapter, &NMDeviceAdapter::interfaceChanged, device, &Device::setName);
-
+	QObject::connect(
+	    deviceAdapter,
+	    &NMDeviceAdapter::stateChanged,
+	    device,
+	    [device](NMDeviceState::Enum state) { device->setState(NMDeviceState::translate(state)); }
+	);
 
 	this->mDeviceHash.insert(path, device);
 	this->mDevices.insertObject(device);
-	qCDebug(logNetworkManager) << "Registered Device" << path;
+
+	qCDebug(logNetworkManager) << "Registered device at path" << path;
+}
+
+// Create a derived device class based on the NMDeviceType of the NMDeviceAdapter
+Device* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, const QString& path) {
+	switch (type) {
+	case NMDeviceType::Wifi: return this->bindWirelessDevice(path);
+	default: return new Device();
+	}
+}
+
+// Create a frontend WirelessDevice and bind the backend wireless adapter to it
+WirelessDevice* NetworkManager::bindWirelessDevice(const QString& path) {
+	auto* device = new WirelessDevice(this);
+
+	auto* wirelessAdapter = new NMWirelessAdapter(device);
+	wirelessAdapter->init(path);
+
+	QObject::connect(
+	    wirelessAdapter,
+	    &NMWirelessAdapter::lastScanChanged,
+	    device,
+	    &WirelessDevice::setLastScan
+	);
+
+	if (this->mWifi == nullptr) {
+		this->mWifi = device;
+	};
+	return device;
 }
 
 void NetworkManager::onDeviceAdded(const QDBusObjectPath& path) {
-	this->registerDevice(path.path());
+	this->queueDeviceRegistration(path.path());
 }
 
 void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
@@ -137,6 +188,9 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		                             << "which is not registered.";
 	} else {
 		auto* device = iter.value();
+		if (this->mWifi == device) {
+			this->mWifi = nullptr;
+		};
 		this->mDeviceHash.erase(iter);
 		this->mDevices.removeObject(device);
 		qCDebug(logNetworkManager) << "Device" << path.path() << "removed.";
@@ -144,7 +198,7 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 }
 
 UntypedObjectModel* NetworkManager::devices() { return &this->mDevices; }
-// WirelessDevice* NetworkManager::wifiDevice() { return &this->mWifi; }
+WirelessDevice* NetworkManager::defaultWifiDevice() { return this->mWifi; }
 bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); }
 
 } // namespace qs::network

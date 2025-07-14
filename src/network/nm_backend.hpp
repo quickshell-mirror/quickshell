@@ -10,9 +10,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../dbus/properties.hpp"
+#include "api.hpp"
 #include "dbus_nm_backend.h"
+#include "nm_adapters.hpp"
 
 namespace qs::network {
 
@@ -23,7 +24,7 @@ public:
 	explicit NetworkManager(QObject* parent = nullptr);
 
 	UntypedObjectModel* devices() override;
-	// WirelessDevice* wifiDevice() override;
+	WirelessDevice* defaultWifiDevice() override;
 	[[nodiscard]] bool isAvailable() const override;
 
 private slots:
@@ -32,11 +33,16 @@ private slots:
 
 private:
 	void init();
-	void registerDevice(const QString& path);
+	void registerDevice(NMDeviceAdapter* deviceAdapter, NMDeviceType::Enum type, const QString& path);
 	void registerDevices();
+	void queueDeviceRegistration(const QString& path);
+	Device* createDeviceVariant(NMDeviceType::Enum type, const QString& path);
+	WirelessDevice* bindWirelessDevice(const QString& path);
+	Device* bindDevice(NMDeviceAdapter* deviceAdapter);
 
 	QHash<QString, Device*> mDeviceHash;
 	ObjectModel<Device> mDevices {this};
+	WirelessDevice* mWifi = nullptr;
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
 
