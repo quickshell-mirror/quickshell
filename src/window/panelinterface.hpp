@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qnamespace.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -20,6 +21,21 @@ class Anchors {
 public:
 	[[nodiscard]] bool horizontalConstraint() const noexcept { return this->mLeft && this->mRight; }
 	[[nodiscard]] bool verticalConstraint() const noexcept { return this->mTop && this->mBottom; }
+
+	[[nodiscard]] Qt::Edge exclusionEdge() const noexcept {
+		auto hasHEdge = this->mLeft ^ this->mRight;
+		auto hasVEdge = this->mTop ^ this->mBottom;
+
+		if (hasVEdge && !hasHEdge) {
+			if (this->mTop) return Qt::TopEdge;
+			if (this->mBottom) return Qt::BottomEdge;
+		} else if (hasHEdge && !hasVEdge) {
+			if (this->mLeft) return Qt::LeftEdge;
+			if (this->mRight) return Qt::RightEdge;
+		}
+
+		return static_cast<Qt::Edge>(0);
+	}
 
 	[[nodiscard]] bool operator==(const Anchors& other) const noexcept {
 		// clang-format off

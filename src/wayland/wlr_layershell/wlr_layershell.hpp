@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
@@ -196,6 +197,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, WlrKeyboardFocus::Enum, bKeyboardFocus, &WlrLayershell::keyboardFocusChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, ExclusionMode::Enum, bExclusionMode, ExclusionMode::Auto, &WlrLayershell::exclusionModeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bcExclusiveZone);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, Qt::Edge, bcExclusionEdge);
 
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bLayer, onStateChanged, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bAnchors, onStateChanged, onValueChanged);

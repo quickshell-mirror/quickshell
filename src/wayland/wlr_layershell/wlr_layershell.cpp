@@ -1,6 +1,7 @@
 #include "wlr_layershell.hpp"
 
 #include <qlogging.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
@@ -20,13 +21,15 @@ WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
 		case ExclusionMode::Ignore: return -1;
 		case ExclusionMode::Normal: return this->bExclusiveZone;
 		case ExclusionMode::Auto:
-			const auto anchors = this->bAnchors.value();
+			const auto edge = this->bcExclusionEdge.value();
 
-			if (anchors.horizontalConstraint()) return this->bImplicitHeight;
-			else if (anchors.verticalConstraint()) return this->bImplicitWidth;
+			if (edge == Qt::TopEdge || edge == Qt::BottomEdge) return this->bImplicitHeight;
+			else if (edge == Qt::LeftEdge || edge == Qt::RightEdge) return this->bImplicitWidth;
 			else return 0;
 		}
 	});
+
+	this->bcExclusionEdge.setBinding([this] { return this->bAnchors.value().exclusionEdge(); });
 }
 
 ProxiedWindow* WlrLayershell::retrieveWindow(QObject* oldInstance) {
