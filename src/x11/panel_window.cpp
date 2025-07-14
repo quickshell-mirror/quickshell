@@ -251,8 +251,8 @@ void XPanelWindow::updateDimensions(bool propagate) {
 
 			if (panel->mTrackedScreen != this->mTrackedScreen) continue;
 
-			auto edge = this->bcExclusionEdge.value();
-			auto exclusiveZone = this->bcExclusiveZone.value();
+			auto edge = panel->bcExclusionEdge.value();
+			auto exclusiveZone = panel->bcExclusiveZone.value();
 
 			screenGeometry.adjust(
 			    edge == Qt::LeftEdge ? exclusiveZone : 0,
