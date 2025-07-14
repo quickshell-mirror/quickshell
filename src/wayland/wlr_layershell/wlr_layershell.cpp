@@ -21,11 +21,16 @@ WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
 		case ExclusionMode::Ignore: return -1;
 		case ExclusionMode::Normal: return this->bExclusiveZone;
 		case ExclusionMode::Auto:
-			const auto edge = this->bcExclusionEdge.value();
+			const auto margins = this->bMargins.value();
 
-			if (edge == Qt::TopEdge || edge == Qt::BottomEdge) return this->bImplicitHeight;
-			else if (edge == Qt::LeftEdge || edge == Qt::RightEdge) return this->bImplicitWidth;
-			else return 0;
+			// add reverse edge margins which are ignored by wlr-layer-shell
+			switch (this->bcExclusionEdge.value()) {
+			case Qt::TopEdge: return this->bImplicitHeight + margins.bottom;
+			case Qt::BottomEdge: return this->bImplicitHeight + margins.top;
+			case Qt::LeftEdge: return this->bImplicitHeight + margins.right;
+			case Qt::RightEdge: return this->bImplicitHeight + margins.left;
+			default: return 0;
+			}
 		}
 	});
 
