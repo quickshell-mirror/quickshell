@@ -28,8 +28,19 @@ class DesktopEntry: public QObject {
 	Q_PROPERTY(QString comment MEMBER mComment CONSTANT);
 	/// Name of the icon associated with this application. May be empty.
 	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
-	/// The raw `Exec` string from the desktop entry. You probably want @@execute().
+	/// The raw `Exec` string from the desktop entry.
+	///
+	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
 	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
+	/// The parsed `Exec` command in the desktop entry.
+	///
+	/// The entry can be run with @@execute(), or by using this command in
+	/// @@Quickshell.Quickshell.execDetached() or @@Quickshell.Io.Process.
+	/// If used in `execDetached` or a `Process`, @@workingDirectory should also be passed to
+	/// the invoked process. See @@execute() for details.
+	///
+	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
+	Q_PROPERTY(QVector<QString> command MEMBER mCommand CONSTANT);
 	/// The working directory to execute from.
 	Q_PROPERTY(QString workingDirectory MEMBER mWorkingDirectory CONSTANT);
 	/// If the application should run in a terminal.
@@ -46,6 +57,16 @@ public:
 	void parseEntry(const QString& text);
 
 	/// Run the application. Currently ignores @@runInTerminal and field codes.
+	///
+	/// This is equivalent to calling @@Quickshell.Quickshell.execDetached() with @@command
+	/// and @@DesktopEntry.workingDirectory as shown below:
+	///
+	/// ```qml
+	/// Quickshell.execDetached({
+	///   command: desktopEntry.command,
+	///   workingDirectory: desktopEntry.workingDirectory,
+	/// });
+	/// ```
 	Q_INVOKABLE void execute() const;
 
 	[[nodiscard]] bool isValid() const;
@@ -54,7 +75,7 @@ public:
 
 	// currently ignores all field codes.
 	static QVector<QString> parseExecString(const QString& execString);
-	static void doExec(const QString& execString, const QString& workingDirectory);
+	static void doExec(const QList<QString>& execString, const QString& workingDirectory);
 
 public:
 	QString mId;
@@ -64,6 +85,7 @@ public:
 	QString mComment;
 	QString mIcon;
 	QString mExecString;
+	QVector<QString> mCommand;
 	QString mWorkingDirectory;
 	bool mTerminal = false;
 	QVector<QString> mCategories;
@@ -82,8 +104,19 @@ class DesktopAction: public QObject {
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
 	Q_PROPERTY(QString name MEMBER mName CONSTANT);
 	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
-	/// The raw `Exec` string from the desktop entry. You probably want @@execute().
+	/// The raw `Exec` string from the action.
+	///
+	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
 	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
+	/// The parsed `Exec` command in the action.
+	///
+	/// The entry can be run with @@execute(), or by using this command in
+	/// @@Quickshell.Quickshell.execDetached() or @@Quickshell.Io.Process.
+	/// If used in `execDetached` or a `Process`, @@DesktopEntry.workingDirectory should also be passed to
+	/// the invoked process.
+	///
+	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
+	Q_PROPERTY(QVector<QString> command MEMBER mCommand CONSTANT);
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopAction instances must be retrieved from a DesktopEntry");
 
@@ -94,6 +127,9 @@ public:
 	    , mId(std::move(id)) {}
 
 	/// Run the application. Currently ignores @@DesktopEntry.runInTerminal and field codes.
+	///
+	/// This is equivalent to calling @@Quickshell.Quickshell.execDetached() with @@command
+	/// and @@DesktopEntry.workingDirectory.
 	Q_INVOKABLE void execute() const;
 
 private:
@@ -102,6 +138,7 @@ private:
 	QString mName;
 	QString mIcon;
 	QString mExecString;
+	QVector<QString> mCommand;
 	QHash<QString, QString> mEntries;
 
 	friend class DesktopEntry;

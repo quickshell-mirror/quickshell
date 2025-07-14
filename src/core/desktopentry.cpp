@@ -11,14 +11,14 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpair.h>
-#include <qprocess.h>
 #include <qstringview.h>
 #include <qtenvironmentvariables.h>
 #include <ranges>
 
-#include "common.hpp"
+#include "../io/processcore.hpp"
 #include "logcat.hpp"
 #include "model.hpp"
+#include "qmlglobal.hpp"
 
 namespace {
 QS_LOGGING_CATEGORY(logDesktopEntry, "quickshell.desktopentry", QtWarningMsg);
@@ -111,8 +111,10 @@ void DesktopEntry::parseEntry(const QString& text) {
 				else if (key == "NoDisplay") this->mNoDisplay = value == "true";
 				else if (key == "Comment") this->mComment = value;
 				else if (key == "Icon") this->mIcon = value;
-				else if (key == "Exec") this->mExecString = value;
-				else if (key == "Path") this->mWorkingDirectory = value;
+				else if (key == "Exec") {
+					this->mExecString = value;
+					this->mCommand = DesktopEntry::parseExecString(value);
+				} else if (key == "Path") this->mWorkingDirectory = value;
 				else if (key == "Terminal") this->mTerminal = value == "true";
 				else if (key == "Categories") this->mCategories = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Keywords") this->mKeywords = value.split(u';', Qt::SkipEmptyParts);
@@ -127,7 +129,10 @@ void DesktopEntry::parseEntry(const QString& text) {
 
 				if (key == "Name") action->mName = value;
 				else if (key == "Icon") action->mIcon = value;
-				else if (key == "Exec") action->mExecString = value;
+				else if (key == "Exec") {
+					action->mExecString = value;
+					action->mCommand = DesktopEntry::parseExecString(value);
+				}
 			}
 
 			this->mActions.insert(actionName, action);
@@ -179,7 +184,7 @@ void DesktopEntry::parseEntry(const QString& text) {
 }
 
 void DesktopEntry::execute() const {
-	DesktopEntry::doExec(this->mExecString, this->mWorkingDirectory);
+	DesktopEntry::doExec(this->mCommand, this->mWorkingDirectory);
 }
 
 bool DesktopEntry::isValid() const { return !this->mName.isEmpty(); }
@@ -251,23 +256,15 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 	return arguments;
 }
 
-void DesktopEntry::doExec(const QString& execString, const QString& workingDirectory) {
-	auto args = DesktopEntry::parseExecString(execString);
-	if (args.isEmpty()) {
-		qCWarning(logDesktopEntry) << "Tried to exec string" << execString << "which parsed as empty.";
-		return;
-	}
-
-	auto process = QProcess();
-	process.setProgram(args.at(0));
-	process.setArguments(args.sliced(1));
-	if (!workingDirectory.isEmpty()) process.setWorkingDirectory(workingDirectory);
-	process.setProcessEnvironment(qs::Common::INITIAL_ENVIRONMENT);
-	process.startDetached();
+void DesktopEntry::doExec(const QList<QString>& execString, const QString& workingDirectory) {
+	qs::io::process::ProcessContext ctx;
+	ctx.setCommand(execString);
+	ctx.setWorkingDirectory(workingDirectory);
+	QuickshellGlobal::execDetached(ctx);
 }
 
 void DesktopAction::execute() const {
-	DesktopEntry::doExec(this->mExecString, this->entry->mWorkingDirectory);
+	DesktopEntry::doExec(this->mCommand, this->entry->mWorkingDirectory);
 }
 
 DesktopEntryManager::DesktopEntryManager() {
