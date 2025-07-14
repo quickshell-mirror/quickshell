@@ -99,6 +99,8 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 		} else return static_cast<qlonglong>(-1);
 	});
 
+	this->bLengthSupported.setBinding([this]() { return this->bInternalLength != -1; });
+
 	this->bPlaybackState.setBinding([this]() {
 		const auto& status = this->bpPlaybackStatus.value();
 
@@ -258,20 +260,18 @@ void MprisPlayer::setPosition(qlonglong position) {
 }
 
 void MprisPlayer::onExportedPositionChanged() {
-	if (!this->lengthSupported()) emit this->lengthChanged();
+	if (!this->bLengthSupported) emit this->lengthChanged();
 }
 
 void MprisPlayer::onSeek(qlonglong time) { this->setPosition(time); }
 
 qreal MprisPlayer::length() const {
-	if (this->bInternalLength == -1) {
+	if (!this->bLengthSupported) {
 		return this->position(); // unsupported
 	} else {
 		return static_cast<qreal>(this->bInternalLength / 1000) / 1000; // NOLINT
 	}
 }
-
-bool MprisPlayer::lengthSupported() const { return this->bInternalLength != -1; }
 
 bool MprisPlayer::volumeSupported() const { return this->pVolume.exists(); }
 

@@ -117,7 +117,7 @@ class MprisPlayer: public QObject {
 	/// The length of the playing track, as seconds, with millisecond precision,
 	/// or the value of @@position if @@lengthSupported is false.
 	Q_PROPERTY(qreal length READ length NOTIFY lengthChanged);
-	Q_PROPERTY(bool lengthSupported READ lengthSupported NOTIFY lengthSupportedChanged);
+	Q_PROPERTY(bool lengthSupported READ default NOTIFY lengthSupportedChanged BINDABLE bindableLengthSupported);
 	/// The volume of the playing track from 0.0 to 1.0, or 1.0 if @@volumeSupported is false.
 	///
 	/// May only be written to if @@canControl and @@volumeSupported are true.
@@ -274,7 +274,7 @@ public:
 	void setPosition(qreal position);
 
 	[[nodiscard]] qreal length() const;
-	[[nodiscard]] bool lengthSupported() const;
+	[[nodiscard]] QBindable<bool> bindableLengthSupported() const { return &this->bLengthSupported; }
 
 	[[nodiscard]] qreal volume() const { return this->bVolume; };
 	[[nodiscard]] bool volumeSupported() const;
@@ -447,6 +447,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackAlbumArtist, &MprisPlayer::trackAlbumArtistChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bTrackArtUrl, &MprisPlayer::trackArtUrlChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, qlonglong, bInternalLength, &MprisPlayer::lengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bLengthSupported, &MprisPlayer::lengthSupportedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bShuffle, &MprisPlayer::shuffleChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(MprisPlayer, playerProperties);
