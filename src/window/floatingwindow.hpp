@@ -8,6 +8,9 @@
 #include "proxywindow.hpp"
 #include "windowinterface.hpp"
 
+// see #include <qpa/qplatformwindow.h>
+static const int QWINDOWSIZE_MAX = ((1 << 24) - 1);
+
 class ProxyFloatingWindow: public ProxyWindowBase {
 	Q_OBJECT;
 
@@ -46,10 +49,11 @@ public:
 	    &ProxyFloatingWindow::onMinimumSizeChanged
 	);
 
-	Q_OBJECT_BINDABLE_PROPERTY(
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(
 	    ProxyFloatingWindow,
 	    QSize,
 	    bMaximumSize,
+	    QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX),
 	    &ProxyFloatingWindow::onMaximumSizeChanged
 	);
 };
