@@ -166,7 +166,7 @@ protected slots:
 	void onMaskDestroyed();
 	void onScreenDestroyed();
 	virtual void onPolished();
-	void runLints();
+	void onExposed();
 
 protected:
 	bool mVisible = true;

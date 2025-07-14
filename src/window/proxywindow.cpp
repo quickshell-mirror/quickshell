@@ -85,7 +85,7 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	if (wasVisible && this->isVisibleDirect()) {
 		emit this->backerVisibilityChanged();
-		this->runLints();
+		this->onExposed();
 	}
 }
 
@@ -195,7 +195,7 @@ void ProxyWindowBase::connectWindow() {
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
-	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::runLints);
+	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::onExposed);
 	QObject::connect(this->window, &ProxiedWindow::devicePixelRatioChanged, this, &ProxyWindowBase::devicePixelRatioChanged);
 	// clang-format on
 }
@@ -283,10 +283,11 @@ void ProxyWindowBase::polishItems() {
 	// This hack manually polishes the item tree right before showing the window so it will
 	// always be created with the correct size.
 	QQuickWindowPrivate::get(this->window)->polishItems();
-	this->onPolished();
 }
 
-void ProxyWindowBase::runLints() {
+void ProxyWindowBase::onExposed() {
+	this->onPolished();
+
 	if (!this->ranLints) {
 		qs::debug::lintItemTree(this->mContentItem);
 		this->ranLints = true;
