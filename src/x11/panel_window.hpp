@@ -1,6 +1,8 @@
 #pragma once
 
+#include <qnamespace.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
@@ -8,6 +10,7 @@
 #include <qtmetamacros.h>
 
 #include "../core/doc.hpp"
+#include "../core/util.hpp"
 #include "../window/panelinterface.hpp"
 #include "../window/proxywindow.hpp"
 
@@ -51,23 +54,28 @@ public:
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 
-	[[nodiscard]] Anchors anchors() const;
-	void setAnchors(Anchors anchors);
+	[[nodiscard]] bool aboveWindows() const { return this->bAboveWindows; }
+	void setAboveWindows(bool aboveWindows) { this->bAboveWindows = aboveWindows; }
 
-	[[nodiscard]] qint32 exclusiveZone() const;
-	void setExclusiveZone(qint32 exclusiveZone);
+	[[nodiscard]] Anchors anchors() const { return this->bAnchors; }
+	void setAnchors(Anchors anchors) { this->bAnchors = anchors; }
 
-	[[nodiscard]] ExclusionMode::Enum exclusionMode() const;
-	void setExclusionMode(ExclusionMode::Enum exclusionMode);
+	[[nodiscard]] qint32 exclusiveZone() const { return this->bExclusiveZone; }
+	void setExclusiveZone(qint32 exclusiveZone) {
+		Qt::beginPropertyUpdateGroup();
+		this->bExclusiveZone = exclusiveZone;
+		this->bExclusionMode = ExclusionMode::Normal;
+		Qt::endPropertyUpdateGroup();
+	}
 
-	[[nodiscard]] Margins margins() const;
-	void setMargins(Margins margins);
+	[[nodiscard]] ExclusionMode::Enum exclusionMode() const { return this->bExclusionMode; }
+	void setExclusionMode(ExclusionMode::Enum exclusionMode) { this->bExclusionMode = exclusionMode; }
 
-	[[nodiscard]] bool aboveWindows() const;
-	void setAboveWindows(bool aboveWindows);
+	[[nodiscard]] Margins margins() const { return this->bMargins; }
+	void setMargins(Margins margins) { this->bMargins = margins; }
 
-	[[nodiscard]] bool focusable() const;
-	void setFocusable(bool focusable);
+	[[nodiscard]] bool focusable() const { return this->bFocusable; }
+	void setFocusable(bool focusable) { this->bFocusable = focusable; }
 
 signals:
 	QSDOC_HIDE void anchorsChanged();
@@ -85,23 +93,35 @@ private slots:
 
 private:
 	void connectScreen();
-	void getExclusion(int& side, quint32& exclusiveZone);
 	void updateStrut(bool propagate = true);
+	void updateStrutCb() { this->updateStrut(); }
 	void updateAboveWindows();
 	void updateFocusable();
 	void updateDimensions(bool propagate = true);
+	void updateDimensionsCb() { this->updateDimensions(); }
 
 	QPointer<QScreen> mTrackedScreen = nullptr;
-	bool mAboveWindows = true;
-	bool mFocusable = false;
-	Anchors mAnchors;
-	Margins mMargins;
-	qint32 mExclusiveZone = 0;
-	ExclusionMode::Enum mExclusionMode = ExclusionMode::Auto;
 	EngineGeneration* knownGeneration = nullptr;
 
 	QRect lastScreenVirtualGeometry;
 	XPanelEventFilter eventFilter;
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(XPanelWindow, bool, bAboveWindows, true, &XPanelWindow::aboveWindowsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, bool, bFocusable, &XPanelWindow::focusableChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, Anchors, bAnchors, &XPanelWindow::anchorsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, Margins, bMargins, &XPanelWindow::marginsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, qint32, bExclusiveZone, &XPanelWindow::exclusiveZoneChanged);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(XPanelWindow, ExclusionMode::Enum, bExclusionMode, ExclusionMode::Auto, &XPanelWindow::exclusionModeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, qint32, bcExclusiveZone);
+	Q_OBJECT_BINDABLE_PROPERTY(XPanelWindow, Qt::Edge, bcExclusionEdge);
+
+	QS_BINDING_SUBSCRIBE_METHOD(XPanelWindow, bAboveWindows, updateAboveWindows, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(XPanelWindow, bAnchors, updateDimensionsCb, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(XPanelWindow, bMargins, updateDimensionsCb, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(XPanelWindow, bcExclusiveZone, updateStrutCb, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(XPanelWindow, bFocusable, updateFocusable, onValueChanged);
+	// clang-format on
 
 	friend class XPanelStack;
 };

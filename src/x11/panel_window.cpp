@@ -98,6 +98,26 @@ XPanelWindow::XPanelWindow(QObject* parent): ProxyWindowBase(parent) {
 	    this,
 	    &XPanelWindow::xInit
 	);
+
+	this->bcExclusiveZone.setBinding([this]() -> qint32 {
+		switch (this->bExclusionMode.value()) {
+		case ExclusionMode::Ignore: return 0;
+		case ExclusionMode::Normal: return this->bExclusiveZone;
+		case ExclusionMode::Auto:
+			auto edge = this->bcExclusionEdge.value();
+			auto margins = this->bMargins.value();
+
+			if (edge == Qt::TopEdge || edge == Qt::BottomEdge) {
+				return this->bImplicitHeight + margins.top + margins.bottom;
+			} else if (edge == Qt::LeftEdge || edge == Qt::RightEdge) {
+				return this->bImplicitWidth + margins.left + margins.right;
+			} else {
+				return 0;
+			}
+		}
+	});
+
+	this->bcExclusionEdge.setBinding([this] { return this->bAnchors.value().exclusionEdge(); });
 }
 
 XPanelWindow::~XPanelWindow() { XPanelStack::instance()->removePanel(this); }
@@ -133,7 +153,7 @@ void XPanelWindow::connectWindow() {
 
 void XPanelWindow::trySetWidth(qint32 implicitWidth) {
 	// only update the actual size if not blocked by anchors
-	if (!this->mAnchors.horizontalConstraint()) {
+	if (!this->bAnchors.value().horizontalConstraint()) {
 		this->ProxyWindowBase::trySetWidth(implicitWidth);
 		this->updateDimensions();
 	}
@@ -141,7 +161,7 @@ void XPanelWindow::trySetWidth(qint32 implicitWidth) {
 
 void XPanelWindow::trySetHeight(qint32 implicitHeight) {
 	// only update the actual size if not blocked by anchors
-	if (!this->mAnchors.verticalConstraint()) {
+	if (!this->bAnchors.value().verticalConstraint()) {
 		this->ProxyWindowBase::trySetHeight(implicitHeight);
 		this->updateDimensions();
 	}
@@ -150,61 +170,6 @@ void XPanelWindow::trySetHeight(qint32 implicitHeight) {
 void XPanelWindow::setScreen(QuickshellScreenInfo* screen) {
 	this->ProxyWindowBase::setScreen(screen);
 	this->connectScreen();
-}
-
-Anchors XPanelWindow::anchors() const { return this->mAnchors; }
-
-void XPanelWindow::setAnchors(Anchors anchors) {
-	if (this->mAnchors == anchors) return;
-	this->mAnchors = anchors;
-	this->updateDimensions();
-	emit this->anchorsChanged();
-}
-
-qint32 XPanelWindow::exclusiveZone() const { return this->mExclusiveZone; }
-
-void XPanelWindow::setExclusiveZone(qint32 exclusiveZone) {
-	if (this->mExclusiveZone == exclusiveZone) return;
-	this->mExclusiveZone = exclusiveZone;
-	this->setExclusionMode(ExclusionMode::Normal);
-	this->updateStrut();
-	emit this->exclusiveZoneChanged();
-}
-
-ExclusionMode::Enum XPanelWindow::exclusionMode() const { return this->mExclusionMode; }
-
-void XPanelWindow::setExclusionMode(ExclusionMode::Enum exclusionMode) {
-	if (this->mExclusionMode == exclusionMode) return;
-	this->mExclusionMode = exclusionMode;
-	this->updateStrut();
-	emit this->exclusionModeChanged();
-}
-
-Margins XPanelWindow::margins() const { return this->mMargins; }
-
-void XPanelWindow::setMargins(Margins margins) {
-	if (this->mMargins == margins) return;
-	this->mMargins = margins;
-	this->updateDimensions();
-	emit this->marginsChanged();
-}
-
-bool XPanelWindow::aboveWindows() const { return this->mAboveWindows; }
-
-void XPanelWindow::setAboveWindows(bool aboveWindows) {
-	if (this->mAboveWindows == aboveWindows) return;
-	this->mAboveWindows = aboveWindows;
-	this->updateAboveWindows();
-	emit this->aboveWindowsChanged();
-}
-
-bool XPanelWindow::focusable() const { return this->mFocusable; }
-
-void XPanelWindow::setFocusable(bool focusable) {
-	if (this->mFocusable == focusable) return;
-	this->mFocusable = focusable;
-	this->updateFocusable();
-	emit this->focusableChanged();
 }
 
 void XPanelWindow::xInit() {
@@ -271,44 +236,42 @@ void XPanelWindow::updateDimensions(bool propagate) {
 
 	auto screenGeometry = this->mScreen->geometry();
 
-	if (this->mExclusionMode != ExclusionMode::Ignore) {
+	if (this->bExclusionMode != ExclusionMode::Ignore) {
 		for (auto* panel: XPanelStack::instance()->panels(this)) {
 			// we only care about windows below us
 			if (panel == this) break;
 
 			// we only care about windows in the same layer
-			if (panel->mAboveWindows != this->mAboveWindows) continue;
+			if (panel->bAboveWindows != this->bAboveWindows) continue;
 
 			if (panel->mScreen != this->mScreen) continue;
 
-			int side = -1;
-			quint32 exclusiveZone = 0;
-			panel->getExclusion(side, exclusiveZone);
-
-			if (exclusiveZone == 0) continue;
-
-			auto zone = static_cast<qint32>(exclusiveZone);
+			auto edge = this->bcExclusionEdge.value();
+			auto exclusiveZone = this->bcExclusiveZone.value();
 
 			screenGeometry.adjust(
-			    side == 0 ? zone : 0,
-			    side == 2 ? zone : 0,
-			    side == 1 ? -zone : 0,
-			    side == 3 ? -zone : 0
+			    edge == Qt::LeftEdge ? exclusiveZone : 0,
+			    edge == Qt::TopEdge ? exclusiveZone : 0,
+			    edge == Qt::RightEdge ? -exclusiveZone : 0,
+			    edge == Qt::BottomEdge ? -exclusiveZone : 0
 			);
 		}
 	}
 
 	auto geometry = QRect();
 
-	if (this->mAnchors.horizontalConstraint()) {
-		geometry.setX(screenGeometry.x() + this->mMargins.left);
-		geometry.setWidth(screenGeometry.width() - this->mMargins.left - this->mMargins.right);
+	auto anchors = this->bAnchors.value();
+	auto margins = this->bMargins.value();
+
+	if (anchors.horizontalConstraint()) {
+		geometry.setX(screenGeometry.x() + margins.left);
+		geometry.setWidth(screenGeometry.width() - margins.left - margins.right);
 	} else {
-		if (this->mAnchors.mLeft) {
-			geometry.setX(screenGeometry.x() + this->mMargins.left);
-		} else if (this->mAnchors.mRight) {
+		if (anchors.mLeft) {
+			geometry.setX(screenGeometry.x() + margins.left);
+		} else if (anchors.mRight) {
 			geometry.setX(
-			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth() - this->mMargins.right
+			    screenGeometry.x() + screenGeometry.width() - this->implicitWidth() - margins.right
 			);
 		} else {
 			geometry.setX(screenGeometry.x() + screenGeometry.width() / 2 - this->implicitWidth() / 2);
@@ -317,16 +280,15 @@ void XPanelWindow::updateDimensions(bool propagate) {
 		geometry.setWidth(this->implicitWidth());
 	}
 
-	if (this->mAnchors.verticalConstraint()) {
-		geometry.setY(screenGeometry.y() + this->mMargins.top);
-		geometry.setHeight(screenGeometry.height() - this->mMargins.top - this->mMargins.bottom);
+	if (anchors.verticalConstraint()) {
+		geometry.setY(screenGeometry.y() + margins.top);
+		geometry.setHeight(screenGeometry.height() - margins.top - margins.bottom);
 	} else {
-		if (this->mAnchors.mTop) {
-			geometry.setY(screenGeometry.y() + this->mMargins.top);
-		} else if (this->mAnchors.mBottom) {
+		if (anchors.mTop) {
+			geometry.setY(screenGeometry.y() + margins.top);
+		} else if (anchors.mBottom) {
 			geometry.setY(
-			    screenGeometry.y() + screenGeometry.height() - this->implicitHeight()
-			    - this->mMargins.bottom
+			    screenGeometry.y() + screenGeometry.height() - this->implicitHeight() - margins.bottom
 			);
 		} else {
 			geometry.setY(screenGeometry.y() + screenGeometry.height() / 2 - this->implicitHeight() / 2);
@@ -355,42 +317,6 @@ void XPanelWindow::updatePanelStack() {
 	}
 }
 
-void XPanelWindow::getExclusion(int& side, quint32& exclusiveZone) {
-	if (this->mExclusionMode == ExclusionMode::Ignore) {
-		exclusiveZone = 0;
-		return;
-	}
-
-	auto& anchors = this->mAnchors;
-	if (anchors.mLeft || anchors.mRight || anchors.mTop || anchors.mBottom) {
-		if (!anchors.horizontalConstraint()
-		    && (anchors.verticalConstraint() || (!anchors.mTop && !anchors.mBottom)))
-		{
-			side = anchors.mLeft ? 0 : anchors.mRight ? 1 : -1;
-		} else if (!anchors.verticalConstraint()
-		           && (anchors.horizontalConstraint() || (!anchors.mLeft && !anchors.mRight)))
-		{
-			side = anchors.mTop ? 2 : anchors.mBottom ? 3 : -1;
-		}
-	}
-
-	if (side == -1) return;
-
-	auto autoExclude = this->mExclusionMode == ExclusionMode::Auto;
-
-	if (autoExclude) {
-		if (side == 0 || side == 1) {
-			exclusiveZone =
-			    this->implicitWidth() + (side == 0 ? this->mMargins.left : this->mMargins.right);
-		} else {
-			exclusiveZone =
-			    this->implicitHeight() + (side == 2 ? this->mMargins.top : this->mMargins.bottom);
-		}
-	} else {
-		exclusiveZone = this->mExclusiveZone;
-	}
-}
-
 // Disable xinerama structs to break multi monitor configurations with bad WMs less.
 // Usually this results in one monitor at the top left corner of the root window working
 // perfectly and all others being broken semi randomly.
@@ -400,12 +326,10 @@ void XPanelWindow::updateStrut(bool propagate) {
 	if (this->window == nullptr || this->window->handle() == nullptr) return;
 	auto* conn = x11Connection();
 
-	int side = -1;
-	quint32 exclusiveZone = 0;
+	auto edge = this->bcExclusionEdge.value();
+	auto exclusiveZone = this->bcExclusiveZone.value();
 
-	this->getExclusion(side, exclusiveZone);
-
-	if (side == -1 || this->mExclusionMode == ExclusionMode::Ignore) {
+	if (edge == 0 || this->bExclusionMode == ExclusionMode::Ignore) {
 		xcb_delete_property(conn, this->window->winId(), XAtom::_NET_WM_STRUT.atom());
 		xcb_delete_property(conn, this->window->winId(), XAtom::_NET_WM_STRUT_PARTIAL.atom());
 		return;
@@ -413,16 +337,25 @@ void XPanelWindow::updateStrut(bool propagate) {
 
 	auto rootGeometry = this->window->screen()->virtualGeometry();
 	auto screenGeometry = this->window->screen()->geometry();
-	auto horizontal = side == 0 || side == 1;
+	auto horizontal = edge == Qt::LeftEdge || edge == Qt::RightEdge;
 
 	if (XINERAMA_STRUTS) {
-		switch (side) {
-		case 0: exclusiveZone += screenGeometry.left(); break;
-		case 1: exclusiveZone += rootGeometry.right() - screenGeometry.right(); break;
-		case 2: exclusiveZone += screenGeometry.top(); break;
-		case 3: exclusiveZone += rootGeometry.bottom() - screenGeometry.bottom(); break;
+		switch (edge) {
+		case Qt::LeftEdge: exclusiveZone += screenGeometry.left(); break;
+		case Qt::RightEdge: exclusiveZone += rootGeometry.right() - screenGeometry.right(); break;
+		case Qt::TopEdge: exclusiveZone += screenGeometry.top(); break;
+		case Qt::BottomEdge: exclusiveZone += rootGeometry.bottom() - screenGeometry.bottom(); break;
 		default: break;
 		}
+	}
+
+	quint32 side = -1;
+
+	switch (edge) {
+	case Qt::LeftEdge: side = 0; break;
+	case Qt::RightEdge: side = 1; break;
+	case Qt::TopEdge: side = 2; break;
+	case Qt::BottomEdge: side = 3; break;
 	}
 
 	auto data = std::array<quint32, 12>();
@@ -461,13 +394,14 @@ void XPanelWindow::updateStrut(bool propagate) {
 void XPanelWindow::updateAboveWindows() {
 	if (this->window == nullptr) return;
 
-	this->window->setFlag(Qt::WindowStaysOnBottomHint, !this->mAboveWindows);
-	this->window->setFlag(Qt::WindowStaysOnTopHint, this->mAboveWindows);
+	auto above = this->bAboveWindows.value();
+	this->window->setFlag(Qt::WindowStaysOnBottomHint, !above);
+	this->window->setFlag(Qt::WindowStaysOnTopHint, above);
 }
 
 void XPanelWindow::updateFocusable() {
 	if (this->window == nullptr) return;
-	this->window->setFlag(Qt::WindowDoesNotAcceptFocus, !this->mFocusable);
+	this->window->setFlag(Qt::WindowDoesNotAcceptFocus, !this->bFocusable);
 }
 
 // XPanelInterface
