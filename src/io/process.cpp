@@ -249,6 +249,11 @@ void Process::startDetached() {
 	this->setupEnvironment(&process);
 	process.setProgram(cmd);
 	process.setArguments(args);
+
+	process.setStandardInputFile(QProcess::nullDevice());
+	process.setStandardOutputFile(QProcess::nullDevice());
+	process.setStandardErrorFile(QProcess::nullDevice());
+
 	process.startDetached();
 }
 

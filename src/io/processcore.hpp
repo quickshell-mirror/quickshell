@@ -16,6 +16,7 @@ class ProcessContext {
 	Q_PROPERTY(QHash<QString, QVariant> environment MEMBER environment WRITE setEnvironment);
 	Q_PROPERTY(bool clearEnvironment MEMBER clearEnvironment WRITE setClearEnvironment);
 	Q_PROPERTY(QString workingDirectory MEMBER workingDirectory WRITE setWorkingDirectory);
+	Q_PROPERTY(bool unbindStdout MEMBER unbindStdout WRITE setUnbindStdout);
 	Q_GADGET;
 	QML_STRUCTURED_VALUE;
 	QML_VALUE_TYPE(processContext);
@@ -45,6 +46,8 @@ public:
 		this->workingDirectorySet = true;
 	}
 
+	void setUnbindStdout(bool unbindStdout) { this->unbindStdout = unbindStdout; }
+
 	QList<QString> command;
 	QHash<QString, QVariant> environment;
 	bool clearEnvironment = false;
@@ -54,6 +57,7 @@ public:
 	bool environmentSet : 1 = false;
 	bool clearEnvironmentSet : 1 = false;
 	bool workingDirectorySet : 1 = false;
+	bool unbindStdout : 1 = true;
 };
 
 void setupProcessEnvironment(

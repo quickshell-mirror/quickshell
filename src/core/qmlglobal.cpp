@@ -263,7 +263,6 @@ void QuickshellGlobal::execDetached(const qs::io::process::ProcessContext& conte
 	auto args = context.command.sliced(1);
 
 	QProcess process;
-
 	qs::io::process::setupProcessEnvironment(&process, context.clearEnvironment, context.environment);
 
 	if (!context.workingDirectory.isEmpty()) {
@@ -272,6 +271,14 @@ void QuickshellGlobal::execDetached(const qs::io::process::ProcessContext& conte
 
 	process.setProgram(cmd);
 	process.setArguments(args);
+
+	process.setStandardInputFile(QProcess::nullDevice());
+
+	if (context.unbindStdout) {
+		process.setStandardOutputFile(QProcess::nullDevice());
+		process.setStandardErrorFile(QProcess::nullDevice());
+	}
+
 	process.startDetached();
 }
 
