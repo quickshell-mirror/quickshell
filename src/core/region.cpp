@@ -1,13 +1,13 @@
 #include "region.hpp"
 #include <cmath>
 
-#include <qlist.h>
 #include <qobject.h>
 #include <qpoint.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
 #include <qregion.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qvectornd.h>
 
 PendingRegion::PendingRegion(QObject* parent): QObject(parent) {
@@ -19,7 +19,6 @@ PendingRegion::PendingRegion(QObject* parent): QObject(parent) {
 	QObject::connect(this, &PendingRegion::widthChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::heightChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::childrenChanged, this, &PendingRegion::changed);
-	QObject::connect(this, &PendingRegion::regionsChanged, this, &PendingRegion::childrenChanged);
 }
 
 void PendingRegion::setItem(QQuickItem* item) {
@@ -42,33 +41,21 @@ void PendingRegion::setItem(QQuickItem* item) {
 	emit this->itemChanged();
 }
 
-void PendingRegion::onItemDestroyed() {
-	this->mItem = nullptr;
-	emit this->itemChanged();
-}
+void PendingRegion::onItemDestroyed() { this->mItem = nullptr; }
 
-void PendingRegion::onChildDestroyed() {
-	this->mRegions.removeAll(this->sender());
-	emit this->regionsChanged();
-}
+void PendingRegion::onChildDestroyed() { this->mRegions.removeAll(this->sender()); }
 
-const QList<PendingRegion*>& PendingRegion::regions() const { return this->mRegions; }
-
-void PendingRegion::setRegions(const QList<PendingRegion*>& regions) {
-	if (regions == this->mRegions) return;
-
-	for (auto* region: this->mRegions) {
-		QObject::disconnect(region, nullptr, this, nullptr);
-	}
-
-	this->mRegions = regions;
-
-	for (auto* region: regions) {
-		QObject::connect(region, &QObject::destroyed, this, &PendingRegion::onChildDestroyed);
-		QObject::connect(region, &PendingRegion::changed, this, &PendingRegion::childrenChanged);
-	}
-
-	emit this->regionsChanged();
+QQmlListProperty<PendingRegion> PendingRegion::regions() {
+	return QQmlListProperty<PendingRegion>(
+	    this,
+	    nullptr,
+	    &PendingRegion::regionsAppend,
+	    &PendingRegion::regionsCount,
+	    &PendingRegion::regionAt,
+	    &PendingRegion::regionsClear,
+	    &PendingRegion::regionsReplace,
+	    &PendingRegion::regionsRemoveLast
+	);
 }
 
 bool PendingRegion::empty() const {
@@ -129,4 +116,59 @@ QRegion PendingRegion::applyTo(const QRect& rect) const {
 		auto baseRegion = QRegion(rect);
 		return this->applyTo(baseRegion);
 	}
+}
+
+void PendingRegion::regionsAppend(QQmlListProperty<PendingRegion>* prop, PendingRegion* region) {
+	auto* self = static_cast<PendingRegion*>(prop->object); // NOLINT
+	if (!region) return;
+
+	QObject::connect(region, &QObject::destroyed, self, &PendingRegion::onChildDestroyed);
+	QObject::connect(region, &PendingRegion::changed, self, &PendingRegion::childrenChanged);
+
+	self->mRegions.append(region);
+
+	emit self->childrenChanged();
+}
+
+PendingRegion* PendingRegion::regionAt(QQmlListProperty<PendingRegion>* prop, qsizetype i) {
+	return static_cast<PendingRegion*>(prop->object)->mRegions.at(i); // NOLINT
+}
+
+void PendingRegion::regionsClear(QQmlListProperty<PendingRegion>* prop) {
+	auto* self = static_cast<PendingRegion*>(prop->object); // NOLINT
+
+	for (auto* region: self->mRegions) {
+		QObject::disconnect(region, nullptr, self, nullptr);
+	}
+
+	self->mRegions.clear(); // NOLINT
+	emit self->childrenChanged();
+}
+
+qsizetype PendingRegion::regionsCount(QQmlListProperty<PendingRegion>* prop) {
+	return static_cast<PendingRegion*>(prop->object)->mRegions.length(); // NOLINT
+}
+
+void PendingRegion::regionsRemoveLast(QQmlListProperty<PendingRegion>* prop) {
+	auto* self = static_cast<PendingRegion*>(prop->object); // NOLINT
+
+	auto* last = self->mRegions.last();
+	if (last != nullptr) QObject::disconnect(last, nullptr, self, nullptr);
+
+	self->mRegions.removeLast();
+	emit self->childrenChanged();
+}
+
+void PendingRegion::regionsReplace(
+    QQmlListProperty<PendingRegion>* prop,
+    qsizetype i,
+    PendingRegion* region
+) {
+	auto* self = static_cast<PendingRegion*>(prop->object); // NOLINT
+
+	auto* old = self->mRegions.at(i);
+	if (old != nullptr) QObject::disconnect(old, nullptr, self, nullptr);
+
+	self->mRegions.replace(i, region);
+	emit self->childrenChanged();
 }
