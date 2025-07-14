@@ -305,6 +305,38 @@ void DesktopEntryManager::scanDesktopEntries() {
 	}
 }
 
+void DesktopEntryManager::rescan() {
+	// Store old entries for cleanup
+	auto oldEntries = this->desktopEntries;
+
+	// Clear the maps
+	this->desktopEntries.clear();
+	this->lowercaseDesktopEntries.clear();
+
+	// Scan for new entries
+	this->scanDesktopEntries();
+
+	// Collect applications for diff update
+	QVector<DesktopEntry*> newApplications;
+	for (auto& entry: this->desktopEntries.values()) {
+		if (!entry->noDisplay()) {
+			newApplications.append(entry);
+		}
+	}
+
+	// Update the model using diff
+	this->mApplications.diffUpdate(newApplications);
+
+	// Clean up old entries
+	for (auto* e: oldEntries) {
+		if (!this->desktopEntries.contains(e->mId)) {
+			e->deleteLater();
+		}
+	}
+
+	emit applicationsChanged();
+}
+
 void DesktopEntryManager::populateApplications() {
 	for (auto& entry: this->desktopEntries.values()) {
 		if (!entry->noDisplay()) this->mApplications.insertObject(entry);
@@ -386,7 +418,15 @@ DesktopEntry* DesktopEntryManager::byId(const QString& id) {
 
 ObjectModel<DesktopEntry>* DesktopEntryManager::applications() { return &this->mApplications; }
 
-DesktopEntries::DesktopEntries() { DesktopEntryManager::instance(); }
+DesktopEntries::DesktopEntries() {
+	auto* mgr = DesktopEntryManager::instance();
+	QObject::connect(
+	    mgr,
+	    &DesktopEntryManager::applicationsChanged,
+	    this,
+	    &DesktopEntries::applicationsChanged
+	);
+}
 
 DesktopEntry* DesktopEntries::byId(const QString& id) {
 	return DesktopEntryManager::instance()->byId(id);
@@ -395,3 +435,5 @@ DesktopEntry* DesktopEntries::byId(const QString& id) {
 ObjectModel<DesktopEntry>* DesktopEntries::applications() {
 	return DesktopEntryManager::instance()->applications();
 }
+
+void DesktopEntries::rescan() { DesktopEntryManager::instance()->rescan(); }

@@ -149,12 +149,16 @@ class DesktopEntryManager: public QObject {
 
 public:
 	void scanDesktopEntries();
+	void rescan();
 
 	[[nodiscard]] DesktopEntry* byId(const QString& id);
 
 	[[nodiscard]] ObjectModel<DesktopEntry>* applications();
 
 	static DesktopEntryManager* instance();
+
+signals:
+	void applicationsChanged();
 
 private:
 	explicit DesktopEntryManager();
@@ -189,4 +193,9 @@ public:
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* byId(const QString& id);
 
 	[[nodiscard]] static ObjectModel<DesktopEntry>* applications();
+
+	Q_INVOKABLE static void rescan();
+
+signals:
+	void applicationsChanged();
 };
