@@ -38,6 +38,7 @@ void NMDeviceAdapter::init(const QString& path) {
 	this->deviceProperties.updateAllViaGetAll();
 }
 
+void NMDeviceAdapter::disconnect() { this->proxy->Disconnect(); }
 bool NMDeviceAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
 QString NMDeviceAdapter::address() const {
 	return this->proxy ? this->proxy->service() : QString();

@@ -23,39 +23,56 @@ class DeviceState: public QObject {
 
 public:
 	enum Enum : quint8 {
+		/// The device state is unknown.
 		Unknown = 0,
-		Disconnected = 10,
-		Connecting = 20,
-		Connected = 30,
-		Disconnecting = 40,
+		/// The device is not connected.
+		Disconnected = 1,
+		/// The device is connected.
+		Connected = 2,
+		/// The device is disconnecting.
+		Disconnecting = 3,
+		/// The device is connecting.
+		Connecting = 4,
 	};
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(DeviceState::Enum state);
 };
 
+///! A tracked network device.
 class Device: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_UNCREATABLE("Devices can only be acquired through Network");
 
 	// clang-format off
+	/// The name of the device's interface.
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
+	/// The hardware address of the device's interface in the XX:XX:XX:XX:XX:XX format.
 	Q_PROPERTY(QString address READ default NOTIFY addressChanged BINDABLE bindableAddress);
+	/// Connection state of the device.
 	Q_PROPERTY(DeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	// clang-format on
 
 signals:
+	void signalDisconnect();
+
+	// Frontend-facing signals
 	void nameChanged();
 	void addressChanged();
 	void stateChanged();
 
 public slots:
+	// Slots for the backend to connect signals to
 	void setName(const QString& name);
 	void setAddress(const QString& address);
 	void setState(DeviceState::Enum state);
 
 public:
 	explicit Device(QObject* parent = nullptr);
+
+	/// Disconnects the device and prevents it from automatically activating further connections.
+	Q_INVOKABLE void disconnect();
+
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; };
 	[[nodiscard]] QBindable<QString> bindableAddress() const { return &this->bAddress; };
 	[[nodiscard]] QBindable<DeviceState::Enum> bindableState() const { return &this->bState; };

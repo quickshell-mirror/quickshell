@@ -32,6 +32,10 @@ FloatingWindow {
 					}
 					Label { text: "Hardware Address: " + modelData.address }
 					Label { text: "State: " + DeviceState.toString(modelData.state) }
+					Button {
+						text: "Disconnect"
+						onClicked: modelData.disconnect()
+					}
 				}
 			}
 		}

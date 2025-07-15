@@ -13,6 +13,7 @@
 namespace qs::network {
 
 namespace {
+Q_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
 Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 }
 
@@ -46,6 +47,22 @@ void Device::setState(DeviceState::Enum state) {
 	if (state != this->bState) {
 		this->bState = state;
 	}
+}
+
+void Device::disconnect() {
+	if (this->bState == DeviceState::Disconnected) {
+		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnected";
+		return;
+	}
+
+	if (this->bState == DeviceState::Disconnecting) {
+		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnecting";
+		return;
+	}
+
+	qCDebug(logNetworkDevice) << "Disconnecting from device" << this;
+	
+	signalDisconnect();
 }
 
 void WirelessDevice::setLastScan(qint64 lastScan) {

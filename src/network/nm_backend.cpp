@@ -131,7 +131,7 @@ void NetworkManager::registerDevice(
 ) {
 	Device* device = createDeviceVariant(type, path);
 
-	// Bind backend NMDeviceAdapter to frontend Device
+	// deviceAdapter signal -> Device slot
 	deviceAdapter->setParent(device);
 	QObject::connect(deviceAdapter, &NMDeviceAdapter::hwAddressChanged, device, &Device::setAddress);
 	QObject::connect(deviceAdapter, &NMDeviceAdapter::interfaceChanged, device, &Device::setName);
@@ -142,6 +142,10 @@ void NetworkManager::registerDevice(
 	    [device](NMDeviceState::Enum state) { device->setState(NMDeviceState::translate(state)); }
 	);
 
+	// Device signal -> deviceAdapter slot
+	QObject::connect(device, &Device::signalDisconnect, deviceAdapter, &NMDeviceAdapter::disconnect);
+
+	// Track device
 	this->mDeviceHash.insert(path, device);
 	this->mDevices.insertObject(device);
 

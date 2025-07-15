@@ -120,6 +120,9 @@ public:
 	[[nodiscard]] QString getHwAddress() { return this->bHwAddress; };
 	[[nodiscard]] NMDeviceType::Enum getType() { return this->bType; };
 
+public slots:
+	void disconnect();
+
 signals:
 	void interfaceChanged(const QString& interface);
 	void hwAddressChanged(const QString& hwAddress);
