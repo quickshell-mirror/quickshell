@@ -141,6 +141,7 @@ public:
 	[[nodiscard]] QQmlListProperty<QObject> data();
 
 signals:
+	void closed();
 	void windowConnected();
 	void windowDestroyed();
 	void visibleChanged();
@@ -160,6 +161,7 @@ signals:
 	void polished();
 
 protected slots:
+	void onVisibleChanged();
 	virtual void onWidthChanged();
 	virtual void onHeightChanged();
 	void onMaskChanged();

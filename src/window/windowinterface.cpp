@@ -133,6 +133,7 @@ QQmlListProperty<QObject> WindowInterface::data() const { return this->proxyWind
 void WindowInterface::connectSignals() const {
 	auto* window = this->proxyWindow();
 	// clang-format off
+	QObject::connect(window, &ProxyWindowBase::closed, this, &WindowInterface::closed);
 	QObject::connect(window, &ProxyWindowBase::windowConnected, this, &WindowInterface::windowConnected);
 	QObject::connect(window, &ProxyWindowBase::visibleChanged, this, &WindowInterface::visibleChanged);
 	QObject::connect(window, &ProxyWindowBase::backerVisibilityChanged, this, &WindowInterface::backingWindowVisibleChanged);

@@ -188,7 +188,7 @@ void ProxyWindowBase::connectWindow() {
 	this->window->setProxy(this);
 
 	// clang-format off
-	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::visibleChanged);
+	QObject::connect(this->window, &QWindow::visibilityChanged, this, &ProxyWindowBase::onVisibleChanged);
 	QObject::connect(this->window, &QWindow::xChanged, this, &ProxyWindowBase::xChanged);
 	QObject::connect(this->window, &QWindow::yChanged, this, &ProxyWindowBase::yChanged);
 	QObject::connect(this->window, &QWindow::widthChanged, this, &ProxyWindowBase::widthChanged);
@@ -224,6 +224,16 @@ void ProxyWindowBase::completeWindow() {
 
 	// without this the dangling screen pointer wont be updated to a real screen
 	emit this->screenChanged();
+}
+
+void ProxyWindowBase::onVisibleChanged() {
+	if (this->mVisible && !this->window->isVisible()) {
+		this->mVisible = false;
+		this->setVisibleDirect(false);
+		emit this->closed();
+	}
+
+	emit this->visibleChanged();
 }
 
 bool ProxyWindowBase::deleteOnInvisible() const { return false; }

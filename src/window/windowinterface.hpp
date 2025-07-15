@@ -236,6 +236,9 @@ public:
 	static QsWindowAttached* qmlAttachedProperties(QObject* object);
 
 signals:
+	/// This signal is emitted when the window is closed by the user, the display server,
+	/// or an error. It is not emitted when @@visible is set to false.
+	void closed();
 	void windowConnected();
 	void visibleChanged();
 	void backingWindowVisibleChanged();
