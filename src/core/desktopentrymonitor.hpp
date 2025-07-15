@@ -1,10 +1,8 @@
 #pragma once
 
-#include <qdatetime.h>
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qobject.h>
-#include <qset.h>
 #include <qstringlist.h>
 #include <qtimer.h>
 
@@ -22,7 +20,6 @@ signals:
 
 private slots:
 	void onDirectoryChanged(const QString& path);
-	void onFileChanged(const QString& path);
 	void processChanges();
 
 private:
@@ -34,8 +31,6 @@ private:
 
 	QFileSystemWatcher* watcher;
 	QStringList desktopPaths;
-	QHash<QString, QDateTime> fileTimestamps;
-	QSet<QString> watchedFiles;
 	QTimer* debounceTimer;
 	QHash<QString, ChangeEvent> pendingChanges;
 };
