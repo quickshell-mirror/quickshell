@@ -384,67 +384,33 @@ DesktopEntry* DesktopEntryManager::byId(const QString& id) {
 ObjectModel<DesktopEntry>* DesktopEntryManager::applications() { return &this->mApplications; }
 
 void DesktopEntryManager::handleFileChanges(
-    const QHash<QString, DesktopEntryMonitor::ChangeEvent>& changes
+    const QHash<QString, DesktopEntryMonitor::ChangeEvent>&
 ) {
+	qCDebug(logDesktopEntry) << "Directory change detected, performing full rescan";
 
-	qCDebug(logDesktopEntry) << "Handling file changes:" << changes.size() << "changes";
+	auto oldEntries = this->desktopEntries;
 
-	bool needsUpdate = false;
+	this->desktopEntries.clear();
+	this->lowercaseDesktopEntries.clear();
 
-	for (auto it = changes.begin(); it != changes.end(); ++it) {
-		const QString& path = it.key();
-		DesktopEntryMonitor::ChangeEvent event = it.value();
+	this->scanDesktopEntries();
 
-		switch (event) {
-		case DesktopEntryMonitor::ChangeEvent::Added:
-		case DesktopEntryMonitor::ChangeEvent::Modified: {
-			// Parse the desktop file
-			QFile file(path);
-			if (file.open(QFile::ReadOnly)) {
-				QString id = this->extractIdFromPath(path);
-				auto* entry = new DesktopEntry(id, this);
-				entry->parseEntry(QString::fromUtf8(file.readAll()));
-
-				if (entry->isValid()) {
-					// Remove old entry if exists
-					if (this->desktopEntries.contains(id)) {
-						auto* oldEntry = this->desktopEntries.value(id);
-						this->desktopEntries.remove(id);
-						this->lowercaseDesktopEntries.remove(id.toLower());
-						oldEntry->deleteLater();
-					}
-
-					this->desktopEntries.insert(id, entry);
-					this->lowercaseDesktopEntries.insert(id.toLower(), entry);
-					needsUpdate = true;
-
-					qCDebug(logDesktopEntry) << "Updated desktop entry:" << id;
-				} else {
-					delete entry;
-				}
-			}
-			break;
-		}
-
-		case DesktopEntryMonitor::ChangeEvent::Removed: {
-			QString id = this->extractIdFromPath(path);
-			if (this->desktopEntries.contains(id)) {
-				auto* entry = this->desktopEntries.take(id);
-				this->lowercaseDesktopEntries.remove(id.toLower());
-				entry->deleteLater();
-				needsUpdate = true;
-
-				qCDebug(logDesktopEntry) << "Removed desktop entry:" << id;
-			}
-			break;
-		}
+	QVector<DesktopEntry*> newApplications;
+	for (auto& entry: this->desktopEntries.values()) {
+		if (!entry->noDisplay()) {
+			newApplications.append(entry);
 		}
 	}
 
-	if (needsUpdate) {
-		this->updateApplicationModel();
-		emit applicationsChanged();
+	this->mApplications.diffUpdate(newApplications);
+
+	for (auto* e: oldEntries) {
+		if (!this->desktopEntries.contains(e->mId)) {
+			e->deleteLater();
+		}
 	}
+
+	emit applicationsChanged();
 }
 
 QString DesktopEntryManager::extractIdFromPath(const QString& path) {
