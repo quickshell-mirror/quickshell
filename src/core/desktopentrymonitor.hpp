@@ -25,7 +25,6 @@ private slots:
 private:
 	void initializeDesktopPaths();
 	void startMonitoring();
-	void addDirectoryHierarchy(const QString& dirPath);
 	void scanAndWatch(const QString& dirPath);
 	void queueChange(ChangeEvent event, const QString& path);
 
