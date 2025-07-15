@@ -5,7 +5,6 @@
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qquickitem.h>
-#include <qquickwindow.h>
 #include <qtypes.h>
 
 #include "../../core/qmlscreen.hpp"
@@ -173,23 +172,9 @@ WlrLayershell* WlrLayershell::qmlAttachedProperties(QObject* object) {
 WaylandPanelInterface::WaylandPanelInterface(QObject* parent)
     : PanelWindowInterface(parent)
     , layer(new WlrLayershell(this)) {
+	this->connectSignals();
 
 	// clang-format off
-	QObject::connect(this->layer, &ProxyWindowBase::windowConnected, this, &WaylandPanelInterface::windowConnected);
-	QObject::connect(this->layer, &ProxyWindowBase::visibleChanged, this, &WaylandPanelInterface::visibleChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::backerVisibilityChanged, this, &WaylandPanelInterface::backingWindowVisibleChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::implicitHeightChanged, this, &WaylandPanelInterface::implicitHeightChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::implicitWidthChanged, this, &WaylandPanelInterface::implicitWidthChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::heightChanged, this, &WaylandPanelInterface::heightChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::widthChanged, this, &WaylandPanelInterface::widthChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::devicePixelRatioChanged, this, &WaylandPanelInterface::devicePixelRatioChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::screenChanged, this, &WaylandPanelInterface::screenChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::windowTransformChanged, this, &WaylandPanelInterface::windowTransformChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::colorChanged, this, &WaylandPanelInterface::colorChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::maskChanged, this, &WaylandPanelInterface::maskChanged);
-	QObject::connect(this->layer, &ProxyWindowBase::surfaceFormatChanged, this, &WaylandPanelInterface::surfaceFormatChanged);
-
-	// panel specific
 	QObject::connect(this->layer, &WlrLayershell::anchorsChanged, this, &WaylandPanelInterface::anchorsChanged);
 	QObject::connect(this->layer, &WlrLayershell::marginsChanged, this, &WaylandPanelInterface::marginsChanged);
 	QObject::connect(this->layer, &WlrLayershell::exclusiveZoneChanged, this, &WaylandPanelInterface::exclusiveZoneChanged);
@@ -206,32 +191,13 @@ void WaylandPanelInterface::onReload(QObject* oldInstance) {
 	this->layer->reload(old != nullptr ? old->layer : nullptr);
 }
 
-QQmlListProperty<QObject> WaylandPanelInterface::data() { return this->layer->data(); }
 ProxyWindowBase* WaylandPanelInterface::proxyWindow() const { return this->layer; }
-QQuickItem* WaylandPanelInterface::contentItem() const { return this->layer->contentItem(); }
-
-bool WaylandPanelInterface::isBackingWindowVisible() const {
-	return this->layer->isVisibleDirect();
-}
-
-qreal WaylandPanelInterface::devicePixelRatio() const { return this->layer->devicePixelRatio(); }
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \
 	type WaylandPanelInterface::get() const { return this->layer->get(); }                           \
 	void WaylandPanelInterface::set(type value) { this->layer->set(value); }
 
-proxyPair(bool, isVisible, setVisible);
-proxyPair(qint32, implicitWidth, setImplicitWidth);
-proxyPair(qint32, implicitHeight, setImplicitHeight);
-proxyPair(qint32, width, setWidth);
-proxyPair(qint32, height, setHeight);
-proxyPair(QuickshellScreenInfo*, screen, setScreen);
-proxyPair(QColor, color, setColor);
-proxyPair(PendingRegion*, mask, setMask);
-proxyPair(QsSurfaceFormat, surfaceFormat, setSurfaceFormat);
-
-// panel specific
 proxyPair(Anchors, anchors, setAnchors);
 proxyPair(Margins, margins, setMargins);
 proxyPair(qint32, exclusiveZone, setExclusiveZone);

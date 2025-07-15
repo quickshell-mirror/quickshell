@@ -197,41 +197,41 @@ public:
 	// clang-format on
 
 	[[nodiscard]] virtual ProxyWindowBase* proxyWindow() const = 0;
-	[[nodiscard]] virtual QQuickItem* contentItem() const = 0;
+	[[nodiscard]] QQuickItem* contentItem() const;
 
-	[[nodiscard]] virtual bool isVisible() const = 0;
-	[[nodiscard]] virtual bool isBackingWindowVisible() const = 0;
-	virtual void setVisible(bool visible) = 0;
+	[[nodiscard]] bool isVisible() const;
+	[[nodiscard]] bool isBackingWindowVisible() const;
+	void setVisible(bool visible) const;
 
-	[[nodiscard]] virtual qint32 implicitWidth() const = 0;
-	virtual void setImplicitWidth(qint32 implicitWidth) = 0;
+	[[nodiscard]] qint32 implicitWidth() const;
+	void setImplicitWidth(qint32 implicitWidth) const;
 
-	[[nodiscard]] virtual qint32 implicitHeight() const = 0;
-	virtual void setImplicitHeight(qint32 implicitHeight) = 0;
+	[[nodiscard]] qint32 implicitHeight() const;
+	void setImplicitHeight(qint32 implicitHeight) const;
 
-	[[nodiscard]] virtual qint32 width() const = 0;
-	virtual void setWidth(qint32 width) = 0;
+	[[nodiscard]] qint32 width() const;
+	void setWidth(qint32 width) const;
 
-	[[nodiscard]] virtual qint32 height() const = 0;
-	virtual void setHeight(qint32 height) = 0;
+	[[nodiscard]] qint32 height() const;
+	void setHeight(qint32 height) const;
 
-	[[nodiscard]] virtual qreal devicePixelRatio() const = 0;
+	[[nodiscard]] qreal devicePixelRatio() const;
 
-	[[nodiscard]] virtual QuickshellScreenInfo* screen() const = 0;
-	virtual void setScreen(QuickshellScreenInfo* screen) = 0;
+	[[nodiscard]] QuickshellScreenInfo* screen() const;
+	void setScreen(QuickshellScreenInfo* screen) const;
 
 	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
 
-	[[nodiscard]] virtual QColor color() const = 0;
-	virtual void setColor(QColor color) = 0;
+	[[nodiscard]] QColor color() const;
+	void setColor(QColor color) const;
 
-	[[nodiscard]] virtual PendingRegion* mask() const = 0;
-	virtual void setMask(PendingRegion* mask) = 0;
+	[[nodiscard]] PendingRegion* mask() const;
+	void setMask(PendingRegion* mask) const;
 
-	[[nodiscard]] virtual QsSurfaceFormat surfaceFormat() const = 0;
-	virtual void setSurfaceFormat(QsSurfaceFormat format) = 0;
+	[[nodiscard]] QsSurfaceFormat surfaceFormat() const;
+	void setSurfaceFormat(QsSurfaceFormat format) const;
 
-	[[nodiscard]] virtual QQmlListProperty<QObject> data() = 0;
+	[[nodiscard]] QQmlListProperty<QObject> data() const;
 
 	static QsWindowAttached* qmlAttachedProperties(QObject* object);
 
@@ -249,6 +249,9 @@ signals:
 	void colorChanged();
 	void maskChanged();
 	void surfaceFormatChanged();
+
+protected:
+	void connectSignals() const;
 };
 
 class QsWindowAttached: public QObject {

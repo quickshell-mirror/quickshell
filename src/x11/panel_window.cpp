@@ -414,23 +414,9 @@ void XPanelWindow::updateFocusable() {
 XPanelInterface::XPanelInterface(QObject* parent)
     : PanelWindowInterface(parent)
     , panel(new XPanelWindow(this)) {
+	this->connectSignals();
 
 	// clang-format off
-	QObject::connect(this->panel, &ProxyWindowBase::windowConnected, this, &XPanelInterface::windowConnected);
-	QObject::connect(this->panel, &ProxyWindowBase::visibleChanged, this, &XPanelInterface::visibleChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::backerVisibilityChanged, this, &XPanelInterface::backingWindowVisibleChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::implicitHeightChanged, this, &XPanelInterface::implicitHeightChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::implicitWidthChanged, this, &XPanelInterface::implicitWidthChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::heightChanged, this, &XPanelInterface::heightChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::widthChanged, this, &XPanelInterface::widthChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::devicePixelRatioChanged, this, &XPanelInterface::devicePixelRatioChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::screenChanged, this, &XPanelInterface::screenChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::windowTransformChanged, this, &XPanelInterface::windowTransformChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::colorChanged, this, &XPanelInterface::colorChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::maskChanged, this, &XPanelInterface::maskChanged);
-	QObject::connect(this->panel, &ProxyWindowBase::surfaceFormatChanged, this, &XPanelInterface::surfaceFormatChanged);
-
-	// panel specific
 	QObject::connect(this->panel, &XPanelWindow::anchorsChanged, this, &XPanelInterface::anchorsChanged);
 	QObject::connect(this->panel, &XPanelWindow::marginsChanged, this, &XPanelInterface::marginsChanged);
 	QObject::connect(this->panel, &XPanelWindow::exclusiveZoneChanged, this, &XPanelInterface::exclusiveZoneChanged);
@@ -447,28 +433,13 @@ void XPanelInterface::onReload(QObject* oldInstance) {
 	this->panel->reload(old != nullptr ? old->panel : nullptr);
 }
 
-QQmlListProperty<QObject> XPanelInterface::data() { return this->panel->data(); }
 ProxyWindowBase* XPanelInterface::proxyWindow() const { return this->panel; }
-QQuickItem* XPanelInterface::contentItem() const { return this->panel->contentItem(); }
-bool XPanelInterface::isBackingWindowVisible() const { return this->panel->isVisibleDirect(); }
-qreal XPanelInterface::devicePixelRatio() const { return this->panel->devicePixelRatio(); }
 
 // NOLINTBEGIN
 #define proxyPair(type, get, set)                                                                  \
 	type XPanelInterface::get() const { return this->panel->get(); }                                 \
 	void XPanelInterface::set(type value) { this->panel->set(value); }
 
-proxyPair(bool, isVisible, setVisible);
-proxyPair(qint32, implicitWidth, setImplicitWidth);
-proxyPair(qint32, implicitHeight, setImplicitHeight);
-proxyPair(qint32, width, setWidth);
-proxyPair(qint32, height, setHeight);
-proxyPair(QuickshellScreenInfo*, screen, setScreen);
-proxyPair(QColor, color, setColor);
-proxyPair(PendingRegion*, mask, setMask);
-proxyPair(QsSurfaceFormat, surfaceFormat, setSurfaceFormat);
-
-// panel specific
 proxyPair(Anchors, anchors, setAnchors);
 proxyPair(Margins, margins, setMargins);
 proxyPair(qint32, exclusiveZone, setExclusiveZone);

@@ -77,41 +77,6 @@ public:
 	void onReload(QObject* oldInstance) override;
 
 	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
-	[[nodiscard]] QQuickItem* contentItem() const override;
-
-	// NOLINTBEGIN
-	[[nodiscard]] bool isVisible() const override;
-	[[nodiscard]] bool isBackingWindowVisible() const override;
-	void setVisible(bool visible) override;
-
-	[[nodiscard]] qint32 implicitWidth() const override;
-	void setImplicitWidth(qint32 implicitWidth) override;
-
-	[[nodiscard]] qint32 implicitHeight() const override;
-	void setImplicitHeight(qint32 implicitHeight) override;
-
-	[[nodiscard]] qint32 width() const override;
-	void setWidth(qint32 width) override;
-
-	[[nodiscard]] qint32 height() const override;
-	void setHeight(qint32 height) override;
-
-	[[nodiscard]] virtual qreal devicePixelRatio() const override;
-
-	[[nodiscard]] QuickshellScreenInfo* screen() const override;
-	void setScreen(QuickshellScreenInfo* screen) override;
-
-	[[nodiscard]] QColor color() const override;
-	void setColor(QColor color) override;
-
-	[[nodiscard]] PendingRegion* mask() const override;
-	void setMask(PendingRegion* mask) override;
-
-	[[nodiscard]] QsSurfaceFormat surfaceFormat() const override;
-	void setSurfaceFormat(QsSurfaceFormat mask) override;
-
-	[[nodiscard]] QQmlListProperty<QObject> data() override;
-	// NOLINTEND
 
 	QBindable<QSize> bindableMinimumSize() { return &this->window->bMinimumSize; }
 	QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
