@@ -4,6 +4,7 @@
 #include <qfilesystemwatcher.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qset.h>
 #include <qstringlist.h>
 #include <qtimer.h>
 
@@ -27,12 +28,14 @@ private slots:
 private:
 	void initializeDesktopPaths();
 	void startMonitoring();
-	void addDirectoryRecursive(const QString& dirPath);
+	void addDirectoryHierarchy(const QString& dirPath);
+	void scanAndWatch(const QString& dirPath);
 	void queueChange(ChangeEvent event, const QString& path);
 
 	QFileSystemWatcher* watcher;
 	QStringList desktopPaths;
 	QHash<QString, QDateTime> fileTimestamps;
+	QSet<QString> watchedFiles;
 	QTimer* debounceTimer;
 	QHash<QString, ChangeEvent> pendingChanges;
 };
