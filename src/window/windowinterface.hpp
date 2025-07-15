@@ -239,6 +239,12 @@ signals:
 	/// This signal is emitted when the window is closed by the user, the display server,
 	/// or an error. It is not emitted when @@visible is set to false.
 	void closed();
+	/// This signal is emitted when resources a window depends on to display are lost,
+	/// or could not be acquired during window creation. The most common trigger for
+	/// this signal is a lack of VRAM when creating or resizing a window.
+	///
+	/// Following this signal, @@closed(s) will be sent.
+	void resourcesLost();
 	void windowConnected();
 	void visibleChanged();
 	void backingWindowVisibleChanged();

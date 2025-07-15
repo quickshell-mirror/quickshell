@@ -142,6 +142,7 @@ public:
 
 signals:
 	void closed();
+	void resourcesLost();
 	void windowConnected();
 	void windowDestroyed();
 	void visibleChanged();
@@ -161,13 +162,16 @@ signals:
 	void polished();
 
 protected slots:
-	void onVisibleChanged();
 	virtual void onWidthChanged();
 	virtual void onHeightChanged();
+	virtual void onPolished();
+
+private slots:
+	void onSceneGraphError(QQuickWindow::SceneGraphError error, const QString& message);
+	void onVisibleChanged();
 	void onMaskChanged();
 	void onMaskDestroyed();
 	void onScreenDestroyed();
-	virtual void onPolished();
 	void onExposed();
 
 protected:

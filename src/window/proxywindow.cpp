@@ -1,6 +1,7 @@
 #include "proxywindow.hpp"
 
 #include <private/qquickwindow_p.h>
+#include <qcontainerfwd.h>
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qguiapplication.h>
@@ -112,6 +113,8 @@ void ProxyWindowBase::ensureQWindow() {
 		auto opaque = this->qsSurfaceFormat.opaqueModified ? this->qsSurfaceFormat.opaque
 		                                                   : this->mColor.alpha() >= 255;
 
+		format.setOption(QSurfaceFormat::ResetNotification);
+
 		if (opaque) format.setAlphaBufferSize(0);
 		else format.setAlphaBufferSize(8);
 
@@ -195,6 +198,7 @@ void ProxyWindowBase::connectWindow() {
 	QObject::connect(this->window, &QWindow::heightChanged, this, &ProxyWindowBase::heightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &ProxyWindowBase::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &ProxyWindowBase::colorChanged);
+	QObject::connect(this->window, &QQuickWindow::sceneGraphError, this, &ProxyWindowBase::onSceneGraphError);
 	QObject::connect(this->window, &ProxiedWindow::exposed, this, &ProxyWindowBase::onExposed);
 	QObject::connect(this->window, &ProxiedWindow::devicePixelRatioChanged, this, &ProxyWindowBase::devicePixelRatioChanged);
 	// clang-format on
@@ -224,6 +228,22 @@ void ProxyWindowBase::completeWindow() {
 
 	// without this the dangling screen pointer wont be updated to a real screen
 	emit this->screenChanged();
+}
+
+void ProxyWindowBase::onSceneGraphError(
+    QQuickWindow::SceneGraphError error,
+    const QString& message
+) {
+	if (error == QQuickWindow::ContextNotAvailable) {
+		qCritical().nospace() << "Failed to create graphics context for " << this << ": " << message;
+	} else {
+		qCritical().nospace() << "Scene graph error " << error << " occurred for " << this << ": "
+		                      << message;
+	}
+
+	emit this->resourcesLost();
+	this->mVisible = false;
+	this->setVisibleDirect(false);
 }
 
 void ProxyWindowBase::onVisibleChanged() {

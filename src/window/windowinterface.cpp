@@ -134,6 +134,7 @@ void WindowInterface::connectSignals() const {
 	auto* window = this->proxyWindow();
 	// clang-format off
 	QObject::connect(window, &ProxyWindowBase::closed, this, &WindowInterface::closed);
+	QObject::connect(window, &ProxyWindowBase::resourcesLost, this, &WindowInterface::resourcesLost);
 	QObject::connect(window, &ProxyWindowBase::windowConnected, this, &WindowInterface::windowConnected);
 	QObject::connect(window, &ProxyWindowBase::visibleChanged, this, &WindowInterface::visibleChanged);
 	QObject::connect(window, &ProxyWindowBase::backerVisibilityChanged, this, &WindowInterface::backingWindowVisibleChanged);
