@@ -126,13 +126,6 @@ class StatusNotifierItem: public QObject {
 public:
 	explicit StatusNotifierItem(const QString& address, QObject* parent = nullptr);
 
-	[[nodiscard]] bool isValid() const;
-	[[nodiscard]] bool isReady() const;
-	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; };
-	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
-
-	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
-
 	/// Primary activation action, generally triggered via a left click.
 	Q_INVOKABLE void activate();
 	/// Secondary activation action, generally triggered via a middle click.
@@ -142,14 +135,21 @@ public:
 	/// Display a platform menu at the given location relative to the parent window.
 	Q_INVOKABLE void display(QObject* parentWindow, qint32 relativeX, qint32 relativeY);
 
-	[[nodiscard]] QBindable<QString> bindableId() const { return &this->bId; };
-	[[nodiscard]] QBindable<QString> bindableTitle() const { return &this->bTitle; };
-	[[nodiscard]] QBindable<Status::Enum> bindableStatus() const { return &this->bStatus; };
-	[[nodiscard]] QBindable<Category::Enum> bindableCategory() const { return &this->bCategory; };
-	[[nodiscard]] QString tooltipTitle() const { return this->bTooltip.value().title; };
-	[[nodiscard]] QString tooltipDescription() const { return this->bTooltip.value().description; };
-	[[nodiscard]] QBindable<bool> bindableHasMenu() const { return &this->bHasMenu; };
-	[[nodiscard]] QBindable<bool> bindableOnlyMenu() const { return &this->bIsMenu; };
+	[[nodiscard]] bool isValid() const;
+	[[nodiscard]] bool isReady() const;
+	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; }
+	[[nodiscard]] QPixmap createPixmap(const QSize& size) const;
+
+	[[nodiscard]] dbus::dbusmenu::DBusMenuHandle* menuHandle();
+
+	[[nodiscard]] QBindable<QString> bindableId() const { return &this->bId; }
+	[[nodiscard]] QBindable<QString> bindableTitle() const { return &this->bTitle; }
+	[[nodiscard]] QBindable<Status::Enum> bindableStatus() const { return &this->bStatus; }
+	[[nodiscard]] QBindable<Category::Enum> bindableCategory() const { return &this->bCategory; }
+	[[nodiscard]] QString tooltipTitle() const { return this->bTooltip.value().title; }
+	[[nodiscard]] QString tooltipDescription() const { return this->bTooltip.value().description; }
+	[[nodiscard]] QBindable<bool> bindableHasMenu() const { return &this->bHasMenu; }
+	[[nodiscard]] QBindable<bool> bindableOnlyMenu() const { return &this->bIsMenu; }
 
 signals:
 	void ready();
