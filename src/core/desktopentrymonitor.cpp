@@ -85,7 +85,7 @@ void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	// Check for new subdirectories
 	auto subdirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	for (const QString& subdir: subdirs) {
-		QString subdirPath = dir.absoluteFilePath(subdir);
+		auto subdirPath = dir.absoluteFilePath(subdir);
 		if (!this->watcher->directories().contains(subdirPath)) {
 			this->scanAndWatch(subdirPath);
 		}
@@ -109,6 +109,6 @@ void DesktopEntryMonitor::processChanges() {
 	this->pendingChanges.clear();
 
 	// Emit with empty hash to signal full rescan needed
-	QHash<QString, ChangeEvent> emptyChanges;
+	auto emptyChanges = QHash<QString, ChangeEvent> {};
 	emit desktopEntriesChanged(emptyChanges);
 }

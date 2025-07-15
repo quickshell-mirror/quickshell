@@ -439,17 +439,17 @@ QString DesktopEntryManager::extractIdFromPath(const QString& path) {
 	// e.g., /usr/share/applications/firefox.desktop -> firefox
 	// e.g., /usr/share/applications/kde4/kate.desktop -> kde4-kate
 
-	QFileInfo info(path);
-	QString id = info.completeBaseName();
+	auto info = QFileInfo(path);
+	auto id = info.completeBaseName();
 
 	// Find the applications directory in the path
-	int appIdx = path.lastIndexOf("/applications/");
+	auto appIdx = path.lastIndexOf("/applications/");
 	if (appIdx != -1) {
-		QString relativePath = path.mid(appIdx + 14); // Skip "/applications/"
-		QFileInfo relInfo(relativePath);
+		auto relativePath = path.mid(appIdx + 14); // Skip "/applications/"
+		auto relInfo = QFileInfo(relativePath);
 
 		// Replace directory separators with dashes
-		QString dirPath = relInfo.path();
+		auto dirPath = relInfo.path();
 		if (dirPath != ".") {
 			id = dirPath.replace('/', '-') + '-' + relInfo.completeBaseName();
 		}
