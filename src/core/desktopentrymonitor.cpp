@@ -18,19 +18,24 @@ DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
 	this->watcher = new QFileSystemWatcher(this);
 	this->debounceTimer = new QTimer(this);
 	this->debounceTimer->setSingleShot(true);
-	this->debounceTimer->setInterval(500); // 500ms debounce
+	this->debounceTimer->setInterval(50);
 
 	// Initialize XDG desktop paths
 	this->initializeDesktopPaths();
 
 	// Setup connections
-	connect(
+	QObject::connect(
 	    this->watcher,
 	    &QFileSystemWatcher::directoryChanged,
 	    this,
 	    &DesktopEntryMonitor::onDirectoryChanged
 	);
-	connect(this->debounceTimer, &QTimer::timeout, this, &DesktopEntryMonitor::processChanges);
+	QObject::connect(
+	    this->debounceTimer,
+	    &QTimer::timeout,
+	    this,
+	    &DesktopEntryMonitor::processChanges
+	);
 
 	// Start monitoring
 	this->startMonitoring();
@@ -44,17 +49,13 @@ void DesktopEntryMonitor::startMonitoring() {
 	for (const QString& path: this->desktopPaths) {
 		if (QDir(path).exists()) {
 			qCDebug(logDesktopMonitor) << "Monitoring desktop entry path:" << path;
-			this->addDirectoryHierarchy(path);
+			this->scanAndWatch(path);
 		}
 	}
 }
 
-void DesktopEntryMonitor::addDirectoryHierarchy(const QString& dirPath) {
-	this->scanAndWatch(dirPath);
-}
-
 void DesktopEntryMonitor::scanAndWatch(const QString& dirPath) {
-	QDir dir(dirPath);
+	auto dir = QDir(dirPath);
 	if (!dir.exists()) return;
 
 	// Add directory to watcher
@@ -70,7 +71,7 @@ void DesktopEntryMonitor::scanAndWatch(const QString& dirPath) {
 
 void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	qCDebug(logDesktopMonitor) << "Directory changed:" << path;
-	QDir dir(path);
+	auto dir = QDir(path);
 
 	// Check if directory still exists - handle removal/unmounting
 	if (!dir.exists()) {
@@ -82,7 +83,7 @@ void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	}
 
 	// Check for new subdirectories
-	QList<QString> subdirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	auto subdirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	for (const QString& subdir: subdirs) {
 		QString subdirPath = dir.absoluteFilePath(subdir);
 		if (!this->watcher->directories().contains(subdirPath)) {
