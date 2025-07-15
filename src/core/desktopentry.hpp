@@ -13,6 +13,7 @@
 #include "model.hpp"
 
 class DesktopAction;
+class DesktopEntryMonitor;
 
 /// A desktop entry. See @@DesktopEntries for details.
 class DesktopEntry: public QObject {
@@ -144,12 +145,13 @@ private:
 	friend class DesktopEntry;
 };
 
+#include "desktopentrymonitor.hpp"
+
 class DesktopEntryManager: public QObject {
 	Q_OBJECT;
 
 public:
 	void scanDesktopEntries();
-	void rescan();
 
 	[[nodiscard]] DesktopEntry* byId(const QString& id);
 
@@ -160,15 +162,21 @@ public:
 signals:
 	void applicationsChanged();
 
+private slots:
+	void handleFileChanges(const QHash<QString, DesktopEntryMonitor::ChangeEvent>& changes);
+
 private:
 	explicit DesktopEntryManager();
 
 	void populateApplications();
 	void scanPath(const QDir& dir, const QString& prefix = QString());
+	QString extractIdFromPath(const QString& path);
+	void updateApplicationModel();
 
 	QHash<QString, DesktopEntry*> desktopEntries;
 	QHash<QString, DesktopEntry*> lowercaseDesktopEntries;
 	ObjectModel<DesktopEntry> mApplications {this};
+	DesktopEntryMonitor* monitor = nullptr;
 };
 
 ///! Desktop entry index.
@@ -193,8 +201,6 @@ public:
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* byId(const QString& id);
 
 	[[nodiscard]] static ObjectModel<DesktopEntry>* applications();
-
-	Q_INVOKABLE static void rescan();
 
 signals:
 	void applicationsChanged();
