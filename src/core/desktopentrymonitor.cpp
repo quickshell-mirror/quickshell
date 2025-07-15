@@ -11,7 +11,7 @@
 #include "logcat.hpp"
 
 namespace {
-QS_LOGGING_CATEGORY(logDesktopMonitor, "quickshell.desktopmonitor", QtWarningMsg);
+QS_LOGGING_CATEGORY(logDesktopMonitor, "quickshell.desktopentrymonitor", QtWarningMsg);
 }
 
 DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
@@ -50,54 +50,76 @@ void DesktopEntryMonitor::startMonitoring() {
 	for (const QString& path: this->desktopPaths) {
 		if (QDir(path).exists()) {
 			qCDebug(logDesktopMonitor) << "Monitoring desktop entry path:" << path;
-			this->addDirectoryRecursive(path);
+			this->addDirectoryHierarchy(path);
 		}
 	}
 }
 
-void DesktopEntryMonitor::addDirectoryRecursive(const QString& dirPath) {
+void DesktopEntryMonitor::addDirectoryHierarchy(const QString& dirPath) {
+	this->scanAndWatch(dirPath);
+}
+
+void DesktopEntryMonitor::scanAndWatch(const QString& dirPath) {
 	QDir dir(dirPath);
 	if (!dir.exists()) return;
 
-	// Add root directory to watcher
+	// Add directory to watcher
 	if (this->watcher->addPath(dirPath)) {
 		qCDebug(logDesktopMonitor) << "Added directory to watcher:" << dirPath;
 	}
 
-	QDirIterator it(
-	    dirPath,
-	    QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
-	    QDirIterator::Subdirectories
-	);
-
-	while (it.hasNext()) {
-		QString path = it.next();
-		QFileInfo info(path);
-
-		if (info.isDir()) {
+	// Add .desktop files
+	for (const auto& entry: dir.entryInfoList({"*.desktop"}, QDir::Files)) {
+		auto path = entry.absoluteFilePath();
+		if (!this->watchedFiles.contains(path)) {
 			if (this->watcher->addPath(path)) {
-				qCDebug(logDesktopMonitor) << "Added directory to watcher:" << path;
-			}
-		} else if (path.endsWith(".desktop")) {
-			if (this->watcher->addPath(path)) {
-				this->fileTimestamps[path] = info.lastModified();
+				this->fileTimestamps[path] = entry.lastModified();
+				this->watchedFiles.insert(path);
 				qCDebug(logDesktopMonitor) << "Monitoring file:" << path;
 			}
 		}
+	}
+
+	// Recurse into subdirs
+	for (const auto& sub: dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+		this->scanAndWatch(dir.absoluteFilePath(sub));
 	}
 }
 
 void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	qCDebug(logDesktopMonitor) << "Directory changed:" << path;
 	QDir dir(path);
+
+	// Check if directory still exists - handle removal/unmounting
+	if (!dir.exists()) {
+		qCDebug(logDesktopMonitor) << "Directory no longer exists, cleaning up:" << path;
+		this->watcher->removePath(path);
+
+		// Remove all watched files from this directory and its subdirectories
+		for (auto it = this->watchedFiles.begin(); it != this->watchedFiles.end();) {
+			const QString& watchedFile = *it;
+			if (watchedFile.startsWith(path + "/") || watchedFile == path) {
+				this->watcher->removePath(watchedFile);
+				this->fileTimestamps.remove(watchedFile);
+				this->queueChange(ChangeEvent::Removed, watchedFile);
+				qCDebug(logDesktopMonitor) << "Removed file due to directory deletion:" << watchedFile;
+				it = this->watchedFiles.erase(it);
+			} else {
+				++it;
+			}
+		}
+		return;
+	}
+
 	QList<QString> currentFiles = dir.entryList({"*.desktop"}, QDir::Files);
 
 	// Check for new files
 	for (const QString& file: currentFiles) {
 		QString fullPath = dir.absoluteFilePath(file);
-		if (!this->watcher->files().contains(fullPath)) {
+		if (!this->watchedFiles.contains(fullPath)) {
 			if (this->watcher->addPath(fullPath)) {
 				this->fileTimestamps[fullPath] = QFileInfo(fullPath).lastModified();
+				this->watchedFiles.insert(fullPath);
 				this->queueChange(ChangeEvent::Added, fullPath);
 				qCDebug(logDesktopMonitor) << "New desktop file detected:" << fullPath;
 			}
@@ -105,13 +127,16 @@ void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	}
 
 	// Check for deleted files
-	QList<QString> watchedFiles = this->watcher->files();
-	for (const QString& watchedFile: watchedFiles) {
+	for (auto it = this->watchedFiles.begin(); it != this->watchedFiles.end();) {
+		const QString& watchedFile = *it;
 		if (QFileInfo(watchedFile).dir().absolutePath() == path && !QFile::exists(watchedFile)) {
 			this->watcher->removePath(watchedFile);
 			this->fileTimestamps.remove(watchedFile);
 			this->queueChange(ChangeEvent::Removed, watchedFile);
 			qCDebug(logDesktopMonitor) << "Desktop file removed:" << watchedFile;
+			it = this->watchedFiles.erase(it);
+		} else {
+			++it;
 		}
 	}
 
@@ -120,38 +145,13 @@ void DesktopEntryMonitor::onDirectoryChanged(const QString& path) {
 	for (const QString& subdir: subdirs) {
 		QString subdirPath = dir.absoluteFilePath(subdir);
 		if (!this->watcher->directories().contains(subdirPath)) {
-			// Add the new subdirectory and all its contents iteratively
-			if (this->watcher->addPath(subdirPath)) {
-				qCDebug(logDesktopMonitor) << "Added new directory to watcher:" << subdirPath;
-			}
-
-			QDirIterator it(
-			    subdirPath,
-			    QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
-			    QDirIterator::Subdirectories
-			);
-
-			while (it.hasNext()) {
-				QString path = it.next();
-				QFileInfo info(path);
-
-				if (info.isDir()) {
-					if (this->watcher->addPath(path)) {
-						qCDebug(logDesktopMonitor) << "Added directory to watcher:" << path;
-					}
-				} else if (path.endsWith(".desktop")) {
-					if (this->watcher->addPath(path)) {
-						this->fileTimestamps[path] = info.lastModified();
-						qCDebug(logDesktopMonitor) << "Monitoring file:" << path;
-					}
-				}
-			}
+			this->scanAndWatch(subdirPath);
 		}
 	}
 }
 
 void DesktopEntryMonitor::onFileChanged(const QString& path) {
-	if (!path.endsWith(".desktop")) return;
+	if (QFileInfo(path).suffix().toLower() != "desktop") return;
 
 	QFileInfo info(path);
 	if (info.exists()) {
@@ -165,6 +165,7 @@ void DesktopEntryMonitor::onFileChanged(const QString& path) {
 		// File was deleted
 		this->watcher->removePath(path);
 		this->fileTimestamps.remove(path);
+		this->watchedFiles.remove(path);
 		this->queueChange(ChangeEvent::Removed, path);
 		qCDebug(logDesktopMonitor) << "Desktop file removed:" << path;
 	}
