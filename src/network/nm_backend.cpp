@@ -129,12 +129,22 @@ void NetworkManager::registerDevice(
     NMDeviceType::Enum type,
     const QString& path
 ) {
-	Device* device = createDeviceVariant(type, path);
+	NetworkDevice* device = createDeviceVariant(type, path);
 
-	// deviceAdapter signal -> Device slot
+	// NMDeviceAdapter signal -> NetworkDevice slot
 	deviceAdapter->setParent(device);
-	QObject::connect(deviceAdapter, &NMDeviceAdapter::hwAddressChanged, device, &Device::setAddress);
-	QObject::connect(deviceAdapter, &NMDeviceAdapter::interfaceChanged, device, &Device::setName);
+	QObject::connect(
+	    deviceAdapter,
+	    &NMDeviceAdapter::hwAddressChanged,
+	    device,
+	    &NetworkDevice::setAddress
+	);
+	QObject::connect(
+	    deviceAdapter,
+	    &NMDeviceAdapter::interfaceChanged,
+	    device,
+	    &NetworkDevice::setName
+	);
 	QObject::connect(
 	    deviceAdapter,
 	    &NMDeviceAdapter::stateChanged,
@@ -142,8 +152,13 @@ void NetworkManager::registerDevice(
 	    [device](NMDeviceState::Enum state) { device->setState(NMDeviceState::translate(state)); }
 	);
 
-	// Device signal -> deviceAdapter slot
-	QObject::connect(device, &Device::signalDisconnect, deviceAdapter, &NMDeviceAdapter::disconnect);
+	// NetworkDevice signal -> NMDeviceAdapter slot
+	QObject::connect(
+	    device,
+	    &NetworkDevice::signalDisconnect,
+	    deviceAdapter,
+	    &NMDeviceAdapter::disconnect
+	);
 
 	// Track device
 	this->mDeviceHash.insert(path, device);
@@ -153,25 +168,37 @@ void NetworkManager::registerDevice(
 }
 
 // Create a derived device class based on the NMDeviceType of the NMDeviceAdapter
-Device* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, const QString& path) {
+NetworkDevice* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, const QString& path) {
 	switch (type) {
 	case NMDeviceType::Wifi: return this->bindWirelessDevice(path);
-	default: return new Device();
+	default: return new NetworkDevice();
 	}
 }
 
-// Create a frontend WirelessDevice and bind the backend wireless adapter to it
-WirelessDevice* NetworkManager::bindWirelessDevice(const QString& path) {
-	auto* device = new WirelessDevice(this);
+// Create a frontend WirelessNetworkDevice and bind the backend wireless adapter to it
+WirelessNetworkDevice* NetworkManager::bindWirelessDevice(const QString& path) {
+	auto* device = new WirelessNetworkDevice(this);
 
 	auto* wirelessAdapter = new NMWirelessAdapter(device);
 	wirelessAdapter->init(path);
 
+	// NMWirelessAdapter signal -> WirelessNetworkDevice slot
 	QObject::connect(
 	    wirelessAdapter,
 	    &NMWirelessAdapter::lastScanChanged,
 	    device,
-	    &WirelessDevice::setLastScan
+	    [device](qint64 lastScan) {
+		    device->scanComplete(lastScan);
+		    qCDebug(logNetworkManager) << lastScan;
+	    }
+	);
+
+	// WirelessNetworkDevice signal -> NMWirelessAdapter slot
+	QObject::connect(
+	    device,
+	    &WirelessNetworkDevice::signalScan,
+	    wirelessAdapter,
+	    &NMWirelessAdapter::scan
 	);
 
 	if (this->mWifi == nullptr) {
@@ -197,12 +224,12 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		};
 		this->mDeviceHash.erase(iter);
 		this->mDevices.removeObject(device);
-		qCDebug(logNetworkManager) << "Device" << path.path() << "removed.";
+		qCDebug(logNetworkManager) << "NetworkDevice" << path.path() << "removed.";
 	}
 }
 
 UntypedObjectModel* NetworkManager::devices() { return &this->mDevices; }
-WirelessDevice* NetworkManager::defaultWifiDevice() { return this->mWifi; }
+WirelessNetworkDevice* NetworkManager::defaultWifiDevice() { return this->mWifi; }
 bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); }
 
 } // namespace qs::network

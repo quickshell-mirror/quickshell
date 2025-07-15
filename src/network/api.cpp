@@ -13,62 +13,86 @@
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
+Q_LOGGING_CATEGORY(logNetworkNetworkDevice, "quickshell.network.device", QtWarningMsg);
 Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
-}
+} // namespace
 
-Device::Device(QObject* parent): QObject(parent) {};
-WirelessDevice::WirelessDevice(QObject* parent): Device(parent) {};
+NetworkDevice::NetworkDevice(QObject* parent): QObject(parent) {};
+WirelessNetworkDevice::WirelessNetworkDevice(QObject* parent): NetworkDevice(parent) {};
 
-QString DeviceState::toString(DeviceState::Enum state) {
+QString NetworkDeviceState::toString(NetworkDeviceState::Enum state) {
 	switch (state) {
-	case DeviceState::Unknown: return QStringLiteral("Unknown");
-	case DeviceState::Disconnected: return QStringLiteral("Disconnected");
-	case DeviceState::Connecting: return QStringLiteral("Connecting");
-	case DeviceState::Connected: return QStringLiteral("Connected");
-	case DeviceState::Disconnecting: return QStringLiteral("Disconnecting");
+	case NetworkDeviceState::Unknown: return QStringLiteral("Unknown");
+	case NetworkDeviceState::Disconnected: return QStringLiteral("Disconnected");
+	case NetworkDeviceState::Connecting: return QStringLiteral("Connecting");
+	case NetworkDeviceState::Connected: return QStringLiteral("Connected");
+	case NetworkDeviceState::Disconnecting: return QStringLiteral("Disconnecting");
 	default: return QStringLiteral("Unknown");
 	}
 }
 
-void Device::setName(const QString& name) {
+QString NetworkDeviceType::toString(NetworkDeviceType::Enum type) {
+	switch (type) {
+	case NetworkDeviceType::Other: return QStringLiteral("Other");
+	case NetworkDeviceType::Wireless: return QStringLiteral("Wireless");
+	case NetworkDeviceType::Ethernet: return QStringLiteral("Ethernet");
+	default: return QStringLiteral("Unknown");
+	}
+}
+
+void NetworkDevice::setName(const QString& name) {
 	if (name != this->bName) {
 		this->bName = name;
 	}
 }
 
-void Device::setAddress(const QString& address) {
+void NetworkDevice::setAddress(const QString& address) {
 	if (address != this->bAddress) {
 		this->bAddress = address;
 	}
 }
 
-void Device::setState(DeviceState::Enum state) {
+void NetworkDevice::setState(NetworkDeviceState::Enum state) {
 	if (state != this->bState) {
 		this->bState = state;
 	}
 }
 
-void Device::disconnect() {
-	if (this->bState == DeviceState::Disconnected) {
-		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnected";
+void NetworkDevice::disconnect() {
+	if (this->bState == NetworkDeviceState::Disconnected) {
+		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already disconnected";
 		return;
 	}
 
-	if (this->bState == DeviceState::Disconnecting) {
-		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnecting";
+	if (this->bState == NetworkDeviceState::Disconnecting) {
+		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already disconnecting";
 		return;
 	}
 
-	qCDebug(logNetworkDevice) << "Disconnecting from device" << this;
-	
+	qCDebug(logNetworkNetworkDevice) << "Disconnecting from device" << this;
+
 	signalDisconnect();
 }
 
-void WirelessDevice::setLastScan(qint64 lastScan) {
-	if (lastScan != this->bLastScan) {
-		this->bLastScan = lastScan;
+void WirelessNetworkDevice::scanComplete(qint64 lastScan) {
+	this->bLastScan = lastScan;
+	emit this->lastScanChanged();
+
+	if (this->bScanning) {
+		this->bScanning = false;
+		emit this->scanningChanged();
 	}
+}
+
+void WirelessNetworkDevice::scan() {
+	if (this->bScanning) {
+		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already scanning";
+		return;
+	}
+
+	qCDebug(logNetworkNetworkDevice) << "Requesting scan on wireless device" << this;
+	this->bScanning = true;
+	signalScan();
 }
 
 Network::Network(QObject* parent): QObject(parent) {

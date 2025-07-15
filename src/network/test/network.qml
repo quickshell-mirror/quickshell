@@ -31,10 +31,24 @@ FloatingWindow {
 						font.bold: true
 					}
 					Label { text: "Hardware Address: " + modelData.address }
-					Label { text: "State: " + DeviceState.toString(modelData.state) }
-					Button {
-						text: "Disconnect"
-						onClicked: modelData.disconnect()
+					Label { text: "Device type: " + NetworkDeviceType.toString(modelData.type) }
+
+					RowLayout {
+						Label { text: "State: " + NetworkDeviceState.toString(modelData.state) }
+						Button {
+							text: "Disconnect"
+							onClicked: modelData.disconnect()
+							visible: modelData.state === NetworkDeviceState.Connected
+						}
+					}
+					RowLayout {
+						Label { text: "Last scan: " + modelData.lastScan }
+						Button {
+							text: "Scan"
+							onClicked: modelData.scan()
+							visible: modelData.scanning === false;
+						}
+						visible: modelData.type === NetworkDeviceType.Wireless
 					}
 				}
 			}

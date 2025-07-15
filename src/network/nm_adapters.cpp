@@ -45,13 +45,13 @@ QString NMDeviceAdapter::address() const {
 }
 QString NMDeviceAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-DeviceState::Enum NMDeviceState::translate(NMDeviceState::Enum state) {
+NetworkDeviceState::Enum NMDeviceState::translate(NMDeviceState::Enum state) {
 	switch(state) {
-		case 0 ... 20: return DeviceState::Unknown;
-		case 30: return DeviceState::Disconnected;
-		case 40 ... 90: return DeviceState::Connecting;
-		case 100: return DeviceState::Connected;
-		case 110 ... 120: return DeviceState::Disconnecting;
+		case 0 ... 20: return NetworkDeviceState::Unknown;
+		case 30: return NetworkDeviceState::Disconnected;
+		case 40 ... 90: return NetworkDeviceState::Connecting;
+		case 100: return NetworkDeviceState::Connected;
+		case 110 ... 120: return NetworkDeviceState::Disconnecting;
 	}
 }
 
@@ -74,6 +74,7 @@ void NMWirelessAdapter::init(const QString& path) {
 	this->wirelessProperties.updateAllViaGetAll();
 }
 
+void NMWirelessAdapter::scan() { this->proxy->RequestScan(); }
 bool NMWirelessAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
 QString NMWirelessAdapter::address() const {
 	return this->proxy ? this->proxy->service() : QString();

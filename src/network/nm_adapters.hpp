@@ -38,7 +38,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	static DeviceState::Enum translate(NMDeviceState::Enum state);
+	static NetworkDeviceState::Enum translate(NMDeviceState::Enum state);
 };
 
 class NMDeviceType: public QObject {
@@ -156,8 +156,11 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] qint64 getLastScan() { return this->bLastScan; };
 
+public slots:
+	void scan();
+
 signals:
-	void lastScanChanged(qint64 time);
+	void lastScanChanged(qint64 lastScan);
 
 private:
 	// clang-format off
@@ -165,7 +168,6 @@ private:
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWirelessAdapter, wirelessProperties);
 	QS_DBUS_PROPERTY_BINDING(NMWirelessAdapter, pLastScan, bLastScan, wirelessProperties, "LastScan");
-
 	DBusNMWirelessProxy* proxy = nullptr;
 };
 } // namespace qs::network
