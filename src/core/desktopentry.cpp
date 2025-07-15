@@ -310,11 +310,11 @@ void DesktopEntryManager::populateApplications() {
 	}
 }
 
-void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
+void DesktopEntryManager::scanPath(const QDir& dir) {
 	auto entries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
 	for (auto& entry: entries) {
-		if (entry.isDir()) this->scanPath(entry.absoluteFilePath(), prefix + dir.dirName() + "-");
+		if (entry.isDir()) this->scanPath(entry.absoluteFilePath());
 		else if (entry.isFile()) {
 			auto path = entry.filePath();
 			if (!path.endsWith(".desktop")) {
@@ -328,7 +328,7 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 				continue;
 			}
 
-			auto id = prefix + entry.fileName().sliced(0, entry.fileName().length() - 8);
+			auto id = this->extractIdFromPath(entry.absoluteFilePath());
 			auto lowerId = id.toLower();
 
 			auto text = QString::fromUtf8(file.readAll());

@@ -174,7 +174,7 @@ private:
 	explicit DesktopEntryManager();
 
 	void populateApplications();
-	void scanPath(const QDir& dir, const QString& prefix = QString());
+	void scanPath(const QDir& dir);
 	QString extractIdFromPath(const QString& path);
 	void updateApplicationModel();
 
