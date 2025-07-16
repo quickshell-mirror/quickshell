@@ -28,6 +28,7 @@ public:
 
 	QDir* baseRunDir();
 	QDir* shellRunDir();
+	QDir* shellVfsDir();
 	QDir* instanceRunDir();
 	void linkRunDir();
 	void linkPathDir();
@@ -48,9 +49,11 @@ private:
 	QString pathId;
 	QDir mBaseRunDir;
 	QDir mShellRunDir;
+	QDir mShellVfsDir;
 	QDir mInstanceRunDir;
 	DirState baseRunState = DirState::Unknown;
 	DirState shellRunState = DirState::Unknown;
+	DirState shellVfsState = DirState::Unknown;
 	DirState instanceRunState = DirState::Unknown;
 
 	QDir mShellDataDir;

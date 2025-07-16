@@ -135,6 +135,33 @@ QDir* QsPaths::instanceRunDir() {
 	else return &this->mInstanceRunDir;
 }
 
+QDir* QsPaths::shellVfsDir() {
+	if (this->shellVfsState == DirState::Unknown) {
+		if (auto* baseRunDir = this->baseRunDir()) {
+			this->mShellVfsDir = QDir(baseRunDir->filePath("vfs"));
+			this->mShellVfsDir = QDir(this->mShellVfsDir.filePath(this->shellId));
+
+			qCDebug(logPaths) << "Initialized runtime vfs path:" << this->mShellVfsDir.path();
+
+			if (!this->mShellVfsDir.mkpath(".")) {
+				qCCritical(logPaths) << "Could not create runtime vfs directory at"
+				                     << this->mShellVfsDir.path();
+				this->shellVfsState = DirState::Failed;
+			} else {
+				this->shellVfsState = DirState::Ready;
+			}
+		} else {
+			qCCritical(logPaths) << "Could not create shell runtime vfs path as it was not possible to "
+			                        "create the base runtime path.";
+
+			this->shellVfsState = DirState::Failed;
+		}
+	}
+
+	if (this->shellVfsState == DirState::Failed) return nullptr;
+	else return &this->mShellVfsDir;
+}
+
 void QsPaths::linkRunDir() {
 	if (auto* runDir = this->instanceRunDir()) {
 		auto pidDir = QDir(this->baseRunDir()->filePath("by-pid"));

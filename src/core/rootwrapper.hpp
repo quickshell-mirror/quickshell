@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qfilesystemwatcher.h>
 #include <qobject.h>
 #include <qqmlengine.h>
 #include <qtclasshelpermacros.h>
@@ -22,10 +23,12 @@ private slots:
 	void generationDestroyed();
 	void onWatchFilesChanged();
 	void onWatchedFilesChanged();
+	void updateTooling();
 
 private:
 	QString rootPath;
 	QString shellId;
 	EngineGeneration* generation = nullptr;
 	QString originalWorkingDirectory;
+	QFileSystemWatcher configDirWatcher;
 };

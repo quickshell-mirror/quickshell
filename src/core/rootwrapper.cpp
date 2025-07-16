@@ -4,6 +4,7 @@
 
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qfilesystemwatcher.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
@@ -18,15 +19,26 @@
 #include "instanceinfo.hpp"
 #include "qmlglobal.hpp"
 #include "scan.hpp"
+#include "toolsupport.hpp"
 
 RootWrapper::RootWrapper(QString rootPath, QString shellId)
     : QObject(nullptr)
     , rootPath(std::move(rootPath))
     , shellId(std::move(shellId))
     , originalWorkingDirectory(QDir::current().absolutePath()) {
-	// clang-format off
-	QObject::connect(QuickshellSettings::instance(), &QuickshellSettings::watchFilesChanged, this, &RootWrapper::onWatchFilesChanged);
-	// clang-format on
+	QObject::connect(
+	    QuickshellSettings::instance(),
+	    &QuickshellSettings::watchFilesChanged,
+	    this,
+	    &RootWrapper::onWatchFilesChanged
+	);
+
+	QObject::connect(
+	    &this->configDirWatcher,
+	    &QFileSystemWatcher::directoryChanged,
+	    this,
+	    &RootWrapper::updateTooling
+	);
 
 	this->reloadGraph(true);
 
@@ -47,6 +59,9 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto rootPath = rootFile.dir();
 	auto scanner = QmlScanner(rootPath);
 	scanner.scanQmlFile(this->rootPath);
+
+	qs::core::QmlToolingSupport::updateTooling(rootPath, scanner);
+	this->configDirWatcher.addPath(rootPath.path());
 
 	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
 	generation->wrapper = this;
@@ -168,3 +183,9 @@ void RootWrapper::onWatchFilesChanged() {
 }
 
 void RootWrapper::onWatchedFilesChanged() { this->reloadGraph(false); }
+
+void RootWrapper::updateTooling() {
+	if (!this->generation) return;
+	auto configDir = QFileInfo(this->rootPath).dir();
+	qs::core::QmlToolingSupport::updateTooling(configDir, this->generation->scanner);
+}
