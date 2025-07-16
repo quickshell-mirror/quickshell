@@ -104,7 +104,7 @@ void NMWirelessAdapter::onAccessPointRemoved(const QDBusObjectPath& path) {
 	auto iter = this->mAPHash.find(path.path());
 	if (iter == this->mAPHash.end()) {
 		qCWarning(logNetworkManager) << "NMWirelessAdapter sent removal signal for" << path.path()
-		                       << "which is not registered.";
+		                             << "which is not registered.";
 	} else {
 		auto* ap = iter.value();
 		this->mAPHash.erase(iter);
@@ -167,6 +167,7 @@ void NMWirelessAdapter::registerAccessPoint(const QString& path) {
 }
 
 void NMWirelessAdapter::scan() { this->proxy->RequestScan({}); }
+
 bool NMWirelessAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
 QString NMWirelessAdapter::address() const {
 	return this->proxy ? this->proxy->service() : QString();
