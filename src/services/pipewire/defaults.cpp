@@ -126,25 +126,33 @@ void PwDefaultTracker::onNodeDestroyed(QObject* node) {
 	if (node == this->mDefaultSink) {
 		qCInfo(logDefaults) << "Default sink destroyed.";
 		this->mDefaultSink = nullptr;
-		emit this->defaultSinkChanged();
+		QMetaObject::invokeMethod(this, &PwDefaultTracker::defaultSinkChanged, Qt::QueuedConnection);
 	}
 
 	if (node == this->mDefaultSource) {
 		qCInfo(logDefaults) << "Default source destroyed.";
 		this->mDefaultSource = nullptr;
-		emit this->defaultSourceChanged();
+		QMetaObject::invokeMethod(this, &PwDefaultTracker::defaultSourceChanged, Qt::QueuedConnection);
 	}
 
 	if (node == this->mDefaultConfiguredSink) {
 		qCInfo(logDefaults) << "Default configured sink destroyed.";
 		this->mDefaultConfiguredSink = nullptr;
-		emit this->defaultConfiguredSinkChanged();
+		QMetaObject::invokeMethod(
+		    this,
+		    &PwDefaultTracker::defaultConfiguredSinkChanged,
+		    Qt::QueuedConnection
+		);
 	}
 
 	if (node == this->mDefaultConfiguredSource) {
 		qCInfo(logDefaults) << "Default configured source destroyed.";
 		this->mDefaultConfiguredSource = nullptr;
-		emit this->defaultConfiguredSourceChanged();
+		QMetaObject::invokeMethod(
+		    this,
+		    &PwDefaultTracker::defaultConfiguredSourceChanged,
+		    Qt::QueuedConnection
+		);
 	}
 }
 
@@ -201,7 +209,8 @@ bool PwDefaultTracker::setConfiguredDefault(const char* key, const QString& valu
 	}
 
 	if (!meta->hasSetPermission()) {
-		qCCritical(logDefaults
+		qCCritical(
+		    logDefaults
 		) << "Cannot set default node as write+execute permissions are missing for"
 		  << meta;
 		return false;
