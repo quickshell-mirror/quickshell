@@ -56,6 +56,8 @@ class HyprlandFocusGrab
     : public QObject
     , public QQmlParserStatus {
 	Q_OBJECT;
+	QML_ELEMENT;
+	Q_INTERFACES(QQmlParserStatus);
 	/// If the focus grab is active. Defaults to false.
 	///
 	/// When set to true, an input grab will be created for the listed windows.
@@ -66,7 +68,6 @@ class HyprlandFocusGrab
 	Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged);
 	/// The list of windows to whitelist for input.
 	Q_PROPERTY(QList<QObject*> windows READ windows WRITE setWindows NOTIFY windowsChanged);
-	QML_ELEMENT;
 
 public:
 	explicit HyprlandFocusGrab(QObject* parent = nullptr): QObject(parent) {}

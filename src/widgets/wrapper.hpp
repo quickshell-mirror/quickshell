@@ -85,6 +85,9 @@ class WrapperManager
     : public QObject
     , public QQmlParserStatus {
 	Q_OBJECT;
+	QML_ELEMENT;
+	Q_INTERFACES(QQmlParserStatus);
+
 	// clang-format off
 	/// The wrapper component's selected child.
 	///
@@ -102,7 +105,6 @@ class WrapperManager
 	/// This property may not be changed after Component.onCompleted.
 	Q_PROPERTY(QQuickItem* wrapper READ wrapper WRITE setWrapper NOTIFY wrapperChanged FINAL);
 	// clang-format on
-	QML_ELEMENT;
 
 public:
 	explicit WrapperManager(QObject* parent = nullptr): QObject(parent) {}

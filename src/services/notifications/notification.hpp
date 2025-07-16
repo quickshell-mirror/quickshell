@@ -171,7 +171,11 @@ public:
 	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; };
 	[[nodiscard]] QBindable<QString> bindableImage() const { return &this->bImage; };
 	[[nodiscard]] QBindable<bool> bindableHasInlineReply() const { return &this->bHasInlineReply; };
-	[[nodiscard]] QBindable<QString> bindableInlineReplyPlaceholder() const { return &this->bInlineReplyPlaceholder; };
+
+	[[nodiscard]] QBindable<QString> bindableInlineReplyPlaceholder() const {
+		return &this->bInlineReplyPlaceholder;
+	};
+
 	[[nodiscard]] QBindable<QVariantMap> bindableHints() const { return &this->bHints; };
 
 	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;

@@ -17,6 +17,9 @@ class PamContext
     : public QObject
     , public QQmlParserStatus {
 	Q_OBJECT;
+	QML_ELEMENT;
+	Q_INTERFACES(QQmlParserStatus);
+
 	// clang-format off
 	/// If the pam context is actively performing an authentication.
 	///
@@ -49,7 +52,6 @@ class PamContext
 	/// If the user's response should be visible. Only valid when @@responseRequired is true.
 	Q_PROPERTY(bool responseVisible READ isResponseVisible NOTIFY responseVisibleChanged);
 	// clang-format on
-	QML_ELEMENT;
 
 public:
 	explicit PamContext(QObject* parent = nullptr): QObject(parent) {}

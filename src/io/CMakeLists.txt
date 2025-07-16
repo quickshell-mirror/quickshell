@@ -21,6 +21,7 @@ qt_add_qml_module(quickshell-io
 		FileView.qml
 )
 
+qs_add_module_deps_light(quickshell-io Quickshell)
 install_qml_module(quickshell-io)
 
 target_link_libraries(quickshell-io PRIVATE Qt::Quick)

@@ -122,6 +122,10 @@ private:
 class PostReloadHook
     : public QObject
     , public QQmlParserStatus {
+	Q_OBJECT;
+	QML_ANONYMOUS;
+	Q_INTERFACES(QQmlParserStatus);
+
 public:
 	PostReloadHook(QObject* parent = nullptr): QObject(parent) {}
 	void classBegin() override {}
