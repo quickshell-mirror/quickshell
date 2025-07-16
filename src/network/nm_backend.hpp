@@ -20,11 +20,12 @@ namespace qs::network {
 class NetworkManager: public NetworkBackend {
 	Q_OBJECT;
 
+signals:
+	void deviceAdded(NetworkDevice* device);
+	void deviceRemoved(NetworkDevice* device);
+
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
-
-	UntypedObjectModel* devices() override;
-	WirelessNetworkDevice* defaultWifiDevice() override;
 	[[nodiscard]] bool isAvailable() const override;
 
 private slots:
@@ -41,11 +42,8 @@ private:
 	NetworkDevice* bindDevice(NMDeviceAdapter* deviceAdapter);
 
 	QHash<QString, NetworkDevice*> mDeviceHash;
-	ObjectModel<NetworkDevice> mDevices {this};
-	WirelessNetworkDevice* mWifi = nullptr;
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
-
 	DBusNetworkManagerProxy* proxy = nullptr;
 };
 

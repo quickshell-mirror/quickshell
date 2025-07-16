@@ -14,6 +14,36 @@
 
 namespace qs::network {
 
+///! A tracked access point on the network
+class NetworkAccessPoint: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("WirelessNetwork can only be acquired through Network");
+	// clang-format off
+	/// The service set identifier of the access point.
+	Q_PROPERTY(QString ssid READ default NOTIFY ssidChanged BINDABLE bindableSsid);
+	// The current signal quality of the access point, in percent.
+	Q_PROPERTY(quint8 signal READ default NOTIFY signalChanged BINDABLE bindableSignal);
+	//clang-format on
+
+signals:
+	void ssidChanged();
+	void signalChanged();
+
+public slots:
+	void setSsid(const QString& ssid);
+	void setSignal(quint8 signal);
+
+public:
+	explicit NetworkAccessPoint(QObject* parent = nullptr);
+
+	[[nodiscard]] QBindable<QString> bindableSsid() const { return &this->bSsid; };
+	[[nodiscard]] QBindable<quint8> bindableSignal() const { return &this->bSignal; };
+
+private:
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkAccessPoint, QString, bSsid, &NetworkAccessPoint::ssidChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkAccessPoint, quint8, bSignal, &NetworkAccessPoint::signalChanged);
+};
 
 ///! Type of network device.
 class NetworkDeviceType: public QObject {
@@ -79,11 +109,9 @@ signals:
 	void addressChanged();
 	void stateChanged();
 
-	// For backend slots
 	void signalDisconnect();
 
 public slots:
-	// For backend signals
 	void setName(const QString& name);
 	void setAddress(const QString& address);
 	void setState(NetworkDeviceState::Enum state);
@@ -102,7 +130,12 @@ public:
 private:
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bName, &NetworkDevice::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bAddress, &NetworkDevice::addressChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NetworkDeviceState::Enum, bState, &NetworkDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    NetworkDevice,
+	    NetworkDeviceState::Enum,
+	    bState,
+	    &NetworkDevice::stateChanged
+	);
 };
 
 ///! Wireless variant of a tracked network device.
@@ -114,18 +147,21 @@ class WirelessNetworkDevice: public NetworkDevice {
 	Q_PROPERTY(qint64 lastScan READ default NOTIFY lastScanChanged BINDABLE bindableLastScan);
 	/// True if the wireless device is currently scanning for available wifi networks.
 	Q_PROPERTY(bool scanning READ default NOTIFY scanningChanged BINDABLE bindableScanning);
+	/// A list of all available access points
+	Q_PROPERTY(UntypedObjectModel* accessPoints READ accessPoints CONSTANT); 
+	QSDOC_TYPE_OVERRIDE(ObjectModel<NetworkAccessPoint>*)
 	//clang-format on
 
 signals:
 	void signalScan();
 
-	// Frontend-facing signals
 	void lastScanChanged();
 	void scanningChanged();
 
 public slots:
-	// For backend signals
 	void scanComplete(qint64 lastScan);
+	void addAccessPoint(NetworkAccessPoint* ap);
+	void removeAccessPoint(NetworkAccessPoint* ap);
 
 public:
 	explicit WirelessNetworkDevice(QObject* parent = nullptr);
@@ -137,11 +173,12 @@ public:
 	[[nodiscard]] QBindable<bool> bindableScanning() { return &this->bScanning; };
 	[[nodiscard]] QBindable<qint64> bindableLastScan() { return &this->bLastScan; };
 
+	UntypedObjectModel* accessPoints() { return &this->mAccessPoints; };
+
 private:
-	// clang-format off
+	ObjectModel<NetworkAccessPoint> mAccessPoints{this};
 	Q_OBJECT_BINDABLE_PROPERTY(WirelessNetworkDevice, bool, bScanning, &WirelessNetworkDevice::scanningChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WirelessNetworkDevice, qint64, bLastScan, &WirelessNetworkDevice::lastScanChanged);
-	// clang-format on
 };
 
 // -- Network --
@@ -150,29 +187,36 @@ class NetworkBackend: public QObject {
 
 public:
 	[[nodiscard]] virtual bool isAvailable() const = 0;
-	virtual UntypedObjectModel* devices() = 0;
-	virtual WirelessNetworkDevice* defaultWifiDevice() = 0;
 
 protected:
 	explicit NetworkBackend(QObject* parent = nullptr): QObject(parent) {};
 };
 
+///! Network manager
+/// Provides access to network devices.
 class Network: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(Network);
 	QML_SINGLETON;
 
-	Q_PROPERTY(WirelessNetworkDevice* defaultWifiNetworkDevice READ defaultWifiNetworkDevice CONSTANT);
+	// clang-format off
+	/// The default wifi device. Usually there is only one. This defaults to the first wifi device registered.
+	// Q_PROPERTY(WirelessNetworkDevice* defaultWifiDevice READ defaultWifiDevice CONSTANT);
+	/// A list of all network devices.
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::NetworkDevice>*);
+	// clang-format on
+
+public slots:
+	void addDevice(NetworkDevice* device);
+	void removeDevice(NetworkDevice* device);
 
 public:
 	explicit Network(QObject* parent = nullptr);
-	[[nodiscard]] UntypedObjectModel* devices() { return backend ? backend->devices() : nullptr; };
-	[[nodiscard]] WirelessNetworkDevice* defaultWifiNetworkDevice() {
-		return backend ? backend->defaultWifiDevice() : nullptr;
-	};
+	[[nodiscard]] UntypedObjectModel* devices() { return backend ? &this->mDevices : nullptr; };
 
 private:
+	ObjectModel<NetworkDevice> mDevices {this};
 	class NetworkBackend* backend = nullptr;
 };
 

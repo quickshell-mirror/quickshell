@@ -41,12 +41,31 @@ FloatingWindow {
 							visible: modelData.state === NetworkDeviceState.Connected
 						}
 					}
-					RowLayout {
-						Label { text: "Last scan: " + modelData.lastScan }
-						Button {
-							text: "Scan"
-							onClicked: modelData.scan()
-							visible: modelData.scanning === false;
+					ColumnLayout {
+						RowLayout {
+							Label { text: "Last scan: " + modelData.lastScan }
+							Button {
+								text: "Scan"
+								onClicked: modelData.scan()
+								visible: modelData.scanning === false;
+							}
+						}
+						Label { text: "Available access points: " }
+						Repeater {
+							model: modelData.accessPoints
+
+							delegate: WrapperRectangle {
+								height: apLabel.implicitHeight + 8
+								color: "transparent"
+								border.color: palette.button
+								border.width: 1
+								
+								Label {
+									id: apLabel
+									anchors.centerIn: parent
+									text: "SSID: " + (modelData.ssid || "[Hidden]") +  ` SIGNAL: ${modelData.signal}`
+								}
+							}
 						}
 						visible: modelData.type === NetworkDeviceType.Wireless
 					}

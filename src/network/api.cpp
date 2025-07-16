@@ -13,12 +13,13 @@
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkNetworkDevice, "quickshell.network.device", QtWarningMsg);
+Q_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
 Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
 
+// NetworkDevice
+
 NetworkDevice::NetworkDevice(QObject* parent): QObject(parent) {};
-WirelessNetworkDevice::WirelessNetworkDevice(QObject* parent): NetworkDevice(parent) {};
 
 QString NetworkDeviceState::toString(NetworkDeviceState::Enum state) {
 	switch (state) {
@@ -60,19 +61,23 @@ void NetworkDevice::setState(NetworkDeviceState::Enum state) {
 
 void NetworkDevice::disconnect() {
 	if (this->bState == NetworkDeviceState::Disconnected) {
-		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already disconnected";
+		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnected";
 		return;
 	}
 
 	if (this->bState == NetworkDeviceState::Disconnecting) {
-		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already disconnecting";
+		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnecting";
 		return;
 	}
 
-	qCDebug(logNetworkNetworkDevice) << "Disconnecting from device" << this;
+	qCDebug(logNetworkDevice) << "Disconnecting from device" << this;
 
 	signalDisconnect();
 }
+
+// WirelessNetworkDevice
+
+WirelessNetworkDevice::WirelessNetworkDevice(QObject* parent): NetworkDevice(parent) {};
 
 void WirelessNetworkDevice::scanComplete(qint64 lastScan) {
 	this->bLastScan = lastScan;
@@ -86,14 +91,42 @@ void WirelessNetworkDevice::scanComplete(qint64 lastScan) {
 
 void WirelessNetworkDevice::scan() {
 	if (this->bScanning) {
-		qCCritical(logNetworkNetworkDevice) << "NetworkDevice" << this << "is already scanning";
+		qCCritical(logNetworkDevice) << "Wireless device" << this << "is already scanning";
 		return;
 	}
 
-	qCDebug(logNetworkNetworkDevice) << "Requesting scan on wireless device" << this;
+	qCDebug(logNetworkDevice) << "Requesting scan on wireless device" << this;
 	this->bScanning = true;
 	signalScan();
 }
+
+void WirelessNetworkDevice::addAccessPoint(NetworkAccessPoint* ap) {
+	mAccessPoints.insertObject(ap);
+}
+
+void WirelessNetworkDevice::removeAccessPoint(NetworkAccessPoint* ap) {
+	mAccessPoints.removeObject(ap);
+}
+
+// NetworkAccessPoint
+
+NetworkAccessPoint::NetworkAccessPoint(QObject* parent): QObject(parent) {};
+
+void NetworkAccessPoint::setSsid(const QString& ssid) {
+	if (this->bSsid != ssid) {
+		this->bSsid = ssid;
+		emit ssidChanged();
+	}
+}
+
+void NetworkAccessPoint::setSignal(quint8 signal) {
+	if (this->bSignal != signal) {
+		this->bSignal = signal;
+		emit signalChanged();
+	}
+}
+
+// Network
 
 Network::Network(QObject* parent): QObject(parent) {
 	// Try each backend
@@ -101,13 +134,19 @@ Network::Network(QObject* parent): QObject(parent) {
 	// NetworkManager
 	auto* nm = new NetworkManager();
 	if (nm->isAvailable()) {
+		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::addDevice);
+		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
 		this->backend = nm;
 		return;
 	}
 
 	// None found
 	this->backend = nullptr;
-	qCDebug(logNetwork) << "Network will not work. Could not find an available backend.";
+	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
+
+void Network::addDevice(NetworkDevice* device) { this->mDevices.insertObject(device); }
+
+void Network::removeDevice(NetworkDevice* device) { this->mDevices.removeObject(device); }
 
 } // namespace qs::network

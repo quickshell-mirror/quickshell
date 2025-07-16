@@ -6,13 +6,16 @@
     <property name="ActiveAccessPoint" type="o" access="read"/>
     
 		<method name="GetAllAccessPoints" type="ao"/>
-		<method name="RequestScan" type="a"/>
+
+    <method name="RequestScan">
+			<arg name="options" type="as" direction="in"/>
+    </method>
     
     <signal name="AccessPointAdded">
       <arg name="access_point" type="o"/>
     </signal>
 		<signal name="AccessPointRemoved">
-			arg name="access_ponit" type="o"/>
+			<arg name="access_point" type="o"/>
 		</signal>
   </interface>
 </node>

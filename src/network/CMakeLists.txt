@@ -29,6 +29,16 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 	dbus_nm_wireless
 )
 
+set_source_files_properties(org.freedesktop.NetworkManager.AccessPoint.xml PROPERTIES
+	CLASSNAME DBusNMAccessPointProxy
+	NO_NAMESPACE TRUE
+)
+
+qt_add_dbus_interface(NM_DBUS_INTERFACES
+	org.freedesktop.NetworkManager.AccessPoint.xml
+	dbus_nm_accesspoint
+)
+
 qt_add_library(quickshell-network STATIC
 	api.cpp
 	nm_backend.cpp

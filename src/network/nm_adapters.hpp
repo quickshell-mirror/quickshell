@@ -12,6 +12,7 @@
 
 #include "../dbus/properties.hpp"
 #include "api.hpp"
+#include "dbus_nm_accesspoint.h"
 #include "dbus_nm_device.h"
 #include "dbus_nm_wireless.h"
 
@@ -113,6 +114,7 @@ class NMDeviceAdapter: public QObject {
 public:
 	explicit NMDeviceAdapter(QObject* parent = nullptr);
 	void init(const QString& path);
+
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
@@ -141,6 +143,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pAddress, bHwAddress, deviceProperties, "HwAddress");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pType, bType, deviceProperties, "DeviceType");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pState, bState, deviceProperties, "State");
+	// clang-format on
 
 	DBusNMDeviceProxy* proxy = nullptr;
 };
@@ -151,6 +154,10 @@ class NMWirelessAdapter: public QObject {
 public:
 	explicit NMWirelessAdapter(QObject* parent = nullptr);
 	void init(const QString& path);
+	void registerAccessPoint(const QString& path);
+	void registerAccessPoints();
+	QHash<QString, NetworkAccessPoint*> mAPHash;
+
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
@@ -161,13 +168,63 @@ public slots:
 
 signals:
 	void lastScanChanged(qint64 lastScan);
+	void accessPointAdded(NetworkAccessPoint* ap);
+	void accessPointRemoved(NetworkAccessPoint* ap);
+
+private slots:
+	void onAccessPointAdded(const QDBusObjectPath& path);
+	void onAccessPointRemoved(const QDBusObjectPath& path);
 
 private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessAdapter, qint64, bLastScan, &NMWirelessAdapter::lastScanChanged);
-
+	
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWirelessAdapter, wirelessProperties);
 	QS_DBUS_PROPERTY_BINDING(NMWirelessAdapter, pLastScan, bLastScan, wirelessProperties, "LastScan");
+	// clang-format on
+
 	DBusNMWirelessProxy* proxy = nullptr;
+};
+
+class NMAccessPointAdapter: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit NMAccessPointAdapter(QObject* parent = nullptr);
+	void init(const QString& path);
+	[[nodiscard]] bool isValid() const;
+	[[nodiscard]] QString path() const;
+	[[nodiscard]] QString address() const;
+
+signals:
+	void ssidChanged(QByteArray ssid);
+	void signalChanged(uchar signal);
+
+private:
+	//clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    NMAccessPointAdapter,
+	    QByteArray,
+	    bSsid,
+	    &NMAccessPointAdapter::ssidChanged
+	);
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    NMAccessPointAdapter,
+	    uchar,
+	    bSignal,
+	    &NMAccessPointAdapter::signalChanged
+	);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMAccessPointAdapter, accessPointProperties);
+	QS_DBUS_PROPERTY_BINDING(NMAccessPointAdapter, pSsid, bSsid, accessPointProperties, "Ssid");
+	QS_DBUS_PROPERTY_BINDING(
+	    NMAccessPointAdapter,
+	    pSignal,
+	    bSignal,
+	    accessPointProperties,
+	    "Strength"
+	);
+
+	DBusNMAccessPointProxy* proxy = nullptr;
 };
 } // namespace qs::network
