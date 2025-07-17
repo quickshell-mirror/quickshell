@@ -36,13 +36,16 @@ class PwObjectIface
 	Q_OBJECT;
 
 public:
-	explicit PwObjectIface(PwBindableObject* object): QObject(object), object(object) {};
+	explicit PwObjectIface(PwBindableObject* object);
 	// destructor should ONLY be called by the pw object destructor, making an unref unnecessary
 	~PwObjectIface() override = default;
 	Q_DISABLE_COPY_MOVE(PwObjectIface);
 
 	void ref() override;
 	void unref() override;
+
+private slots:
+	void onObjectDestroying();
 
 private:
 	quint32 refcount = 0;

@@ -18,6 +18,16 @@
 
 namespace qs::service::pipewire {
 
+PwObjectIface::PwObjectIface(PwBindableObject* object): QObject(object), object(object) {
+	// We want to destroy the interface before QObject::destroyed is fired, as handlers
+	// connected before PwObjectIface will run first and emit signals that hit user code,
+	// which can then try to reference the iface again after ~PwNode() has been called but
+	// before ~QObject() has finished.
+	QObject::connect(object, &PwBindableObject::destroying, this, &PwObjectIface::onObjectDestroying);
+}
+
+void PwObjectIface::onObjectDestroying() { delete this; }
+
 void PwObjectIface::ref() {
 	this->refcount++;
 
