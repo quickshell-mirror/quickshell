@@ -18,8 +18,8 @@ public:
 
 	// path must be canonical
 	void scanDir(const QString& path);
-	// returns if the file has a singleton
-	bool scanQmlFile(const QString& path);
+
+	void scanQmlRoot(const QString& path);
 
 	QVector<QString> scannedDirs;
 	QVector<QString> scannedFiles;
@@ -28,6 +28,7 @@ public:
 private:
 	QDir rootPath;
 
-	void scanQmlJson(const QString& path);
+	bool scanQmlFile(const QString& path, bool& singleton, bool& internal);
+	bool scanQmlJson(const QString& path);
 	[[nodiscard]] static QPair<QString, QString> jsonToQml(const QJsonValue& value, int indent = 0);
 };

@@ -58,7 +58,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto rootFile = QFileInfo(this->rootPath);
 	auto rootPath = rootFile.dir();
 	auto scanner = QmlScanner(rootPath);
-	scanner.scanQmlFile(this->rootPath);
+	scanner.scanQmlRoot(this->rootPath);
 
 	qs::core::QmlToolingSupport::updateTooling(rootPath, scanner);
 	this->configDirWatcher.addPath(rootPath.path());

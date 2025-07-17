@@ -26,30 +26,41 @@ void QmlScanner::scanDir(const QString& path) {
 	qCDebug(logQmlScanner) << "Scanning directory" << path;
 	auto dir = QDir(path);
 
+	struct Entry {
+		QString name;
+		bool singleton = false;
+		bool internal = false;
+	};
+
 	bool seenQmldir = false;
-	auto singletons = QVector<QString>();
-	auto entries = QVector<QString>();
-	for (auto& entry: dir.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
-		if (entry == "qmldir") {
+	auto entries = QVector<Entry>();
+
+	for (auto& name: dir.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
+		if (name == "qmldir") {
 			qCDebug(logQmlScanner
 			) << "Found qmldir file, qmldir synthesization will be disabled for directory"
 			  << path;
 			seenQmldir = true;
-		} else if (entry.at(0).isUpper() && entry.endsWith(".qml")) {
-			if (this->scanQmlFile(dir.filePath(entry))) {
-				singletons.push_back(entry);
+		} else if (name.at(0).isUpper() && name.endsWith(".qml")) {
+			auto& entry = entries.emplaceBack();
+
+			if (this->scanQmlFile(dir.filePath(name), entry.singleton, entry.internal)) {
+				entry.name = name;
 			} else {
-				entries.push_back(entry);
+				entries.pop_back();
 			}
-		} else if (entry.at(0).isUpper() && entry.endsWith(".qml.json")) {
-			this->scanQmlJson(dir.filePath(entry));
-			singletons.push_back(entry.first(entry.length() - 5));
+		} else if (name.at(0).isUpper() && name.endsWith(".qml.json")) {
+			if (this->scanQmlJson(dir.filePath(name))) {
+				entries.push_back({
+				    .name = name.first(name.length() - 5),
+				    .singleton = true,
+				});
+			}
 		}
 	}
 
 	if (!seenQmldir) {
-		qCDebug(logQmlScanner) << "Synthesizing qmldir for directory" << path << "singletons"
-		                       << singletons;
+		qCDebug(logQmlScanner) << "Synthesizing qmldir for directory" << path;
 
 		QString qmldir;
 		auto stream = QTextStream(&qmldir);
@@ -77,13 +88,10 @@ void QmlScanner::scanDir(const QString& path) {
 			qCWarning(logQmlScanner) << "Module path" << path << "is outside of the config folder.";
 		}
 
-		for (auto& singleton: singletons) {
-			stream << "singleton " << singleton.sliced(0, singleton.length() - 4) << " 1.0 " << singleton
-			       << "\n";
-		}
-
-		for (auto& entry: entries) {
-			stream << entry.sliced(0, entry.length() - 4) << " 1.0 " << entry << "\n";
+		for (const auto& entry: entries) {
+			if (entry.internal) stream << "internal ";
+			if (entry.singleton) stream << "singleton ";
+			stream << entry.name.sliced(0, entry.name.length() - 4) << " 1.0 " << entry.name << '\n';
 		}
 
 		qCDebug(logQmlScanner) << "Synthesized qmldir for" << path << qPrintable("\n" + qmldir);
@@ -91,7 +99,7 @@ void QmlScanner::scanDir(const QString& path) {
 	}
 }
 
-bool QmlScanner::scanQmlFile(const QString& path) {
+bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& internal) {
 	if (this->scannedFiles.contains(path)) return false;
 	this->scannedFiles.push_back(path);
 
@@ -106,13 +114,12 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 	auto stream = QTextStream(&file);
 	auto imports = QVector<QString>();
 
-	bool singleton = false;
-
 	while (!stream.atEnd()) {
 		auto line = stream.readLine().trimmed();
 		if (!singleton && line == "pragma Singleton") {
-			qCDebug(logQmlScanner) << "Discovered singleton" << path;
 			singleton = true;
+		} else if (!internal && line == "//@ pragma Internal") {
+			internal = true;
 		} else if (line.startsWith("import")) {
 			// we dont care about "import qs" as we always load the root folder
 			if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
@@ -188,16 +195,22 @@ bool QmlScanner::scanQmlFile(const QString& path) {
 		else this->scanDir(cpath);
 	}
 
-	return singleton;
+	return true;
 }
 
-void QmlScanner::scanQmlJson(const QString& path) {
+void QmlScanner::scanQmlRoot(const QString& path) {
+	bool singleton = false;
+	bool internal = false;
+	this->scanQmlFile(path, singleton, internal);
+}
+
+bool QmlScanner::scanQmlJson(const QString& path) {
 	qCDebug(logQmlScanner) << "Scanning qml.json file" << path;
 
 	auto file = QFile(path);
 	if (!file.open(QFile::ReadOnly | QFile::Text)) {
 		qCWarning(logQmlScanner) << "Failed to open file" << path;
-		return;
+		return false;
 	}
 
 	auto data = file.readAll();
@@ -209,7 +222,7 @@ void QmlScanner::scanQmlJson(const QString& path) {
 	if (error.error != QJsonParseError::NoError) {
 		qCCritical(logQmlScanner).nospace()
 		    << "Failed to parse qml.json file at " << path << ": " << error.errorString();
-		return;
+		return false;
 	}
 
 	const QString body =
@@ -219,6 +232,7 @@ void QmlScanner::scanQmlJson(const QString& path) {
 
 	this->fileIntercepts.insert(path.first(path.length() - 5), body);
 	this->scannedFiles.push_back(path);
+	return true;
 }
 
 QPair<QString, QString> QmlScanner::jsonToQml(const QJsonValue& value, int indent) {
