@@ -163,6 +163,10 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 		} else {
 			const auto* icon = closestPixmap(size, this->bAttentionIconPixmaps.value());
 
+			if (icon == nullptr) {
+				icon = closestPixmap(size, this->bIconPixmaps.value());
+			}
+
 			if (icon != nullptr) {
 				const auto image =
 				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
