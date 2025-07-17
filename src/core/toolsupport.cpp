@@ -1,5 +1,7 @@
 #include "toolsupport.hpp"
+#include <cerrno>
 
+#include <fcntl.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qdir.h>
@@ -28,6 +30,10 @@ bool QmlToolingSupport::updateTooling(const QDir& configRoot, QmlScanner& scanne
 		return false;
 	}
 
+	if (!QmlToolingSupport::lockTooling()) {
+		return false;
+	}
+
 	if (!QmlToolingSupport::updateQmllsConfig(configRoot, false)) {
 		QDir(vfs->filePath("qs")).removeRecursively();
 		return false;
@@ -35,6 +41,39 @@ bool QmlToolingSupport::updateTooling(const QDir& configRoot, QmlScanner& scanne
 
 	QmlToolingSupport::updateToolingFs(scanner, configRoot, vfs->filePath("qs"));
 	return true;
+}
+
+bool QmlToolingSupport::lockTooling() {
+	if (QmlToolingSupport::toolingLock) return true;
+
+	auto lockPath = QsPaths::instance()->shellVfsDir()->filePath("tooling.lock");
+	auto* file = new QFile(lockPath);
+
+	if (!file->open(QFile::WriteOnly)) {
+		qCCritical(logTooling) << "Could not open tooling lock for write";
+		return false;
+	}
+
+	auto lock = flock {
+	    .l_type = F_WRLCK,
+	    .l_whence = SEEK_SET, // NOLINT (fcntl.h??)
+	    .l_start = 0,
+	    .l_len = 0,
+	    .l_pid = 0,
+	};
+
+	if (fcntl(file->handle(), F_SETLK, &lock) == 0) {
+		qCInfo(logTooling) << "Acquired tooling support lock";
+		QmlToolingSupport::toolingLock = file;
+		return true;
+	} else if (errno == EACCES || errno == EAGAIN) {
+		qCInfo(logTooling) << "Tooling support locked by another instance";
+		return false;
+	} else {
+		qCCritical(logTooling).nospace() << "Could not create tooling lock at " << lockPath
+		                                 << " with error code " << errno << ": " << qt_error_string();
+		return false;
+	}
 }
 
 QString QmlToolingSupport::getQmllsConfig() {
