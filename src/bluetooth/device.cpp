@@ -1,4 +1,5 @@
 #include "device.hpp"
+#include <algorithm>
 
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
@@ -46,10 +47,33 @@ BluetoothDevice::BluetoothDevice(const QString& path, QObject* parent): QObject(
 	}
 
 	this->properties.setInterface(this->mInterface);
+
+	this->bRssi.subscribe([this]() { emit this->signalStrengthChanged(); });
 }
 
 BluetoothAdapter* BluetoothDevice::adapter() const {
 	return Bluez::instance()->adapter(this->bAdapterPath.value().path());
+}
+
+qint32 BluetoothDevice::signalStrength() const {
+	// Convert RSSI (dBm) to a normalized 0-100 scale
+	// Based on practical Bluetooth RSSI ranges:
+	// -30 to -40 dBm = 85-100
+	// -40 to -55 dBm = 65-85
+	// -55 to -65 dBm = 45-65
+	// -65 to -75 dBm = 25-45
+	// -75 to -85 dBm = 10-25
+	// <= -85 dBm     = 0-10
+
+	auto rssiValue = this->bRssi.value();
+	if (rssiValue == 0) {
+		return 0;
+	}
+
+	auto rssi = std::max(static_cast<qint16>(-100), std::min(static_cast<qint16>(-30), rssiValue));
+	auto normalized = static_cast<qint32>(((rssi + 100) / 70.0) * 100.0);
+
+	return std::max(0, std::min(100, normalized));
 }
 
 void BluetoothDevice::setConnected(bool connected) {

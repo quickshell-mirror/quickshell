@@ -99,9 +99,8 @@ class BluetoothDevice: public QObject {
 	Q_PROPERTY(bool batteryAvailable READ batteryAvailable NOTIFY batteryAvailableChanged);
 	/// Battery level of the connected device, from `0.0` to `1.0`. Only valid if @@batteryAvailable is true.
 	Q_PROPERTY(qreal battery READ default NOTIFY batteryChanged BINDABLE bindableBattery);
-	/// Received Signal Strength Indicator in dBm. Only valid when device is discoverable/advertising.
-	/// Typical values range from -30 (very close) to -90 (far away). Values of 0 indicate no signal data.
-	Q_PROPERTY(qint16 rssi READ rssi NOTIFY rssiChanged BINDABLE bindableRssi);
+	/// Signal strength as a normalized score from 0 to 100, where higher is better (stronger signal).
+	Q_PROPERTY(qint32 signalStrength READ signalStrength NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
 	/// The Bluetooth adapter this device belongs to.
 	Q_PROPERTY(BluetoothAdapter* adapter READ adapter NOTIFY adapterChanged);
 	/// DBus path of the device under the `org.bluez` system service.
@@ -148,7 +147,7 @@ public:
 	[[nodiscard]] bool wakeAllowed() const { return this->bWakeAllowed; }
 	void setWakeAllowed(bool wakeAllowed);
 
-	[[nodiscard]] qint16 rssi() const { return this->bRssi; }
+	[[nodiscard]] qint32 signalStrength() const;
 
 	[[nodiscard]] bool pairing() const { return this->bPairing; }
 
@@ -164,7 +163,7 @@ public:
 	[[nodiscard]] QBindable<QString> bindableIcon() { return &this->bIcon; }
 	[[nodiscard]] QBindable<qreal> bindableBattery() { return &this->bBattery; }
 	[[nodiscard]] QBindable<BluetoothDeviceState::Enum> bindableState() { return &this->bState; }
-	[[nodiscard]] QBindable<qint16> bindableRssi() { return &this->bRssi; }
+	[[nodiscard]] QBindable<qint32> bindableSignalStrength() { return &this->bSignalStrength; }
 
 	void addInterface(const QString& interface, const QVariantMap& properties);
 	void removeInterface(const QString& interface);
@@ -184,7 +183,7 @@ signals:
 	void iconChanged();
 	void batteryAvailableChanged();
 	void batteryChanged();
-	void rssiChanged();
+	void signalStrengthChanged();
 	void adapterChanged();
 
 private:
@@ -208,7 +207,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, qreal, bBattery, &BluetoothDevice::batteryChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, BluetoothDeviceState::Enum, bState, &BluetoothDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, bool, bPairing, &BluetoothDevice::pairingChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, qint16, bRssi, &BluetoothDevice::rssiChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, qint32, bSignalStrength, &BluetoothDevice::signalStrengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, qint16, bRssi);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(BluetoothDevice, properties);
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pAddress, bAddress, properties, "Address");
