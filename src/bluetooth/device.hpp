@@ -222,7 +222,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pWakeAllowed, bWakeAllowed, properties, "WakeAllowed");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pIcon, bIcon, properties, "Icon");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pAdapterPath, bAdapterPath, properties, "Adapter");
-	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pRssi, bRssi, properties, "RSSI", true);
+	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pRssi, bRssi, properties, "RSSI", false);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(BluetoothDevice, batteryProperties);
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, BatteryPercentage, pBattery, bBattery, batteryProperties, "Percentage", true);
