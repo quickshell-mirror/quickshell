@@ -108,10 +108,13 @@ bool QmlToolingSupport::updateQmllsConfig(const QDir& configRoot, bool create) {
 	auto vfsConfigPath = QsPaths::instance()->shellVfsDir()->filePath(".qmlls.ini");
 
 	auto shellFileInfo = QFileInfo(shellConfigPath);
-	if (!create && !shellFileInfo.exists()) {
+	if (!create && !shellFileInfo.exists() && !shellFileInfo.isSymLink()) {
 		if (QmlToolingSupport::toolingEnabled) {
 			qInfo() << "QML tooling support disabled";
 			QmlToolingSupport::toolingEnabled = false;
+		} else {
+			qCInfo(logTooling) << "Not enabling QML tooling support, qmlls.ini is missing at path"
+			                   << shellConfigPath;
 		}
 
 		QFile::remove(vfsConfigPath);
