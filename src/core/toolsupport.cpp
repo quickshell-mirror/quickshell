@@ -9,7 +9,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qnamespace.h>
+#include <qqmlengine.h>
 #include <qtenvironmentvariables.h>
 
 #include "logcat.hpp"
@@ -78,16 +78,10 @@ bool QmlToolingSupport::lockTooling() {
 
 QString QmlToolingSupport::getQmllsConfig() {
 	static auto config = []() {
-		QList<QString> importPaths;
-
-		auto addPaths = [&](const QList<QString>& paths) {
-			for (const auto& path: paths) {
-				if (!importPaths.contains(path)) importPaths.append(path);
-			}
-		};
-
-		addPaths(qEnvironmentVariable("QML_IMPORT_PATH").split(u':', Qt::SkipEmptyParts));
-		addPaths(qEnvironmentVariable("QML2_IMPORT_PATH").split(u':', Qt::SkipEmptyParts));
+		// We can't replicate the algorithm used to create the import path list as it can have distro
+		// specific patches, e.g. nixos.
+		auto importPaths = QQmlEngine().importPathList();
+		importPaths.removeIf([](const QString& path) { return path.startsWith("qrc:"); });
 
 		auto vfsPath = QsPaths::instance()->shellVfsDir()->path();
 		auto importPathsStr = importPaths.join(u':');
