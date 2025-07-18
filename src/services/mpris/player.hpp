@@ -51,6 +51,30 @@ public:
 	Q_INVOKABLE static QString toString(qs::service::mpris::MprisLoopState::Enum status);
 };
 
+}; // namespace qs::service::mpris
+
+namespace qs::dbus {
+
+template <>
+struct DBusDataTransform<qs::service::mpris::MprisPlaybackState::Enum> {
+	using Wire = QString;
+	using Data = qs::service::mpris::MprisPlaybackState::Enum;
+	static DBusResult<Data> fromWire(const QString& wire);
+	static QString toWire(Data data);
+};
+
+template <>
+struct DBusDataTransform<qs::service::mpris::MprisLoopState::Enum> {
+	using Wire = QString;
+	using Data = qs::service::mpris::MprisLoopState::Enum;
+	static DBusResult<Data> fromWire(const QString& wire);
+	static QString toWire(Data data);
+};
+
+}; // namespace qs::dbus
+
+namespace qs::service::mpris {
+
 ///! A media player exposed over MPRIS.
 /// A media player exposed over MPRIS.
 ///
@@ -404,13 +428,13 @@ private:
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(MprisPlayer, appProperties);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pIdentity, bIdentity, appProperties, "Identity");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pDesktopEntry, bDesktopEntry, appProperties, "DesktopEntry");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanQuit, bCanQuit, appProperties, "CanQuit");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanRaise, bCanRaise, appProperties, "CanRaise");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pDesktopEntry, bDesktopEntry, appProperties, "DesktopEntry", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanQuit, bCanQuit, appProperties, "CanQuit", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanRaise, bCanRaise, appProperties, "CanRaise", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pFullscreen, bFullscreen, appProperties, "Fullscreen", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pCanSetFullscreen, bCanSetFullscreen, appProperties, "CanSetFullscreen", false);
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedUriSchemes, bSupportedUriSchemes, appProperties, "SupportedUriSchemes");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedMimeTypes, bSupportedMimeTypes, appProperties, "SupportedMimeTypes");
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedUriSchemes, bSupportedUriSchemes, appProperties, "SupportedUriSchemes", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pSupportedMimeTypes, bSupportedMimeTypes, appProperties, "SupportedMimeTypes", false);
 
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanPlay);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bpCanPause);
@@ -420,8 +444,6 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QVariantMap, bpMetadata);
 	QS_BINDING_SUBSCRIBE_METHOD(MprisPlayer, bpMetadata, onMetadataChanged, onValueChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MprisPlayer, qlonglong, bpPosition, -1, &MprisPlayer::positionChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bpPlaybackStatus);
-	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bpLoopStatus);
 
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanControl, &MprisPlayer::canControlChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, bool, bCanPlay, &MprisPlayer::canPlayChanged);
@@ -460,8 +482,8 @@ private:
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, qlonglong, pPosition, bpPosition, onPositionUpdated, playerProperties, "Position", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pVolume, bVolume, playerProperties, "Volume", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMetadata, bpMetadata, playerProperties, "Metadata");
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, void, pPlaybackStatus, bpPlaybackStatus, onPlaybackStatusUpdated, playerProperties, "PlaybackStatus", true);
-	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pLoopStatus, bpLoopStatus, playerProperties, "LoopStatus", false);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, void, pPlaybackStatus, bPlaybackState, onPlaybackStatusUpdated, playerProperties, "PlaybackStatus", true);
+	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pLoopStatus, bLoopState, playerProperties, "LoopStatus", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pRate, bRate, playerProperties, "Rate", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMinRate, bMinRate, playerProperties, "MinimumRate", false);
 	QS_DBUS_PROPERTY_BINDING(MprisPlayer, pMaxRate, bMaxRate, playerProperties, "MaximumRate", false);

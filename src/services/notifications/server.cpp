@@ -21,7 +21,7 @@
 namespace qs::service::notifications {
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-QS_LOGGING_CATEGORY(logNotifications, "quickshell.service.notifications");
+QS_LOGGING_CATEGORY(logNotifications, "quickshell.service.notifications", QtWarningMsg);
 
 NotificationServer::NotificationServer() {
 	qDBusRegisterMetaType<DBusNotificationImage>();

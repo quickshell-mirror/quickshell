@@ -246,8 +246,13 @@ void DBusPropertyGroup::requestPropertyUpdate(DBusPropertyCore* property) {
 		const QDBusPendingReply<QDBusVariant> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logDbusProperties).noquote() << "Error updating property" << propStr;
-			qCWarning(logDbusProperties) << reply.error();
+			if (!property->isRequired() && reply.error().type() == QDBusError::InvalidArgs) {
+				qCDebug(logDbusProperties) << "Error updating non-required property" << propStr;
+				qCDebug(logDbusProperties) << reply.error();
+			} else {
+				qCWarning(logDbusProperties).noquote() << "Error updating property" << propStr;
+				qCWarning(logDbusProperties) << reply.error();
+			}
 		} else {
 			this->tryUpdateProperty(property, reply.value().variant());
 		}

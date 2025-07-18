@@ -222,9 +222,14 @@ void StatusNotifierItem::activate() {
 		const QDBusPendingReply<> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logStatusNotifierItem).noquote()
-			    << "Error calling Activate method of StatusNotifierItem" << this->properties.toString();
-			qCWarning(logStatusNotifierItem) << reply.error();
+			if (reply.error().type() == QDBusError::UnknownMethod) {
+				qCDebug(logStatusNotifierItem) << "Tried to call Activate method of StatusNotifierItem"
+				                               << this->properties.toString() << "but it does not exist.";
+			} else {
+				qCWarning(logStatusNotifierItem).noquote()
+				    << "Error calling Activate method of StatusNotifierItem" << this->properties.toString();
+				qCWarning(logStatusNotifierItem) << reply.error();
+			}
 		}
 
 		delete call;
@@ -241,10 +246,16 @@ void StatusNotifierItem::secondaryActivate() {
 		const QDBusPendingReply<> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logStatusNotifierItem).noquote()
-			    << "Error calling SecondaryActivate method of StatusNotifierItem"
-			    << this->properties.toString();
-			qCWarning(logStatusNotifierItem) << reply.error();
+			if (reply.error().type() == QDBusError::UnknownMethod) {
+				qCDebug(logStatusNotifierItem)
+				    << "Tried to call SecondaryActivate method of StatusNotifierItem"
+				    << this->properties.toString() << "but it does not exist.";
+			} else {
+				qCWarning(logStatusNotifierItem).noquote()
+				    << "Error calling SecondaryActivate method of StatusNotifierItem"
+				    << this->properties.toString();
+				qCWarning(logStatusNotifierItem) << reply.error();
+			}
 		}
 
 		delete call;

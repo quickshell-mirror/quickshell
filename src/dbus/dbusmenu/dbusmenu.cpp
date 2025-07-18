@@ -312,8 +312,8 @@ void DBusMenu::prepareToShow(qint32 item, qint32 depth) {
 	auto responseCallback = [this, item, depth](QDBusPendingCallWatcher* call) {
 		const QDBusPendingReply<bool> reply = *call;
 		if (reply.isError()) {
-			qCWarning(logDbusMenu) << "Error in AboutToShow, but showing anyway for menu" << item << "of"
-			                       << this << reply.error();
+			qCDebug(logDbusMenu) << "Error in AboutToShow, but showing anyway for menu" << item << "of"
+			                     << this << reply.error();
 		}
 
 		this->updateLayout(item, depth);

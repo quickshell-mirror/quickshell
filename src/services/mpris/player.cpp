@@ -3,6 +3,7 @@
 #include <qcontainerfwd.h>
 #include <qdatetime.h>
 #include <qdbusconnection.h>
+#include <qdbuserror.h>
 #include <qdbusextratypes.h>
 #include <qlist.h>
 #include <qlogging.h>
@@ -101,39 +102,8 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 
 	this->bLengthSupported.setBinding([this]() { return this->bInternalLength != -1; });
 
-	this->bPlaybackState.setBinding([this]() {
-		const auto& status = this->bpPlaybackStatus.value();
-
-		if (status == "Playing") {
-			return MprisPlaybackState::Playing;
-		} else if (status == "Paused") {
-			this->pausedTime = QDateTime::currentDateTimeUtc();
-			return MprisPlaybackState::Paused;
-		} else if (status == "Stopped") {
-			return MprisPlaybackState::Stopped;
-		} else {
-			qWarning() << "Received unexpected PlaybackStatus for" << this << status;
-			return MprisPlaybackState::Stopped;
-		}
-	});
-
 	this->bIsPlaying.setBinding([this]() {
 		return this->bPlaybackState == MprisPlaybackState::Playing;
-	});
-
-	this->bLoopState.setBinding([this]() {
-		const auto& status = this->bpLoopStatus.value();
-
-		if (status == "None") {
-			return MprisLoopState::None;
-		} else if (status == "Track") {
-			return MprisLoopState::Track;
-		} else if (status == "Playlist") {
-			return MprisLoopState::Playlist;
-		} else {
-			qWarning() << "Received unexpected LoopStatus for" << this << status;
-			return MprisLoopState::None;
-		}
 	});
 
 	// clang-format off
@@ -432,18 +402,11 @@ void MprisPlayer::setLoopState(MprisLoopState::Enum loopState) {
 	}
 
 	if (loopState == this->bLoopState) return;
-
-	QString loopStatusStr;
-	switch (loopState) {
-	case MprisLoopState::None: loopStatusStr = "None"; break;
-	case MprisLoopState::Track: loopStatusStr = "Track"; break;
-	case MprisLoopState::Playlist: loopStatusStr = "Playlist"; break;
-	default:
+	if (loopState < MprisLoopState::None || loopState > MprisLoopState::Playlist) {
 		qWarning() << "Cannot set loopState of" << this << "to unknown value" << loopState;
-		return;
 	}
 
-	this->bpLoopStatus = loopStatusStr;
+	this->bLoopState = loopState;
 	this->pLoopStatus.write();
 }
 
@@ -496,3 +459,47 @@ void MprisPlayer::onGetAllFinished() {
 }
 
 } // namespace qs::service::mpris
+
+namespace qs::dbus {
+
+using namespace qs::service::mpris;
+
+DBusResult<MprisPlaybackState::Enum>
+DBusDataTransform<MprisPlaybackState::Enum>::fromWire(const QString& wire) {
+	if (wire == "Playing") return MprisPlaybackState::Playing;
+	if (wire == "Paused") return MprisPlaybackState::Paused;
+	if (wire == "Stopped") return MprisPlaybackState::Stopped;
+	return QDBusError(QDBusError::InvalidArgs, QString("Invalid MprisPlaybackState: %1").arg(wire));
+}
+
+QString DBusDataTransform<MprisPlaybackState::Enum>::toWire(MprisPlaybackState::Enum data) {
+	switch (data) {
+	case MprisPlaybackState::Playing: return "Playing";
+	case MprisPlaybackState::Paused: return "Paused";
+	case MprisPlaybackState::Stopped: return "Stopped";
+	default:
+		qFatal() << "Tried to convert an invalid MprisPlaybackState to String";
+		return QString();
+	}
+}
+
+DBusResult<MprisLoopState::Enum>
+DBusDataTransform<MprisLoopState::Enum>::fromWire(const QString& wire) {
+	if (wire == "None") return MprisLoopState::None;
+	if (wire == "Track") return MprisLoopState::Track;
+	if (wire == "Playlist") return MprisLoopState::Playlist;
+	return QDBusError(QDBusError::InvalidArgs, QString("Invalid MprisLoopState: %1").arg(wire));
+}
+
+QString DBusDataTransform<MprisLoopState::Enum>::toWire(MprisLoopState::Enum data) {
+	switch (data) {
+	case MprisLoopState::None: return "None";
+	case MprisLoopState::Track: return "Track";
+	case MprisLoopState::Playlist: return "Playlist";
+	default:
+		qFatal() << "Tried to convert an invalid MprisLoopState to String";
+		return QString();
+	}
+}
+
+} // namespace qs::dbus
