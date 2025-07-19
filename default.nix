@@ -118,11 +118,8 @@
     dontBuild = true;
 
     installPhase = ''
-      mkdir -p $out/bin
-      # cp will create .quickshell-wrapped in path, ln will not. It is occasionally useful.
-      cp -r ${unwrapped}/bin/* $out/bin
-      ln -s ${unwrapped}/share $out/share
-      # not /lib
+      mkdir -p $out
+      cp -r ${unwrapped}/* $out
     '';
 
     passthru = {
