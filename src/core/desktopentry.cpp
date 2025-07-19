@@ -17,6 +17,8 @@
 #include <ranges>
 
 #include "../io/processcore.hpp"
+#include "desktopentrymonitor.hpp"
+#include "desktoputils.hpp"
 #include "logcat.hpp"
 #include "model.hpp"
 #include "qmlglobal.hpp"
@@ -270,40 +272,35 @@ void DesktopAction::execute() const {
 }
 
 DesktopEntryManager::DesktopEntryManager() {
+	// Create file watcher for desktop entries
+	this->monitor = new DesktopEntryMonitor(this);
+	connect(
+	    this->monitor,
+	    &DesktopEntryMonitor::desktopEntriesChanged,
+	    this,
+	    &DesktopEntryManager::handleFileChanges
+	);
+
+	// Initial scan
 	this->scanDesktopEntries();
 	this->populateApplications();
 }
 
 void DesktopEntryManager::scanDesktopEntries() {
-	QList<QString> dataPaths;
-
-	if (qEnvironmentVariableIsSet("XDG_DATA_HOME")) {
-		dataPaths.push_back(qEnvironmentVariable("XDG_DATA_HOME"));
-	} else if (qEnvironmentVariableIsSet("HOME")) {
-		dataPaths.push_back(qEnvironmentVariable("HOME") + "/.local/share");
-	}
-
-	if (qEnvironmentVariableIsSet("XDG_DATA_DIRS")) {
-		auto var = qEnvironmentVariable("XDG_DATA_DIRS");
-		dataPaths += var.split(u':', Qt::SkipEmptyParts);
-	} else {
-		dataPaths.push_back("/usr/local/share");
-		dataPaths.push_back("/usr/share");
-	}
+	auto desktopPaths = DesktopUtils::getDesktopDirectories();
 
 	qCDebug(logDesktopEntry) << "Creating desktop entry scanners";
 
-	for (auto& path: std::ranges::reverse_view(dataPaths)) {
-		auto p = QDir(path).filePath("applications");
-		auto file = QFileInfo(p);
+	for (auto& path: std::ranges::reverse_view(desktopPaths)) {
+		auto file = QFileInfo(path);
 
 		if (!file.isDir()) {
-			qCDebug(logDesktopEntry) << "Not scanning path" << p << "as it is not a directory";
+			qCDebug(logDesktopEntry) << "Not scanning path" << path << "as it is not a directory";
 			continue;
 		}
 
-		qCDebug(logDesktopEntry) << "Scanning path" << p;
-		this->scanPath(p);
+		qCDebug(logDesktopEntry) << "Scanning path" << path;
+		this->scanPath(path);
 	}
 }
 
@@ -313,11 +310,11 @@ void DesktopEntryManager::populateApplications() {
 	}
 }
 
-void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
+void DesktopEntryManager::scanPath(const QDir& dir) {
 	auto entries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
 	for (auto& entry: entries) {
-		if (entry.isDir()) this->scanPath(entry.absoluteFilePath(), prefix + dir.dirName() + "-");
+		if (entry.isDir()) this->scanPath(entry.absoluteFilePath());
 		else if (entry.isFile()) {
 			auto path = entry.filePath();
 			if (!path.endsWith(".desktop")) {
@@ -331,7 +328,7 @@ void DesktopEntryManager::scanPath(const QDir& dir, const QString& prefix) {
 				continue;
 			}
 
-			auto id = prefix + entry.fileName().sliced(0, entry.fileName().length() - 8);
+			auto id = this->extractIdFromPath(entry.absoluteFilePath());
 			auto lowerId = id.toLower();
 
 			auto text = QString::fromUtf8(file.readAll());
@@ -407,7 +404,77 @@ DesktopEntry* DesktopEntryManager::heuristicLookup(const QString& name) {
 
 ObjectModel<DesktopEntry>* DesktopEntryManager::applications() { return &this->mApplications; }
 
-DesktopEntries::DesktopEntries() { DesktopEntryManager::instance(); }
+void DesktopEntryManager::handleFileChanges(
+    const QHash<QString, DesktopEntryMonitor::ChangeEvent>&
+) {
+	qCDebug(logDesktopEntry) << "Directory change detected, performing full rescan";
+
+	auto oldEntries = this->desktopEntries;
+
+	this->desktopEntries.clear();
+	this->lowercaseDesktopEntries.clear();
+
+	this->scanDesktopEntries();
+
+	QVector<DesktopEntry*> newApplications;
+	for (auto& entry: this->desktopEntries.values()) {
+		if (!entry->noDisplay()) {
+			newApplications.append(entry);
+		}
+	}
+
+	this->mApplications.diffUpdate(newApplications);
+
+	for (auto* e: oldEntries) {
+		if (!this->desktopEntries.contains(e->mId)) {
+			e->deleteLater();
+		}
+	}
+
+	emit applicationsChanged();
+}
+
+QString DesktopEntryManager::extractIdFromPath(const QString& path) {
+	// Extract ID from path following XDG spec
+	// e.g., /usr/share/applications/firefox.desktop -> firefox
+	// e.g., /usr/share/applications/kde4/kate.desktop -> kde4-kate
+
+	auto info = QFileInfo(path);
+	auto id = info.completeBaseName();
+
+	// Find the applications directory in the path
+	auto appIdx = path.lastIndexOf("/applications/");
+	if (appIdx != -1) {
+		auto relativePath = path.mid(appIdx + 14); // Skip "/applications/"
+		auto relInfo = QFileInfo(relativePath);
+
+		// Replace directory separators with dashes
+		auto dirPath = relInfo.path();
+		if (dirPath != ".") {
+			id = dirPath.replace('/', '-') + '-' + relInfo.completeBaseName();
+		}
+	}
+
+	return id;
+}
+
+void DesktopEntryManager::updateApplicationModel() {
+	QVector<DesktopEntry*> newApplications;
+	for (auto& entry: this->desktopEntries.values()) {
+		if (!entry->noDisplay()) newApplications.append(entry);
+	}
+	this->mApplications.diffUpdate(newApplications);
+}
+
+DesktopEntries::DesktopEntries() {
+	auto* mgr = DesktopEntryManager::instance();
+	QObject::connect(
+	    mgr,
+	    &DesktopEntryManager::applicationsChanged,
+	    this,
+	    &DesktopEntries::applicationsChanged
+	);
+}
 
 DesktopEntry* DesktopEntries::byId(const QString& id) {
 	return DesktopEntryManager::instance()->byId(id);
