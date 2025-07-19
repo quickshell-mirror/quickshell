@@ -1,4 +1,5 @@
 #include "desktopentry.hpp"
+#include <algorithm>
 
 #include <qcontainerfwd.h>
 #include <qdebug.h>
@@ -108,6 +109,7 @@ void DesktopEntry::parseEntry(const QString& text) {
 
 				if (key == "Name") this->mName = value;
 				else if (key == "GenericName") this->mGenericName = value;
+				else if (key == "StartupWMClass") this->mStartupClass = value;
 				else if (key == "NoDisplay") this->mNoDisplay = value == "true";
 				else if (key == "Comment") this->mComment = value;
 				else if (key == "Icon") this->mIcon = value;
@@ -384,12 +386,35 @@ DesktopEntry* DesktopEntryManager::byId(const QString& id) {
 	}
 }
 
+DesktopEntry* DesktopEntryManager::heuristicLookup(const QString& name) {
+	if (auto* entry = DesktopEntryManager::byId(name)) return entry;
+
+	auto& list = this->mApplications.valueList();
+
+	auto iter = std::ranges::find_if(list, [&](const DesktopEntry* entry) {
+		return name == entry->mStartupClass;
+	});
+
+	if (iter != list.end()) return *iter;
+
+	iter = std::ranges::find_if(list, [&](const DesktopEntry* entry) {
+		return name.toLower() == entry->mStartupClass.toLower();
+	});
+
+	if (iter != list.end()) return *iter;
+	return nullptr;
+}
+
 ObjectModel<DesktopEntry>* DesktopEntryManager::applications() { return &this->mApplications; }
 
 DesktopEntries::DesktopEntries() { DesktopEntryManager::instance(); }
 
 DesktopEntry* DesktopEntries::byId(const QString& id) {
 	return DesktopEntryManager::instance()->byId(id);
+}
+
+DesktopEntry* DesktopEntries::heuristicLookup(const QString& name) {
+	return DesktopEntryManager::instance()->heuristicLookup(name);
 }
 
 ObjectModel<DesktopEntry>* DesktopEntries::applications() {

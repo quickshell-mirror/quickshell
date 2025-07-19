@@ -22,6 +22,9 @@ class DesktopEntry: public QObject {
 	Q_PROPERTY(QString name MEMBER mName CONSTANT);
 	/// Short description of the application, such as "Web Browser". May be empty.
 	Q_PROPERTY(QString genericName MEMBER mGenericName CONSTANT);
+	/// Initial class or app id the app intends to use. May be useful for matching running apps
+	/// to desktop entries.
+	Q_PROPERTY(QString startupClass MEMBER mStartupClass CONSTANT);
 	/// If true, this application should not be displayed in menus and launchers.
 	Q_PROPERTY(bool noDisplay MEMBER mNoDisplay CONSTANT);
 	/// Long description of the application, such as "View websites on the internet". May be empty.
@@ -81,6 +84,7 @@ public:
 	QString mId;
 	QString mName;
 	QString mGenericName;
+	QString mStartupClass;
 	bool mNoDisplay = false;
 	QString mComment;
 	QString mIcon;
@@ -151,6 +155,7 @@ public:
 	void scanDesktopEntries();
 
 	[[nodiscard]] DesktopEntry* byId(const QString& id);
+	[[nodiscard]] DesktopEntry* heuristicLookup(const QString& name);
 
 	[[nodiscard]] ObjectModel<DesktopEntry>* applications();
 
@@ -186,7 +191,14 @@ public:
 	explicit DesktopEntries();
 
 	/// Look up a desktop entry by name. Includes NoDisplay entries. May return null.
+	///
+	/// While this function requires an exact match, @@heuristicLookup() will correctly
+	/// find an entry more often and is generally more useful.
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* byId(const QString& id);
+	/// Look up a desktop entry by name using heuristics. Unline @@byId(),
+	/// if no exact matches are found this function will try to guess - potentially incorrectly.
+	/// May return null.
+	Q_INVOKABLE [[nodiscard]] static DesktopEntry* heuristicLookup(const QString& name);
 
 	[[nodiscard]] static ObjectModel<DesktopEntry>* applications();
 };
