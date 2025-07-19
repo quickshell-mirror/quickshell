@@ -389,7 +389,7 @@ DesktopEntry* DesktopEntryManager::byId(const QString& id) {
 DesktopEntry* DesktopEntryManager::heuristicLookup(const QString& name) {
 	if (auto* entry = DesktopEntryManager::byId(name)) return entry;
 
-	auto& list = this->mApplications.valueList();
+	auto list = this->desktopEntries.values();
 
 	auto iter = std::ranges::find_if(list, [&](const DesktopEntry* entry) {
 		return name == entry->mStartupClass;
