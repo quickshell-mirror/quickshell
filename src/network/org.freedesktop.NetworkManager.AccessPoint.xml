@@ -1,0 +1,6 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.AccessPoint">
+    <property name="Ssid" type="ay" access="read"/>
+    <property name="Strength" type="y" access="read"/>
+	</interface>
+</node>

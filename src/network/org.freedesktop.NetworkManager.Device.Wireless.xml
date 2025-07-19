@@ -1,0 +1,22 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Device.Wireless">
+    <property name="Mode" type="u" access="read"/>
+    <property name="Bitrate" type="u" access="read"/>
+    <property name="LastScan" type="x" access="read"/>
+    <property name="ActiveAccessPoint" type="o" access="read"/>
+    
+		<method name="GetAllAccessPoints" type="ao"/>
+
+    <method name="RequestScan">
+			<arg name="options" type="a{sv}" direction="in"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
+    </method>
+    
+    <signal name="AccessPointAdded">
+      <arg name="access_point" type="o"/>
+    </signal>
+		<signal name="AccessPointRemoved">
+			<arg name="access_point" type="o"/>
+		</signal>
+  </interface>
+</node>
