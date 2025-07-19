@@ -477,9 +477,7 @@ QString DBusDataTransform<MprisPlaybackState::Enum>::toWire(MprisPlaybackState::
 	case MprisPlaybackState::Playing: return "Playing";
 	case MprisPlaybackState::Paused: return "Paused";
 	case MprisPlaybackState::Stopped: return "Stopped";
-	default:
-		qFatal() << "Tried to convert an invalid MprisPlaybackState to String";
-		return QString();
+	default: qFatal() << "Tried to convert an invalid MprisPlaybackState to String"; return QString();
 	}
 }
 
@@ -496,9 +494,7 @@ QString DBusDataTransform<MprisLoopState::Enum>::toWire(MprisLoopState::Enum dat
 	case MprisLoopState::None: return "None";
 	case MprisLoopState::Track: return "Track";
 	case MprisLoopState::Playlist: return "Playlist";
-	default:
-		qFatal() << "Tried to convert an invalid MprisLoopState to String";
-		return QString();
+	default: qFatal() << "Tried to convert an invalid MprisLoopState to String"; return QString();
 	}
 }
 

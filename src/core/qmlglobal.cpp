@@ -210,8 +210,20 @@ void QuickshellGlobal::onClipboardChanged(QClipboard::Mode mode) {
 	if (mode == QClipboard::Clipboard) emit this->clipboardTextChanged();
 }
 
-QString QuickshellGlobal::configDir() const {
+QString QuickshellGlobal::shellDir() const {
 	return EngineGeneration::findObjectGeneration(this)->rootPath.path();
+}
+
+QString QuickshellGlobal::configDir() const {
+	qWarning() << "Quickshell.configDir is deprecated and may be removed in a future release. Use "
+	              "Quickshell.shellDir.";
+	return this->shellDir();
+}
+
+QString QuickshellGlobal::shellRoot() const {
+	qWarning() << "Quickshell.shellRoot is deprecated and may be removed in a future release. Use "
+	              "Quickshell.shellDir.";
+	return this->shellDir();
 }
 
 QString QuickshellGlobal::dataDir() const { // NOLINT
@@ -226,8 +238,14 @@ QString QuickshellGlobal::cacheDir() const { // NOLINT
 	return QsPaths::instance()->shellCacheDir().path();
 }
 
+QString QuickshellGlobal::shellPath(const QString& path) const {
+	return this->shellDir() % '/' % path;
+}
+
 QString QuickshellGlobal::configPath(const QString& path) const {
-	return this->configDir() % '/' % path;
+	qWarning() << "Quickshell.configPath() is deprecated and may be removed in a future release. Use "
+	              "Quickshell.shellPath().";
+	return this->shellPath(path);
 }
 
 QString QuickshellGlobal::dataPath(const QString& path) const {

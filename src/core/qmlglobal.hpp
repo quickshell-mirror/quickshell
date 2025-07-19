@@ -108,9 +108,11 @@ class QuickshellGlobal: public QObject {
 	///
 	/// The root directory is the folder containing the entrypoint to your shell, often referred
 	/// to as `shell.qml`.
+	Q_PROPERTY(QString shellDir READ shellDir CONSTANT);
+	/// > [!WARNING] Deprecated: Renamed to @@shellDir for clarity.
 	Q_PROPERTY(QString configDir READ configDir CONSTANT);
-	/// > [!WARNING] Deprecated: Returns @@configDir.
-	Q_PROPERTY(QString shellRoot READ configDir CONSTANT);
+	/// > [!WARNING] Deprecated: Renamed to @@shellDir for consistency.
+	Q_PROPERTY(QString shellRoot READ shellRoot CONSTANT);
 	/// Quickshell's working directory. Defaults to whereever quickshell was launched from.
 	Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged);
 	/// If true then the configuration will be reloaded whenever any files change.
@@ -198,6 +200,8 @@ public:
 	/// icon if the requested one could not be loaded.
 	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
 	/// Equivalent to `${Quickshell.configDir}/${path}`
+	Q_INVOKABLE [[nodiscard]] QString shellPath(const QString& path) const;
+	/// > [!WARNING] Deprecated: Renamed to @@shellPath() for clarity.
 	Q_INVOKABLE [[nodiscard]] QString configPath(const QString& path) const;
 	/// Equivalent to `${Quickshell.dataDir}/${path}`
 	Q_INVOKABLE [[nodiscard]] QString dataPath(const QString& path) const;
@@ -214,7 +218,9 @@ public:
 	void clearReloadPopupInhibit() { this->mInhibitReloadPopup = false; }
 	[[nodiscard]] bool isReloadPopupInhibited() const { return this->mInhibitReloadPopup; }
 
+	[[nodiscard]] QString shellDir() const;
 	[[nodiscard]] QString configDir() const;
+	[[nodiscard]] QString shellRoot() const;
 
 	[[nodiscard]] QString workingDirectory() const;
 	void setWorkingDirectory(QString workingDirectory);
