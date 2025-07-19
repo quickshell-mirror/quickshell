@@ -457,10 +457,14 @@ void ThreadLogging::onMessage(const LogMessage& msg, bool showInSparse) {
 		this->fileStream << Qt::endl;
 	}
 
-	if (this->detailedWriter.write(msg)) {
-		this->detailedFile->flush();
-	} else if (this->detailedFile != nullptr) {
-		qCCritical(logLogging) << "Detailed logger failed to write. Ending detailed logs.";
+	if (!this->detailedWriter.write(msg) || (this->detailedFile && !this->detailedFile->flush())) {
+		if (this->detailedFile) {
+			qCCritical(logLogging) << "Detailed logger failed to write. Ending detailed logs.";
+		}
+
+		this->detailedWriter.setDevice(nullptr);
+		this->detailedFile->close();
+		this->detailedFile = nullptr;
 	}
 }
 
