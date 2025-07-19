@@ -56,24 +56,23 @@ BluetoothAdapter* BluetoothDevice::adapter() const {
 }
 
 qint32 BluetoothDevice::signalStrength() const {
-	// Convert RSSI (dBm) to a normalized 0-100 scale
-	// Based on practical Bluetooth RSSI ranges:
-	// -30 to -40 dBm = 85-100
-	// -40 to -55 dBm = 65-85
-	// -55 to -65 dBm = 45-65
-	// -65 to -75 dBm = 25-45
-	// -75 to -85 dBm = 10-25
-	// <= -85 dBm     = 0-10
+	if (this->bRssi.value() == 0) return 0;
 
-	auto rssiValue = this->bRssi.value();
-	if (rssiValue == 0) {
-		return 0;
+	auto rssi = std::clamp(static_cast<double>(this->bRssi.value()), -100.0, -30.0);
+
+	if (rssi >= -60.0) {
+		auto percentage = 75.0 + ((rssi + 60.0) / 30.0) * 25.0;
+		return static_cast<qint32>(std::round(percentage));
 	}
-
-	auto rssi = std::max(static_cast<qint16>(-100), std::min(static_cast<qint16>(-30), rssiValue));
-	auto normalized = static_cast<qint32>(((rssi + 100) / 70.0) * 100.0);
-
-	return std::max(0, std::min(100, normalized));
+	if (rssi >= -80.0) {
+		auto percentage = 9.0 + ((rssi + 80.0) / 20.0) * 66.0;
+		return static_cast<qint32>(std::round(percentage));
+	}
+	if (rssi >= -90.0) {
+		auto percentage = 0.0 + ((rssi + 90.0) / 10.0) * 9.0;
+		return static_cast<qint32>(std::round(percentage));
+	}
+	return 0;
 }
 
 void BluetoothDevice::setConnected(bool connected) {
