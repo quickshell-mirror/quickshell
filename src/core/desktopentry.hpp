@@ -186,7 +186,6 @@ public:
 	static DesktopEntryManager* instance();
 
 	QString extractIdFromPath(const QString& path);
-	QStringList getDesktopDirectories() const;
 
 signals:
 	void applicationsChanged();
