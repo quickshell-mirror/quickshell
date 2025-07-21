@@ -113,14 +113,15 @@ void NetworkManager::queueDeviceRegistration(const QString& path) {
 		return;
 	}
 
-	// Wait for DBus to send us the device type
+	// Wait for DBus to send the device type
 	QObject::connect(
 	    deviceAdapter,
 	    &NMDeviceAdapter::typeChanged,
 	    this,
 	    [this, deviceAdapter, path](NMDeviceType::Enum type) {
 		    this->registerDevice(deviceAdapter, type, path);
-	    }
+	    },
+	    Qt::SingleShotConnection
 	);
 }
 
@@ -177,8 +178,8 @@ NetworkDevice* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, cons
 }
 
 // Create a WirelessNetworkDevice and bind the NMWirelessAdapter
-WirelessNetworkDevice* NetworkManager::bindWirelessDevice(const QString& path) {
-	auto* device = new WirelessNetworkDevice(this);
+NetworkWifiDevice* NetworkManager::bindWirelessDevice(const QString& path) {
+	auto* device = new NetworkWifiDevice(this);
 
 	auto* wirelessAdapter = new NMWirelessAdapter(device);
 	wirelessAdapter->init(path);
@@ -190,25 +191,25 @@ WirelessNetworkDevice* NetworkManager::bindWirelessDevice(const QString& path) {
 	    wirelessAdapter,
 	    &NMWirelessAdapter::lastScanChanged,
 	    device,
-	    &WirelessNetworkDevice::scanComplete
+	    &NetworkWifiDevice::scanComplete
 	);
 	QObject::connect(
 	    wirelessAdapter,
-	    &NMWirelessAdapter::accessPointAdded,
+	    &NMWirelessAdapter::wifiNetworkAdded,
 	    device,
-	    &WirelessNetworkDevice::addAccessPoint
+	    &NetworkWifiDevice::addNetwork
 	);
 	QObject::connect(
 	    wirelessAdapter,
-	    &NMWirelessAdapter::accessPointRemoved,
+	    &NMWirelessAdapter::wifiNetworkRemoved,
 	    device,
-	    &WirelessNetworkDevice::removeAccessPoint
+	    &NetworkWifiDevice::removeNetwork
 	);
 
 	// WirelessNetworkDevice signal -> NMWirelessAdapter slot
 	QObject::connect(
 	    device,
-	    &WirelessNetworkDevice::signalScan,
+	    &NetworkWifiDevice::signalScan,
 	    wirelessAdapter,
 	    &NMWirelessAdapter::scan
 	);
@@ -230,6 +231,7 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		auto* device = iter.value();
 		this->mDeviceHash.erase(iter);
 		emit deviceRemoved(device);
+		delete device;
 		qCDebug(logNetworkManager) << "Device" << path.path() << "removed.";
 	}
 }

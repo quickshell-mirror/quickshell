@@ -14,15 +14,15 @@
 
 namespace qs::network {
 
-///! A tracked access point on the network
-class NetworkAccessPoint: public QObject {
+///! A wifi network available to a wifi device
+class NetworkWifiNetwork: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("WirelessNetwork can only be acquired through Network");
+	QML_UNCREATABLE("Wifi netorks can only be acquired through Network");
 	// clang-format off
-	/// The service set identifier of the access point.
+	/// The service set identifier of the wifi network
 	Q_PROPERTY(QString ssid READ default NOTIFY ssidChanged BINDABLE bindableSsid);
-	// The current signal quality of the access point, in percent.
+	// The current signal quality of the best access point on the network, in percent.
 	Q_PROPERTY(quint8 signal READ default NOTIFY signalChanged BINDABLE bindableSignal);
 	//clang-format on
 
@@ -35,14 +35,14 @@ public slots:
 	void setSignal(quint8 signal);
 
 public:
-	explicit NetworkAccessPoint(QObject* parent = nullptr);
+	explicit NetworkWifiNetwork(QObject* parent = nullptr);
 
 	[[nodiscard]] QBindable<QString> bindableSsid() const { return &this->bSsid; };
 	[[nodiscard]] QBindable<quint8> bindableSignal() const { return &this->bSignal; };
 
 private:
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkAccessPoint, QString, bSsid, &NetworkAccessPoint::ssidChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkAccessPoint, quint8, bSignal, &NetworkAccessPoint::signalChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiNetwork, QString, bSsid, &NetworkWifiNetwork::ssidChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiNetwork, quint8, bSignal, &NetworkWifiNetwork::signalChanged);
 };
 
 ///! Type of network device.
@@ -139,7 +139,7 @@ private:
 };
 
 ///! Wireless variant of a tracked network device.
-class WirelessNetworkDevice: public NetworkDevice {
+class NetworkWifiDevice: public NetworkDevice {
 	Q_OBJECT;
 
 	// clang-format off
@@ -147,9 +147,9 @@ class WirelessNetworkDevice: public NetworkDevice {
 	Q_PROPERTY(qint64 lastScan READ default NOTIFY lastScanChanged BINDABLE bindableLastScan);
 	/// True if the wireless device is currently scanning for available wifi networks.
 	Q_PROPERTY(bool scanning READ default NOTIFY scanningChanged BINDABLE bindableScanning);
-	/// A list of all available access points
-	Q_PROPERTY(UntypedObjectModel* accessPoints READ accessPoints CONSTANT); 
-	QSDOC_TYPE_OVERRIDE(ObjectModel<NetworkAccessPoint>*)
+	/// A list of all available wifi networks
+	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<NetworkWifiNetwork>*)
 	//clang-format on
 
 signals:
@@ -160,11 +160,11 @@ signals:
 
 public slots:
 	void scanComplete(qint64 lastScan);
-	void addAccessPoint(NetworkAccessPoint* ap);
-	void removeAccessPoint(NetworkAccessPoint* ap);
+	void addNetwork(NetworkWifiNetwork* network);
+	void removeNetwork(NetworkWifiNetwork* network);
 
 public:
-	explicit WirelessNetworkDevice(QObject* parent = nullptr);
+	explicit NetworkWifiDevice(QObject* parent = nullptr);
 	[[nodiscard]] NetworkDeviceType::Enum type() const override { return NetworkDeviceType::Wireless; };
 
 	/// Request the wireless device to scan for available WiFi networks.
@@ -173,12 +173,12 @@ public:
 	[[nodiscard]] QBindable<bool> bindableScanning() { return &this->bScanning; };
 	[[nodiscard]] QBindable<qint64> bindableLastScan() { return &this->bLastScan; };
 
-	UntypedObjectModel* accessPoints() { return &this->mAccessPoints; };
+	UntypedObjectModel* networks() { return &this->mNetworks; };
 
 private:
-	ObjectModel<NetworkAccessPoint> mAccessPoints{this};
-	Q_OBJECT_BINDABLE_PROPERTY(WirelessNetworkDevice, bool, bScanning, &WirelessNetworkDevice::scanningChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(WirelessNetworkDevice, qint64, bLastScan, &WirelessNetworkDevice::lastScanChanged);
+	ObjectModel<NetworkWifiNetwork> mNetworks {this};
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, bool, bScanning, &NetworkWifiDevice::scanningChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, qint64, bLastScan, &NetworkWifiDevice::lastScanChanged);
 };
 
 // -- Network --

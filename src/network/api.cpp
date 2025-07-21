@@ -77,9 +77,9 @@ void NetworkDevice::disconnect() {
 
 // WirelessNetworkDevice
 
-WirelessNetworkDevice::WirelessNetworkDevice(QObject* parent): NetworkDevice(parent) {};
+NetworkWifiDevice::NetworkWifiDevice(QObject* parent): NetworkDevice(parent) {};
 
-void WirelessNetworkDevice::scanComplete(qint64 lastScan) {
+void NetworkWifiDevice::scanComplete(qint64 lastScan) {
 	this->bLastScan = lastScan;
 	emit this->lastScanChanged();
 
@@ -89,7 +89,7 @@ void WirelessNetworkDevice::scanComplete(qint64 lastScan) {
 	}
 }
 
-void WirelessNetworkDevice::scan() {
+void NetworkWifiDevice::scan() {
 	if (this->bScanning) {
 		qCCritical(logNetworkDevice) << "Wireless device" << this << "is already scanning";
 		return;
@@ -100,26 +100,24 @@ void WirelessNetworkDevice::scan() {
 	signalScan();
 }
 
-void WirelessNetworkDevice::addAccessPoint(NetworkAccessPoint* ap) {
-	mAccessPoints.insertObject(ap);
-}
+void NetworkWifiDevice::addNetwork(NetworkWifiNetwork* network) { mNetworks.insertObject(network); }
 
-void WirelessNetworkDevice::removeAccessPoint(NetworkAccessPoint* ap) {
-	mAccessPoints.removeObject(ap);
+void NetworkWifiDevice::removeNetwork(NetworkWifiNetwork* network) {
+	mNetworks.removeObject(network);
 }
 
 // NetworkAccessPoint
 
-NetworkAccessPoint::NetworkAccessPoint(QObject* parent): QObject(parent) {};
+NetworkWifiNetwork::NetworkWifiNetwork(QObject* parent): QObject(parent) {};
 
-void NetworkAccessPoint::setSsid(const QString& ssid) {
+void NetworkWifiNetwork::setSsid(const QString& ssid) {
 	if (this->bSsid != ssid) {
 		this->bSsid = ssid;
 		emit ssidChanged();
 	}
 }
 
-void NetworkAccessPoint::setSignal(quint8 signal) {
+void NetworkWifiNetwork::setSignal(quint8 signal) {
 	if (this->bSignal != signal) {
 		this->bSignal = signal;
 		emit signalChanged();

@@ -34,7 +34,7 @@ void NMDeviceAdapter::init(const QString& path) {
 	);
 
 	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create NMDeviceAdapter for" << path;
+		qCWarning(logNetworkManager) << "Cannot create dbus proxy for" << path;
 		return;
 	}
 
@@ -72,7 +72,7 @@ void NMWirelessAdapter::init(const QString& path) {
 	);
 
 	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create NMWirelessAdapter for" << path;
+		qCWarning(logNetworkManager) << "Cannot create dbus proxy for" << path;
 		return;
 	}
 
@@ -101,16 +101,16 @@ void NMWirelessAdapter::onAccessPointAdded(const QDBusObjectPath& path) {
 }
 
 void NMWirelessAdapter::onAccessPointRemoved(const QDBusObjectPath& path) {
-	auto iter = this->mAPHash.find(path.path());
-	if (iter == this->mAPHash.end()) {
-		qCWarning(logNetworkManager) << "NMWirelessAdapter sent removal signal for" << path.path()
-		                             << "which is not registered.";
-	} else {
-		auto* ap = iter.value();
-		this->mAPHash.erase(iter);
-		emit accessPointRemoved(ap);
-		qCDebug(logNetworkManager) << "Access point" << path.path() << "removed.";
+	auto* ap = mPathToApHash.take(path.path());
+
+	if (!ap) {
+		qCDebug(logNetworkManager) << "NetworkManager backend sent removal signal for" << path.path()
+		                           << "which is not registered.";
+		return;
 	}
+
+	removeApFromNetwork(ap);
+	delete ap;
 }
 
 void NMWirelessAdapter::registerAccessPoints() {
@@ -135,35 +135,80 @@ void NMWirelessAdapter::registerAccessPoints() {
 }
 
 void NMWirelessAdapter::registerAccessPoint(const QString& path) {
-	if (this->mAPHash.contains(path)) {
+	if (this->mPathToApHash.contains(path)) {
 		qCDebug(logNetworkManager) << "Skipping duplicate registration of access point" << path;
 		return;
 	}
 
-	// Create an access point adapter
-	auto* apAdapter = new NMAccessPointAdapter();
-	apAdapter->init(path);
+	auto* ap = new NMAccessPointAdapter(this);
+	ap->init(path);
 
-	if (!apAdapter->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create NMAccessPointAdapter for" << path;
-		delete apAdapter;
+	if (!ap->isValid()) {
+		qCWarning(logNetworkManager) << "Cannot create access point for" << path;
+		delete ap;
 		return;
 	}
-	auto* ap = new NetworkAccessPoint(this);
-	apAdapter->setParent(ap);
 
-	// NMAccessPointAdapter signal -> NetworkAccessPoint slot
-	QObject::connect(apAdapter, &NMAccessPointAdapter::ssidChanged, ap, &NetworkAccessPoint::setSsid);
-	QObject::connect(
-	    apAdapter,
-	    &NMAccessPointAdapter::signalChanged,
-	    ap,
-	    &NetworkAccessPoint::setSignal
-	);
-
-	this->mAPHash.insert(path, ap);
-	emit accessPointAdded(ap);
+	this->mPathToApHash.insert(path, ap);
 	qCDebug(logNetworkManager) << "Registered access point" << path;
+
+	QObject::connect(
+	    ap,
+	    &NMAccessPointAdapter::ssidChanged,
+	    this,
+	    [this, ap](const QByteArray& ssid) {
+		    if (ssid.isEmpty()) {
+			    this->removeApFromNetwork(ap);
+		    } else {
+			    this->addApToNetwork(ap, ssid);
+		    }
+	    }
+	);
+}
+
+void NMWirelessAdapter::addApToNetwork(NMAccessPointAdapter* ap, const QByteArray& ssid) {
+	// Remove AP from old network
+	removeApFromNetwork(ap);
+
+	auto* group = mSsidToApGroupHash.value(ssid);
+	if (!group) {
+		// Create a new AP group and wifi network
+		group = new NMAccessPointGroup(ssid, this);
+		auto* network = new NetworkWifiNetwork(this);
+		network->setSsid(ssid);
+
+		// NMAccessPointGroup signal -> NetworkWifiNetwork slot
+		QObject::connect(
+		    group,
+		    &NMAccessPointGroup::maxSignalChanged,
+		    network,
+		    &NetworkWifiNetwork::setSignal
+		);
+
+		this->mSsidToApGroupHash.insert(ssid, group);
+		this->mSsidToNetworkHash.insert(ssid, network);
+		emit this->wifiNetworkAdded(network);
+		qCDebug(logNetworkManager) << "Registered wifi network" << ssid;
+	}
+
+	group->addAccessPoint(ap);
+	this->mPathToSsidHash.insert(ap->path(), ssid);
+}
+
+void NMWirelessAdapter::removeApFromNetwork(NMAccessPointAdapter* ap) {
+	QByteArray ssid = mPathToSsidHash.take(ap->path());
+	if (ssid.isEmpty()) return; // AP wasn't in any network
+
+	auto* group = mSsidToApGroupHash.value(ssid);
+	group->removeAccessPoint(ap);
+	if (group->isEmpty()) {
+		mSsidToApGroupHash.remove(ssid);
+		auto* network = mSsidToNetworkHash.take(ssid);
+		emit wifiNetworkRemoved(network);
+		delete network;
+		delete group;
+		qCDebug(logNetworkManager) << "Deleted wifi network" << ssid;
+	}
 }
 
 void NMWirelessAdapter::scan() { this->proxy->RequestScan({}); }
@@ -176,10 +221,6 @@ QString NMWirelessAdapter::path() const { return this->proxy ? this->proxy->path
 
 // Access Point
 
-namespace {
-Q_LOGGING_CATEGORY(logNMAccessPoint, "quickshell.network.networkmanager.accesspoint", QtWarningMsg);
-}
-
 NMAccessPointAdapter::NMAccessPointAdapter(QObject* parent): QObject(parent) {}
 
 void NMAccessPointAdapter::init(const QString& path) {
@@ -191,7 +232,7 @@ void NMAccessPointAdapter::init(const QString& path) {
 	);
 
 	if (!this->proxy->isValid()) {
-		qCWarning(logNMAccessPoint) << "Cannot create NMWirelessAdapter for" << path;
+		qCWarning(logNetworkManager) << "Cannot create access point proxy for" << path;
 		return;
 	}
 
@@ -204,6 +245,47 @@ QString NMAccessPointAdapter::address() const {
 	return this->proxy ? this->proxy->service() : QString();
 }
 QString NMAccessPointAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
+
+// Access Point Group
+
+NMAccessPointGroup::NMAccessPointGroup(const QByteArray& ssid, QObject* parent)
+    : QObject(parent)
+    , mSsid(ssid) {}
+
+void NMAccessPointGroup::updateMaxSignal() {
+	quint8 max = 0;
+	for (auto* ap: mAccessPoints) {
+		max = qMax(max, ap->getSignal());
+	}
+	if (this->bMaxSignal != max) {
+		this->bMaxSignal = max;
+	}
+}
+
+void NMAccessPointGroup::addAccessPoint(NMAccessPointAdapter* ap) {
+	if (this->mAccessPoints.contains(ap)) return;
+
+	this->mAccessPoints.append(ap);
+	QObject::connect(
+	    ap,
+	    &NMAccessPointAdapter::signalChanged,
+	    this,
+	    &NMAccessPointGroup::updateMaxSignal
+	);
+	this->updateMaxSignal();
+}
+
+void NMAccessPointGroup::removeAccessPoint(NMAccessPointAdapter* ap) {
+	if (mAccessPoints.removeOne(ap)) {
+		QObject::disconnect(
+		    ap,
+		    &NMAccessPointAdapter::signalChanged,
+		    this,
+		    &NMAccessPointGroup::updateMaxSignal
+		);
+		this->updateMaxSignal();
+	}
+}
 
 } // namespace qs::network
 

@@ -50,9 +50,9 @@ FloatingWindow {
 								visible: modelData.scanning === false;
 							}
 						}
-						Label { text: "Available access points: " }
+						Label { text: "Available networks: " }
 						Repeater {
-							model: modelData.accessPoints
+							model: modelData.networks
 
 							delegate: WrapperRectangle {
 								height: apLabel.implicitHeight + 8
