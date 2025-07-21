@@ -26,8 +26,8 @@ WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
 			switch (this->bcExclusionEdge.value()) {
 			case Qt::TopEdge: return this->bImplicitHeight + margins.bottom;
 			case Qt::BottomEdge: return this->bImplicitHeight + margins.top;
-			case Qt::LeftEdge: return this->bImplicitHeight + margins.right;
-			case Qt::RightEdge: return this->bImplicitHeight + margins.left;
+			case Qt::LeftEdge: return this->bImplicitWidth + margins.right;
+			case Qt::RightEdge: return this->bImplicitWidth + margins.left;
 			default: return 0;
 			}
 		}
