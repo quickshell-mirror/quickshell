@@ -272,7 +272,7 @@ DesktopEntryScanner::DesktopEntryScanner(DesktopEntryManager* manager): manager(
 }
 
 void DesktopEntryScanner::run() {
-	auto desktopPaths = manager->getDesktopDirectories();
+	auto desktopPaths = manager->monitor->getDesktopDirectories();
 	auto scanResults = DesktopEntryScanResults();
 
 	for (auto& path: std::ranges::reverse_view(desktopPaths)) {
@@ -328,7 +328,7 @@ DesktopEntryManager::DesktopEntryManager() {
 }
 
 void DesktopEntryManager::scanDesktopEntries() {
-	auto desktopPaths = this->getDesktopDirectories();
+	auto desktopPaths = this->monitor->getDesktopDirectories();
 	auto scanResults = DesktopEntryScanResults();
 
 	qCDebug(logDesktopEntry) << "Creating desktop entry scanners";
@@ -397,10 +397,6 @@ void DesktopEntryManager::handleFileChanges() {
 	this->scanInProgress = true;
 	auto* scanner = new DesktopEntryScanner(this);
 	QThreadPool::globalInstance()->start(scanner);
-}
-
-QStringList DesktopEntryManager::getDesktopDirectories() const {
-	return this->monitor->getDesktopDirectories();
 }
 
 QString DesktopEntryManager::extractIdFromPath(const QString& path) {
