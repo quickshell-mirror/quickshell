@@ -15,34 +15,42 @@
 namespace qs::network {
 
 ///! A wifi network available to a wifi device
-class NetworkWifiNetwork: public QObject {
+class WifiNetwork: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("Wifi netorks can only be acquired through Network");
+	QML_UNCREATABLE("Wifi networks can only be acquired through Network");
 	// clang-format off
 	/// The service set identifier of the wifi network
 	Q_PROPERTY(QString ssid READ default NOTIFY ssidChanged BINDABLE bindableSsid);
-	// The current signal quality of the best access point on the network, in percent.
-	Q_PROPERTY(quint8 signal READ default NOTIFY signalChanged BINDABLE bindableSignal);
-	//clang-format on
+	// The current signal strength of the best access point on the network, in percent.
+	Q_PROPERTY(quint8 signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
+	/// True if the wireless device is curerntly connected to this wifi network.
+	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
+	// clang-format on
 
 signals:
 	void ssidChanged();
-	void signalChanged();
+	void signalStrengthChanged();
+	void connectedChanged();
 
 public slots:
 	void setSsid(const QString& ssid);
-	void setSignal(quint8 signal);
+	void setSignalStrength(quint8 signalStrength);
+	void setConnected(bool connected);
 
 public:
-	explicit NetworkWifiNetwork(QObject* parent = nullptr);
+	explicit WifiNetwork(QObject* parent = nullptr);
 
 	[[nodiscard]] QBindable<QString> bindableSsid() const { return &this->bSsid; };
-	[[nodiscard]] QBindable<quint8> bindableSignal() const { return &this->bSignal; };
+	[[nodiscard]] QBindable<quint8> bindableSignalStrength() const { return &this->bSignalStrength; };
+	[[nodiscard]] QBindable<bool> bindableConnected() const { return &this->bConnected; };
 
 private:
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiNetwork, QString, bSsid, &NetworkWifiNetwork::ssidChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiNetwork, quint8, bSignal, &NetworkWifiNetwork::signalChanged);
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, QString, bSsid, &WifiNetwork::ssidChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, quint8, bSignalStrength, &WifiNetwork::signalStrengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bConnected, &WifiNetwork::connectedChanged);
+	// clang-format on
 };
 
 ///! Type of network device.
@@ -57,8 +65,6 @@ public:
 		Other = 0,
 		///! An 802.11 Wi-Fi device.
 		Wireless = 1,
-		///! A wired ethernet device.
-		Ethernet = 2
 	};
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(NetworkDeviceType::Enum type);
@@ -91,7 +97,7 @@ public:
 class NetworkDevice: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("NetworkDevices can only be acquired through Network");
+	QML_UNCREATABLE("Devices can only be acquired through Network");
 
 	// clang-format off
 	/// The name of the device's interface.
@@ -128,14 +134,11 @@ public:
 	[[nodiscard]] QBindable<NetworkDeviceState::Enum> bindableState() const { return &this->bState; };
 
 private:
+	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bName, &NetworkDevice::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bAddress, &NetworkDevice::addressChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    NetworkDevice,
-	    NetworkDeviceState::Enum,
-	    bState,
-	    &NetworkDevice::stateChanged
-	);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NetworkDeviceState::Enum, bState, &NetworkDevice::stateChanged);
+	// clang-format on
 };
 
 ///! Wireless variant of a tracked network device.
@@ -145,11 +148,13 @@ class NetworkWifiDevice: public NetworkDevice {
 	// clang-format off
 	/// The timestamp (in CLOCK_BOOTTIME milliseconds) for the last finished network scan.
 	Q_PROPERTY(qint64 lastScan READ default NOTIFY lastScanChanged BINDABLE bindableLastScan);
-	/// True if the wireless device is currently scanning for available wifi networks.
+	/// True if the wifi device is currently scanning for available wifi networks.
 	Q_PROPERTY(bool scanning READ default NOTIFY scanningChanged BINDABLE bindableScanning);
-	/// A list of all available wifi networks
+	/// The currently active wifi network
+	// Q_PROPERTY(WifiNetwork activeNetwork READ networks CONSTANT);
+	/// A list of all wifi networks available to this wifi device
 	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
-	QSDOC_TYPE_OVERRIDE(ObjectModel<NetworkWifiNetwork>*)
+	QSDOC_TYPE_OVERRIDE(ObjectModel<WifiNetwork>*)
 	//clang-format on
 
 signals:
@@ -160,8 +165,8 @@ signals:
 
 public slots:
 	void scanComplete(qint64 lastScan);
-	void addNetwork(NetworkWifiNetwork* network);
-	void removeNetwork(NetworkWifiNetwork* network);
+	void addNetwork(WifiNetwork* network);
+	void removeNetwork(WifiNetwork* network);
 
 public:
 	explicit NetworkWifiDevice(QObject* parent = nullptr);
@@ -176,12 +181,13 @@ public:
 	UntypedObjectModel* networks() { return &this->mNetworks; };
 
 private:
-	ObjectModel<NetworkWifiNetwork> mNetworks {this};
+	static bool compareNetworks(WifiNetwork* a, WifiNetwork* b);
+	ObjectModel<WifiNetwork> mNetworks {this};
+
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, bool, bScanning, &NetworkWifiDevice::scanningChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, qint64, bLastScan, &NetworkWifiDevice::lastScanChanged);
 };
 
-// -- Network --
 class NetworkBackend: public QObject {
 	Q_OBJECT;
 

@@ -29,6 +29,7 @@ FloatingWindow {
 					Label { 
 						text: `Device ${index}: ${modelData.name}`
 						font.bold: true
+						font.pointSize: 12
 					}
 					Label { text: "Hardware Address: " + modelData.address }
 					Label { text: "Device type: " + NetworkDeviceType.toString(modelData.type) }
@@ -51,19 +52,50 @@ FloatingWindow {
 							}
 						}
 						Label { text: "Available networks: " }
-						Repeater {
-							model: modelData.networks
 
-							delegate: WrapperRectangle {
-								height: apLabel.implicitHeight + 8
-								color: "transparent"
-								border.color: palette.button
-								border.width: 1
-								
-								Label {
-									id: apLabel
-									anchors.centerIn: parent
-									text: "SSID: " + (modelData.ssid || "[Hidden]") +  ` SIGNAL: ${modelData.signal}`
+						GridLayout {
+							columns: 3
+							columnSpacing: 30
+							rowSpacing: 5
+
+							Label {
+								Layout.row: 0
+								Layout.column: 0
+								text: "SSID"
+							}
+							Label {
+								Layout.row: 0
+								Layout.column: 1
+								text: "SIGNAL"
+							}
+							Label {
+								Layout.row: 0
+								Layout.column: 2
+								text: "CONNECTED"
+							}
+
+							Repeater {
+								model: modelData.networks
+								delegate: Text {
+									Layout.row: index + 1
+									Layout.column: 0
+									text: modelData.ssid || "[Hidden]"
+								}
+							}
+							Repeater {
+								model: modelData.networks
+								delegate: Text { 
+									Layout.row: index + 1
+									Layout.column: 1
+									text: `${modelData.signalStrength}%`
+								}
+							}
+							Repeater {
+								model: modelData.networks
+								delegate: Text { 
+									Layout.row: index + 1
+									Layout.column: 2
+									text: modelData.connected ? "*" : ""
 								}
 							}
 						}

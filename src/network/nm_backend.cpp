@@ -56,7 +56,6 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 }
 
 void NetworkManager::init() {
-	// Proxy signals -> NetworkManager slots
 	QObject::connect(
 	    this->proxy,
 	    &DBusNetworkManagerProxy::DeviceAdded,
@@ -103,9 +102,7 @@ void NetworkManager::queueDeviceRegistration(const QString& path) {
 		return;
 	}
 
-	// Create a device adapter
-	auto* deviceAdapter = new NMDeviceAdapter();
-	deviceAdapter->init(path);
+	auto* deviceAdapter = new NMDeviceAdapter(path);
 
 	if (!deviceAdapter->isValid()) {
 		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
@@ -113,7 +110,7 @@ void NetworkManager::queueDeviceRegistration(const QString& path) {
 		return;
 	}
 
-	// Wait for DBus to send the device type
+	// Wait to receive NMDeviceType before registering device
 	QObject::connect(
 	    deviceAdapter,
 	    &NMDeviceAdapter::typeChanged,
@@ -125,7 +122,6 @@ void NetworkManager::queueDeviceRegistration(const QString& path) {
 	);
 }
 
-// Register the device
 void NetworkManager::registerDevice(
     NMDeviceAdapter* deviceAdapter,
     NMDeviceType::Enum type,
@@ -151,7 +147,9 @@ void NetworkManager::registerDevice(
 	    deviceAdapter,
 	    &NMDeviceAdapter::stateChanged,
 	    device,
-	    [device](NMDeviceState::Enum state) { device->setState(NMDeviceState::translate(state)); }
+	    [device](NMDeviceState::Enum state) {
+		    device->setState(NMDeviceState::toNetworkDeviceState(state));
+	    }
 	);
 
 	// NetworkDevice signal -> NMDeviceAdapter slot
@@ -162,14 +160,13 @@ void NetworkManager::registerDevice(
 	    &NMDeviceAdapter::disconnect
 	);
 
-	// Track device
 	this->mDeviceHash.insert(path, device);
 	emit deviceAdded(device);
 
-	qCDebug(logNetworkManager) << "Registered device at path" << path;
+	qCDebug(logNetworkManager) << "Registered device" << path;
 }
 
-// Create a derived device class based on the NMDeviceType of the NMDeviceAdapter
+// Create a device derived from NMDeviceType
 NetworkDevice* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, const QString& path) {
 	switch (type) {
 	case NMDeviceType::Wifi: return this->bindWirelessDevice(path);
@@ -177,12 +174,10 @@ NetworkDevice* NetworkManager::createDeviceVariant(NMDeviceType::Enum type, cons
 	}
 }
 
-// Create a WirelessNetworkDevice and bind the NMWirelessAdapter
+// Create a WirelessNetworkDevice and connect the NMWirelessAdapter
 NetworkWifiDevice* NetworkManager::bindWirelessDevice(const QString& path) {
 	auto* device = new NetworkWifiDevice(this);
-
-	auto* wirelessAdapter = new NMWirelessAdapter(device);
-	wirelessAdapter->init(path);
+	auto* wirelessAdapter = new NMWirelessAdapter(path, device);
 
 	// TODO: Check isValid() - throw error
 

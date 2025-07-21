@@ -17,8 +17,6 @@ Q_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
 Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
 
-// NetworkDevice
-
 NetworkDevice::NetworkDevice(QObject* parent): QObject(parent) {};
 
 QString NetworkDeviceState::toString(NetworkDeviceState::Enum state) {
@@ -36,7 +34,6 @@ QString NetworkDeviceType::toString(NetworkDeviceType::Enum type) {
 	switch (type) {
 	case NetworkDeviceType::Other: return QStringLiteral("Other");
 	case NetworkDeviceType::Wireless: return QStringLiteral("Wireless");
-	case NetworkDeviceType::Ethernet: return QStringLiteral("Ethernet");
 	default: return QStringLiteral("Unknown");
 	}
 }
@@ -75,8 +72,6 @@ void NetworkDevice::disconnect() {
 	signalDisconnect();
 }
 
-// WirelessNetworkDevice
-
 NetworkWifiDevice::NetworkWifiDevice(QObject* parent): NetworkDevice(parent) {};
 
 void NetworkWifiDevice::scanComplete(qint64 lastScan) {
@@ -100,31 +95,38 @@ void NetworkWifiDevice::scan() {
 	signalScan();
 }
 
-void NetworkWifiDevice::addNetwork(NetworkWifiNetwork* network) { mNetworks.insertObject(network); }
+void NetworkWifiDevice::addNetwork(WifiNetwork* network) { mNetworks.insertObjectSorted(network, &NetworkWifiDevice::compareNetworks); }
 
-void NetworkWifiDevice::removeNetwork(NetworkWifiNetwork* network) {
+bool NetworkWifiDevice::compareNetworks(WifiNetwork* a, WifiNetwork* b) {
+	return a->bindableSignalStrength().value() > b->bindableSignalStrength().value();
+}
+
+void NetworkWifiDevice::removeNetwork(WifiNetwork* network) {
 	mNetworks.removeObject(network);
 }
 
-// NetworkAccessPoint
+WifiNetwork::WifiNetwork(QObject* parent): QObject(parent) {};
 
-NetworkWifiNetwork::NetworkWifiNetwork(QObject* parent): QObject(parent) {};
-
-void NetworkWifiNetwork::setSsid(const QString& ssid) {
+void WifiNetwork::setSsid(const QString& ssid) {
 	if (this->bSsid != ssid) {
 		this->bSsid = ssid;
-		emit ssidChanged();
+		emit this->ssidChanged();
 	}
 }
 
-void NetworkWifiNetwork::setSignal(quint8 signal) {
-	if (this->bSignal != signal) {
-		this->bSignal = signal;
-		emit signalChanged();
+void WifiNetwork::setSignalStrength(quint8 signal) {
+	if (this->bSignalStrength != signal) {
+		this->bSignalStrength = signal;
+		emit this->signalStrengthChanged();
 	}
 }
 
-// Network
+void WifiNetwork::setConnected(bool connected) {
+	if (this->bConnected != connected) {
+		this->bConnected = connected;
+		emit this->connectedChanged();
+	}
+}
 
 Network::Network(QObject* parent): QObject(parent) {
 	// Try each backend
@@ -136,10 +138,11 @@ Network::Network(QObject* parent): QObject(parent) {
 		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
 		this->backend = nm;
 		return;
+	} else {
+		delete nm;
 	}
 
 	// None found
-	this->backend = nullptr;
 	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
 
