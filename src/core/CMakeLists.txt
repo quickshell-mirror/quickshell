@@ -24,7 +24,6 @@ qt_add_library(quickshell-core STATIC
 	elapsedtimer.cpp
 	desktopentry.cpp
 	desktopentrymonitor.cpp
-	desktoputils.cpp
 	objectrepeater.cpp
 	platformmenu.cpp
 	qsmenu.cpp

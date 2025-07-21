@@ -7,8 +7,10 @@
 #include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qrunnable.h>
 #include <qtmetamacros.h>
 
+#include "desktopentrymonitor.hpp"
 #include "doc.hpp"
 #include "model.hpp"
 
@@ -149,7 +151,26 @@ private:
 	friend class DesktopEntry;
 };
 
-#include "desktopentrymonitor.hpp"
+class DesktopEntryManager;
+
+struct ParsedDesktopEntry {
+	QString id;
+	QString content;
+};
+
+using DesktopEntryScanResults = QList<ParsedDesktopEntry>;
+Q_DECLARE_METATYPE(DesktopEntryScanResults)
+
+class DesktopEntryScanner: public QRunnable {
+public:
+	explicit DesktopEntryScanner(DesktopEntryManager* manager);
+
+	void run() override;
+	void scanDirectory(const QDir& dir, DesktopEntryScanResults& entries);
+
+private:
+	DesktopEntryManager* manager;
+};
 
 class DesktopEntryManager: public QObject {
 	Q_OBJECT;
@@ -164,24 +185,26 @@ public:
 
 	static DesktopEntryManager* instance();
 
+	QString extractIdFromPath(const QString& path);
+	QStringList getDesktopDirectories() const;
+
 signals:
 	void applicationsChanged();
 
 private slots:
-	void handleFileChanges(const QHash<QString, DesktopEntryMonitor::ChangeEvent>& changes);
+	void handleFileChanges();
+	void onScanCompleted(const DesktopEntryScanResults& scanResults);
 
 private:
 	explicit DesktopEntryManager();
-
-	void populateApplications();
-	void scanPath(const QDir& dir);
-	QString extractIdFromPath(const QString& path);
-	void updateApplicationModel();
 
 	QHash<QString, DesktopEntry*> desktopEntries;
 	QHash<QString, DesktopEntry*> lowercaseDesktopEntries;
 	ObjectModel<DesktopEntry> mApplications {this};
 	DesktopEntryMonitor* monitor = nullptr;
+	bool scanInProgress = false;
+
+	friend class DesktopEntryScanner;
 };
 
 ///! Desktop entry index.
