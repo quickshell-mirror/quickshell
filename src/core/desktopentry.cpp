@@ -298,10 +298,16 @@ void DesktopEntryScanner::scanDirectory(const QDir& dir, DesktopEntryScanResults
 			this->scanDirectory(QDir(entry.absoluteFilePath()), entries);
 		} else if (entry.isFile()) {
 			auto path = entry.filePath();
-			if (!path.endsWith(".desktop")) continue;
+			if (!path.endsWith(".desktop")) {
+				qCDebug(logDesktopEntry) << "Skipping file" << path << "as it has no .desktop extension";
+				continue;
+			}
 
 			auto file = QFile(path);
-			if (!file.open(QFile::ReadOnly)) continue;
+			if (!file.open(QFile::ReadOnly)) {
+				qCDebug(logDesktopEntry) << "Could not open file" << path;
+				continue;
+			}
 
 			auto id = manager->extractIdFromPath(entry.absoluteFilePath());
 			auto content = QString::fromUtf8(file.readAll());
@@ -429,13 +435,19 @@ void DesktopEntryManager::onScanCompleted(const DesktopEntryScanResults& scanRes
 		dentry->parseEntry(parsed.content);
 
 		if (!dentry->isValid()) {
+			qCDebug(logDesktopEntry) << "Skipping desktop entry" << parsed.id;
 			delete dentry;
 			continue;
 		}
 
+		qCDebug(logDesktopEntry) << "Found desktop entry" << parsed.id;
+
 		auto lowerId = parsed.id.toLower();
 
-		if (newEntries.contains(parsed.id)) {
+		auto conflictingId = newEntries.contains(parsed.id);
+
+		if (conflictingId) {
+			qCDebug(logDesktopEntry) << "Replacing old entry for" << parsed.id;
 			delete newEntries.value(parsed.id);
 			newEntries.remove(parsed.id);
 			newLowercaseEntries.remove(lowerId);
@@ -444,6 +456,11 @@ void DesktopEntryManager::onScanCompleted(const DesktopEntryScanResults& scanRes
 		newEntries.insert(parsed.id, dentry);
 
 		if (newLowercaseEntries.contains(lowerId)) {
+			qCInfo(logDesktopEntry).nospace()
+			    << "Multiple desktop entries have the same lowercased id " << lowerId
+			    << ". This can cause ambiguity when byId requests are not made with the correct case "
+			       "already.";
+
 			newLowercaseEntries.remove(lowerId);
 		}
 
