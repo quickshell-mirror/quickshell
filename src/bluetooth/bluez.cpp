@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
+#include <qdbusconnectioninterface.h>
 #include <qdbusextratypes.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -29,6 +30,8 @@ Bluez* Bluez::instance() {
 }
 
 Bluez::Bluez() { this->init(); }
+
+Bluez::~Bluez() { this->unregisterAgent(); }
 
 void Bluez::updateDefaultAdapter() {
 	const auto& adapters = this->mAdapters.valueList();
@@ -67,6 +70,7 @@ void Bluez::init() {
 	}
 
 	this->registerAgent();
+	this->setupBlueZWatcher();
 }
 
 void Bluez::onInterfacesAdded(
@@ -195,7 +199,7 @@ void Bluez::registerAgent() {
 
 	auto reply = agentManager->RegisterAgent(
 	    QDBusObjectPath(this->agent->objectPath()),
-	    QStringLiteral("NoInputNoOutput")
+	    QStringLiteral("KeyboardDisplay")
 	);
 
 	if (reply.isError()) {
@@ -207,6 +211,44 @@ void Bluez::registerAgent() {
 	}
 
 	agentManager->RequestDefaultAgent(QDBusObjectPath(this->agent->objectPath()));
+}
+
+void Bluez::unregisterAgent() {
+	if (!this->agent) return;
+
+	auto bus = QDBusConnection::systemBus();
+	auto* agentManager = new DBusBluezAgentManagerInterface("org.bluez", "/org/bluez", bus, this);
+
+	if (agentManager->isValid()) {
+		agentManager->UnregisterAgent(QDBusObjectPath(this->agent->objectPath()));
+	}
+
+	bus.unregisterObject(this->agent->objectPath());
+	delete this->agent;
+	this->agent = nullptr;
+	delete agentManager;
+}
+
+void Bluez::setupBlueZWatcher() {
+	auto bus = QDBusConnection::systemBus();
+	auto* iface = bus.interface();
+
+	QObject::connect(
+	    iface,
+	    &QDBusConnectionInterface::serviceOwnerChanged,
+	    this,
+	    [this](const QString& name, const QString&, const QString& newOwner) {
+		    if (name == QLatin1String("org.bluez")) {
+			    if (!newOwner.isEmpty()) {
+				    qCDebug(logBluetooth) << "BlueZ came back, re-registering agent";
+				    this->registerAgent();
+			    } else {
+				    qCDebug(logBluetooth) << "BlueZ went away, cleaning agent";
+				    this->unregisterAgent();
+			    }
+		    }
+	    }
+	);
 }
 
 } // namespace qs::bluetooth

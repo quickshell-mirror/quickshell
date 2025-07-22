@@ -118,7 +118,7 @@ void BluetoothDevice::connect() {
 			    this->bState = this->bConnected ? BluetoothDeviceState::Connected
 			                                    : BluetoothDeviceState::Disconnected;
 		    } else {
-			    qCDebug(logDevice) << "Successfully connected to device" << this;
+			    qCDebug(logDevice) << "Successfully connected to to device" << this;
 		    }
 
 		    delete watcher;
@@ -293,8 +293,6 @@ void BluetoothDevice::onConnectedChanged() {
 	    this->bConnected ? BluetoothDeviceState::Connected : BluetoothDeviceState::Disconnected;
 	emit this->connectedChanged();
 }
-
-void BluetoothDevice::onServicesResolvedChanged() { emit this->servicesResolvedChanged(); }
 
 } // namespace qs::bluetooth
 

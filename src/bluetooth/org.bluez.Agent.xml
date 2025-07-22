@@ -7,6 +7,25 @@
       <arg name="device" type="o" direction="in"/>
       <arg name="passkey" type="u" direction="in"/>
     </method>
+    <method name="AuthorizeService">
+      <arg name="device" type="o" direction="in"/>
+      <arg name="uuid" type="s" direction="in"/>
+    </method>
+    <method name="RequestPinCode">
+      <arg name="device" type="o" direction="in"/>
+    </method>
+    <method name="RequestPasskey">
+      <arg name="device" type="o" direction="in"/>
+    </method>
+    <method name="DisplayPinCode">
+      <arg name="device" type="o" direction="in"/>
+      <arg name="pincode" type="s" direction="in"/>
+    </method>
+    <method name="DisplayPasskey">
+      <arg name="device" type="o" direction="in"/>
+      <arg name="passkey" type="u" direction="in"/>
+      <arg name="entered" type="q" direction="in"/>
+    </method>
     <method name="Cancel">
     </method>
     <method name="Release">

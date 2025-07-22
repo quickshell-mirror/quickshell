@@ -42,9 +42,16 @@ private slots:
 
 private:
 	explicit Bluez();
+	~Bluez();
 	void init();
 	void registerAgent();
+	void unregisterAgent();
+	void setupBlueZWatcher();
 
+public:
+	[[nodiscard]] BluetoothAgent* getAgent() const { return this->agent; }
+
+private:
 	qs::dbus::DBusObjectManager* objectManager = nullptr;
 	BluetoothAgent* agent = nullptr;
 	QHash<QString, BluetoothAdapter*> mAdapterMap;
@@ -77,6 +84,8 @@ class BluezQml: public QObject {
 	/// A list of all connected bluetooth devices across all adapters.
 	/// See @@BluetoothAdapter.devices for the devices connected to a single adapter.
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
+	/// The bluetooth agent for handling pairing requests.
+	Q_PROPERTY(BluetoothAgent* agent READ agent CONSTANT);
 	// clang-format on
 
 signals:
@@ -95,6 +104,11 @@ public:
 
 	[[nodiscard]] static QBindable<BluetoothAdapter*> bindableDefaultAdapter() {
 		return &Bluez::instance()->bDefaultAdapter;
+	}
+
+	[[nodiscard]] static BluetoothAgent* agent() {
+		auto* instance = Bluez::instance();
+		return instance ? instance->getAgent() : nullptr;
 	}
 };
 
