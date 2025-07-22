@@ -15,10 +15,13 @@
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
+#include <qquickitemgrabresult.h>
 #include <qscreen.h>
 #include <qtenvironmentvariables.h>
+#include <qthreadpool.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qurl.h>
 #include <qvariant.h>
 #include <qwindowdefs.h>
 #include <unistd.h>
@@ -311,6 +314,25 @@ QString QuickshellGlobal::iconPath(const QString& icon, bool check) {
 
 QString QuickshellGlobal::iconPath(const QString& icon, const QString& fallback) {
 	return IconImageProvider::requestString(icon, "", fallback);
+}
+
+void QuickshellGlobal::saveToFile(
+    const QQuickItemGrabResult* grabResult,
+    const QUrl& filePath
+) {
+	if (!filePath.isLocalFile()) {
+		qWarning() << "saveToFile can only save to a file on the local filesystem";
+		return;
+	}
+
+	const QString localFile = filePath.toLocalFile();
+	QImage image = grabResult->image();
+
+	QThreadPool::globalInstance()->start([image, localFile] {
+		if (!image.save(localFile)) {
+			qWarning() << "Failed to save image to" << localFile;
+		}
+	});
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {
