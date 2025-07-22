@@ -44,7 +44,6 @@ FloatingWindow {
 					}
 					ColumnLayout {
 						RowLayout {
-							Label { text: "Last scan: " + modelData.lastScan }
 							Button {
 								text: "Scan"
 								onClicked: modelData.scan()

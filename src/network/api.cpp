@@ -69,15 +69,12 @@ void NetworkDevice::disconnect() {
 
 	qCDebug(logNetworkDevice) << "Disconnecting from device" << this;
 
-	signalDisconnect();
+	this->requestDisconnect();
 }
 
 NetworkWifiDevice::NetworkWifiDevice(QObject* parent): NetworkDevice(parent) {};
 
-void NetworkWifiDevice::scanComplete(qint64 lastScan) {
-	this->bLastScan = lastScan;
-	emit this->lastScanChanged();
-
+void NetworkWifiDevice::scanComplete() {
 	if (this->bScanning) {
 		this->bScanning = false;
 		emit this->scanningChanged();
@@ -92,18 +89,12 @@ void NetworkWifiDevice::scan() {
 
 	qCDebug(logNetworkDevice) << "Requesting scan on wireless device" << this;
 	this->bScanning = true;
-	signalScan();
+	this->requestScan();
 }
 
-void NetworkWifiDevice::addNetwork(WifiNetwork* network) { mNetworks.insertObjectSorted(network, &NetworkWifiDevice::compareNetworks); }
+void NetworkWifiDevice::addNetwork(WifiNetwork* network) { mNetworks.insertObject(network); }
 
-bool NetworkWifiDevice::compareNetworks(WifiNetwork* a, WifiNetwork* b) {
-	return a->bindableSignalStrength().value() > b->bindableSignalStrength().value();
-}
-
-void NetworkWifiDevice::removeNetwork(WifiNetwork* network) {
-	mNetworks.removeObject(network);
-}
+void NetworkWifiDevice::removeNetwork(WifiNetwork* network) { mNetworks.removeObject(network); }
 
 WifiNetwork::WifiNetwork(QObject* parent): QObject(parent) {};
 

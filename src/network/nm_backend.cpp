@@ -155,7 +155,7 @@ void NetworkManager::registerDevice(
 	// NetworkDevice signal -> NMDeviceAdapter slot
 	QObject::connect(
 	    device,
-	    &NetworkDevice::signalDisconnect,
+	    &NetworkDevice::requestDisconnect,
 	    deviceAdapter,
 	    &NMDeviceAdapter::disconnect
 	);
@@ -204,7 +204,7 @@ NetworkWifiDevice* NetworkManager::bindWirelessDevice(const QString& path) {
 	// WirelessNetworkDevice signal -> NMWirelessAdapter slot
 	QObject::connect(
 	    device,
-	    &NetworkWifiDevice::signalScan,
+	    &NetworkWifiDevice::requestScan,
 	    wirelessAdapter,
 	    &NMWirelessAdapter::scan
 	);

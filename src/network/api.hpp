@@ -14,7 +14,7 @@
 
 namespace qs::network {
 
-///! A wifi network available to a wifi device
+///! A wifi network
 class WifiNetwork: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -53,7 +53,7 @@ private:
 	// clang-format on
 };
 
-///! Type of network device.
+///! Type of Network device.
 class NetworkDeviceType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -70,7 +70,7 @@ public:
 	Q_INVOKABLE static QString toString(NetworkDeviceType::Enum type);
 };
 
-///! State of a network device.
+///! Connection state of a Network device.
 class NetworkDeviceState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -93,7 +93,7 @@ public:
 	Q_INVOKABLE static QString toString(NetworkDeviceState::Enum state);
 };
 
-///! A tracked network device.
+///! A tracked Network device.
 class NetworkDevice: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -114,8 +114,7 @@ signals:
 	void nameChanged();
 	void addressChanged();
 	void stateChanged();
-
-	void signalDisconnect();
+	void requestDisconnect();
 
 public slots:
 	void setName(const QString& name);
@@ -146,8 +145,6 @@ class NetworkWifiDevice: public NetworkDevice {
 	Q_OBJECT;
 
 	// clang-format off
-	/// The timestamp (in CLOCK_BOOTTIME milliseconds) for the last finished network scan.
-	Q_PROPERTY(qint64 lastScan READ default NOTIFY lastScanChanged BINDABLE bindableLastScan);
 	/// True if the wifi device is currently scanning for available wifi networks.
 	Q_PROPERTY(bool scanning READ default NOTIFY scanningChanged BINDABLE bindableScanning);
 	/// The currently active wifi network
@@ -158,13 +155,11 @@ class NetworkWifiDevice: public NetworkDevice {
 	//clang-format on
 
 signals:
-	void signalScan();
-
-	void lastScanChanged();
+	void requestScan();
 	void scanningChanged();
 
 public slots:
-	void scanComplete(qint64 lastScan);
+	void scanComplete();
 	void addNetwork(WifiNetwork* network);
 	void removeNetwork(WifiNetwork* network);
 
@@ -176,16 +171,13 @@ public:
 	Q_INVOKABLE void scan();
 
 	[[nodiscard]] QBindable<bool> bindableScanning() { return &this->bScanning; };
-	[[nodiscard]] QBindable<qint64> bindableLastScan() { return &this->bLastScan; };
 
 	UntypedObjectModel* networks() { return &this->mNetworks; };
 
 private:
-	static bool compareNetworks(WifiNetwork* a, WifiNetwork* b);
 	ObjectModel<WifiNetwork> mNetworks {this};
 
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, bool, bScanning, &NetworkWifiDevice::scanningChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NetworkWifiDevice, qint64, bLastScan, &NetworkWifiDevice::lastScanChanged);
 };
 
 class NetworkBackend: public QObject {
