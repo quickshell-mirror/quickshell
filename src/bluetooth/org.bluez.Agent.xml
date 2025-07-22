@@ -1,0 +1,15 @@
+<node>
+  <interface name="org.bluez.Agent1">
+    <method name="RequestAuthorization">
+      <arg name="device" type="o" direction="in"/>
+    </method>
+    <method name="RequestConfirmation">
+      <arg name="device" type="o" direction="in"/>
+      <arg name="passkey" type="u" direction="in"/>
+    </method>
+    <method name="Cancel">
+    </method>
+    <method name="Release">
+    </method>
+  </interface>
+</node>

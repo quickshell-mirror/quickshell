@@ -1,0 +1,14 @@
+<node>
+  <interface name="org.bluez.AgentManager1">
+    <method name="RegisterAgent">
+      <arg name="agent" type="o" direction="in"/>
+      <arg name="capability" type="s" direction="in"/>
+    </method>
+    <method name="UnregisterAgent">
+      <arg name="agent" type="o" direction="in"/>
+    </method>
+    <method name="RequestDefaultAgent">
+      <arg name="agent" type="o" direction="in"/>
+    </method>
+  </interface>
+</node>

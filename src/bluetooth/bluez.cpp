@@ -12,6 +12,9 @@
 #include "../dbus/dbus_objectmanager_types.hpp"
 #include "../dbus/objectmanager.hpp"
 #include "adapter.hpp"
+#include "agent.hpp"
+#include "dbus_agent_adaptor.h"
+#include "dbus_agent_manager.h"
 #include "device.hpp"
 
 namespace qs::bluetooth {
@@ -62,6 +65,8 @@ void Bluez::init() {
 		qCDebug(logBluetooth) << "BlueZ is not running. Bluetooth integration will not work.";
 		return;
 	}
+
+	this->registerAgent();
 }
 
 void Bluez::onInterfacesAdded(
@@ -163,6 +168,45 @@ BluezQml::BluezQml() {
 	    this,
 	    &BluezQml::defaultAdapterChanged
 	);
+}
+
+void Bluez::registerAgent() {
+
+	this->agent = new BluetoothAgent(this);
+	new Agent1Adaptor(this->agent);
+
+	auto bus = QDBusConnection::systemBus();
+	if (!bus.registerObject(this->agent->objectPath(), this->agent)) {
+		qCWarning(logBluetooth) << "Failed to register Bluetooth agent on D-Bus";
+		delete this->agent;
+		this->agent = nullptr;
+		return;
+	}
+
+	auto* agentManager = new DBusBluezAgentManagerInterface("org.bluez", "/org/bluez", bus, this);
+
+	if (!agentManager->isValid()) {
+		qCWarning(logBluetooth) << "Could not create AgentManager interface";
+		bus.unregisterObject(this->agent->objectPath());
+		delete this->agent;
+		this->agent = nullptr;
+		return;
+	}
+
+	auto reply = agentManager->RegisterAgent(
+	    QDBusObjectPath(this->agent->objectPath()),
+	    QStringLiteral("NoInputNoOutput")
+	);
+
+	if (reply.isError()) {
+		qCWarning(logBluetooth) << "Failed to register agent:" << reply.error().message();
+		bus.unregisterObject(this->agent->objectPath());
+		delete this->agent;
+		this->agent = nullptr;
+		return;
+	}
+
+	agentManager->RequestDefaultAgent(QDBusObjectPath(this->agent->objectPath()));
 }
 
 } // namespace qs::bluetooth

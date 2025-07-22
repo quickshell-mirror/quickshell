@@ -44,6 +44,7 @@ BluetoothAdapter::BluetoothAdapter(const QString& path, QObject* parent): QObjec
 	}
 
 	this->properties.setInterface(this->mInterface);
+	this->properties.updateAllViaGetAll();
 }
 
 QString BluetoothAdapter::adapterId() const {

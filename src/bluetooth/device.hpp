@@ -95,6 +95,8 @@ class BluetoothDevice: public QObject {
 	Q_PROPERTY(bool blocked READ blocked WRITE setBlocked NOTIFY blockedChanged);
 	/// True if the device is allowed to wake up the host system from suspend.
 	Q_PROPERTY(bool wakeAllowed READ wakeAllowed WRITE setWakeAllowed NOTIFY wakeAllowedChanged);
+	/// True if device services (GATT/SDP) have been resolved and device is fully ready.
+	Q_PROPERTY(bool servicesResolved READ servicesResolved NOTIFY servicesResolvedChanged);
 	/// True if the connected device reports its battery level. Battery level can be accessed via @@battery.
 	Q_PROPERTY(bool batteryAvailable READ batteryAvailable NOTIFY batteryAvailableChanged);
 	/// Battery level of the connected device, from `0.0` to `1.0`. Only valid if @@batteryAvailable is true.
@@ -145,6 +147,8 @@ public:
 	[[nodiscard]] bool wakeAllowed() const { return this->bWakeAllowed; }
 	void setWakeAllowed(bool wakeAllowed);
 
+	[[nodiscard]] bool servicesResolved() const { return this->bServicesResolved; }
+
 	[[nodiscard]] bool pairing() const { return this->bPairing; }
 
 	[[nodiscard]] QBindable<QString> bindableAddress() { return &this->bAddress; }
@@ -156,6 +160,7 @@ public:
 	[[nodiscard]] QBindable<bool> bindableTrusted() { return &this->bTrusted; }
 	[[nodiscard]] QBindable<bool> bindableBlocked() { return &this->bBlocked; }
 	[[nodiscard]] QBindable<bool> bindableWakeAllowed() { return &this->bWakeAllowed; }
+	[[nodiscard]] QBindable<bool> bindableServicesResolved() { return &this->bServicesResolved; }
 	[[nodiscard]] QBindable<QString> bindableIcon() { return &this->bIcon; }
 	[[nodiscard]] QBindable<qreal> bindableBattery() { return &this->bBattery; }
 	[[nodiscard]] QBindable<BluetoothDeviceState::Enum> bindableState() { return &this->bState; }
@@ -175,6 +180,7 @@ signals:
 	void trustedChanged();
 	void blockedChanged();
 	void wakeAllowedChanged();
+	void servicesResolvedChanged();
 	void iconChanged();
 	void batteryAvailableChanged();
 	void batteryChanged();
@@ -182,6 +188,7 @@ signals:
 
 private:
 	void onConnectedChanged();
+	void onServicesResolvedChanged();
 
 	DBusBluezDeviceInterface* mInterface = nullptr;
 	QDBusInterface* mBatteryInterface = nullptr;
@@ -196,6 +203,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, bool, bTrusted, &BluetoothDevice::trustedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, bool, bBlocked, &BluetoothDevice::blockedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, bool, bWakeAllowed, &BluetoothDevice::wakeAllowedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, bool, bServicesResolved, &BluetoothDevice::onServicesResolvedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, QString, bIcon, &BluetoothDevice::iconChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, QDBusObjectPath, bAdapterPath);
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothDevice, qreal, bBattery, &BluetoothDevice::batteryChanged);
@@ -212,6 +220,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pTrusted, bTrusted, properties, "Trusted");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pBlocked, bBlocked, properties, "Blocked");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pWakeAllowed, bWakeAllowed, properties, "WakeAllowed");
+	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pServicesResolved, bServicesResolved, properties, "ServicesResolved");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pIcon, bIcon, properties, "Icon");
 	QS_DBUS_PROPERTY_BINDING(BluetoothDevice, pAdapterPath, bAdapterPath, properties, "Adapter");
 

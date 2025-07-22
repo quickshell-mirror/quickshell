@@ -15,6 +15,7 @@
 namespace qs::bluetooth {
 
 class BluetoothAdapter;
+class BluetoothAgent;
 class BluetoothDevice;
 
 class Bluez: public QObject {
@@ -42,8 +43,10 @@ private slots:
 private:
 	explicit Bluez();
 	void init();
+	void registerAgent();
 
 	qs::dbus::DBusObjectManager* objectManager = nullptr;
+	BluetoothAgent* agent = nullptr;
 	QHash<QString, BluetoothAdapter*> mAdapterMap;
 	QHash<QString, BluetoothDevice*> mDeviceMap;
 	ObjectModel<BluetoothAdapter> mAdapters {this};

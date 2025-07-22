@@ -46,6 +46,7 @@ BluetoothDevice::BluetoothDevice(const QString& path, QObject* parent): QObject(
 	}
 
 	this->properties.setInterface(this->mInterface);
+	this->properties.updateAllViaGetAll();
 }
 
 BluetoothAdapter* BluetoothDevice::adapter() const {
@@ -117,7 +118,7 @@ void BluetoothDevice::connect() {
 			    this->bState = this->bConnected ? BluetoothDeviceState::Connected
 			                                    : BluetoothDeviceState::Disconnected;
 		    } else {
-			    qCDebug(logDevice) << "Successfully connected to to device" << this;
+			    qCDebug(logDevice) << "Successfully connected to device" << this;
 		    }
 
 		    delete watcher;
@@ -292,6 +293,8 @@ void BluetoothDevice::onConnectedChanged() {
 	    this->bConnected ? BluetoothDeviceState::Connected : BluetoothDeviceState::Disconnected;
 	emit this->connectedChanged();
 }
+
+void BluetoothDevice::onServicesResolvedChanged() { emit this->servicesResolvedChanged(); }
 
 } // namespace qs::bluetooth
 
