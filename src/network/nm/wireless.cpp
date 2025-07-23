@@ -1,4 +1,4 @@
-#include "nm_adapters.hpp"
+#include "wireless.hpp"
 
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
@@ -8,9 +8,7 @@
 #include <qstring.h>
 #include <qtypes.h>
 
-#include "../dbus/properties.hpp"
-#include "dbus_nm_accesspoint.h"
-#include "dbus_nm_device.h"
+#include "../../dbus/properties.hpp"
 #include "dbus_nm_wireless.h"
 
 using namespace qs::dbus;
@@ -19,40 +17,6 @@ namespace qs::network {
 
 namespace {
 Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
-}
-
-NMDeviceAdapter::NMDeviceAdapter(const QString& path, QObject* parent): QObject(parent) {
-	this->proxy = new DBusNMDeviceProxy(
-	    "org.freedesktop.NetworkManager",
-	    path,
-	    QDBusConnection::systemBus(),
-	    this
-	);
-
-	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create DBus interface for device at" << path;
-		return;
-	}
-
-	this->deviceProperties.setInterface(this->proxy);
-	this->deviceProperties.updateAllViaGetAll();
-}
-
-void NMDeviceAdapter::disconnect() { this->proxy->Disconnect(); }
-bool NMDeviceAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
-QString NMDeviceAdapter::address() const {
-	return this->proxy ? this->proxy->service() : QString();
-}
-QString NMDeviceAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
-
-NetworkDeviceState::Enum NMDeviceState::toNetworkDeviceState(NMDeviceState::Enum state) {
-	switch (state) {
-	case 0 ... 20: return NetworkDeviceState::Unknown;
-	case 30: return NetworkDeviceState::Disconnected;
-	case 40 ... 90: return NetworkDeviceState::Connecting;
-	case 100: return NetworkDeviceState::Connected;
-	case 110 ... 120: return NetworkDeviceState::Disconnecting;
-	}
 }
 
 NMWirelessAdapter::NMWirelessAdapter(const QString& path, QObject* parent): QObject(parent) {
@@ -207,7 +171,7 @@ void NMWirelessAdapter::addApToNetwork(NMAccessPointAdapter* ap, const QByteArra
 
 		// Sometimes active AP changes before wifi network is registered
 		if (this->activeApPath().path() == ap->path()) {
-			network->setConnected(true);	
+			network->setConnected(true);
 		};
 
 		emit this->wifiNetworkAdded(network);
@@ -242,78 +206,4 @@ QString NMWirelessAdapter::address() const {
 }
 QString NMWirelessAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-NMAccessPointAdapter::NMAccessPointAdapter(const QString& path, QObject* parent): QObject(parent) {
-	this->proxy = new DBusNMAccessPointProxy(
-	    "org.freedesktop.NetworkManager",
-	    path,
-	    QDBusConnection::systemBus(),
-	    this
-	);
-
-	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create access point proxy for" << path;
-		return;
-	}
-
-	this->accessPointProperties.setInterface(this->proxy);
-	this->accessPointProperties.updateAllViaGetAll();
-}
-
-bool NMAccessPointAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
-QString NMAccessPointAdapter::address() const {
-	return this->proxy ? this->proxy->service() : QString();
-}
-QString NMAccessPointAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
-
-NMAccessPointGroup::NMAccessPointGroup(QByteArray ssid, QObject* parent)
-    : QObject(parent)
-    , mSsid(std::move(ssid)) {}
-
-void NMAccessPointGroup::updateSignalStrength() {
-	quint8 max = 0;
-	for (auto* ap: mAccessPoints) {
-		max = qMax(max, ap->getSignal());
-	}
-	if (this->bMaxSignal != max) {
-		this->bMaxSignal = max;
-	}
-}
-
-void NMAccessPointGroup::addAccessPoint(NMAccessPointAdapter* ap) {
-	if (this->mAccessPoints.contains(ap)) {
-		qCWarning(logNetworkManager) << "Access point" << ap->path() << "was already in AP group";
-		return;
-	}
-
-	this->mAccessPoints.append(ap);
-	QObject::connect(
-	    ap,
-	    &NMAccessPointAdapter::signalStrengthChanged,
-	    this,
-	    &NMAccessPointGroup::updateSignalStrength
-	);
-	this->updateSignalStrength();
-}
-
-void NMAccessPointGroup::removeAccessPoint(NMAccessPointAdapter* ap) {
-	if (mAccessPoints.removeOne(ap)) {
-		QObject::disconnect(ap, nullptr, this, nullptr);
-		this->updateSignalStrength();
-	}
-}
-
 } // namespace qs::network
-
-namespace qs::dbus {
-
-DBusResult<qs::network::NMDeviceType::Enum>
-DBusDataTransform<qs::network::NMDeviceType::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMDeviceType::Enum>(wire));
-}
-
-DBusResult<qs::network::NMDeviceState::Enum>
-DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
-}
-
-} // namespace qs::dbus

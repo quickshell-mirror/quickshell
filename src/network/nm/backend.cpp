@@ -1,4 +1,4 @@
-#include "nm_backend.hpp"
+#include "backend.hpp"
 
 #include <qcontainerfwd.h>
 #include <qdbusextratypes.h>
@@ -10,11 +10,12 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../dbus/bus.hpp"
-#include "../dbus/properties.hpp"
-#include "api.hpp"
+#include "../../dbus/bus.hpp"
+#include "../../dbus/properties.hpp"
+#include "../api.hpp"
+#include "device.hpp"
+#include "wireless.hpp"
 #include "dbus_nm_backend.h"
-#include "nm_adapters.hpp"
 
 namespace qs::network {
 

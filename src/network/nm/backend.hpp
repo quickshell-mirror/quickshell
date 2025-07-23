@@ -10,10 +10,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../dbus/properties.hpp"
-#include "api.hpp"
+#include "../../dbus/properties.hpp"
+#include "../api.hpp"
 #include "dbus_nm_backend.h"
-#include "nm_adapters.hpp"
+#include "device.hpp"
 
 namespace qs::network {
 

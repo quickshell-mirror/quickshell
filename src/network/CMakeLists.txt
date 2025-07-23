@@ -1,48 +1,50 @@
 # NetworkManager DBus
-set_source_files_properties(org.freedesktop.NetworkManager.xml PROPERTIES
+set_source_files_properties(nm/org.freedesktop.NetworkManager.xml PROPERTIES
 	CLASSNAME DBusNetworkManagerProxy
 	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(NM_DBUS_INTERFACES
-	org.freedesktop.NetworkManager.xml
-	dbus_nm_backend
+	nm/org.freedesktop.NetworkManager.xml
+	nm/dbus_nm_backend
 )
 
-set_source_files_properties(org.freedesktop.NetworkManager.Device.xml PROPERTIES
+set_source_files_properties(nm/org.freedesktop.NetworkManager.Device.xml PROPERTIES
 	CLASSNAME DBusNMDeviceProxy
 	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(NM_DBUS_INTERFACES
-	org.freedesktop.NetworkManager.Device.xml
-	dbus_nm_device
+	nm/org.freedesktop.NetworkManager.Device.xml
+	nm/dbus_nm_device
 )
 
-set_source_files_properties(org.freedesktop.NetworkManager.Device.Wireless.xml PROPERTIES
+set_source_files_properties(nm/org.freedesktop.NetworkManager.Device.Wireless.xml PROPERTIES
 	CLASSNAME DBusNMWirelessProxy
 	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(NM_DBUS_INTERFACES
-	org.freedesktop.NetworkManager.Device.Wireless.xml
-	dbus_nm_wireless
+	nm/org.freedesktop.NetworkManager.Device.Wireless.xml
+	nm/dbus_nm_wireless
 )
 
-set_source_files_properties(org.freedesktop.NetworkManager.AccessPoint.xml PROPERTIES
+set_source_files_properties(nm/org.freedesktop.NetworkManager.AccessPoint.xml PROPERTIES
 	CLASSNAME DBusNMAccessPointProxy
 	NO_NAMESPACE TRUE
 )
 
 qt_add_dbus_interface(NM_DBUS_INTERFACES
-	org.freedesktop.NetworkManager.AccessPoint.xml
-	dbus_nm_accesspoint
+	nm/org.freedesktop.NetworkManager.AccessPoint.xml
+	nm/dbus_nm_accesspoint
 )
 
 qt_add_library(quickshell-network STATIC
 	api.cpp
-	nm_backend.cpp
-	nm_adapters.cpp
+	nm/backend.cpp
+	nm/device.cpp
+	nm/accesspoint.cpp
+	nm/wireless.cpp
 	${NM_DBUS_INTERFACES}
 )
 

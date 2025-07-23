@@ -8,7 +8,7 @@
 #include <qdbusservicewatcher.h>
 #include <qlogging.h>
 
-#include "nm_backend.hpp"
+#include "nm/backend.hpp"
 
 namespace qs::network {
 
