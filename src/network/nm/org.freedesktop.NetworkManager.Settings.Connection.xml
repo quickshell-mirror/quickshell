@@ -1,0 +1,16 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Settings.Connection">
+    <method name="GetSettings">
+			<arg name="settings" type="a{sa{sv}}" direction="out"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+    </method>
+    <method name="GetSecrets">
+			<arg name="setting_name" type="s" direction="in"/>
+			<arg name="secrets" type="a{sa{sv}}" direction="out"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+    </method>
+    
+    <signal name="Updated"/>
+		<signal name="Removed"/>
+  </interface>
+</node>

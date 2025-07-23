@@ -9,7 +9,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "dbus_nm_device.h"
+#include "nm/dbus_nm_device.h"
 
 using namespace qs::dbus;
 

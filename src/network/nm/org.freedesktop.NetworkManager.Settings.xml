@@ -1,0 +1,14 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Settings">
+		<method name="ListConnections">
+			<arg name="connections" type="ao" direction="out"/>
+		</method>
+    
+    <signal name="NewConnection">
+			<arg name="connection" type="o"/>
+		</signal>
+    <signal name="ConnectionRemoved">
+			<arg name="connection" type="o"/>
+		</signal>
+  </interface>
+</node>

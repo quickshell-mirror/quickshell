@@ -123,18 +123,17 @@ Network::Network(QObject* parent): QObject(parent) {
 	// Try each backend
 
 	// NetworkManager
-	auto* nm = new NetworkManager();
-	if (nm->isAvailable()) {
-		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::addDevice);
-		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
-		this->backend = nm;
-		return;
-	} else {
-		delete nm;
-	}
-
-	// None found
-	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
+	auto* nm = new NetworkManager(this);
+	connect(nm, &NetworkBackend::ready, this, [this, nm](bool success) {
+		if (success) {
+			QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::addDevice);
+			QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
+			this->backend = nm;
+		} else {
+			delete nm;
+			qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
+		}
+	});
 }
 
 void Network::addDevice(NetworkDevice* device) { this->mDevices.insertObject(device); }

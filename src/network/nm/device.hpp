@@ -11,8 +11,8 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "api.hpp"
-#include "dbus_nm_device.h"
+#include "../api.hpp"
+#include "nm/dbus_nm_device.h"
 
 namespace qs::network {
 

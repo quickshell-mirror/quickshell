@@ -11,7 +11,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "dbus_nm_accesspoint.h"
+#include "nm/dbus_nm_accesspoint.h"
 
 namespace qs::network {
 
