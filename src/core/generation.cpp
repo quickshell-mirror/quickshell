@@ -222,6 +222,11 @@ void EngineGeneration::onFileChanged(const QString& name) {
 	if (!this->watcher->files().contains(name)) {
 		this->deletedWatchedFiles.push_back(name);
 	} else {
+		// some editors (e.g vscode) perform file saving in two steps: truncate + write
+		// ignore the first event (truncate) with size 0 to prevent incorrect live reloading
+		auto fileInfo = QFileInfo(name);
+		if (fileInfo.isFile() && fileInfo.size() == 0) return;
+
 		emit this->filesChanged();
 	}
 }
