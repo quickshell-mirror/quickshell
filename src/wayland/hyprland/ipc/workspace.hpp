@@ -54,7 +54,7 @@ public:
 	///
 	/// > [!NOTE] This is equivalent to running
 	/// > ```qml
-	/// > HyprlandIpc.dispatch(`workspace ${workspace.id}`);
+	/// > HyprlandIpc.dispatch(`workspace ${workspace.name}`);
 	/// > ```
 	Q_INVOKABLE void activate();
 
