@@ -274,23 +274,23 @@ public:
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString address() const;
 
-	[[nodiscard]] QBindable<bool> bindableCanControl() const { return &this->bCanControl; };
-	[[nodiscard]] QBindable<bool> bindableCanSeek() const { return &this->bCanSeek; };
-	[[nodiscard]] QBindable<bool> bindableCanGoNext() const { return &this->bCanGoNext; };
-	[[nodiscard]] QBindable<bool> bindableCanGoPrevious() const { return &this->bCanGoPrevious; };
-	[[nodiscard]] QBindable<bool> bindableCanPlay() const { return &this->bCanPlay; };
-	[[nodiscard]] QBindable<bool> bindableCanPause() const { return &this->bCanPause; };
+	[[nodiscard]] QBindable<bool> bindableCanControl() const { return &this->bCanControl; }
+	[[nodiscard]] QBindable<bool> bindableCanSeek() const { return &this->bCanSeek; }
+	[[nodiscard]] QBindable<bool> bindableCanGoNext() const { return &this->bCanGoNext; }
+	[[nodiscard]] QBindable<bool> bindableCanGoPrevious() const { return &this->bCanGoPrevious; }
+	[[nodiscard]] QBindable<bool> bindableCanPlay() const { return &this->bCanPlay; }
+	[[nodiscard]] QBindable<bool> bindableCanPause() const { return &this->bCanPause; }
 	[[nodiscard]] QBindable<bool> bindableCanTogglePlaying() const {
 		return &this->bCanTogglePlaying;
-	};
-	[[nodiscard]] QBindable<bool> bindableCanQuit() const { return &this->bCanQuit; };
-	[[nodiscard]] QBindable<bool> bindableCanRaise() const { return &this->bCanRaise; };
+	}
+	[[nodiscard]] QBindable<bool> bindableCanQuit() const { return &this->bCanQuit; }
+	[[nodiscard]] QBindable<bool> bindableCanRaise() const { return &this->bCanRaise; }
 	[[nodiscard]] QBindable<bool> bindableCanSetFullscreen() const {
 		return &this->bCanSetFullscreen;
-	};
+	}
 
-	[[nodiscard]] QBindable<QString> bindableIdentity() const { return &this->bIdentity; };
-	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; };
+	[[nodiscard]] QBindable<QString> bindableIdentity() const { return &this->bIdentity; }
+	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; }
 
 	[[nodiscard]] qlonglong positionMs() const;
 	[[nodiscard]] qreal position() const;
@@ -300,49 +300,49 @@ public:
 	[[nodiscard]] qreal length() const;
 	[[nodiscard]] QBindable<bool> bindableLengthSupported() const { return &this->bLengthSupported; }
 
-	[[nodiscard]] qreal volume() const { return this->bVolume; };
+	[[nodiscard]] qreal volume() const { return this->bVolume; }
 	[[nodiscard]] bool volumeSupported() const;
 	void setVolume(qreal volume);
 
-	[[nodiscard]] QBindable<quint32> bindableUniqueId() const { return &this->bUniqueId; };
-	[[nodiscard]] QBindable<QVariantMap> bindableMetadata() const { return &this->bMetadata; };
-	[[nodiscard]] QBindable<QString> bindableTrackTitle() const { return &this->bTrackTitle; };
-	[[nodiscard]] QBindable<QString> bindableTrackAlbum() const { return &this->bTrackAlbum; };
+	[[nodiscard]] QBindable<quint32> bindableUniqueId() const { return &this->bUniqueId; }
+	[[nodiscard]] QBindable<QVariantMap> bindableMetadata() const { return &this->bMetadata; }
+	[[nodiscard]] QBindable<QString> bindableTrackTitle() const { return &this->bTrackTitle; }
+	[[nodiscard]] QBindable<QString> bindableTrackAlbum() const { return &this->bTrackAlbum; }
 	[[nodiscard]] QBindable<QString> bindableTrackAlbumArtist() const {
 		return &this->bTrackAlbumArtist;
-	};
-	[[nodiscard]] QBindable<QString> bindableTrackArtist() const { return &this->bTrackArtist; };
-	[[nodiscard]] QBindable<QString> bindableTrackArtUrl() const { return &this->bTrackArtUrl; };
+	}
+	[[nodiscard]] QBindable<QString> bindableTrackArtist() const { return &this->bTrackArtist; }
+	[[nodiscard]] QBindable<QString> bindableTrackArtUrl() const { return &this->bTrackArtUrl; }
 
-	[[nodiscard]] MprisPlaybackState::Enum playbackState() const { return this->bPlaybackState; };
+	[[nodiscard]] MprisPlaybackState::Enum playbackState() const { return this->bPlaybackState; }
 	void setPlaybackState(MprisPlaybackState::Enum playbackState);
 
-	[[nodiscard]] bool isPlaying() const { return this->bIsPlaying; };
+	[[nodiscard]] bool isPlaying() const { return this->bIsPlaying; }
 	void setPlaying(bool playing);
 
-	[[nodiscard]] MprisLoopState::Enum loopState() const { return this->bLoopState; };
+	[[nodiscard]] MprisLoopState::Enum loopState() const { return this->bLoopState; }
 	[[nodiscard]] bool loopSupported() const;
 	void setLoopState(MprisLoopState::Enum loopState);
 
-	[[nodiscard]] qreal rate() const { return this->bRate; };
-	[[nodiscard]] QBindable<qreal> bindableMinRate() const { return &this->bRate; };
-	[[nodiscard]] QBindable<qreal> bindableMaxRate() const { return &this->bRate; };
+	[[nodiscard]] qreal rate() const { return this->bRate; }
+	[[nodiscard]] QBindable<qreal> bindableMinRate() const { return &this->bRate; }
+	[[nodiscard]] QBindable<qreal> bindableMaxRate() const { return &this->bRate; }
 	void setRate(qreal rate);
 
-	[[nodiscard]] bool shuffle() const { return this->bShuffle; };
+	[[nodiscard]] bool shuffle() const { return this->bShuffle; }
 	[[nodiscard]] bool shuffleSupported() const;
 	void setShuffle(bool shuffle);
 
-	[[nodiscard]] bool fullscreen() const { return this->bFullscreen; };
+	[[nodiscard]] bool fullscreen() const { return this->bFullscreen; }
 	void setFullscreen(bool fullscreen);
 
 	[[nodiscard]] QBindable<QList<QString>> bindableSupportedUriSchemes() const {
 		return &this->bSupportedUriSchemes;
-	};
+	}
 
 	[[nodiscard]] QBindable<QList<QString>> bindableSupportedMimeTypes() const {
 		return &this->bSupportedMimeTypes;
-	};
+	}
 
 signals:
 	/// The track has changed.
@@ -414,7 +414,7 @@ private:
 	void onPlaybackStatusUpdated();
 	// call instead of setting bpPosition
 	void setPosition(qlonglong position);
-	void requestPositionUpdate() { this->pPosition.requestUpdate(); };
+	void requestPositionUpdate() { this->pPosition.requestUpdate(); }
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(MprisPlayer, QString, bIdentity, &MprisPlayer::identityChanged);

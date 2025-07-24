@@ -168,9 +168,9 @@ class DBusBindableProperty: public DBusPropertyCore {
 public:
 	explicit DBusBindableProperty() { this->group()->attachProperty(this); }
 
-	[[nodiscard]] QString name() const override { return Name; };
-	[[nodiscard]] QStringView nameRef() const override { return Name; };
-	[[nodiscard]] bool isRequired() const override { return required; };
+	[[nodiscard]] QString name() const override { return Name; }
+	[[nodiscard]] QStringView nameRef() const override { return Name; }
+	[[nodiscard]] bool isRequired() const override { return required; }
 
 	[[nodiscard]] QString valueString() override {
 		QString str;

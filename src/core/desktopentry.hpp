@@ -195,7 +195,7 @@ public:
 	/// While this function requires an exact match, @@heuristicLookup() will correctly
 	/// find an entry more often and is generally more useful.
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* byId(const QString& id);
-	/// Look up a desktop entry by name using heuristics. Unline @@byId(),
+	/// Look up a desktop entry by name using heuristics. Unlike @@byId(),
 	/// if no exact matches are found this function will try to guess - potentially incorrectly.
 	/// May return null.
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* heuristicLookup(const QString& name);

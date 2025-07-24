@@ -46,8 +46,8 @@ class QsMenuHandle: public QObject {
 public:
 	explicit QsMenuHandle(QObject* parent): QObject(parent) {}
 
-	virtual void refHandle() {};
-	virtual void unrefHandle() {};
+	virtual void refHandle() {}
+	virtual void unrefHandle() {}
 
 	[[nodiscard]] virtual QsMenuEntry* menu() = 0;
 

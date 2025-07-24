@@ -51,7 +51,7 @@ class MprisQml: public QObject {
 	Q_PROPERTY(UntypedObjectModel* players READ players CONSTANT);
 
 public:
-	explicit MprisQml(QObject* parent = nullptr): QObject(parent) {};
+	explicit MprisQml(QObject* parent = nullptr): QObject(parent) {}
 
 	[[nodiscard]] ObjectModel<MprisPlayer>* players();
 };

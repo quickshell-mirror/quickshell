@@ -154,29 +154,29 @@ public:
 	[[nodiscard]] bool isLastGeneration() const;
 	void setLastGeneration();
 
-	[[nodiscard]] QBindable<qreal> bindableExpireTimeout() const { return &this->bExpireTimeout; };
-	[[nodiscard]] QBindable<QString> bindableAppName() const { return &this->bAppName; };
-	[[nodiscard]] QBindable<QString> bindableAppIcon() const { return &this->bAppIcon; };
-	[[nodiscard]] QBindable<QString> bindableSummary() const { return &this->bSummary; };
-	[[nodiscard]] QBindable<QString> bindableBody() const { return &this->bBody; };
+	[[nodiscard]] QBindable<qreal> bindableExpireTimeout() const { return &this->bExpireTimeout; }
+	[[nodiscard]] QBindable<QString> bindableAppName() const { return &this->bAppName; }
+	[[nodiscard]] QBindable<QString> bindableAppIcon() const { return &this->bAppIcon; }
+	[[nodiscard]] QBindable<QString> bindableSummary() const { return &this->bSummary; }
+	[[nodiscard]] QBindable<QString> bindableBody() const { return &this->bBody; }
 	[[nodiscard]] QBindable<NotificationUrgency ::Enum> bindableUrgency() const {
 		return &this->bUrgency;
-	};
+	}
 
 	[[nodiscard]] QList<NotificationAction*> actions() const;
 
-	[[nodiscard]] QBindable<bool> bindableHasActionIcons() const { return &this->bHasActionIcons; };
-	[[nodiscard]] QBindable<bool> bindableResident() const { return &this->bResident; };
-	[[nodiscard]] QBindable<bool> bindableTransient() const { return &this->bTransient; };
-	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; };
-	[[nodiscard]] QBindable<QString> bindableImage() const { return &this->bImage; };
-	[[nodiscard]] QBindable<bool> bindableHasInlineReply() const { return &this->bHasInlineReply; };
+	[[nodiscard]] QBindable<bool> bindableHasActionIcons() const { return &this->bHasActionIcons; }
+	[[nodiscard]] QBindable<bool> bindableResident() const { return &this->bResident; }
+	[[nodiscard]] QBindable<bool> bindableTransient() const { return &this->bTransient; }
+	[[nodiscard]] QBindable<QString> bindableDesktopEntry() const { return &this->bDesktopEntry; }
+	[[nodiscard]] QBindable<QString> bindableImage() const { return &this->bImage; }
+	[[nodiscard]] QBindable<bool> bindableHasInlineReply() const { return &this->bHasInlineReply; }
 
 	[[nodiscard]] QBindable<QString> bindableInlineReplyPlaceholder() const {
 		return &this->bInlineReplyPlaceholder;
-	};
+	}
 
-	[[nodiscard]] QBindable<QVariantMap> bindableHints() const { return &this->bHints; };
+	[[nodiscard]] QBindable<QVariantMap> bindableHints() const { return &this->bHints; }
 
 	[[nodiscard]] NotificationCloseReason::Enum closeReason() const;
 	void setTracked(bool tracked);

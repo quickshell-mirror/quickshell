@@ -22,7 +22,7 @@ class UPower: public QObject {
 public:
 	[[nodiscard]] UPowerDevice* displayDevice();
 	[[nodiscard]] ObjectModel<UPowerDevice>* devices();
-	[[nodiscard]] QBindable<bool> bindableOnBattery() const { return &this->bOnBattery; };
+	[[nodiscard]] QBindable<bool> bindableOnBattery() const { return &this->bOnBattery; }
 
 	static UPower* instance();
 

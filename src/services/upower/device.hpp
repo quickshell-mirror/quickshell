@@ -173,25 +173,25 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QString path() const;
 
-	[[nodiscard]] QBindable<UPowerDeviceType::Enum> bindableType() const { return &this->bType; };
-	[[nodiscard]] QBindable<bool> bindablePowerSupply() const { return &this->bPowerSupply; };
-	[[nodiscard]] QBindable<qreal> bindableEnergy() const { return &this->bEnergy; };
-	[[nodiscard]] QBindable<qreal> bindableEnergyCapacity() const { return &this->bEnergyCapacity; };
-	[[nodiscard]] QBindable<qreal> bindableChangeRate() const { return &this->bChangeRate; };
-	[[nodiscard]] QBindable<qlonglong> bindableTimeToEmpty() const { return &this->bTimeToEmpty; };
-	[[nodiscard]] QBindable<qlonglong> bindableTimeToFull() const { return &this->bTimeToFull; };
-	[[nodiscard]] QBindable<qreal> bindablePercentage() const { return &this->bPercentage; };
-	[[nodiscard]] QBindable<bool> bindableIsPresent() const { return &this->bIsPresent; };
-	[[nodiscard]] QBindable<UPowerDeviceState::Enum> bindableState() const { return &this->bState; };
+	[[nodiscard]] QBindable<UPowerDeviceType::Enum> bindableType() const { return &this->bType; }
+	[[nodiscard]] QBindable<bool> bindablePowerSupply() const { return &this->bPowerSupply; }
+	[[nodiscard]] QBindable<qreal> bindableEnergy() const { return &this->bEnergy; }
+	[[nodiscard]] QBindable<qreal> bindableEnergyCapacity() const { return &this->bEnergyCapacity; }
+	[[nodiscard]] QBindable<qreal> bindableChangeRate() const { return &this->bChangeRate; }
+	[[nodiscard]] QBindable<qlonglong> bindableTimeToEmpty() const { return &this->bTimeToEmpty; }
+	[[nodiscard]] QBindable<qlonglong> bindableTimeToFull() const { return &this->bTimeToFull; }
+	[[nodiscard]] QBindable<qreal> bindablePercentage() const { return &this->bPercentage; }
+	[[nodiscard]] QBindable<bool> bindableIsPresent() const { return &this->bIsPresent; }
+	[[nodiscard]] QBindable<UPowerDeviceState::Enum> bindableState() const { return &this->bState; }
 	[[nodiscard]] QBindable<qreal> bindableHealthPercentage() const {
 		return &this->bHealthPercentage;
-	};
-	[[nodiscard]] QBindable<bool> bindableHealthSupported() const { return &this->bHealthSupported; };
-	[[nodiscard]] QBindable<QString> bindableIconName() const { return &this->bIconName; };
-	[[nodiscard]] QBindable<bool> bindableIsLaptopBattery() const { return &this->bIsLaptopBattery; };
-	[[nodiscard]] QBindable<QString> bindableNativePath() const { return &this->bNativePath; };
-	[[nodiscard]] QBindable<QString> bindableModel() const { return &this->bModel; };
-	[[nodiscard]] QBindable<bool> bindableReady() const { return &this->bReady; };
+	}
+	[[nodiscard]] QBindable<bool> bindableHealthSupported() const { return &this->bHealthSupported; }
+	[[nodiscard]] QBindable<QString> bindableIconName() const { return &this->bIconName; }
+	[[nodiscard]] QBindable<bool> bindableIsLaptopBattery() const { return &this->bIsLaptopBattery; }
+	[[nodiscard]] QBindable<QString> bindableNativePath() const { return &this->bNativePath; }
+	[[nodiscard]] QBindable<QString> bindableModel() const { return &this->bModel; }
+	[[nodiscard]] QBindable<bool> bindableReady() const { return &this->bReady; }
 
 signals:
 	QSDOC_HIDE void readyChanged();

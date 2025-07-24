@@ -139,8 +139,8 @@ protected:
 	void printChildCountWarning() const;
 	void updateGeometry();
 
-	virtual void disconnectChild() {};
-	virtual void connectChild() {};
+	virtual void disconnectChild() {}
+	virtual void connectChild() {}
 
 	QQuickItem* mWrapper = nullptr;
 	QQuickItem* mAssignedWrapper = nullptr;

@@ -53,7 +53,7 @@ public:
 	[[nodiscard]] QVariant data(const QModelIndex& index, qint32 role) const override;
 	[[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
-	[[nodiscard]] QList<QObject*> values() const { return this->valuesList; };
+	[[nodiscard]] QList<QObject*> values() const { return this->valuesList; }
 	void removeAt(qsizetype index);
 
 	Q_INVOKABLE qsizetype indexOf(QObject* object);

@@ -164,7 +164,7 @@ class IpcHandler: public PostReloadHook {
 	QML_ELEMENT;
 
 public:
-	explicit IpcHandler(QObject* parent = nullptr): PostReloadHook(parent) {};
+	explicit IpcHandler(QObject* parent = nullptr): PostReloadHook(parent) {}
 	~IpcHandler() override;
 	Q_DISABLE_COPY_MOVE(IpcHandler);
 

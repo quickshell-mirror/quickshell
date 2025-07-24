@@ -55,7 +55,7 @@ public:
 
 	// the buffer will be sent in both slots if there is data remaining from a previous parser
 	virtual void parseBytes(QByteArray& incoming, QByteArray& buffer) = 0;
-	virtual void streamEnded(QByteArray& /*buffer*/) {};
+	virtual void streamEnded(QByteArray& /*buffer*/) {}
 
 signals:
 	/// Emitted when data is read from the stream.
@@ -63,7 +63,7 @@ signals:
 };
 
 ///! DataStreamParser for delimited data streams.
-/// DataStreamParser for delimited data streams. @@read() is emitted once per delimited chunk of the stream.
+/// DataStreamParser for delimited data streams. @@DataStreamParser.read(s) is emitted once per delimited chunk of the stream.
 class SplitParser: public DataStreamParser {
 	Q_OBJECT;
 	/// The delimiter for parsed data. May be multiple characters. Defaults to `\n`.

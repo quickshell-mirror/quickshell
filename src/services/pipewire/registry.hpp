@@ -55,8 +55,8 @@ protected:
 	void registryBind(const char* interface, quint32 version);
 	virtual void bind();
 	void unbind();
-	virtual void bindHooks() {};
-	virtual void unbindHooks() {};
+	virtual void bindHooks() {}
+	virtual void unbindHooks() {}
 
 	quint32 refcount = 0;
 	pw_proxy* object = nullptr;

@@ -57,7 +57,7 @@ public:
 
 	void reload(QObject* oldInstance = nullptr);
 
-	void classBegin() override {};
+	void classBegin() override {}
 	void componentComplete() override;
 
 	// Reload objects in the parent->child graph recursively.
