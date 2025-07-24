@@ -183,8 +183,8 @@ private:
 class NetworkBackend: public QObject {
 	Q_OBJECT;
 
-signals:
-	void ready(bool success);
+public:
+	[[nodiscard]] virtual bool isAvailable() const = 0;
 
 protected:
 	explicit NetworkBackend(QObject* parent = nullptr): QObject(parent) {};

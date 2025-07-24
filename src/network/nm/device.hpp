@@ -11,7 +11,8 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../frontend.hpp"
+#include "connection.hpp"
 #include "nm/dbus_nm_device.h"
 
 namespace qs::network {
@@ -130,19 +131,31 @@ signals:
 	void hwAddressChanged(const QString& hwAddress);
 	void typeChanged(NMDeviceType::Enum type);
 	void stateChanged(NMDeviceState::Enum state);
+	void connectionAdded(const QString& path);
+	void connectionRemoved(const QString& path);
+	void availableConnectionsChanged(QList<QDBusObjectPath> paths);
+
+private slots:
+	void onAvailableConnectionsChanged(const QList<QDBusObjectPath>& paths);
 
 private:
+	// Connection lookups
+	QSet<QString> mConnectionPaths;
+	QHash<QString, NMConnectionAdapter*> mConnectionMap;
+
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QString, bInterface, &NMDeviceAdapter::interfaceChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QString, bHwAddress, &NMDeviceAdapter::hwAddressChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, NMDeviceState::Enum, bState, &NMDeviceAdapter::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, NMDeviceType::Enum, bType, &NMDeviceAdapter::typeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QList<QDBusObjectPath>, bAvailableConnections, &NMDeviceAdapter::availableConnectionsChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pName, bInterface, deviceProperties, "Interface");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pAddress, bHwAddress, deviceProperties, "HwAddress");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pType, bType, deviceProperties, "DeviceType");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pState, bState, deviceProperties, "State");
+	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	// clang-format on
 
 	DBusNMDeviceProxy* proxy = nullptr;

@@ -2,5 +2,9 @@
   <interface name="org.freedesktop.NetworkManager.AccessPoint">
     <property name="Ssid" type="ay" access="read"/>
     <property name="Strength" type="y" access="read"/>
+    <property name="WpaFlags" type="u" access="read"/>
+    <property name="RsnFlags" type="u" access="read"/>
+    <property name="Flags" type="u" access="read"/>
+    <property name="Frequency" type="u" access="read"/>
 	</interface>
 </node>

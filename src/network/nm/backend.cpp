@@ -10,9 +10,8 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../dbus/bus.hpp"
 #include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../frontend.hpp"
 #include "device.hpp"
 #include "nm/dbus_nm_backend.h"
 #include "wireless.hpp"
@@ -25,7 +24,6 @@ Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWar
 
 const QString NM_SERVICE = "org.freedesktop.NetworkManager";
 const QString NM_PATH = "/org/freedesktop/NetworkManager";
-const QString NM_SETTINGS_PATH = "/org/freedesktop/NetworkManager/Settings";
 
 NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	qCDebug(logNetworkManager) << "Starting NetworkManager Network Backend";
@@ -34,7 +32,6 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	if (!bus.isConnected()) {
 		qCWarning(logNetworkManager
 		) << "Could not connect to DBus. NetworkManager backend will not work.";
-		emit ready(false);
 		return;
 	}
 
@@ -42,33 +39,13 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 
 	if (!this->proxy->isValid()) {
 		qCDebug(logNetworkManager
-		) << "NetworkManager service is not currently running, attempting to start it.";
-
-		dbus::tryLaunchService(this, bus, NM_SERVICE, [this](bool success) {
-			if (success) {
-				qCDebug(logNetworkManager) << "Successfully launched NetworkManager backend.";
-				this->init();
-			} else {
-				qCWarning(logNetworkManager)
-				    << "Could not start NetworkManager. This network backend will not work.";
-				emit ready(false);
-			}
-		});
+		) << "NetworkManager service is not currently running. This network backend will not work";
 	} else {
 		this->init();
 	}
 }
 
 void NetworkManager::init() {
-	emit ready(true);
-
-	this->settings = new NMSettingsAdapter(NM_SETTINGS_PATH, this);
-	if (!this->settings->isValid()) {
-		qCWarning(logNetworkManager) << "Failed to connect to NetworkManager settings service.";
-		delete this->settings;
-		return;
-	}
-
 	QObject::connect(
 	    this->proxy,
 	    &DBusNetworkManagerProxy::DeviceAdded,
@@ -243,5 +220,7 @@ void NetworkManager::onDeviceRemoved(const QDBusObjectPath& path) {
 		qCDebug(logNetworkManager) << "Device" << path.path() << "removed.";
 	}
 }
+
+bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); };
 
 } // namespace qs::network

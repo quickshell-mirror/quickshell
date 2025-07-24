@@ -11,7 +11,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../frontend.hpp"
 #include "connection.hpp"
 #include "device.hpp"
 #include "nm/dbus_nm_backend.h"
@@ -27,6 +27,7 @@ signals:
 
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
+	[[nodiscard]] bool isAvailable() const override;
 
 private slots:
 	void onDeviceAdded(const QDBusObjectPath& path);
@@ -42,7 +43,6 @@ private:
 	NetworkDevice* bindDevice(NMDeviceAdapter* deviceAdapter);
 
 	QHash<QString, NetworkDevice*> mDeviceHash;
-	NMSettingsAdapter* settings = nullptr;
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
 	DBusNetworkManagerProxy* proxy = nullptr;

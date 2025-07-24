@@ -49,18 +49,8 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 	nm/dbus_nm_connection
 )
 
-set_source_files_properties(nm/org.freedesktop.NetworkManager.Settings.xml PROPERTIES
-	CLASSNAME DBusNMSettingsProxy
-	NO_NAMESPACE TRUE
-)
-
-qt_add_dbus_interface(NM_DBUS_INTERFACES
-	nm/org.freedesktop.NetworkManager.Settings.xml
-	nm/dbus_nm_settings
-)
-
 qt_add_library(quickshell-network STATIC
-	api.cpp
+	frontend.cpp
 	nm/backend.cpp
 	nm/device.cpp
 	nm/accesspoint.cpp

@@ -1,4 +1,4 @@
-#include "api.hpp"
+#include "frontend.hpp"
 
 #include <qdbusconnection.h>
 #include <qdbusconnectioninterface.h>
@@ -124,16 +124,16 @@ Network::Network(QObject* parent): QObject(parent) {
 
 	// NetworkManager
 	auto* nm = new NetworkManager(this);
-	connect(nm, &NetworkBackend::ready, this, [this, nm](bool success) {
-		if (success) {
-			QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::addDevice);
-			QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
-			this->backend = nm;
-		} else {
-			delete nm;
-			qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
-		}
-	});
+	if (nm->isAvailable()) {
+		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::addDevice);
+		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::removeDevice);
+		this->backend = nm;
+		return;
+	} else {
+		delete nm;
+	}
+
+	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
 
 void Network::addDevice(NetworkDevice* device) { this->mDevices.insertObject(device); }

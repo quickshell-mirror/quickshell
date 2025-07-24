@@ -11,9 +11,9 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../api.hpp"
+#include "../frontend.hpp"
 #include "accesspoint.hpp"
-#include "dbus_nm_wireless.h"
+#include "nm/dbus_nm_wireless.h"
 
 namespace qs::network {
 
@@ -56,7 +56,7 @@ private:
 	//  Lookups: AP <-> AP group <-> frontend wifi network
 	QHash<QString, NMAccessPointAdapter*> mApMap;       // AP Path -> NMAccessPointAdapter*
 	QHash<QString, QByteArray> mSsidMap;                // AP Path -> Ssid
-	QHash<QByteArray, NMAccessPointGroup*> mApGroupMap; // Ssid -> NMAccessPointGroup*
+	QHash<QByteArray, NMWifiNetwork*> mApGroupMap; // Ssid -> NMAccessPointGroup*
 	QHash<QByteArray, WifiNetwork*> mWifiNetworkMap;    // Ssid -> NetworkWifiNetwork*
 
 	// clang-format off

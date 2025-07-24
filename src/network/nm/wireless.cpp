@@ -9,7 +9,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "dbus_nm_wireless.h"
+#include "nm/dbus_nm_wireless.h"
 
 using namespace qs::dbus;
 
@@ -155,13 +155,13 @@ void NMWirelessAdapter::addApToNetwork(NMAccessPointAdapter* ap, const QByteArra
 	auto* group = mApGroupMap.value(ssid);
 	if (!group) {
 		auto* network = new WifiNetwork(this);
-		group = new NMAccessPointGroup(ssid, this);
+		group = new NMWifiNetwork(ssid, this);
 		network->setSsid(QString::fromUtf8(ssid));
 
 		// NMAccessPointGroup signal -> NetworkWifiNetwork slot
 		QObject::connect(
 		    group,
-		    &NMAccessPointGroup::signalStrengthChanged,
+		    &NMWifiNetwork::signalStrengthChanged,
 		    network,
 		    &WifiNetwork::setSignalStrength
 		);

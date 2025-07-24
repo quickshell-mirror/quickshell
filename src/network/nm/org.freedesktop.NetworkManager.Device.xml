@@ -3,6 +3,7 @@
     <property name="Interface" type="s" access="read"/>
 		<property name="HwAddress" type="s" access="read"/>   
 		<property name="DeviceType" type="u" access="read"/>
+    <property name="AvailableConnections" type="ao" access="read"/>
 
     <method name="Disconnect"/>
   </interface>

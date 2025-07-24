@@ -42,11 +42,11 @@ QString NMAccessPointAdapter::address() const {
 }
 QString NMAccessPointAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-NMAccessPointGroup::NMAccessPointGroup(QByteArray ssid, QObject* parent)
+NMWifiNetwork::NMWifiNetwork(QByteArray ssid, QObject* parent)
     : QObject(parent)
     , mSsid(std::move(ssid)) {}
 
-void NMAccessPointGroup::updateSignalStrength() {
+void NMWifiNetwork::updateSignalStrength() {
 	quint8 max = 0;
 	for (auto* ap: mAccessPoints) {
 		max = qMax(max, ap->getSignal());
@@ -56,7 +56,7 @@ void NMAccessPointGroup::updateSignalStrength() {
 	}
 }
 
-void NMAccessPointGroup::addAccessPoint(NMAccessPointAdapter* ap) {
+void NMWifiNetwork::addAccessPoint(NMAccessPointAdapter* ap) {
 	if (this->mAccessPoints.contains(ap)) {
 		qCWarning(logNetworkManager) << "Access point" << ap->path() << "was already in AP group";
 		return;
@@ -67,12 +67,12 @@ void NMAccessPointGroup::addAccessPoint(NMAccessPointAdapter* ap) {
 	    ap,
 	    &NMAccessPointAdapter::signalStrengthChanged,
 	    this,
-	    &NMAccessPointGroup::updateSignalStrength
+	    &NMWifiNetwork::updateSignalStrength
 	);
 	this->updateSignalStrength();
 }
 
-void NMAccessPointGroup::removeAccessPoint(NMAccessPointAdapter* ap) {
+void NMWifiNetwork::removeAccessPoint(NMAccessPointAdapter* ap) {
 	if (mAccessPoints.removeOne(ap)) {
 		QObject::disconnect(ap, nullptr, this, nullptr);
 		this->updateSignalStrength();
@@ -80,3 +80,17 @@ void NMAccessPointGroup::removeAccessPoint(NMAccessPointAdapter* ap) {
 }
 
 } // namespace qs::network
+
+namespace qs::dbus {
+
+DBusResult<qs::network::NM80211ApFlags::Enum>
+DBusDataTransform<qs::network::NM80211ApFlags::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NM80211ApFlags::Enum>(wire));
+}
+
+DBusResult<qs::network::NM80211ApSecurityFlags::Enum>
+DBusDataTransform<qs::network::NM80211ApSecurityFlags::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NM80211ApSecurityFlags::Enum>(wire));
+}
+
+} // namespace qs::dbus

@@ -32,8 +32,44 @@ NMDeviceAdapter::NMDeviceAdapter(const QString& path, QObject* parent): QObject(
 		return;
 	}
 
+	QObject::connect(
+	    this,
+	    &NMDeviceAdapter::availableConnectionsChanged,
+	    this,
+	    &NMDeviceAdapter::onAvailableConnectionsChanged
+	);
+
 	this->deviceProperties.setInterface(this->proxy);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>& paths) {
+	QSet<QString> newConnectionPaths;
+	for (const QDBusObjectPath& path: paths) {
+		newConnectionPaths.insert(path.path());
+	}
+
+	QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
+	QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
+	for (const QString& path: addedConnections) {
+		auto* connection = new NMConnectionAdapter(path, this);
+		if (!connection->isValid()) {
+			qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
+			delete connection;
+		} else {
+			this->mConnectionMap.insert(path, connection);
+			qCDebug(logNetworkManager) << "Registered connection" << path;
+		}
+	}
+	for (const QString& path: removedConnections) {
+		auto* connection = this->mConnectionMap.take(path);
+		if (!connection) {
+			qCDebug(logNetworkManager) << "NetworkManager backend sent removal signal for" << path
+			                           << "which is not registered.";
+		} else {
+			delete connection;
+		}
+	};
 }
 
 void NMDeviceAdapter::disconnect() { this->proxy->Disconnect(); }
