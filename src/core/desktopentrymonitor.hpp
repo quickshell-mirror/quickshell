@@ -12,8 +12,6 @@ public:
 	explicit DesktopEntryMonitor(QObject* parent = nullptr);
 	~DesktopEntryMonitor() = default;
 
-	QStringList getDesktopDirectories() const;
-
 signals:
 	void desktopEntriesChanged();
 
@@ -22,12 +20,10 @@ private slots:
 	void processChanges();
 
 private:
-	void initializeDesktopPaths();
 	void startMonitoring();
 	void scanAndWatch(const QString& dirPath);
 
 	QFileSystemWatcher* watcher;
-	QStringList desktopPaths;
 	QTimer* debounceTimer;
 	bool rescanPending = false;
 };

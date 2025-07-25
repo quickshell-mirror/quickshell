@@ -17,6 +17,33 @@
 class DesktopAction;
 class DesktopEntryMonitor;
 
+struct DesktopActionData {
+	QString id;
+	QString name;
+	QString icon;
+	QString execString;
+	QVector<QString> command;
+	QHash<QString, QString> entries;
+};
+
+struct ParsedDesktopEntryData {
+	QString id;
+	QString name;
+	QString genericName;
+	QString startupClass;
+	bool noDisplay = false;
+	QString comment;
+	QString icon;
+	QString execString;
+	QVector<QString> command;
+	QString workingDirectory;
+	bool terminal = false;
+	QVector<QString> categories;
+	QVector<QString> keywords;
+	QHash<QString, QString> entries;
+	QHash<QString, DesktopActionData> actions;
+};
+
 /// A desktop entry. See @@DesktopEntries for details.
 class DesktopEntry: public QObject {
 	Q_OBJECT;
@@ -60,7 +87,8 @@ class DesktopEntry: public QObject {
 public:
 	explicit DesktopEntry(QString id, QObject* parent): QObject(parent), mId(std::move(id)) {}
 
-	void parseEntry(const QString& text);
+	static ParsedDesktopEntryData parseText(const QString& id, const QString& text);
+	void applyParsedData(const ParsedDesktopEntryData& data);
 
 	/// Run the application. Currently ignores @@runInTerminal and field codes.
 	///
@@ -153,12 +181,8 @@ private:
 
 class DesktopEntryManager;
 
-struct ParsedDesktopEntry {
-	QString id;
-	QString content;
-};
-
-using DesktopEntryScanResults = QList<ParsedDesktopEntry>;
+using DesktopEntryScanResults = QList<ParsedDesktopEntryData>;
+Q_DECLARE_METATYPE(ParsedDesktopEntryData)
 Q_DECLARE_METATYPE(DesktopEntryScanResults)
 
 class DesktopEntryScanner: public QRunnable {
@@ -185,7 +209,8 @@ public:
 
 	static DesktopEntryManager* instance();
 
-	QString extractIdFromPath(const QString& path);
+	static QString extractIdFromPath(const QString& path);
+	static const QStringList& desktopPaths();
 
 signals:
 	void applicationsChanged();
