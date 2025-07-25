@@ -191,27 +191,31 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	return data;
 }
 
-void DesktopEntry::applyParsedData(const ParsedDesktopEntryData& data) {
-	this->mEntries = data.entries;
-	this->mName = data.name;
-	this->mGenericName = data.genericName;
-	this->mStartupClass = data.startupClass;
-	this->mNoDisplay = data.noDisplay;
-	this->mComment = data.comment;
-	this->mIcon = data.icon;
-	this->mExecString = data.execString;
-	this->mCommand = data.command;
-	this->mWorkingDirectory = data.workingDirectory;
-	this->mTerminal = data.terminal;
-	this->mCategories = data.categories;
-	this->mKeywords = data.keywords;
+void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
+	this->bName = newState.name;
+	this->bGenericName = newState.genericName;
+	this->bStartupClass = newState.startupClass;
+	this->bNoDisplay = newState.noDisplay;
+	this->bComment = newState.comment;
+	this->bIcon = newState.icon;
+	this->bExecString = newState.execString;
+	this->bCommand = newState.command;
+	this->bWorkingDirectory = newState.workingDirectory;
+	this->bRunInTerminal = newState.terminal;
+	this->bCategories = newState.categories;
+	this->bKeywords = newState.keywords;
 
+	this->state = newState;
+	this->updateActions(newState.actions);
+}
+
+void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newActions) {
 	for (auto* action: this->mActions.values()) {
 		action->deleteLater();
 	}
 	this->mActions.clear();
 
-	for (const auto& [actionName, actionData]: data.actions.asKeyValueRange()) {
+	for (const auto& [actionName, actionData]: newActions.asKeyValueRange()) {
 		auto* action = new DesktopAction(actionData.id, this);
 		action->mEntries = actionData.entries;
 		action->mName = actionData.name;
@@ -223,11 +227,10 @@ void DesktopEntry::applyParsedData(const ParsedDesktopEntryData& data) {
 }
 
 void DesktopEntry::execute() const {
-	DesktopEntry::doExec(this->mCommand, this->mWorkingDirectory);
+	DesktopEntry::doExec(this->bCommand.value(), this->bWorkingDirectory.value());
 }
 
-bool DesktopEntry::isValid() const { return !this->mName.isEmpty(); }
-bool DesktopEntry::noDisplay() const { return this->mNoDisplay; }
+bool DesktopEntry::isValid() const { return !this->bName.value().isEmpty(); }
 
 QVector<DesktopAction*> DesktopEntry::actions() const { return this->mActions.values(); }
 
@@ -303,7 +306,7 @@ void DesktopEntry::doExec(const QList<QString>& execString, const QString& worki
 }
 
 void DesktopAction::execute() const {
-	DesktopEntry::doExec(this->mCommand, this->entry->mWorkingDirectory);
+	DesktopEntry::doExec(this->mCommand, this->entry->bWorkingDirectory.value());
 }
 
 DesktopEntryScanner::DesktopEntryScanner(DesktopEntryManager* manager): manager(manager) {
@@ -406,14 +409,14 @@ DesktopEntry* DesktopEntryManager::heuristicLookup(const QString& name) {
 
 	auto list = this->desktopEntries.values();
 
-	auto iter = std::ranges::find_if(list, [&](const DesktopEntry* entry) {
-		return name == entry->mStartupClass;
+	auto iter = std::ranges::find_if(list, [&](DesktopEntry* entry) {
+		return name == entry->bStartupClass.value();
 	});
 
 	if (iter != list.end()) return *iter;
 
-	iter = std::ranges::find_if(list, [&](const DesktopEntry* entry) {
-		return name.toLower() == entry->mStartupClass.toLower();
+	iter = std::ranges::find_if(list, [&](DesktopEntry* entry) {
+		return name.toLower() == entry->bStartupClass.value().toLower();
 	});
 
 	if (iter != list.end()) return *iter;
@@ -502,10 +505,10 @@ void DesktopEntryManager::onScanCompleted(const DesktopEntryScanResults& scanRes
 		if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
 			dentry = it.value();
 			oldEntries.erase(it);
-			dentry->applyParsedData(data);
+			dentry->updateState(data);
 		} else {
 			dentry = new DesktopEntry(data.id, this);
-			dentry->applyParsedData(data);
+			dentry->updateState(data);
 		}
 
 		if (!dentry->isValid()) {
