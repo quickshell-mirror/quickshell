@@ -147,53 +147,20 @@ signals:
 public:
 	QString mId;
 
+	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bName, &DesktopEntry::nameChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QString,
-	    bGenericName,
-	    &DesktopEntry::genericNameChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QString,
-	    bStartupClass,
-	    &DesktopEntry::startupClassChanged
-	);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bGenericName, &DesktopEntry::genericNameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bStartupClass, &DesktopEntry::startupClassChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, bool, bNoDisplay, &DesktopEntry::noDisplayChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bComment, &DesktopEntry::commentChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bIcon, &DesktopEntry::iconChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bExecString, &DesktopEntry::execStringChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QVector<QString>,
-	    bCommand,
-	    &DesktopEntry::commandChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QString,
-	    bWorkingDirectory,
-	    &DesktopEntry::workingDirectoryChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    bool,
-	    bRunInTerminal,
-	    &DesktopEntry::runInTerminalChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QVector<QString>,
-	    bCategories,
-	    &DesktopEntry::categoriesChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopEntry,
-	    QVector<QString>,
-	    bKeywords,
-	    &DesktopEntry::keywordsChanged
-	);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bCommand, &DesktopEntry::commandChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bWorkingDirectory, &DesktopEntry::workingDirectoryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, bool, bRunInTerminal, &DesktopEntry::runInTerminalChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bCategories, &DesktopEntry::categoriesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bKeywords, &DesktopEntry::keywordsChanged);
+	// clang-format on
 
 private:
 	void updateActions(const QHash<QString, DesktopActionData>& newActions);
@@ -256,20 +223,12 @@ private:
 	QString mId;
 	QHash<QString, QString> mEntries;
 
+	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bName, &DesktopAction::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bIcon, &DesktopAction::iconChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopAction,
-	    QString,
-	    bExecString,
-	    &DesktopAction::execStringChanged
-	);
-	Q_OBJECT_BINDABLE_PROPERTY(
-	    DesktopAction,
-	    QVector<QString>,
-	    bCommand,
-	    &DesktopAction::commandChanged
-	);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bExecString, &DesktopAction::execStringChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QVector<QString>, bCommand, &DesktopAction::commandChanged);
+	// clang-format on
 
 	friend class DesktopEntry;
 };
