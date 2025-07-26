@@ -240,7 +240,9 @@ public:
 	explicit DesktopEntryScanner(DesktopEntryManager* manager);
 
 	void run() override;
-	void scanDirectory(const QDir& dir, QList<ParsedDesktopEntryData>& entries);
+	// clang-format off
+	void scanDirectory(const QDir& dir, const QString& idPrefix, QList<ParsedDesktopEntryData>& entries);
+	// clang-format on
 
 private:
 	DesktopEntryManager* manager;

@@ -247,8 +247,8 @@ bool DesktopEntry::isValid() const { return !this->bName.value().isEmpty(); }
 QVector<DesktopAction*> DesktopEntry::actions() const { return this->mActions.values(); }
 
 QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
-	auto arguments = QVector<QString>();
-	auto currentArgument = QString();
+	QVector<QString> arguments;
+	QString currentArgument;
 	auto parsingString = false;
 	auto escape = 0;
 	auto percent = false;
@@ -334,22 +334,28 @@ void DesktopEntryScanner::run() {
 		auto file = QFileInfo(path);
 		if (!file.isDir()) continue;
 
-		this->scanDirectory(QDir(path), scanResults);
+		this->scanDirectory(QDir(path), QString(), scanResults);
 	}
 
 	QMetaObject::invokeMethod(
 	    this->manager,
-	    [mgr = this->manager, results = std::move(scanResults)]() { mgr->onScanCompleted(results); },
-	    Qt::QueuedConnection
+	    &DesktopEntryManager::onScanCompleted,
+	    Qt::QueuedConnection,
+	    scanResults
 	);
 }
 
-void DesktopEntryScanner::scanDirectory(const QDir& dir, QList<ParsedDesktopEntryData>& entries) {
+void DesktopEntryScanner::scanDirectory(
+    const QDir& dir,
+    const QString& idPrefix,
+    QList<ParsedDesktopEntryData>& entries
+) {
 	auto dirEntries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
 	for (auto& entry: dirEntries) {
 		if (entry.isDir()) {
-			this->scanDirectory(QDir(entry.absoluteFilePath()), entries);
+			auto subdirPrefix = idPrefix.isEmpty() ? entry.fileName() : idPrefix + '-' + entry.fileName();
+			this->scanDirectory(QDir(entry.absoluteFilePath()), subdirPrefix, entries);
 		} else if (entry.isFile()) {
 			auto path = entry.filePath();
 			if (!path.endsWith(".desktop")) {
@@ -363,7 +369,8 @@ void DesktopEntryScanner::scanDirectory(const QDir& dir, QList<ParsedDesktopEntr
 				continue;
 			}
 
-			auto id = DesktopEntryManager::extractIdFromPath(entry.absoluteFilePath());
+			auto basename = QFileInfo(entry.fileName()).completeBaseName();
+			auto id = idPrefix.isEmpty() ? basename : idPrefix + '-' + basename;
 			auto content = QString::fromUtf8(file.readAll());
 
 			auto data = DesktopEntry::parseText(id, content);
@@ -481,8 +488,9 @@ const QStringList& DesktopEntryManager::desktopPaths() {
 		auto dataDirs = qEnvironmentVariable("XDG_DATA_DIRS");
 		if (dataDirs.isEmpty()) dataDirs = "/usr/local/share:/usr/share";
 
-		for (const auto& dir: dataDirs.split(':', Qt::SkipEmptyParts))
+		for (const auto& dir: dataDirs.split(':', Qt::SkipEmptyParts)) {
 			dataPaths.append(dir + "/applications");
+		}
 
 		return dataPaths;
 	}();
@@ -557,9 +565,8 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 }
 
 DesktopEntries::DesktopEntries() {
-	auto* mgr = DesktopEntryManager::instance();
 	QObject::connect(
-	    mgr,
+	    DesktopEntryManager::instance(),
 	    &DesktopEntryManager::applicationsChanged,
 	    this,
 	    &DesktopEntries::applicationsChanged
