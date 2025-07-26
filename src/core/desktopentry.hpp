@@ -50,29 +50,23 @@ class DesktopEntry: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
 	/// Name of the specific application, such as "Firefox".
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
+	// clang-format off
+	Q_PROPERTY(QString name READ default WRITE default NOTIFY nameChanged BINDABLE bindableName);
 	/// Short description of the application, such as "Web Browser". May be empty.
-	Q_PROPERTY(
-	    QString genericName READ genericName NOTIFY genericNameChanged BINDABLE bindableGenericName
-	);
+	Q_PROPERTY(QString genericName READ default WRITE default NOTIFY genericNameChanged BINDABLE bindableGenericName);
 	/// Initial class or app id the app intends to use. May be useful for matching running apps
 	/// to desktop entries.
-	Q_PROPERTY(
-	    QString startupClass READ startupClass NOTIFY startupClassChanged BINDABLE
-	        bindableStartupClass
-	);
+	Q_PROPERTY(QString startupClass READ default WRITE default NOTIFY startupClassChanged BINDABLE bindableStartupClass);
 	/// If true, this application should not be displayed in menus and launchers.
-	Q_PROPERTY(bool noDisplay READ noDisplay NOTIFY noDisplayChanged BINDABLE bindableNoDisplay);
+	Q_PROPERTY(bool noDisplay READ default WRITE default NOTIFY noDisplayChanged BINDABLE bindableNoDisplay);
 	/// Long description of the application, such as "View websites on the internet". May be empty.
-	Q_PROPERTY(QString comment READ comment NOTIFY commentChanged BINDABLE bindableComment);
+	Q_PROPERTY(QString comment READ default WRITE default NOTIFY commentChanged BINDABLE bindableComment);
 	/// Name of the icon associated with this application. May be empty.
-	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged BINDABLE bindableIcon);
+	Q_PROPERTY(QString icon READ default WRITE default NOTIFY iconChanged BINDABLE bindableIcon);
 	/// The raw `Exec` string from the desktop entry.
 	///
 	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
-	Q_PROPERTY(
-	    QString execString READ execString NOTIFY execStringChanged BINDABLE bindableExecString
-	);
+	Q_PROPERTY(QString execString READ default WRITE default NOTIFY execStringChanged BINDABLE bindableExecString);
 	/// The parsed `Exec` command in the desktop entry.
 	///
 	/// The entry can be run with @@execute(), or by using this command in
@@ -81,24 +75,14 @@ class DesktopEntry: public QObject {
 	/// the invoked process. See @@execute() for details.
 	///
 	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
-	Q_PROPERTY(QVector<QString> command READ command NOTIFY commandChanged BINDABLE bindableCommand);
+	Q_PROPERTY(QVector<QString> command READ default WRITE default NOTIFY commandChanged BINDABLE bindableCommand);
 	/// The working directory to execute from.
-	Q_PROPERTY(
-	    QString workingDirectory READ workingDirectory NOTIFY workingDirectoryChanged BINDABLE
-	        bindableWorkingDirectory
-	);
+	Q_PROPERTY(QString workingDirectory READ default WRITE default NOTIFY workingDirectoryChanged BINDABLE bindableWorkingDirectory);
 	/// If the application should run in a terminal.
-	Q_PROPERTY(
-	    bool runInTerminal READ runInTerminal NOTIFY runInTerminalChanged BINDABLE
-	        bindableRunInTerminal
-	);
-	Q_PROPERTY(
-	    QVector<QString> categories READ categories NOTIFY categoriesChanged BINDABLE
-	        bindableCategories
-	);
-	Q_PROPERTY(
-	    QVector<QString> keywords READ keywords NOTIFY keywordsChanged BINDABLE bindableKeywords
-	);
+	Q_PROPERTY(bool runInTerminal READ default WRITE default NOTIFY runInTerminalChanged BINDABLE bindableRunInTerminal);
+	Q_PROPERTY(QVector<QString> categories READ default WRITE default NOTIFY categoriesChanged BINDABLE bindableCategories);
+	Q_PROPERTY(QVector<QString> keywords READ default WRITE default NOTIFY keywordsChanged BINDABLE bindableKeywords);
+	// clang-format on
 	Q_PROPERTY(QVector<DesktopAction*> actions READ actions CONSTANT);
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopEntry instances must be retrieved from DesktopEntries");
@@ -124,19 +108,6 @@ public:
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QVector<DesktopAction*> actions() const;
-
-	[[nodiscard]] QString name() const { return this->bName; }
-	[[nodiscard]] QString genericName() const { return this->bGenericName; }
-	[[nodiscard]] QString startupClass() const { return this->bStartupClass; }
-	[[nodiscard]] bool noDisplay() const { return this->bNoDisplay; }
-	[[nodiscard]] QString comment() const { return this->bComment; }
-	[[nodiscard]] QString icon() const { return this->bIcon; }
-	[[nodiscard]] QString execString() const { return this->bExecString; }
-	[[nodiscard]] QVector<QString> command() const { return this->bCommand; }
-	[[nodiscard]] QString workingDirectory() const { return this->bWorkingDirectory; }
-	[[nodiscard]] bool runInTerminal() const { return this->bRunInTerminal; }
-	[[nodiscard]] QVector<QString> categories() const { return this->bCategories; }
-	[[nodiscard]] QVector<QString> keywords() const { return this->bKeywords; }
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
 	[[nodiscard]] QBindable<QString> bindableGenericName() const { return &this->bGenericName; }
@@ -237,14 +208,13 @@ private:
 class DesktopAction: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
-	Q_PROPERTY(QString icon READ icon NOTIFY iconChanged BINDABLE bindableIcon);
+	// clang-format off
+	Q_PROPERTY(QString name READ default WRITE default NOTIFY nameChanged BINDABLE bindableName);
+	Q_PROPERTY(QString icon READ default WRITE default NOTIFY iconChanged BINDABLE bindableIcon);
 	/// The raw `Exec` string from the action.
 	///
 	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
-	Q_PROPERTY(
-	    QString execString READ execString NOTIFY execStringChanged BINDABLE bindableExecString
-	);
+	Q_PROPERTY(QString execString READ default WRITE default NOTIFY execStringChanged BINDABLE bindableExecString);
 	/// The parsed `Exec` command in the action.
 	///
 	/// The entry can be run with @@execute(), or by using this command in
@@ -253,7 +223,8 @@ class DesktopAction: public QObject {
 	/// the invoked process.
 	///
 	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
-	Q_PROPERTY(QVector<QString> command READ command NOTIFY commandChanged BINDABLE bindableCommand);
+	Q_PROPERTY(QVector<QString> command READ default WRITE default NOTIFY commandChanged BINDABLE bindableCommand);
+	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopAction instances must be retrieved from a DesktopEntry");
 
@@ -268,11 +239,6 @@ public:
 	/// This is equivalent to calling @@Quickshell.Quickshell.execDetached() with @@command
 	/// and @@DesktopEntry.workingDirectory.
 	Q_INVOKABLE void execute() const;
-
-	[[nodiscard]] QString name() const { return this->bName; }
-	[[nodiscard]] QString icon() const { return this->bIcon; }
-	[[nodiscard]] QString execString() const { return this->bExecString; }
-	[[nodiscard]] QVector<QString> command() const { return this->bCommand; }
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
 	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; }
