@@ -23,7 +23,6 @@ private:
 	void startMonitoring();
 	void scanAndWatch(const QString& dirPath);
 
-	QFileSystemWatcher* watcher;
-	QTimer* debounceTimer;
-	bool rescanPending = false;
+	QFileSystemWatcher watcher;
+	QTimer debounceTimer;
 };
