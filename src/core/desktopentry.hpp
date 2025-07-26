@@ -261,7 +261,6 @@ public:
 
 	static DesktopEntryManager* instance();
 
-	static QString extractIdFromPath(const QString& path);
 	static const QStringList& desktopPaths();
 
 signals:

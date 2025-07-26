@@ -453,29 +453,6 @@ void DesktopEntryManager::handleFileChanges() {
 	QThreadPool::globalInstance()->start(scanner);
 }
 
-QString DesktopEntryManager::extractIdFromPath(const QString& path) {
-	const auto fi = QFileInfo(path);
-	const auto canon = fi.canonicalFilePath();
-	const auto actual = canon.isEmpty() ? fi.absoluteFilePath() : canon;
-	for (const auto& rootPath: DesktopEntryManager::desktopPaths()) {
-		auto root = QDir(rootPath);
-		const auto rel = root.relativeFilePath(actual);
-		if (!rel.startsWith("../")) {
-			auto relInfo = QFileInfo(rel);
-			auto id = QString();
-			if (relInfo.path() != "." && !relInfo.path().isEmpty()) {
-				id = relInfo.path();
-				id.replace('/', '-');
-				id += '-' + relInfo.completeBaseName();
-			} else {
-				id = relInfo.completeBaseName();
-			}
-			return id;
-		}
-	}
-	return fi.completeBaseName();
-}
-
 const QStringList& DesktopEntryManager::desktopPaths() {
 	static const auto paths = []() {
 		auto dataPaths = QStringList();
