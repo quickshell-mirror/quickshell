@@ -9,6 +9,7 @@
 #include <qqmlengine.h>
 #include <qqmlintegration.h>
 #include <qqmllist.h>
+#include <qquickitemgrabresult.h>
 #include <qscreen.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -183,6 +184,15 @@ public:
 	///
 	/// This function is equivalent to @@Quickshell.Io.Process.startDetached().
 	Q_INVOKABLE static void execDetached(const qs::io::process::ProcessContext& context);
+
+	/// Save the contents of an ItemGrabResult to a file asynchronously.
+	///
+	/// > [!INFO] This function is equivalent to an asynchronous version of
+	/// > @@QtQuick.ItemGrabResult.saveToFile().
+	/// >
+	/// > You can use it in a similar way: `Item.grabToImage(res => Quickshell.saveToFile(res, path))`
+	Q_INVOKABLE static void
+	saveToFile(const QQuickItemGrabResult* grabResult, const QUrl& filePath);
 
 	/// Returns a string usable for a @@QtQuick.Image.source for a given system icon.
 	///
