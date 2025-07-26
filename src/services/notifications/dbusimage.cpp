@@ -42,10 +42,9 @@ const QDBusArgument& operator>>(const QDBusArgument& argument, DBusNotificationI
 	} else if (channels != (pixmap.hasAlpha ? 4 : 3)) {
 		qCWarning(logNotifications) << "Unable to parse pixmap as channel count is incorrect."
 		                            << "Got " << channels << "expected" << (pixmap.hasAlpha ? 4 : 3);
-	} else if (rowstride != pixmap.width * sampleBits * channels) {
+	} else if (rowstride != pixmap.width * channels) {
 		qCWarning(logNotifications) << "Unable to parse pixmap as rowstride is incorrect. Got"
-		                            << rowstride << "expected"
-		                            << (pixmap.width * sampleBits * channels);
+		                            << rowstride << "expected" << (pixmap.width * channels);
 	}
 
 	return argument;
@@ -55,7 +54,7 @@ const QDBusArgument& operator<<(QDBusArgument& argument, const DBusNotificationI
 	argument.beginStructure();
 	argument << pixmap.width;
 	argument << pixmap.height;
-	argument << pixmap.width * (pixmap.hasAlpha ? 4 : 3) * 8;
+	argument << pixmap.width * (pixmap.hasAlpha ? 4 : 3);
 	argument << pixmap.hasAlpha;
 	argument << 8;
 	argument << (pixmap.hasAlpha ? 4 : 3);
