@@ -22,6 +22,8 @@ namespace {
 QS_LOGGING_CATEGORY(logBuffer, "quickshell.wayland.buffer", QtWarningMsg);
 }
 
+void WlBufferRequest::reset() { *this = WlBufferRequest(); }
+
 WlBuffer* WlBufferSwapchain::createBackbuffer(const WlBufferRequest& request, bool* newBuffer) {
 	auto& buffer = this->presentSecondBuffer ? this->buffer1 : this->buffer2;
 
@@ -53,7 +55,8 @@ bool WlBufferManager::isReady() const { return this->p->mReady; }
 	                             << " (disabled: " << dmabufDisabled << ')';
 
 	for (const auto& [format, modifiers]: request.dmabuf.formats) {
-		qCDebug(logBuffer) << "    Format" << dmabuf::FourCCStr(format);
+		qCDebug(logBuffer).nospace() << "    Format " << dmabuf::FourCCStr(format)
+		                             << (modifiers.length() == 0 ? " (No modifiers specified)" : "");
 
 		for (const auto& modifier: modifiers) {
 			qCDebug(logBuffer) << "      Explicit Modifier" << dmabuf::FourCCModStr(modifier);

@@ -65,6 +65,8 @@ void WlrScreencopyContext::onScreenDestroyed() {
 void WlrScreencopyContext::captureFrame() {
 	if (this->object()) return;
 
+	this->request.reset();
+
 	if (this->region.isEmpty()) {
 		this->init(manager->capture_output(this->paintCursors ? 1 : 0, screen->output()));
 	} else {

@@ -68,6 +68,8 @@ struct WlBufferRequest {
 		dev_t device = 0;
 		StackList<DmaFormat, 1> formats;
 	} dmabuf;
+
+	void reset();
 };
 
 class WlBuffer {

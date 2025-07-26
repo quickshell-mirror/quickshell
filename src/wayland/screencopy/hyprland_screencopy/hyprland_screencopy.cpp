@@ -64,6 +64,8 @@ void HyprlandScreencopyContext::onToplevelDestroyed() {
 void HyprlandScreencopyContext::captureFrame() {
 	if (this->object()) return;
 
+	this->request.reset();
+
 	this->init(this->manager->capture_toplevel_with_wlr_toplevel_handle(
 	    this->paintCursors ? 1 : 0,
 	    this->handle->object()
