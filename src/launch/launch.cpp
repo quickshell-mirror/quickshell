@@ -73,6 +73,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool useQApplication = false;
 		bool nativeTextRendering = false;
 		bool desktopSettingsAware = true;
+		bool useSystemStyle = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
 		QString dataDir;
@@ -88,6 +89,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			if (pragma == "UseQApplication") pragmas.useQApplication = true;
 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
+			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
 			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
 			else if (pragma.startsWith("Env ")) {
 				auto envPragma = pragma.sliced(4);
@@ -154,6 +156,11 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	LogManager::initFs();
 
 	Common::INITIAL_ENVIRONMENT = QProcessEnvironment::systemEnvironment();
+
+	if (!pragmas.useSystemStyle) {
+		qunsetenv("QT_STYLE_OVERRIDE");
+		qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+	}
 
 	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
 		qputenv(var.toUtf8(), val.toUtf8());
