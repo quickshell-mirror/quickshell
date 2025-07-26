@@ -193,9 +193,7 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 }
 
 void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-	QScopedPropertyUpdateGroup group;
-#endif
+	Qt::beginPropertyUpdateGroup();
 	this->bName = newState.name;
 	this->bGenericName = newState.genericName;
 	this->bStartupClass = newState.startupClass;
@@ -208,6 +206,7 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 	this->bRunInTerminal = newState.terminal;
 	this->bCategories = newState.categories;
 	this->bKeywords = newState.keywords;
+	Qt::endPropertyUpdateGroup();
 
 	this->state = newState;
 	this->updateActions(newState.actions);
@@ -229,13 +228,13 @@ void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newAct
 			this->mActions.insert(key, act);
 		}
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-		QScopedPropertyUpdateGroup group;
-#endif
+		Qt::beginPropertyUpdateGroup();
 		act->bName = d.name;
 		act->bIcon = d.icon;
 		act->bExecString = d.execString;
 		act->bCommand = d.command;
+		Qt::endPropertyUpdateGroup();
+
 		act->mEntries = d.entries;
 	}
 
