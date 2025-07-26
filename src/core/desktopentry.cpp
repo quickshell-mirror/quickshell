@@ -101,12 +101,9 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 
 	auto finishCategory = [&data, &groupName, &entries]() {
 		if (groupName == "Desktop Entry") {
-			const auto typeIt = entries.constFind("Type");
-			if (typeIt == entries.cend() || typeIt->second != "Application") return;
+			if (entries.value("Type").second != "Application") return;
 
-			if (const auto hiddenIt = entries.constFind("Hidden");
-			    hiddenIt != entries.cend() && hiddenIt->second == "true")
-				return;
+			if (entries.value("Hidden").second == "true") return;
 
 			for (const auto& [key, pair]: entries.asKeyValueRange()) {
 				auto& [_, value] = pair;
@@ -128,7 +125,7 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 			}
 		} else if (groupName.startsWith("Desktop Action ")) {
 			auto actionName = groupName.sliced(16);
-			auto action = DesktopActionData();
+			DesktopActionData action;
 			action.id = actionName;
 
 			for (const auto& [key, pair]: entries.asKeyValueRange()) {
@@ -168,7 +165,7 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 		const auto& value = line.sliced(splitIdx + 1);
 
 		auto localeIdx = key.indexOf('[');
-		auto locale = Locale();
+		Locale locale;
 		if (localeIdx != -1 && localeIdx != key.length() - 1) {
 			locale = Locale(key.sliced(localeIdx + 1, key.length() - localeIdx - 2));
 			key = key.sliced(0, localeIdx);
@@ -215,9 +212,7 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newActions) {
 	auto old = this->mActions;
 
-	for (auto it = newActions.cbegin(); it != newActions.cend(); ++it) {
-		const auto& key = it.key();
-		const auto& d = it.value();
+	for (const auto& [key, d]: newActions.asKeyValueRange()) {
 
 		DesktopAction* act = nullptr;
 		if (auto found = old.find(key); found != old.end()) {
@@ -238,7 +233,7 @@ void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newAct
 		act->mEntries = d.entries;
 	}
 
-	for (auto* leftover: std::as_const(old)) {
+	for (auto* leftover: old) {
 		leftover->deleteLater();
 	}
 }
@@ -552,7 +547,7 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 
 	auto newApplications = QVector<DesktopEntry*>();
 	for (auto* entry: this->desktopEntries.values())
-		if (!entry->noDisplay()) newApplications.append(entry);
+		if (!entry->bNoDisplay) newApplications.append(entry);
 
 	this->mApplications.diffUpdate(newApplications);
 

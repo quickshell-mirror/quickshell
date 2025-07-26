@@ -10,7 +10,7 @@
 static void addPathAndParents(QFileSystemWatcher& watcher, const QString& path) {
 	watcher.addPath(path);
 
-	QString p = QFileInfo(path).absolutePath();
+	auto p = QFileInfo(path).absolutePath();
 	while (!p.isEmpty()) {
 		watcher.addPath(p);
 		const auto parent = QFileInfo(p).dir().absolutePath();
