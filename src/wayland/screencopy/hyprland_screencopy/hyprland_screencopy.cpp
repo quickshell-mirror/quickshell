@@ -103,6 +103,16 @@ void HyprlandScreencopyContext::hyprland_toplevel_export_frame_v1_flags(uint32_t
 
 void HyprlandScreencopyContext::hyprland_toplevel_export_frame_v1_buffer_done() {
 	auto* backbuffer = this->mSwapchain.createBackbuffer(this->request);
+
+	if (!backbuffer || !backbuffer->buffer()) {
+		qCWarning(logScreencopy) << "Backbuffer creation failed for screencopy. Skipping frame.";
+
+		// Try again. This will be spammy if the compositor continuously sends bad frames.
+		this->destroy();
+		this->captureFrame();
+		return;
+	}
+
 	this->copy(backbuffer->buffer(), this->copiedFirstFrame ? 0 : 1);
 }
 

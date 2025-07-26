@@ -69,6 +69,11 @@ bool WlBufferManager::isReady() const { return this->p->mReady; }
 		qCDebug(logBuffer) << "    Format" << format;
 	}
 
+	if (request.width == 0 || request.height == 0) {
+		qCWarning(logBuffer) << "Cannot create zero-sized buffer.";
+		return nullptr;
+	}
+
 	if (!dmabufDisabled) {
 		if (auto* buf = this->p->dmabuf.createDmabuf(request)) return buf;
 		qCWarning(logBuffer) << "DMA buffer creation failed, falling back to SHM.";

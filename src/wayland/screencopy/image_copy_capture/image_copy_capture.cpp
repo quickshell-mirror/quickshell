@@ -117,6 +117,12 @@ void IccScreencopyContext::doCapture() {
 	auto newBuffer = false;
 	auto* backbuffer = this->mSwapchain.createBackbuffer(this->request, &newBuffer);
 
+	if (!backbuffer || !backbuffer->buffer()) {
+		qCWarning(logIcc) << "Backbuffer creation failed for screencopy. Waiting for updated buffer "
+		                     "creation parameters before trying again.";
+		return;
+	}
+
 	this->IccCaptureFrame::init(this->IccCaptureSession::create_frame());
 	this->IccCaptureFrame::attach_buffer(backbuffer->buffer());
 

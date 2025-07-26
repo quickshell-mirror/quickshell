@@ -111,6 +111,15 @@ void WlrScreencopyContext::zwlr_screencopy_frame_v1_flags(uint32_t flags) {
 void WlrScreencopyContext::zwlr_screencopy_frame_v1_buffer_done() {
 	auto* backbuffer = this->mSwapchain.createBackbuffer(this->request);
 
+	if (!backbuffer || !backbuffer->buffer()) {
+		qCWarning(logScreencopy) << "Backbuffer creation failed for screencopy. Skipping frame.";
+
+		// Try again. This will be spammy if the compositor continuously sends bad frames.
+		this->destroy();
+		this->captureFrame();
+		return;
+	}
+
 	if (this->copiedFirstFrame) {
 		this->copy_with_damage(backbuffer->buffer());
 	} else {
