@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(quickshell VERSION "0.1.0" LANGUAGES CXX C)
+project(quickshell VERSION "0.2.0" LANGUAGES CXX C)
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
