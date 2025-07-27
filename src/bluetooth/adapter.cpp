@@ -53,6 +53,12 @@ QString BluetoothAdapter::adapterId() const {
 
 void BluetoothAdapter::setEnabled(bool enabled) {
 	if (enabled == this->bEnabled) return;
+
+	if (enabled && this->bState == BluetoothAdapterState::Blocked) {
+		qCCritical(logAdapter) << "Cannot enable adapter because it is blocked by rfkill.";
+		return;
+	}
+
 	this->bEnabled = enabled;
 	this->pEnabled.write();
 }
