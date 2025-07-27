@@ -127,7 +127,7 @@ void Notification::updateProperties(
 
 	if (appIcon.isEmpty() && !this->bDesktopEntry.value().isEmpty()) {
 		if (auto* entry = DesktopEntryManager::instance()->byId(this->bDesktopEntry.value())) {
-			appIcon = entry->mIcon;
+			appIcon = entry->bIcon.value();
 		}
 	}
 
