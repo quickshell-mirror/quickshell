@@ -387,7 +387,7 @@ DesktopEntry* DesktopEntryManager::byId(const QString& id) {
 }
 
 DesktopEntry* DesktopEntryManager::heuristicLookup(const QString& name) {
-	if (auto* entry = DesktopEntryManager::byId(name)) return entry;
+	if (auto* entry = this->byId(name)) return entry;
 
 	auto list = this->desktopEntries.values();
 
