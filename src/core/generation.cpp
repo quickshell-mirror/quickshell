@@ -161,8 +161,9 @@ void EngineGeneration::postReload() {
 	if (this->engine == nullptr || this->root == nullptr) return;
 
 	QsEnginePlugin::runOnReload();
-	PostReloadHook::postReloadTree(this->root);
-	this->singletonRegistry.onPostReload();
+
+	emit this->firePostReload();
+	QObject::disconnect(this, &EngineGeneration::firePostReload, nullptr, nullptr);
 }
 
 void EngineGeneration::setWatchingFiles(bool watching) {

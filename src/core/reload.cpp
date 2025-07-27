@@ -129,14 +129,18 @@ QObject* Reloadable::getChildByReloadId(QObject* parent, const QString& reloadId
 void PostReloadHook::componentComplete() {
 	auto* engineGeneration = EngineGeneration::findObjectGeneration(this);
 	if (!engineGeneration || engineGeneration->reloadComplete) this->postReload();
+	else {
+		// disconnected by EngineGeneration::postReload
+		QObject::connect(
+		    engineGeneration,
+		    &EngineGeneration::firePostReload,
+		    this,
+		    &PostReloadHook::postReload
+		);
+	}
 }
 
 void PostReloadHook::postReload() {
 	this->isPostReload = true;
 	this->onPostReload();
-}
-
-void PostReloadHook::postReloadTree(QObject* root) {
-	for (auto* child: root->children()) PostReloadHook::postReloadTree(child);
-	if (auto* self = dynamic_cast<PostReloadHook*>(root)) self->postReload();
 }

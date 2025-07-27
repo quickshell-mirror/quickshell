@@ -26,7 +26,6 @@ public:
 
 	void registerSingleton(const QUrl& url, Singleton* singleton);
 	void onReload(SingletonRegistry* old);
-	void onPostReload();
 
 private:
 	QHash<QUrl, Singleton*> registry;

@@ -75,6 +75,7 @@ public:
 signals:
 	void filesChanged();
 	void reloadFinished();
+	void firePostReload();
 
 public slots:
 	void quit();

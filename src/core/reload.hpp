@@ -131,10 +131,10 @@ public:
 	void classBegin() override {}
 	void componentComplete() override;
 
-	void postReload();
 	virtual void onPostReload() = 0;
 
-	static void postReloadTree(QObject* root);
+public slots:
+	void postReload();
 
 protected:
 	bool isPostReload = false;
