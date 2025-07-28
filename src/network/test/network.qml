@@ -51,9 +51,8 @@ FloatingWindow {
 							}
 						}
 						Label { text: "Available networks: " }
-
 						GridLayout {
-							columns: 3
+							columns: 4
 							columnSpacing: 30
 							rowSpacing: 5
 
@@ -65,12 +64,17 @@ FloatingWindow {
 							Label {
 								Layout.row: 0
 								Layout.column: 1
-								text: "SIGNAL"
+								text: "SECURITY"
 							}
 							Label {
 								Layout.row: 0
 								Layout.column: 2
-								text: "CONNECTED"
+								text: "KNOWN"
+							}
+							Label {
+								Layout.row: 0
+								Layout.column: 3
+								text: "SIGNAL STRENGTH"
 							}
 
 							Repeater {
@@ -86,7 +90,7 @@ FloatingWindow {
 								delegate: Text { 
 									Layout.row: index + 1
 									Layout.column: 1
-									text: `${modelData.signalStrength}%`
+									text: NMWirelessSecurityType.toString(modelData.nmSecurity)
 								}
 							}
 							Repeater {
@@ -94,7 +98,15 @@ FloatingWindow {
 								delegate: Text { 
 									Layout.row: index + 1
 									Layout.column: 2
-									text: modelData.connected ? "*" : ""
+									text: modelData.known ? "*" : ""
+								}
+							}
+							Repeater {
+								model: modelData.networks
+								delegate: Text { 
+									Layout.row: index + 1
+									Layout.column: 3
+									text: modelData.signalStrength + "%"
 								}
 							}
 						}

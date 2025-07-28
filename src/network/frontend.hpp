@@ -11,32 +11,42 @@
 #include <qtypes.h>
 
 #include "../core/model.hpp"
+#include "nm/enums.hpp"
 
 namespace qs::network {
 
-///! A wifi network
+///! A wifi network represents an available connection or access point on a wireless device.
 class WifiNetwork: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("Wifi networks can only be acquired through Network");
+	QML_UNCREATABLE("Wifi items can only be acquired through Network");
 	// clang-format off
-	/// The service set identifier of the wifi network
+	/// The SSID (service set identifier) of the wifi network
 	Q_PROPERTY(QString ssid READ default NOTIFY ssidChanged BINDABLE bindableSsid);
 	// The current signal strength of the best access point on the network, in percent.
 	Q_PROPERTY(quint8 signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
-	/// True if the wireless device is curerntly connected to this wifi network.
+	/// True if the wireless device is currently connected to this wifi network.
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
+	/// The security type of the wifi network when the backend is NetworkManager. Otherwise NMWirelessSecurityType::Unknown.
+	Q_PROPERTY(NMWirelessSecurityType::Enum nmSecurity READ default NOTIFY nmSecurityChanged BINDABLE bindableNmSecurity);
+	/// True if the wifi network has a known connection profile saved.
+	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	// clang-format on
 
 signals:
 	void ssidChanged();
 	void signalStrengthChanged();
 	void connectedChanged();
+	void nmSecurityChanged();
+	void knownChanged();
+	void requestConnect();
 
 public slots:
 	void setSsid(const QString& ssid);
 	void setSignalStrength(quint8 signalStrength);
 	void setConnected(bool connected);
+	void setNmSecurity(NMWirelessSecurityType::Enum security);
+	void setKnown(bool known);
 
 public:
 	explicit WifiNetwork(QObject* parent = nullptr);
@@ -44,12 +54,20 @@ public:
 	[[nodiscard]] QBindable<QString> bindableSsid() const { return &this->bSsid; };
 	[[nodiscard]] QBindable<quint8> bindableSignalStrength() const { return &this->bSignalStrength; };
 	[[nodiscard]] QBindable<bool> bindableConnected() const { return &this->bConnected; };
+	[[nodiscard]] QBindable<NMWirelessSecurityType::Enum> bindableNmSecurity() const {
+		return &this->bNmSecurity;
+	};
+	[[nodiscard]] QBindable<bool> bindableKnown() const { return &this->bKnown; };
+
+	// Q_INVOKABLE void connect();
 
 private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, QString, bSsid, &WifiNetwork::ssidChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, quint8, bSignalStrength, &WifiNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bConnected, &WifiNetwork::connectedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, NMWirelessSecurityType::Enum, bNmSecurity, &WifiNetwork::nmSecurityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bKnown, &WifiNetwork::knownChanged);
 	// clang-format on
 };
 
@@ -160,8 +178,8 @@ signals:
 
 public slots:
 	void scanComplete();
-	void addNetwork(WifiNetwork* network);
-	void removeNetwork(WifiNetwork* network);
+	void wifiNetworkAdded(WifiNetwork* network);
+	void wifiNetworkRemoved(WifiNetwork* network);
 
 public:
 	explicit NetworkWifiDevice(QObject* parent = nullptr);

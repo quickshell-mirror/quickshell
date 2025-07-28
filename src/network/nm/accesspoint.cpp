@@ -11,9 +11,27 @@
 #include "../../dbus/properties.hpp"
 #include "nm/dbus_nm_accesspoint.h"
 
-using namespace qs::dbus;
+namespace qs::dbus {
+
+DBusResult<qs::network::NM80211ApFlags::Enum>
+DBusDataTransform<qs::network::NM80211ApFlags::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NM80211ApFlags::Enum>(wire));
+}
+
+DBusResult<qs::network::NM80211ApSecurityFlags::Enum>
+DBusDataTransform<qs::network::NM80211ApSecurityFlags::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NM80211ApSecurityFlags::Enum>(wire));
+}
+
+DBusResult<qs::network::NM80211Mode::Enum>
+DBusDataTransform<qs::network::NM80211Mode::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NM80211Mode::Enum>(wire));
+}
+
+} // namespace qs::dbus
 
 namespace qs::network {
+using namespace qs::dbus;
 
 namespace {
 Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
@@ -32,6 +50,14 @@ NMAccessPointAdapter::NMAccessPointAdapter(const QString& path, QObject* parent)
 		return;
 	}
 
+	QObject::connect(
+	    &this->accessPointProperties,
+	    &DBusPropertyGroup::getAllFinished,
+	    this,
+	    [this]() { emit this->ready(); },
+	    Qt::SingleShotConnection
+	);
+
 	this->accessPointProperties.setInterface(this->proxy);
 	this->accessPointProperties.updateAllViaGetAll();
 }
@@ -42,55 +68,4 @@ QString NMAccessPointAdapter::address() const {
 }
 QString NMAccessPointAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-NMWifiNetwork::NMWifiNetwork(QByteArray ssid, QObject* parent)
-    : QObject(parent)
-    , mSsid(std::move(ssid)) {}
-
-void NMWifiNetwork::updateSignalStrength() {
-	quint8 max = 0;
-	for (auto* ap: mAccessPoints) {
-		max = qMax(max, ap->getSignal());
-	}
-	if (this->bMaxSignal != max) {
-		this->bMaxSignal = max;
-	}
-}
-
-void NMWifiNetwork::addAccessPoint(NMAccessPointAdapter* ap) {
-	if (this->mAccessPoints.contains(ap)) {
-		qCWarning(logNetworkManager) << "Access point" << ap->path() << "was already in AP group";
-		return;
-	}
-
-	this->mAccessPoints.append(ap);
-	QObject::connect(
-	    ap,
-	    &NMAccessPointAdapter::signalStrengthChanged,
-	    this,
-	    &NMWifiNetwork::updateSignalStrength
-	);
-	this->updateSignalStrength();
-}
-
-void NMWifiNetwork::removeAccessPoint(NMAccessPointAdapter* ap) {
-	if (mAccessPoints.removeOne(ap)) {
-		QObject::disconnect(ap, nullptr, this, nullptr);
-		this->updateSignalStrength();
-	}
-}
-
 } // namespace qs::network
-
-namespace qs::dbus {
-
-DBusResult<qs::network::NM80211ApFlags::Enum>
-DBusDataTransform<qs::network::NM80211ApFlags::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NM80211ApFlags::Enum>(wire));
-}
-
-DBusResult<qs::network::NM80211ApSecurityFlags::Enum>
-DBusDataTransform<qs::network::NM80211ApSecurityFlags::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NM80211ApSecurityFlags::Enum>(wire));
-}
-
-} // namespace qs::dbus

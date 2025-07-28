@@ -11,81 +11,9 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../frontend.hpp"
 #include "connection.hpp"
+#include "enums.hpp"
 #include "nm/dbus_nm_device.h"
-
-namespace qs::network {
-
-class NMDeviceState: public QObject {
-	Q_OBJECT;
-
-public:
-	enum Enum : quint8 {
-		Unkown = 0,
-		Unmanaged = 10,
-		Unavailable = 20,
-		Disconnected = 30,
-		Prepare = 40,
-		Config = 50,
-		NeedAuth = 60,
-		IPConfig = 70,
-		IPCheck = 80,
-		Secondaries = 90,
-		Activated = 100,
-		Deactivating = 110,
-		Failed = 120,
-	};
-	Q_ENUM(Enum);
-
-	static NetworkDeviceState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
-};
-
-class NMDeviceType: public QObject {
-	Q_OBJECT;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Generic = 14,
-		Ethernet = 1,
-		Wifi = 2,
-		Unused1 = 3,
-		Unused2 = 4,
-		Bluetooth = 5,
-		OlpcMesh = 6,
-		Wimax = 7,
-		Modem = 8,
-		Infiniband = 9,
-		Bond = 10,
-		Vlan = 11,
-		Adsl = 12,
-		Bridge = 13,
-		Team = 15,
-		Tun = 16,
-		Tunnel = 17,
-		Macvlan = 18,
-		Vxlan = 19,
-		Veth = 20,
-		Macsec = 21,
-		Dummy = 22,
-		Ppp = 23,
-		OvsInterface = 24,
-		OvsPort = 25,
-		OvsBridge = 26,
-		Wpan = 27,
-		Lowpan = 28,
-		WireGuard = 29,
-		WifiP2P = 30,
-		Vrf = 31,
-		Loopback = 32,
-		Hsr = 33,
-		Ipvlan = 34,
-	};
-	Q_ENUM(Enum);
-};
-
-} // namespace qs::network
 
 namespace qs::dbus {
 
@@ -119,20 +47,22 @@ public:
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
-	[[nodiscard]] QString getInterface() { return this->bInterface; };
-	[[nodiscard]] QString getHwAddress() { return this->bHwAddress; };
-	[[nodiscard]] NMDeviceType::Enum getType() { return this->bType; };
+	[[nodiscard]] QString interface() { return this->bInterface; };
+	[[nodiscard]] QString hwAddress() { return this->bHwAddress; };
+	[[nodiscard]] NMDeviceType::Enum type() { return this->bType; };
+	[[nodiscard]] NMDeviceState::Enum state() { return this->bState; };
 
 public slots:
 	void disconnect();
 
 signals:
+	void ready();
+	void connectionLoaded(NMConnectionAdapter* connection);
+	void connectionRemoved(NMConnectionAdapter* connection);
 	void interfaceChanged(const QString& interface);
 	void hwAddressChanged(const QString& hwAddress);
 	void typeChanged(NMDeviceType::Enum type);
 	void stateChanged(NMDeviceState::Enum state);
-	void connectionAdded(const QString& path);
-	void connectionRemoved(const QString& path);
 	void availableConnectionsChanged(QList<QDBusObjectPath> paths);
 
 private slots:
