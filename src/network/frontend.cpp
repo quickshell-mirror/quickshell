@@ -92,9 +92,13 @@ void NetworkWifiDevice::scan() {
 	this->requestScan();
 }
 
-void NetworkWifiDevice::addNetwork(WifiNetwork* network) { mNetworks.insertObject(network); }
+void NetworkWifiDevice::wifiNetworkAdded(WifiNetwork* network) {
+	this->mNetworks.insertObject(network);
+}
 
-void NetworkWifiDevice::removeNetwork(WifiNetwork* network) { mNetworks.removeObject(network); }
+void NetworkWifiDevice::wifiNetworkRemoved(WifiNetwork* network) {
+	this->mNetworks.removeObject(network);
+}
 
 WifiNetwork::WifiNetwork(QObject* parent): QObject(parent) {};
 
@@ -116,6 +120,20 @@ void WifiNetwork::setConnected(bool connected) {
 	if (this->bConnected != connected) {
 		this->bConnected = connected;
 		emit this->connectedChanged();
+	}
+}
+
+void WifiNetwork::setNmSecurity(NMWirelessSecurityType::Enum security) {
+	if (this->bNmSecurity != security) {
+		this->bNmSecurity = security;
+		emit this->nmSecurityChanged();
+	}
+}
+
+void WifiNetwork::setKnown(bool known) {
+	if (this->bKnown != known) {
+		this->bKnown = known;
+		emit this->knownChanged();
 	}
 }
 

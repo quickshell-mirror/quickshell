@@ -12,7 +12,6 @@
 
 #include "../../dbus/properties.hpp"
 #include "../frontend.hpp"
-#include "connection.hpp"
 #include "device.hpp"
 #include "nm/dbus_nm_backend.h"
 
@@ -35,12 +34,11 @@ private slots:
 
 private:
 	void init();
-	void registerDevice(NMDeviceAdapter* deviceAdapter, NMDeviceType::Enum type, const QString& path);
+	void registerDevice(NMDeviceAdapter* deviceAdapter, const QString& path);
 	void registerDevices();
 	void queueDeviceRegistration(const QString& path);
-	NetworkDevice* createDeviceVariant(NMDeviceType::Enum type, const QString& path);
-	NetworkWifiDevice* bindWirelessDevice(const QString& path);
-	NetworkDevice* bindDevice(NMDeviceAdapter* deviceAdapter);
+	static NetworkDeviceState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
+	NetworkWifiDevice* bindWirelessDevice(NMDeviceAdapter* deviceAdapter, const QString& path);
 
 	QHash<QString, NetworkDevice*> mDeviceHash;
 

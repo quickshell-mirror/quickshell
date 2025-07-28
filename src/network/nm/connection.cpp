@@ -9,17 +9,19 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "nm/dbus_nm_connection.h"
-
-using namespace qs::dbus;
 
 namespace qs::network {
+using namespace qs::dbus;
 
 namespace {
 Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
+// NMConnectionAdapter
+
 NMConnectionAdapter::NMConnectionAdapter(const QString& path, QObject* parent): QObject(parent) {
+	qDBusRegisterMetaType<ConnectionSettingsMap>();
+
 	this->proxy = new DBusNMConnectionProxy(
 	    "org.freedesktop.NetworkManager",
 	    path,
@@ -32,8 +34,34 @@ NMConnectionAdapter::NMConnectionAdapter(const QString& path, QObject* parent): 
 		return;
 	}
 
+	// clang-format off
+	QObject::connect(this->proxy, &DBusNMConnectionProxy::Updated, this, &NMConnectionAdapter::updateSettings);
+	// clang-format on
+
 	this->connectionProperties.setInterface(this->proxy);
 	this->connectionProperties.updateAllViaGetAll();
+
+	this->updateSettings();
+}
+
+void NMConnectionAdapter::updateSettings() {
+	auto pending = this->proxy->GetSettings();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<ConnectionSettingsMap> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logNetworkManager) << "Failed to get settings: " << reply.error().message();
+		} else {
+			this->bSettings = reply.value();
+		}
+
+		emit this->ready();
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
 bool NMConnectionAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }

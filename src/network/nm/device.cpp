@@ -9,11 +9,23 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "nm/dbus_nm_device.h"
 
-using namespace qs::dbus;
+namespace qs::dbus {
+
+DBusResult<qs::network::NMDeviceType::Enum>
+DBusDataTransform<qs::network::NMDeviceType::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMDeviceType::Enum>(wire));
+}
+
+DBusResult<qs::network::NMDeviceState::Enum>
+DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
+}
+
+} // namespace qs::dbus
 
 namespace qs::network {
+using namespace qs::dbus;
 
 namespace {
 Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
@@ -32,12 +44,10 @@ NMDeviceAdapter::NMDeviceAdapter(const QString& path, QObject* parent): QObject(
 		return;
 	}
 
-	QObject::connect(
-	    this,
-	    &NMDeviceAdapter::availableConnectionsChanged,
-	    this,
-	    &NMDeviceAdapter::onAvailableConnectionsChanged
-	);
+	// clang-format off
+	QObject::connect(this, &NMDeviceAdapter::availableConnectionsChanged, this, &NMDeviceAdapter::onAvailableConnectionsChanged);
+	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->ready(); }, Qt::SingleShotConnection);
+	// clang-format on
 
 	this->deviceProperties.setInterface(this->proxy);
 	this->deviceProperties.updateAllViaGetAll();
@@ -58,6 +68,13 @@ void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>
 			delete connection;
 		} else {
 			this->mConnectionMap.insert(path, connection);
+			QObject::connect(
+			    connection,
+			    &NMConnectionAdapter::ready,
+			    this,
+			    [this, connection]() { emit this->connectionLoaded(connection); },
+			    Qt::SingleShotConnection
+			);
 			qCDebug(logNetworkManager) << "Registered connection" << path;
 		}
 	}
@@ -67,6 +84,7 @@ void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>
 			qCDebug(logNetworkManager) << "NetworkManager backend sent removal signal for" << path
 			                           << "which is not registered.";
 		} else {
+			emit this->connectionRemoved(connection);
 			delete connection;
 		}
 	};
@@ -79,28 +97,4 @@ QString NMDeviceAdapter::address() const {
 }
 QString NMDeviceAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-NetworkDeviceState::Enum NMDeviceState::toNetworkDeviceState(NMDeviceState::Enum state) {
-	switch (state) {
-	case 0 ... 20: return NetworkDeviceState::Unknown;
-	case 30: return NetworkDeviceState::Disconnected;
-	case 40 ... 90: return NetworkDeviceState::Connecting;
-	case 100: return NetworkDeviceState::Connected;
-	case 110 ... 120: return NetworkDeviceState::Disconnecting;
-	}
-}
-
 } // namespace qs::network
-
-namespace qs::dbus {
-
-DBusResult<qs::network::NMDeviceType::Enum>
-DBusDataTransform<qs::network::NMDeviceType::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMDeviceType::Enum>(wire));
-}
-
-DBusResult<qs::network::NMDeviceState::Enum>
-DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
-}
-
-} // namespace qs::dbus

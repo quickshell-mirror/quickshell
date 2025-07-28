@@ -6,5 +6,6 @@
     <property name="RsnFlags" type="u" access="read"/>
     <property name="Flags" type="u" access="read"/>
     <property name="Frequency" type="u" access="read"/>
+		<property name="Mode" type="u" access="read"/>
 	</interface>
 </node>
