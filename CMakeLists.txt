@@ -157,3 +157,9 @@ install(
 	DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 	RENAME org.quickshell.svg
 )
+
+configure_file(assets/quickshell.service.in quickshell.service)
+install(
+	FILES ${CMAKE_BINARY_DIR}/quickshell.service
+	DESTINATION lib/systemd/user
+)
