@@ -1,0 +1,10 @@
+[Unit]
+Description=QtQuick-based Desktop Shell Toolkit
+PartOf=graphical-session.target
+Requisite=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=@CMAKE_INSTALL_BINDIR@/quickshell
+Slice=session.slice
+Restart=on-failure
