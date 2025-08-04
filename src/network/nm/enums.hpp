@@ -13,6 +13,7 @@
 namespace qs::network {
 
 // 802.11 specific device encryption and authentication capabilities.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceWifiCapabilities.
 class NMWirelessCapabilities: public QObject {
 	Q_OBJECT;
 
@@ -76,6 +77,7 @@ public:
 	}
 };
 
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceState.
 class NMDeviceState: public QObject {
 	Q_OBJECT;
 
@@ -98,7 +100,8 @@ public:
 	Q_ENUM(Enum);
 };
 
-// Indicates the type of hardware represented by a device object
+// Indicates the type of hardware represented by a device object.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceType.
 class NMDeviceType: public QObject {
 	Q_OBJECT;
 
@@ -144,6 +147,7 @@ public:
 };
 
 // Indicates the 802.11 mode an access point is currently in.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NM80211Mode.
 class NM80211Mode: public QObject {
 	Q_OBJECT;
 
@@ -159,6 +163,7 @@ public:
 };
 
 // 802.11 access point flags.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NM80211ApSecurityFlags.
 class NM80211ApFlags: public QObject {
 	Q_OBJECT;
 
@@ -175,6 +180,7 @@ public:
 
 // 802.11 access point security and authentication flags.
 // These flags describe the current system requirements of an access point as determined from the access point's beacon.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NM80211ApSecurityFlags.
 class NM80211ApSecurityFlags: public QObject {
 	Q_OBJECT;
 
@@ -197,6 +203,71 @@ public:
 		KeyMgmtEapSuiteB192 = 8192,
 	};
 	Q_ENUM(Enum);
+};
+
+// Indicates the state of a connection to a specific network while it is starting, connected, or disconnected from that network.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionState.
+class NMActiveConnectionState: public QObject {
+	Q_OBJECT;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		Activating = 1,
+		Activated = 2,
+		Deactivating = 3,
+		Deactivated = 4
+	};
+	Q_ENUM(Enum);
+};
+
+// Active connection state reasons.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
+class NMActiveConnectionStateReason: public QObject {
+	Q_OBJECT;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		None = 1,
+		UserDisconnected = 2,
+		DeviceDisconnected = 3,
+		ServiceStopped = 4,
+		IpConfigInvalid = 5,
+		ConnectTimeout = 6,
+		ServiceStartTimeout = 7,
+		ServiceStartFailed = 8,
+		NoSecrets = 9,
+		LoginFailed = 10,
+		ConnectionRemoved = 11,
+		DependencyFailed = 12,
+		DeviceRealizeFailed = 13,
+		DeviceRemoved = 14
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NMActiveConnectionStateReason::Enum reason) {
+		switch (reason) {
+		case Unknown: return "The reason for the active connection state change is unknown.";
+		case None: return "No reason was given for the active connection state change.";
+		case UserDisconnected:
+			return "The active connection changed state because the user disconnected it.";
+		case DeviceDisconnected:
+			return "The active connection changed state because the device it was using was "
+			       "disconnected.";
+		case ServiceStopped: return "The service providing the VPN connection was stopped.";
+		case IpConfigInvalid: return "The IP config of the active connection was invalid.";
+		case ConnectTimeout: return "The connection attempt to the VPN service timed out.";
+		case ServiceStartTimeout:
+			return "A timeout occurred while starting the service providing the VPN connection.";
+		case ServiceStartFailed: return "Starting the service providing the VPN connection failed.";
+		case NoSecrets: return "Necessary secrets for the connection were not provided.";
+		case LoginFailed: return "Authentication to the server failed.";
+		case ConnectionRemoved: return "Necessary secrets for the connection were not provided.";
+		case DependencyFailed: return " Master connection of this connection failed to activate.";
+		case DeviceRealizeFailed: return "Could not create the software device link.";
+		case DeviceRemoved: return "The device this connection depended on disappeared.";
+		};
+	};
 };
 
 } // namespace qs::network

@@ -46,11 +46,42 @@ NMDeviceAdapter::NMDeviceAdapter(const QString& path, QObject* parent): QObject(
 
 	// clang-format off
 	QObject::connect(this, &NMDeviceAdapter::availableConnectionsChanged, this, &NMDeviceAdapter::onAvailableConnectionsChanged);
+	QObject::connect(this, &NMDeviceAdapter::activeConnectionChanged, this, &NMDeviceAdapter::onActiveConnectionChanged);
 	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->ready(); }, Qt::SingleShotConnection);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->proxy);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDeviceAdapter::onActiveConnectionChanged(const QDBusObjectPath& path) {
+	QString stringPath = path.path();
+	if (this->mActiveConnection) {
+		QObject::disconnect(this->mActiveConnection, nullptr, this, nullptr);
+		emit this->activeConnectionRemoved(this->mActiveConnection);
+		delete this->mActiveConnection;
+		this->mActiveConnection = nullptr;
+	}
+
+	if (stringPath != "/") {
+		auto* active = new NMActiveConnectionAdapter(stringPath, this);
+		this->mActiveConnection = active;
+		qCDebug(logNetworkManager) << "Registered active connection" << stringPath;
+
+		QObject::connect(
+		    active,
+		    &NMActiveConnectionAdapter::ready,
+		    this,
+		    [this, active]() {
+			    QString path = active->connection().path();
+			    if (!this->mConnectionMap.contains(path)) {
+				    this->registerConnection(path);
+			    }
+			    emit this->activeConnectionLoaded(active);
+		    },
+		    Qt::SingleShotConnection
+		);
+	}
 }
 
 void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>& paths) {
@@ -62,21 +93,7 @@ void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>
 	QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
 	QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
 	for (const QString& path: addedConnections) {
-		auto* connection = new NMConnectionAdapter(path, this);
-		if (!connection->isValid()) {
-			qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
-			delete connection;
-		} else {
-			this->mConnectionMap.insert(path, connection);
-			QObject::connect(
-			    connection,
-			    &NMConnectionAdapter::ready,
-			    this,
-			    [this, connection]() { emit this->connectionLoaded(connection); },
-			    Qt::SingleShotConnection
-			);
-			qCDebug(logNetworkManager) << "Registered connection" << path;
-		}
+		registerConnection(path);
 	}
 	for (const QString& path: removedConnections) {
 		auto* connection = this->mConnectionMap.take(path);
@@ -87,7 +104,27 @@ void NMDeviceAdapter::onAvailableConnectionsChanged(const QList<QDBusObjectPath>
 			emit this->connectionRemoved(connection);
 			delete connection;
 		}
+		this->mConnectionPaths.remove(path);
 	};
+}
+
+void NMDeviceAdapter::registerConnection(const QString& path) {
+	auto* connection = new NMConnectionSettingsAdapter(path, this);
+	if (!connection->isValid()) {
+		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
+		delete connection;
+	} else {
+		this->mConnectionMap.insert(path, connection);
+		this->mConnectionPaths.insert(path);
+		QObject::connect(
+		    connection,
+		    &NMConnectionSettingsAdapter::ready,
+		    this,
+		    [this, connection]() { emit this->connectionLoaded(connection); },
+		    Qt::SingleShotConnection
+		);
+		qCDebug(logNetworkManager) << "Registered connection" << path;
+	}
 }
 
 void NMDeviceAdapter::disconnect() { this->proxy->Disconnect(); }

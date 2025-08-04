@@ -131,8 +131,8 @@ public:
 	explicit NMWirelessManager(QObject* parent = nullptr);
 
 public slots:
-	void connectionLoaded(NMConnectionAdapter* connection);
-	void connectionRemoved(NMConnectionAdapter* connection);
+	void connectionLoaded(NMConnectionSettingsAdapter* connection);
+	void connectionRemoved(NMConnectionSettingsAdapter* connection);
 	void networkAdded(NMWirelessNetwork* nmNetwork);
 	void networkRemoved(NMWirelessNetwork* nmNetwork);
 
@@ -143,7 +143,7 @@ signals:
 private:
 	// Lookups to help merge 1:1 connection:item relation and 1:many network:item relation.
 	QHash<QString, NMWirelessNetwork*> mNetworkMap;      // Ssid -> NMWirelessNetwork
-	QHash<QString, NMConnectionAdapter*> mConnectionMap; // Uuid -> NMConnectionAdapter
+	QHash<QString, NMConnectionSettingsAdapter*> mConnectionMap; // Uuid -> NMConnectionAdapter
 	QHash<QString, WifiNetwork*> mUuidToItem;            // Uuid -> WifiNetwork
 	QMultiHash<QString, WifiNetwork*> mSsidToItem;       // Ssid -> WifiNetwork
 };
