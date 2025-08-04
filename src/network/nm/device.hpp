@@ -57,21 +57,27 @@ public slots:
 
 signals:
 	void ready();
-	void connectionLoaded(NMConnectionAdapter* connection);
-	void connectionRemoved(NMConnectionAdapter* connection);
+	void connectionLoaded(NMConnectionSettingsAdapter* connection);
+	void connectionRemoved(NMConnectionSettingsAdapter* connection);
+	void activeConnectionLoaded(NMActiveConnectionAdapter* connection);
+	void activeConnectionRemoved(NMActiveConnectionAdapter* connection);
 	void interfaceChanged(const QString& interface);
 	void hwAddressChanged(const QString& hwAddress);
 	void typeChanged(NMDeviceType::Enum type);
 	void stateChanged(NMDeviceState::Enum state);
 	void availableConnectionsChanged(QList<QDBusObjectPath> paths);
+	void activeConnectionChanged(const QDBusObjectPath& connection);
 
 private slots:
 	void onAvailableConnectionsChanged(const QList<QDBusObjectPath>& paths);
+	void onActiveConnectionChanged(const QDBusObjectPath& path);
 
 private:
+	void registerConnection(const QString& path);
 	// Connection lookups
 	QSet<QString> mConnectionPaths;
-	QHash<QString, NMConnectionAdapter*> mConnectionMap;
+	QHash<QString, NMConnectionSettingsAdapter*> mConnectionMap;
+	NMActiveConnectionAdapter* mActiveConnection = nullptr;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QString, bInterface, &NMDeviceAdapter::interfaceChanged);
@@ -79,6 +85,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, NMDeviceState::Enum, bState, &NMDeviceAdapter::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, NMDeviceType::Enum, bType, &NMDeviceAdapter::typeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QList<QDBusObjectPath>, bAvailableConnections, &NMDeviceAdapter::availableConnectionsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDeviceAdapter, QDBusObjectPath, bActiveConnection, &NMDeviceAdapter::activeConnectionChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pName, bInterface, deviceProperties, "Interface");
@@ -86,6 +93,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pType, bType, deviceProperties, "DeviceType");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pState, bState, deviceProperties, "State");
 	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
+	QS_DBUS_PROPERTY_BINDING(NMDeviceAdapter, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
 	// clang-format on
 
 	DBusNMDeviceProxy* proxy = nullptr;

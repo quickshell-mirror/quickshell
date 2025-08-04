@@ -264,7 +264,7 @@ QString NMWirelessAdapter::path() const { return this->proxy ? this->proxy->path
 
 NMWirelessManager::NMWirelessManager(QObject* parent): QObject(parent) {};
 
-void NMWirelessManager::connectionLoaded(NMConnectionAdapter* connection) {
+void NMWirelessManager::connectionLoaded(NMConnectionSettingsAdapter* connection) {
 	ConnectionSettingsMap settings = connection->settings();
 	if (settings["connection"]["id"].toString().isEmpty()
 	    || settings["connection"]["uuid"].toString().isEmpty()
@@ -316,7 +316,7 @@ void NMWirelessManager::connectionLoaded(NMConnectionAdapter* connection) {
 	}
 };
 
-void NMWirelessManager::connectionRemoved(NMConnectionAdapter* connection) {
+void NMWirelessManager::connectionRemoved(NMConnectionSettingsAdapter* connection) {
 	ConnectionSettingsMap settings = connection->settings();
 
 	// Check if this connection supplies an item

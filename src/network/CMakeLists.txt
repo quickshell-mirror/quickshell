@@ -40,13 +40,23 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 )
 
 set_source_files_properties(nm/org.freedesktop.NetworkManager.Settings.Connection.xml PROPERTIES
-	CLASSNAME DBusNMConnectionProxy
+	CLASSNAME DBusNMConnectionSettingsProxy
 	INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/nm/dbus_types.hpp
 )
 
 qt_add_dbus_interface(NM_DBUS_INTERFACES
 	nm/org.freedesktop.NetworkManager.Settings.Connection.xml
-	nm/dbus_nm_connection
+	nm/dbus_nm_connection_settings
+)
+
+set_source_files_properties(nm/org.freedesktop.NetworkManager.Connection.Active.xml PROPERTIES
+	CLASSNAME DBusNMActiveConnectionProxy
+	NO_NAMESPACE TRUE
+)
+
+qt_add_dbus_interface(NM_DBUS_INTERFACES
+	nm/org.freedesktop.NetworkManager.Connection.Active.xml
+	nm/dbus_nm_active_connection
 )
 
 qt_add_library(quickshell-network STATIC
