@@ -12,8 +12,26 @@ void ItemImageGrab::grab(QQuickItem* target, const QUrl& path) {
 }
 
 void ItemImageGrab::grab(QQuickItem* target, const QUrl& path, const QSize& targetSize) {
+	this->cropAndGrab(target, path, QRect(), targetSize);
+}
+
+void ItemImageGrab::cropAndGrab(QQuickItem* target, const QUrl& path, const QRect& rect) {
+	this->cropAndGrab(target, path, rect, QSize());
+}
+
+void ItemImageGrab::cropAndGrab(
+    QQuickItem* target,
+    const QUrl& path,
+    const QRect& rect,
+    const QSize& targetSize
+) {
 	if (!target) {
-		qWarning() << "ItemImageGrab::grab: a target is required";
+		qWarning() << "ItemImageGrab: a target is required";
+		return;
+	}
+
+	if (!path.isLocalFile()) {
+		qWarning() << "ItemImageGrab: can only save to a file on the local filesystem";
 		return;
 	}
 
@@ -28,10 +46,18 @@ void ItemImageGrab::grab(QQuickItem* target, const QUrl& path, const QSize& targ
 	    grabResult.data(),
 	    &QQuickItemGrabResult::ready,
 	    this,
-	    [grabResult, path, this]() {
-		    QThreadPool::globalInstance()->start([grabResult, path, this] {
-			    if (grabResult->saveToFile(path)) {
-				    emit this->saved(path);
+	    [grabResult, rect, path, this]() {
+		    QThreadPool::globalInstance()->start([grabResult, rect, path, this] {
+			    QImage image = grabResult->image();
+
+			    if (!rect.isEmpty()) {
+				    image = image.copy(rect);
+			    }
+
+			    const QString localFile = path.toLocalFile();
+
+			    if (image.save(localFile)) {
+				    emit this->saved(localFile);
 			    } else {
 				    emit this->failed(path);
 			    }
