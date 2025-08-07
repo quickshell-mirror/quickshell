@@ -57,7 +57,7 @@ void ItemImageGrab::cropAndGrab(
 			    const QString localFile = path.toLocalFile();
 
 			    if (image.save(localFile)) {
-				    emit this->saved(localFile);
+				    emit this->saved(localFile, path);
 			    } else {
 				    emit this->failed(path);
 			    }

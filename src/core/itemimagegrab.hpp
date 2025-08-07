@@ -20,6 +20,6 @@ public:
 	cropAndGrab(QQuickItem* target, const QUrl& path, const QRect& rect, const QSize& targetSize);
 
 signals:
-	void saved(const QString& path);
+	void saved(const QString& file, const QUrl& path);
 	void failed(const QUrl& path);
 };
