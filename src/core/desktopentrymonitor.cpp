@@ -23,13 +23,18 @@ DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
 	this->debounceTimer.setSingleShot(true);
 	this->debounceTimer.setInterval(100);
 
-	connect(
+	QObject::connect(
 	    &this->watcher,
 	    &QFileSystemWatcher::directoryChanged,
 	    this,
 	    &DesktopEntryMonitor::onDirectoryChanged
 	);
-	connect(&this->debounceTimer, &QTimer::timeout, this, &DesktopEntryMonitor::processChanges);
+	QObject::connect(
+	    &this->debounceTimer,
+	    &QTimer::timeout,
+	    this,
+	    &DesktopEntryMonitor::processChanges
+	);
 
 	this->startMonitoring();
 }

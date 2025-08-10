@@ -278,6 +278,7 @@ private:
 	ObjectModel<DesktopEntry> mApplications {this};
 	DesktopEntryMonitor* monitor = nullptr;
 	bool scanInProgress = false;
+	bool scanQueued = false;
 
 	friend class DesktopEntryScanner;
 };

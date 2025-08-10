@@ -102,7 +102,6 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	auto finishCategory = [&data, &groupName, &entries]() {
 		if (groupName == "Desktop Entry") {
 			if (entries.value("Type").second != "Application") return;
-
 			if (entries.value("Hidden").second == "true") return;
 
 			for (const auto& [key, pair]: entries.asKeyValueRange()) {
@@ -146,8 +145,8 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 		entries.clear();
 	};
 
-	for (auto& line: text.split(u'\n')) {
-		if (line.isEmpty() || line.startsWith(u'#')) continue;
+	for (auto& line: text.split(u'\n', Qt::SkipEmptyParts)) {
+		if (line.startsWith(u'#')) continue;
 
 		if (line.startsWith(u'[') && line.endsWith(u']')) {
 			finishCategory();
@@ -213,7 +212,6 @@ void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newAct
 	auto old = this->mActions;
 
 	for (const auto& [key, d]: newActions.asKeyValueRange()) {
-
 		DesktopAction* act = nullptr;
 		if (auto found = old.find(key); found != old.end()) {
 			act = found.value();
@@ -311,7 +309,7 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 }
 
 void DesktopEntry::doExec(const QList<QString>& execString, const QString& workingDirectory) {
-	auto ctx = qs::io::process::ProcessContext();
+	qs::io::process::ProcessContext ctx;
 	ctx.setCommand(execString);
 	ctx.setWorkingDirectory(workingDirectory);
 	QuickshellGlobal::execDetached(ctx);
@@ -326,11 +324,10 @@ DesktopEntryScanner::DesktopEntryScanner(DesktopEntryManager* manager): manager(
 }
 
 void DesktopEntryScanner::run() {
-	auto desktopPaths = DesktopEntryManager::desktopPaths();
+	const auto& desktopPaths = DesktopEntryManager::desktopPaths();
 	auto scanResults = QList<ParsedDesktopEntryData>();
 
-	for (int i = desktopPaths.size() - 1; i >= 0; --i) {
-		const auto& path = desktopPaths.at(i);
+	for (const auto& path: desktopPaths | std::views::reverse) {
 		auto file = QFileInfo(path);
 		if (!file.isDir()) continue;
 
@@ -395,11 +392,13 @@ void DesktopEntryManager::scanDesktopEntries() {
 	qCDebug(logDesktopEntry) << "Starting desktop entry scan";
 
 	if (this->scanInProgress) {
-		qCDebug(logDesktopEntry) << "Scan already in progress, skipping";
+		qCDebug(logDesktopEntry) << "Scan already in progress, queuing another scan";
+		this->scanQueued = true;
 		return;
 	}
 
 	this->scanInProgress = true;
+	this->scanQueued = false;
 	auto* scanner = new DesktopEntryScanner(this);
 	QThreadPool::globalInstance()->start(scanner);
 }
@@ -444,11 +443,13 @@ void DesktopEntryManager::handleFileChanges() {
 	qCDebug(logDesktopEntry) << "Directory change detected, performing full rescan";
 
 	if (this->scanInProgress) {
-		qCDebug(logDesktopEntry) << "Scan already in progress, skipping";
+		qCDebug(logDesktopEntry) << "Scan already in progress, queuing another scan";
+		this->scanQueued = true;
 		return;
 	}
 
 	this->scanInProgress = true;
+	this->scanQueued = false;
 	auto* scanner = new DesktopEntryScanner(this);
 	QThreadPool::globalInstance()->start(scanner);
 }
@@ -476,7 +477,13 @@ const QStringList& DesktopEntryManager::desktopPaths() {
 }
 
 void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& scanResults) {
-	auto guard = qScopeGuard([this] { this->scanInProgress = false; });
+	auto guard = qScopeGuard([this] {
+		this->scanInProgress = false;
+		if (this->scanQueued) {
+			this->scanQueued = false;
+			this->scanDesktopEntries();
+		}
+	});
 
 	auto oldEntries = this->desktopEntries;
 	auto newEntries = QHash<QString, DesktopEntry*>();
@@ -536,9 +543,9 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 
 	this->mApplications.diffUpdate(newApplications);
 
-	for (auto* e: oldEntries) e->deleteLater();
-
 	emit applicationsChanged();
+
+	for (auto* e: oldEntries) e->deleteLater();
 }
 
 DesktopEntries::DesktopEntries() {
