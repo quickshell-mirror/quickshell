@@ -9,6 +9,7 @@
 			<arg name="secrets" type="a{sa{sv}}" direction="out"/>
 			<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConnectionSettingsMap"/>
     </method>
+		<method name="Delete"/>
     
     <signal name="Updated"/>
 		<signal name="Removed"/>

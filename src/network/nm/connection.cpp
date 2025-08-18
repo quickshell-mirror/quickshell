@@ -9,6 +9,16 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
+#include "nm/utils.hpp"
+
+namespace qs::dbus {
+
+DBusResult<qs::network::NMConnectionState::Enum>
+DBusDataTransform<qs::network::NMConnectionState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMConnectionState::Enum>(wire));
+}
+
+} // namespace qs::dbus
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -19,8 +29,7 @@ Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWar
 
 // NMConnectionAdapter
 
-NMConnectionSettingsAdapter::NMConnectionSettingsAdapter(const QString& path, QObject* parent)
-    : QObject(parent) {
+NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent): QObject(parent) {
 	qDBusRegisterMetaType<ConnectionSettingsMap>();
 
 	this->proxy = new DBusNMConnectionSettingsProxy(
@@ -36,16 +45,17 @@ NMConnectionSettingsAdapter::NMConnectionSettingsAdapter(const QString& path, QO
 	}
 
 	// clang-format off
-	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettingsAdapter::updateSettings);
+	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::updateSettings);
+	bSecurity.setBinding([&] { return securityFromConnectionSettings(this->bSettings); });
 	// clang-format on
-
+	//
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
 
 	this->updateSettings();
 }
 
-void NMConnectionSettingsAdapter::updateSettings() {
+void NMConnectionSettings::updateSettings() {
 	auto pending = this->proxy->GetSettings();
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
@@ -53,7 +63,8 @@ void NMConnectionSettingsAdapter::updateSettings() {
 		const QDBusPendingReply<ConnectionSettingsMap> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logNetworkManager) << "Failed to get settings: " << reply.error().message();
+			qCWarning(logNetworkManager)
+			    << "Failed to get" << this->path() << "settings:" << reply.error().message();
 		} else {
 			this->bSettings = reply.value();
 		}
@@ -65,17 +76,13 @@ void NMConnectionSettingsAdapter::updateSettings() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-bool NMConnectionSettingsAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
-QString NMConnectionSettingsAdapter::address() const {
+bool NMConnectionSettings::isValid() const { return this->proxy && this->proxy->isValid(); }
+QString NMConnectionSettings::address() const {
 	return this->proxy ? this->proxy->service() : QString();
 }
-QString NMConnectionSettingsAdapter::path() const {
-	return this->proxy ? this->proxy->path() : QString();
-}
+QString NMConnectionSettings::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
-NMActiveConnectionAdapter::NMActiveConnectionAdapter(const QString& path, QObject* parent)
-    : QObject(parent) {
-
+NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QObject(parent) {
 	this->proxy = new DBusNMActiveConnectionProxy(
 	    "org.freedesktop.NetworkManager",
 	    path,
@@ -90,30 +97,25 @@ NMActiveConnectionAdapter::NMActiveConnectionAdapter(const QString& path, QObjec
 
 	// clang-format off
 	QObject::connect(&this->activeConnectionProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->ready(); }, Qt::SingleShotConnection);
-	QObject::connect(this->proxy, &DBusNMActiveConnectionProxy::StateChanged, this, &NMActiveConnectionAdapter::onStateChanged);
+	QObject::connect(this->proxy, &DBusNMActiveConnectionProxy::StateChanged, this, &NMActiveConnection::onStateChanged);
 	// clang-format on
 
 	this->activeConnectionProperties.setInterface(this->proxy);
 	this->activeConnectionProperties.updateAllViaGetAll();
 }
 
-void NMActiveConnectionAdapter::onStateChanged(quint32 state, quint32 reason) {
-	auto enumState = static_cast<NMActiveConnectionState::Enum>(state);
-	auto enumReason = static_cast<NMActiveConnectionStateReason::Enum>(reason);
-
-	if (enumState != mState) {
-		this->mState = enumState;
+void NMActiveConnection::onStateChanged(quint32 /*state*/, quint32 reason) {
+	auto enumReason = static_cast<NMConnectionStateReason::Enum>(reason);
+	if (this->mStateReason != enumReason) {
 		this->mStateReason = enumReason;
-		emit this->stateChanged(enumState, enumReason);
+		emit this->stateReasonChanged(enumReason);
 	}
 }
 
-bool NMActiveConnectionAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
-QString NMActiveConnectionAdapter::address() const {
+bool NMActiveConnection::isValid() const { return this->proxy && this->proxy->isValid(); }
+QString NMActiveConnection::address() const {
 	return this->proxy ? this->proxy->service() : QString();
 }
-QString NMActiveConnectionAdapter::path() const {
-	return this->proxy ? this->proxy->path() : QString();
-}
+QString NMActiveConnection::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
 } // namespace qs::network

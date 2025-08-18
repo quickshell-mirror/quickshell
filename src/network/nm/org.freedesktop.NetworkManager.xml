@@ -6,8 +6,20 @@
 		<method name="GetDevices">
 			<arg direction="out" type="ao" name="devices"/>
 		</method>
-
-		<property name="State" type="u" access="read"/>
+		<method name="ActivateConnection">
+			<arg direction="in" type="o" name="connection"/>
+			<arg direction="in" type="o" name="device"/>
+			<arg direction="in" type="o" name="specific_object"/>
+			<arg direction="out" type="o" name="active_connection"/>
+		</method>
+		<method name="AddAndActivateConnection">
+		<arg direction="in" type="a{sa{sv}}" name="connection"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConnectionSettingsMap"/>
+			<arg direction="in" type="o" name="device"/>
+			<arg direction="in" type="o" name="specific_object"/>
+			<arg direction="out" type="o" name="path"/>
+			<arg direction="out" type="o" name="active_connection"/>
+		</method>
 
 		<signal name="DeviceAdded">
 			<arg type="o" name="device_path"/>

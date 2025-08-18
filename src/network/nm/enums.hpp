@@ -83,7 +83,7 @@ class NMDeviceState: public QObject {
 
 public:
 	enum Enum : quint8 {
-		Unkown = 0,
+		Unknown = 0,
 		Unmanaged = 10,
 		Unavailable = 20,
 		Disconnected = 30,
@@ -96,52 +96,6 @@ public:
 		Activated = 100,
 		Deactivating = 110,
 		Failed = 120,
-	};
-	Q_ENUM(Enum);
-};
-
-// Indicates the type of hardware represented by a device object.
-// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceType.
-class NMDeviceType: public QObject {
-	Q_OBJECT;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Generic = 14,
-		Ethernet = 1,
-		Wifi = 2,
-		Unused1 = 3,
-		Unused2 = 4,
-		Bluetooth = 5,
-		OlpcMesh = 6,
-		Wimax = 7,
-		Modem = 8,
-		Infiniband = 9,
-		Bond = 10,
-		Vlan = 11,
-		Adsl = 12,
-		Bridge = 13,
-		Team = 15,
-		Tun = 16,
-		Tunnel = 17,
-		Macvlan = 18,
-		Vxlan = 19,
-		Veth = 20,
-		Macsec = 21,
-		Dummy = 22,
-		Ppp = 23,
-		OvsInterface = 24,
-		OvsPort = 25,
-		OvsBridge = 26,
-		Wpan = 27,
-		Lowpan = 28,
-		WireGuard = 29,
-		WifiP2P = 30,
-		Vrf = 31,
-		Loopback = 32,
-		Hsr = 33,
-		Ipvlan = 34,
 	};
 	Q_ENUM(Enum);
 };
@@ -207,8 +161,10 @@ public:
 
 // Indicates the state of a connection to a specific network while it is starting, connected, or disconnected from that network.
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionState.
-class NMActiveConnectionState: public QObject {
+class NMConnectionState: public QObject {
 	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
 
 public:
 	enum Enum : quint8 {
@@ -219,12 +175,23 @@ public:
 		Deactivated = 4
 	};
 	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NMConnectionState::Enum state) {
+		switch (state) {
+		case Unknown: return "Unknown";
+		case Activating: return "Activating";
+		case Activated: return "Activated";
+		case Deactivating: return "Deactivating";
+		case Deactivated: return "Deactivated";
+		}
+	}
 };
 
 // Active connection state reasons.
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
-class NMActiveConnectionStateReason: public QObject {
+class NMConnectionStateReason: public QObject {
 	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
 
 public:
 	enum Enum : quint8 {
@@ -245,15 +212,12 @@ public:
 		DeviceRemoved = 14
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NMActiveConnectionStateReason::Enum reason) {
+	Q_INVOKABLE static QString toString(NMConnectionStateReason::Enum reason) {
 		switch (reason) {
-		case Unknown: return "The reason for the active connection state change is unknown.";
-		case None: return "No reason was given for the active connection state change.";
-		case UserDisconnected:
-			return "The active connection changed state because the user disconnected it.";
-		case DeviceDisconnected:
-			return "The active connection changed state because the device it was using was "
-			       "disconnected.";
+		case Unknown: return "Unknown";
+		case None: return "No reason";
+		case UserDisconnected: return "User disconnection";
+		case DeviceDisconnected: return "The device the connection was using was disconnected.";
 		case ServiceStopped: return "The service providing the VPN connection was stopped.";
 		case IpConfigInvalid: return "The IP config of the active connection was invalid.";
 		case ConnectTimeout: return "The connection attempt to the VPN service timed out.";

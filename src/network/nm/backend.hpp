@@ -11,7 +11,8 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../frontend.hpp"
+#include "../network.hpp"
+#include "../wifi.hpp"
 #include "device.hpp"
 #include "nm/dbus_nm_backend.h"
 
@@ -21,28 +22,45 @@ class NetworkManager: public NetworkBackend {
 	Q_OBJECT;
 
 signals:
-	void deviceAdded(NetworkDevice* device);
-	void deviceRemoved(NetworkDevice* device);
+	void wifiEnabledChanged(bool enabled);
+	void wifiHardwareEnabledChanged(bool enabled);
+	void wifiDeviceAdded(WifiDevice* device);
+	void wifiDeviceRemoved(WifiDevice* device);
 
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
 	[[nodiscard]] bool isAvailable() const override;
 
+public slots:
+	void setWifiEnabled(bool enabled);
+
 private slots:
-	void onDeviceAdded(const QDBusObjectPath& path);
-	void onDeviceRemoved(const QDBusObjectPath& path);
+	void onDevicePathAdded(const QDBusObjectPath& path);
+	void onDevicePathRemoved(const QDBusObjectPath& path);
+	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
+	void addAndActivateConnection(
+	    const ConnectionSettingsMap& settings,
+	    const QDBusObjectPath& devPath,
+	    const QDBusObjectPath& specificObjectPath
+	);
 
 private:
 	void init();
-	void registerDevice(NMDeviceAdapter* deviceAdapter, const QString& path);
 	void registerDevices();
-	void queueDeviceRegistration(const QString& path);
-	static NetworkDeviceState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
-	NetworkWifiDevice* bindWirelessDevice(NMDeviceAdapter* deviceAdapter, const QString& path);
+	void registerDevice(const QString& path);
+	void registerWifiDevice(const QString& path);
+	static NetworkConnectionState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
 
 	QHash<QString, NetworkDevice*> mDeviceHash;
 
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiEnabled, &NetworkManager::wifiEnabledChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiHardwareEnabled, &NetworkManager::wifiHardwareEnabledChanged);
+
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NetworkManager, dbusProperties);
+	QS_DBUS_PROPERTY_BINDING(NetworkManager, pWifiEnabled, bWifiEnabled, dbusProperties, "WirelessEnabled");
+	QS_DBUS_PROPERTY_BINDING(NetworkManager, pWifiHardwareEnabled, bWifiHardwareEnabled, dbusProperties, "WirelessHardwareEnabled");
+	// clang-format on
 	DBusNetworkManagerProxy* proxy = nullptr;
 };
 
