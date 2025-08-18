@@ -19,8 +19,7 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 	if (splitIdx != -1) {
 		iconName = id.sliced(0, splitIdx);
 		path = id.sliced(splitIdx + 6);
-		qWarning() << "Searching custom icon paths is not yet supported. Icon path will be ignored for"
-		           << id;
+		path = QString("/%1/%2").arg(path, iconName.sliced(iconName.lastIndexOf('/') + 1));
 	} else {
 		splitIdx = id.indexOf("?fallback=");
 		if (splitIdx != -1) {
@@ -32,7 +31,8 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 	}
 
 	auto icon = QIcon::fromTheme(iconName);
-	if (icon.isNull()) icon = QIcon::fromTheme(fallbackName);
+	if (icon.isNull() && !fallbackName.isEmpty()) icon = QIcon::fromTheme(fallbackName);
+	if (icon.isNull() && !path.isEmpty()) icon = QPixmap(path);
 
 	auto targetSize = requestedSize.isValid() ? requestedSize : QSize(100, 100);
 	if (targetSize.width() == 0 || targetSize.height() == 0) targetSize = QSize(2, 2);
