@@ -10,6 +10,7 @@
 
 #include "../../dbus/properties.hpp"
 #include "nm/dbus_nm_accesspoint.h"
+#include "utils.hpp"
 
 namespace qs::dbus {
 
@@ -37,7 +38,13 @@ namespace {
 Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
-NMAccessPointAdapter::NMAccessPointAdapter(const QString& path, QObject* parent): QObject(parent) {
+NMAccessPoint::NMAccessPoint(
+    const QString& path,
+    NMWirelessCapabilities::Enum caps,
+    QObject* parent
+)
+    : QObject(parent)
+    , mCaps(caps) {
 	this->proxy = new DBusNMAccessPointProxy(
 	    "org.freedesktop.NetworkManager",
 	    path,
@@ -46,26 +53,21 @@ NMAccessPointAdapter::NMAccessPointAdapter(const QString& path, QObject* parent)
 	);
 
 	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create access point proxy for" << path;
+		qCWarning(logNetworkManager) << "Cannot create DBus interface for AP at" << path;
 		return;
 	}
 
-	QObject::connect(
-	    &this->accessPointProperties,
-	    &DBusPropertyGroup::getAllFinished,
-	    this,
-	    [this]() { emit this->ready(); },
-	    Qt::SingleShotConnection
-	);
+	// clang-format off
+	QObject::connect(&this->accessPointProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->ready(); }, Qt::SingleShotConnection);
+	bSecurity.setBinding([&] { return findBestWirelessSecurity( this->mCaps, true, this->bMode == NM80211Mode::Adhoc, this->bFlags, this->bWpaFlags, this->bRsnFlags); });
+	// clang-format on
 
 	this->accessPointProperties.setInterface(this->proxy);
 	this->accessPointProperties.updateAllViaGetAll();
 }
 
-bool NMAccessPointAdapter::isValid() const { return this->proxy && this->proxy->isValid(); }
-QString NMAccessPointAdapter::address() const {
-	return this->proxy ? this->proxy->service() : QString();
-}
-QString NMAccessPointAdapter::path() const { return this->proxy ? this->proxy->path() : QString(); }
+bool NMAccessPoint::isValid() const { return this->proxy && this->proxy->isValid(); }
+QString NMAccessPoint::address() const { return this->proxy ? this->proxy->service() : QString(); }
+QString NMAccessPoint::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
 } // namespace qs::network

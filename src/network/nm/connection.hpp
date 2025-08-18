@@ -13,74 +13,92 @@
 #include "../../dbus/properties.hpp"
 #include "dbus_types.hpp"
 #include "enums.hpp"
-#include "nm/dbus_nm_connection_settings.h"
 #include "nm/dbus_nm_active_connection.h"
+#include "nm/dbus_nm_connection_settings.h"
 
+namespace qs::dbus {
+
+template <>
+struct DBusDataTransform<qs::network::NMConnectionState::Enum> {
+	using Wire = quint32;
+	using Data = qs::network::NMConnectionState::Enum;
+	static DBusResult<Data> fromWire(Wire wire);
+};
+
+} // namespace qs::dbus
 namespace qs::network {
 
-class NMConnectionSettingsAdapter: public QObject {
+// Proxy of a /org/freedesktop/NetworkManager/Settings/Connection/* object.
+class NMConnectionSettings: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit NMConnectionSettingsAdapter(const QString& path, QObject* parent = nullptr);
-	void updateSettings();
+	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
+
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
+	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
-	void settingsChanged();
+	void settingsChanged(ConnectionSettingsMap settings);
+	void securityChanged(NMWirelessSecurityType::Enum security);
+	void ssidChanged(QString ssid);
 	void ready();
+	void disappeared();
 
 private:
+	void updateSettings();
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettingsAdapter, ConnectionSettingsMap, bSettings, &NMConnectionSettingsAdapter::settingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, NMWirelessSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
 	// clang-format on
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
 
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettingsAdapter, connectionSettingsProperties);
 	DBusNMConnectionSettingsProxy* proxy = nullptr;
 };
 
-class NMActiveConnectionAdapter: public QObject {
+// Proxy of a /org/freedesktop/NetworkManager/ActiveConnection/* object.
+class NMActiveConnection: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit NMActiveConnectionAdapter(const QString& path, QObject* parent = nullptr);
+	explicit NMActiveConnection(const QString& path, QObject* parent = nullptr);
+
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QDBusObjectPath connection() const { return this->bConnection; };
-	[[nodiscard]] bool isDefault() const { return this->bIsDefault; };
-	[[nodiscard]] bool isDefault6() const { return this->bIsDefault6; };
-	[[nodiscard]] NMActiveConnectionState::Enum state() const { return this->mState; };
-	[[nodiscard]] NMActiveConnectionStateReason::Enum stateReason() const { return this->mStateReason; };
+	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
+	[[nodiscard]] NMConnectionStateReason::Enum stateReason() const { return this->mStateReason; };
+	[[nodiscard]] QString uuid() const { return this->bUuid; };
 
 signals:
-	void stateChanged(NMActiveConnectionState::Enum state, NMActiveConnectionStateReason::Enum reason);
+	void stateChanged(NMConnectionState::Enum state);
+	void stateReasonChanged(NMConnectionStateReason::Enum reason);
 	void connectionChanged(QDBusObjectPath path);
-	void isDefaultChanged(bool isDefault);
-	void isDefault6Changed(bool isDefault6);
+	void uuidChanged(const QString& uuid);
 	void ready();
+	void disappeared();
 
 private slots:
 	void onStateChanged(quint32 state, quint32 reason);
 
 private:
+	NMConnectionStateReason::Enum mStateReason = NMConnectionStateReason::Unknown;
+
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnectionAdapter, QDBusObjectPath, bConnection, &NMActiveConnectionAdapter::connectionChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnectionAdapter, bool, bIsDefault, &NMActiveConnectionAdapter::isDefaultChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnectionAdapter, bool, bIsDefault6, &NMActiveConnectionAdapter::isDefault6Changed);
+	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, QDBusObjectPath, bConnection, &NMActiveConnection::connectionChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, QString, bUuid, &NMActiveConnection::uuidChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, NMConnectionState::Enum, bState, &NMActiveConnection::stateChanged);
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMActiveConnection, activeConnectionProperties);
+	QS_DBUS_PROPERTY_BINDING(NMActiveConnection, pConnection, bConnection, activeConnectionProperties, "Connection");
+	QS_DBUS_PROPERTY_BINDING(NMActiveConnection, pUuid, bUuid, activeConnectionProperties, "Uuid");
+	QS_DBUS_PROPERTY_BINDING(NMActiveConnection, pState, bState, activeConnectionProperties, "State");
 	// clang-format on
-
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMActiveConnectionAdapter, activeConnectionProperties);
-	QS_DBUS_PROPERTY_BINDING(NMActiveConnectionAdapter, pConnection, bConnection, activeConnectionProperties, "Connection");
-	QS_DBUS_PROPERTY_BINDING(NMActiveConnectionAdapter, pIsDefault, bIsDefault, activeConnectionProperties, "Default");
-	QS_DBUS_PROPERTY_BINDING(NMActiveConnectionAdapter, pIsDefault6, bIsDefault6, activeConnectionProperties, "Default6");
 	DBusNMActiveConnectionProxy* proxy = nullptr;
-
-	NMActiveConnectionState::Enum mState = NMActiveConnectionState::Unknown;
-	NMActiveConnectionStateReason::Enum mStateReason = NMActiveConnectionStateReason::Unknown;
 };
 
 } // namespace qs::network

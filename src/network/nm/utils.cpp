@@ -316,7 +316,6 @@ NMWirelessSecurityType::Enum findBestWirelessSecurity(
     NM80211ApSecurityFlags::Enum apWpa,
     NM80211ApSecurityFlags::Enum apRsn
 ) {
-	// The ordering of this list is a pragmatic combination of security level and popularity
 	const QList<NMWirelessSecurityType::Enum> types = {
 	    NMWirelessSecurityType::Wpa3SuiteB192,
 	    NMWirelessSecurityType::Sae,

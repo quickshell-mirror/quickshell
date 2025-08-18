@@ -10,9 +10,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../frontend.hpp"
+#include "../wifi.hpp"
 #include "accesspoint.hpp"
 #include "connection.hpp"
+#include "device.hpp"
 #include "enums.hpp"
 #include "nm/dbus_nm_wireless.h"
 
@@ -27,63 +28,72 @@ struct DBusDataTransform<qs::network::NMWirelessCapabilities::Enum> {
 } // namespace qs::dbus
 namespace qs::network {
 
-// NMWirelessNetwork represents a wireless network, which aggregates all access points with
-// the same SSID. It also provides signals and slots for a frontend WifiNetwork.
+// NMWirelessNetwork aggregates all NMActiveConnection, NMAccessPoint, 
+// and NMConnectionSetting objects with the same ssid.
 class NMWirelessNetwork: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit NMWirelessNetwork(
-	    NMWirelessCapabilities::Enum caps,
-	    QByteArray ssid,
-	    QObject* parent = nullptr
-	);
-	void addAccessPoint(NMAccessPointAdapter* ap);
-	void removeAccessPoint(NMAccessPointAdapter* ap);
+	explicit NMWirelessNetwork(QString ssid, QObject* parent = nullptr);
+	void addAccessPoint(NMAccessPoint* ap);
+	void removeAccessPoint(NMAccessPoint* ap);
+	void addConnectionSettings(NMConnectionSettings* conn);
+	void removeConnectionSettings(NMConnectionSettings* conn);
+	void addActiveConnection(NMActiveConnection* active);
+	void removeActiveConnection(NMActiveConnection* active);
 	void updateSignalStrength();
+	void updateReferenceConnection();
 
-	[[nodiscard]] bool isEmpty() const { return this->mAccessPoints.isEmpty(); };
-	[[nodiscard]] quint8 signalStrength() const { return this->bMaxSignal; };
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
-	[[nodiscard]] NMAccessPointAdapter* referenceAccessPoint() const { return this->mReferenceAP; };
-	[[nodiscard]] NMWirelessSecurityType::Enum findBestSecurity();
+	[[nodiscard]] quint8 signalStrength() const { return this->mSignalStrength; };
+	[[nodiscard]] NMConnectionState::Enum state() const { return this->mState; };
+	[[nodiscard]] bool known() const { return this->mKnown; };
+	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->mReason; };
+	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->mSecurity; };
+	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
+	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
+	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
+	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); };
+
+public slots:
+	void setState(NMConnectionState::Enum state);
+	void setReason(NMConnectionStateReason::Enum reason);
+	void setKnown(bool known);
 
 signals:
 	void signalStrengthChanged(quint8 signal);
-	void referenceAccessPointChanged(NMAccessPointAdapter* ap);
-	void disappeared(const QString& ssid);
+	void stateChanged(NMConnectionState::Enum state);
+	void knownChanged(bool known);
+	void reasonChanged(NMConnectionStateReason::Enum reason);
+	void securityChanged(NMWirelessSecurityType::Enum security);
+	void disappeared();
 
 private:
-	NMAccessPointAdapter* mReferenceAP = nullptr;
-	QList<NMAccessPointAdapter*> mAccessPoints;
-	NMWirelessCapabilities::Enum mDeviceCapabilities;
-	QByteArray mSsid;
-
-	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bMaxSignal, &NMWirelessNetwork::signalStrengthChanged);
-	// clang-format on
+	QString mSsid;
+	QHash<QString, NMAccessPoint*> mAccessPoints;
+	QHash<QString, NMConnectionSettings*> mConnections;
+	NMActiveConnection* mActiveConnection = nullptr;
+	NMAccessPoint* mReferenceAp = nullptr;
+	NMConnectionSettings* mReferenceConn = nullptr;
+	NMConnectionState::Enum mState = NMConnectionState::Deactivated;
+	NMConnectionStateReason::Enum mReason = NMConnectionStateReason::None;
+	NMWirelessSecurityType::Enum mSecurity = NMWirelessSecurityType::None;
+	quint8 mSignalStrength = 0;
+	bool mKnown = false;
+	bool mActive = false;
 };
 
-// NMWirelessAdapter wraps the state of a NetworkManager wireless device
-// (org.freedesktop.NetworkManager.Device.Wireless), provides signals/slots that connect to a
-// frontend NetworkWifiDevice, and creates/destroys NMAccessPointAdapters and NMAccessPointGroups
-class NMWirelessAdapter: public QObject {
+// Proxy of a /org/freedesktop/NetworkManager/Device/* object.
+// Extends NMDevice to also include members from the org.freedesktop.NetworkManager.Device.Wireless interface
+// Owns the lifetime of NMAccessPoints(s), NMWirelessNetwork(s), frontend WifiNetwork(s).
+class NMWirelessDevice: public NMDevice {
 	Q_OBJECT;
 
 public:
-	explicit NMWirelessAdapter(const QString& path, QObject* parent = nullptr);
+	explicit NMWirelessDevice(const QString& path, QObject* parent = nullptr);
 
-	void init();
-	void registerAccessPoint(const QString& path);
-	void registerAccessPoints();
-	void addApToNetwork(NMAccessPointAdapter* ap, const QByteArray& ssid);
-	void removeApFromNetwork(NMAccessPointAdapter* ap);
-
-	[[nodiscard]] bool isValid() const;
-	[[nodiscard]] QString path() const;
-	[[nodiscard]] QString address() const;
+	[[nodiscard]] bool isWirelessValid() const;
 	[[nodiscard]] qint64 getLastScan() { return this->bLastScan; };
-	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
 
 public slots:
@@ -91,61 +101,44 @@ public slots:
 
 signals:
 	void lastScanChanged(qint64 lastScan);
-	void activeApChanged(const QDBusObjectPath& path);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
-
-	void networkAdded(NMWirelessNetwork* network);
-	void networkRemoved(NMWirelessNetwork* network);
+	void accessPointLoaded(NMAccessPoint* ap);
+	void accessPointRemoved(NMAccessPoint* ap);
+	void wifiNetworkAdded(WifiNetwork* net);
+	void wifiNetworkRemoved(WifiNetwork* net);
+	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
+	void addAndActivateConnection(
+	    const ConnectionSettingsMap& settings,
+	    const QDBusObjectPath& devPath,
+	    const QDBusObjectPath& apPath
+	);
 
 private slots:
-	void onAccessPointAdded(const QDBusObjectPath& path);
-	void onAccessPointRemoved(const QDBusObjectPath& path);
-	void onAccessPointReady(NMAccessPointAdapter* ap);
+	void onAccessPointPathAdded(const QDBusObjectPath& path);
+	void onAccessPointPathRemoved(const QDBusObjectPath& path);
+	void onAccessPointLoaded(NMAccessPoint* ap);
+	void onConnectionLoaded(NMConnectionSettings* conn);
+	void onActiveConnectionLoaded(NMActiveConnection* active);
 
 private:
-	//  Lookups: NMAccessPointAdapter <-> NMWifiNetwork
-	QHash<QString, NMAccessPointAdapter*> mApMap;      // AP Path -> NMAccessPointAdapter*
-	QHash<QString, QByteArray> mSsidMap;               // AP Path -> Ssid
-	QHash<QByteArray, NMWirelessNetwork*> mNetworkMap; // Ssid -> NMAccessPointGroup*
+	void registerAccessPoint(const QString& path);
+	void registerAccessPoints();
+	void initWireless();
+	NMWirelessNetwork* registerNetwork(const QString& ssid);
+
+	QHash<QString, NMAccessPoint*> mAccessPoints;
+	QHash<QString, NMWirelessNetwork*> mBackendNetworks;
 
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessAdapter, qint64, bLastScan, &NMWirelessAdapter::lastScanChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessAdapter, QDBusObjectPath, bActiveAccessPoint, &NMWirelessAdapter::activeApChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessAdapter, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessAdapter::capabilitiesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, qint64, bLastScan, &NMWirelessDevice::lastScanChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessDevice::capabilitiesChanged);
 	
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWirelessAdapter, wirelessProperties);
-	QS_DBUS_PROPERTY_BINDING(NMWirelessAdapter, pLastScan, bLastScan, wirelessProperties, "LastScan");
-	QS_DBUS_PROPERTY_BINDING(NMWirelessAdapter, pActiveAccessPoint, bActiveAccessPoint, wirelessProperties, "ActiveAccessPoint");
-	QS_DBUS_PROPERTY_BINDING(NMWirelessAdapter, pCapabilities, bCapabilities, wirelessProperties, "WirelessCapabilities");
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWireless, wirelessProperties);
+	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pLastScan, bLastScan, wirelessProperties, "LastScan");
+	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pCapabilities, bCapabilities, wirelessProperties, "WirelessCapabilities");
 	// clang-format on
 
-	DBusNMWirelessProxy* proxy = nullptr;
-};
-
-// NMWirelessManager processes the incoming/outgoing connections (NMDeviceAdapter) and wifi
-// networks (NMWirelessAdapter), and merges them into WifiItems for the frontend.
-class NMWirelessManager: public QObject {
-	Q_OBJECT;
-
-public:
-	explicit NMWirelessManager(QObject* parent = nullptr);
-
-public slots:
-	void connectionLoaded(NMConnectionSettingsAdapter* connection);
-	void connectionRemoved(NMConnectionSettingsAdapter* connection);
-	void networkAdded(NMWirelessNetwork* nmNetwork);
-	void networkRemoved(NMWirelessNetwork* nmNetwork);
-
-signals:
-	void wifiNetworkAdded(WifiNetwork* network);
-	void wifiNetworkRemoved(WifiNetwork* network);
-
-private:
-	// Lookups to help merge 1:1 connection:item relation and 1:many network:item relation.
-	QHash<QString, NMWirelessNetwork*> mNetworkMap;      // Ssid -> NMWirelessNetwork
-	QHash<QString, NMConnectionSettingsAdapter*> mConnectionMap; // Uuid -> NMConnectionAdapter
-	QHash<QString, WifiNetwork*> mUuidToItem;            // Uuid -> WifiNetwork
-	QMultiHash<QString, WifiNetwork*> mSsidToItem;       // Ssid -> WifiNetwork
+	DBusNMWirelessProxy* wirelessProxy = nullptr;
 };
 
 } // namespace qs::network
