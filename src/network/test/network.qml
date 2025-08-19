@@ -136,19 +136,21 @@ FloatingWindow {
 							}
 							Text { 
 								text: NMWirelessSecurityType.toString(modelData.nmSecurity)
-								Layout.preferredWidth: 80
+								Layout.preferredWidth: 100
 								horizontalAlignment: Text.AlignRight
 								elide: Text.ElideLeft
 							}
 							Text { 
-								text: modelData.known ? "KNOWN" : ""
-								Layout.preferredWidth: 50
+								text: modelData.known ? "Known" : ""
 								horizontalAlignment: Text.AlignLeft
 								elide: Text.ElideRight
 							}
 							Text {
 								text: modelData.signalStrength + "%"	
-								Layout.preferredWidth: 25
+								horizontalAlignment: Text.AlignLeft
+							}
+							Text {
+								text: NetworkConnectionState.toString(modelData.state)
 								horizontalAlignment: Text.AlignLeft
 							}
 						}

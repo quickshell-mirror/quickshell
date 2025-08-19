@@ -118,7 +118,6 @@ void Wifi::onEnabledSet(bool enabled) {
 void Wifi::setDefaultDevice(WifiDevice* dev) {
 	if (this->mDefaultDevice == dev) return;
 	this->mDefaultDevice = dev;
-	qCDebug(logWifi) << "Default device set to" << dev->name();
 	emit this->defaultDeviceChanged();
 }
 

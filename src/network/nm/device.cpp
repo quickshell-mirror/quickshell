@@ -61,8 +61,7 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 	if (stringPath != "/") {
 		auto* active = new NMActiveConnection(stringPath, this);
 		this->mActiveConnection = active;
-		qCDebug(logNetworkManager) << "Registered active connection" << stringPath;
-				QObject::connect(
+		QObject::connect(
 		    active,
 		    &NMActiveConnection::ready,
 		    this,
