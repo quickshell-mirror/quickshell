@@ -102,6 +102,7 @@ public slots:
 signals:
 	void lastScanChanged(qint64 lastScan);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
+	void activeAccessPointChanged(const QDBusObjectPath& path);
 	void accessPointLoaded(NMAccessPoint* ap);
 	void accessPointRemoved(NMAccessPoint* ap);
 	void wifiNetworkAdded(WifiNetwork* net);
@@ -116,6 +117,7 @@ signals:
 private slots:
 	void onAccessPointPathAdded(const QDBusObjectPath& path);
 	void onAccessPointPathRemoved(const QDBusObjectPath& path);
+	void onActiveAccessPointChanged(const QDBusObjectPath& path);
 	void onAccessPointLoaded(NMAccessPoint* ap);
 	void onConnectionLoaded(NMConnectionSettings* conn);
 	void onActiveConnectionLoaded(NMActiveConnection* active);
@@ -126,16 +128,19 @@ private:
 	void initWireless();
 	NMWirelessNetwork* registerNetwork(const QString& ssid);
 
+	QString mActiveApPath;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMWirelessNetwork*> mBackendNetworks;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, qint64, bLastScan, &NMWirelessDevice::lastScanChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessDevice::capabilitiesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDBusObjectPath, bActiveAccessPoint, &NMWirelessDevice::activeAccessPointChanged);
 	
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWireless, wirelessProperties);
 	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pLastScan, bLastScan, wirelessProperties, "LastScan");
 	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pCapabilities, bCapabilities, wirelessProperties, "WirelessCapabilities");
+	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pActiveAccessPoint, bActiveAccessPoint, wirelessProperties, "ActiveAccessPoint");
 	// clang-format on
 
 	DBusNMWirelessProxy* wirelessProxy = nullptr;
