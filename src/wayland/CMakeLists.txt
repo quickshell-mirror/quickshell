@@ -114,6 +114,11 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
+if (INPUT_METHOD)
+	add_subdirectory(input_method)
+	list(APPEND WAYLAND_MODULES Quickshell.Wayland._InputMethod)
+endif()
+
 add_subdirectory(idle_inhibit)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleInhibitor)
 
