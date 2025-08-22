@@ -114,6 +114,11 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
+if (INPUT_METHOD)
+	add_subdirectory(input_method)
+	list(APPEND WAYLAND_MODULES Quickshell.Wayland._InputMethod)
+endif()
+
 # widgets for qmenu
 target_link_libraries(quickshell-wayland PRIVATE
 	Qt::Quick Qt::Widgets Qt::WaylandClient Qt::WaylandClientPrivate
