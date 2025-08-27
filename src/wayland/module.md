@@ -5,5 +5,6 @@ headers = [
 	"session_lock.hpp",
 	"toplevel_management/qml.hpp",
 	"screencopy/view.hpp",
+	"idle_inhibit/inhibitor.hpp",
 ]
 -----
