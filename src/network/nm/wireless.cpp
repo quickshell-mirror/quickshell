@@ -62,6 +62,11 @@ void NMWirelessNetwork::updateReferenceConnection() {
 	}
 }
 
+void NMWirelessNetwork::setActiveApPath(const QDBusObjectPath& path) {
+	if (this->mActiveApPath == path) return;
+	this->mActiveApPath = path;
+}
+
 void NMWirelessNetwork::setState(NMConnectionState::Enum state) {
 	if (this->mState == state) return;
 	this->mState = state;
@@ -85,15 +90,11 @@ void NMWirelessNetwork::updateSignalStrength() {
 	NMAccessPoint* selectedAp = nullptr;
 
 	for (auto* ap: this->mAccessPoints.values()) {
-		if (ap->active()) {
-			selectedStrength = ap->signalStrength();
-			selectedAp = ap;
-			break;
-		}
 		if (selectedStrength <= ap->signalStrength()) {
 			selectedStrength = ap->signalStrength();
 			selectedAp = ap;
 		}
+		if (ap->path() == this->mActiveApPath.path()) break;
 	}
 
 	if (selectedStrength != this->mSignalStrength) {
@@ -217,20 +218,8 @@ void NMWirelessDevice::initWireless() {
 	QObject::connect(this, &NMWirelessDevice::accessPointLoaded, this, &NMWirelessDevice::onAccessPointLoaded);
 	QObject::connect(this, &NMWirelessDevice::connectionLoaded, this, &NMWirelessDevice::onConnectionLoaded);
 	QObject::connect(this, &NMWirelessDevice::activeConnectionLoaded, this, &NMWirelessDevice::onActiveConnectionLoaded);
-	QObject::connect(this, &NMWirelessDevice::activeAccessPointChanged, this, &NMWirelessDevice::onActiveAccessPointChanged);
 	// clang-format on
 	this->registerAccessPoints();
-}
-
-void NMWirelessDevice::onActiveAccessPointChanged(const QDBusObjectPath& path) {
-	// Make previous AP inactive
-	auto* prevAp = this->mAccessPoints.value(this->mActiveApPath);
-	if (prevAp) prevAp->setActive(false);
-
-	// Make current AP active
-	this->mActiveApPath = path.path();
-	auto* curAp = this->mAccessPoints.value(path.path());
-	if (curAp) curAp->setActive(true);
 }
 
 void NMWirelessDevice::onAccessPointPathAdded(const QDBusObjectPath& path) {
@@ -279,7 +268,6 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 	}
 
 	auto* ap = new NMAccessPoint(path, this->capabilities(), this);
-	if (ap->path() == this->mActiveApPath) ap->setActive(true);
 
 	if (!ap->isValid()) {
 		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
@@ -298,9 +286,13 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 }
 
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
-	auto* frontend = new WifiNetwork(ssid, this);
 	auto* backend = new NMWirelessNetwork(ssid, this);
+	// clang-format off
+	backend->setActiveApPath(this->activeApPath());
+	QObject::connect(this, &NMWirelessDevice::activeAccessPointChanged, backend, &NMWirelessNetwork::setActiveApPath);
+	// clang-format on
 
+	auto* frontend = new WifiNetwork(ssid, this);
 	// clang-format off
 	frontend->setSignalStrength(backend->signalStrength());
 	frontend->setState(static_cast<NetworkConnectionState::Enum>(backend->state()));
