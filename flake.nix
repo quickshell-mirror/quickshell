@@ -10,10 +10,10 @@
         (system: fn system nixpkgs.legacyPackages.${system});
   in {
     packages = forEachSystem (system: pkgs: rec {
-      quickshell = pkgs.callPackage ./default.nix {
+      quickshell-unwrapped = pkgs.callPackage ./unwrapped.nix {
         gitRev = self.rev or self.dirtyRev;
       };
-
+      quickshell = pkgs.callPackage ./default.nix {inherit quickshell-unwrapped;};
       default = quickshell;
     });
 
