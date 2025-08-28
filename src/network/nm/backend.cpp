@@ -27,6 +27,8 @@ const QString NM_SERVICE = "org.freedesktop.NetworkManager";
 const QString NM_PATH = "/org/freedesktop/NetworkManager";
 
 NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
+	qDBusRegisterMetaType<ConnectionSettingsMap>();
+
 	auto bus = QDBusConnection::systemBus();
 	if (!bus.isConnected()) {
 		qCWarning(logNetworkManager

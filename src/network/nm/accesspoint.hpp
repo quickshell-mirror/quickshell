@@ -59,8 +59,6 @@ public:
 	[[nodiscard]] NM80211ApSecurityFlags::Enum rsnFlags() const { return this->bRsnFlags; };
 	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; };
 	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
-	[[nodiscard]] bool active() const { return this->mActive; };
-	void setActive(bool active) { this->mActive = active; };
 
 signals:
 	void ssidChanged(const QByteArray& ssid);

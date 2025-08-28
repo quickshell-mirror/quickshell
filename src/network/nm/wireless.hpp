@@ -56,10 +56,11 @@ public:
 	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); };
 
 public slots:
+	void setActiveApPath(const QDBusObjectPath& path);
 	void setState(NMConnectionState::Enum state);
 	void setReason(NMConnectionStateReason::Enum reason);
 	void setKnown(bool known);
-
+	
 signals:
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
@@ -73,6 +74,7 @@ private:
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
 	NMActiveConnection* mActiveConnection = nullptr;
+	QDBusObjectPath mActiveApPath;
 	NMAccessPoint* mReferenceAp = nullptr;
 	NMConnectionSettings* mReferenceConn = nullptr;
 	NMConnectionState::Enum mState = NMConnectionState::Deactivated;
@@ -95,6 +97,7 @@ public:
 	[[nodiscard]] bool isWirelessValid() const;
 	[[nodiscard]] qint64 getLastScan() { return this->bLastScan; };
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
+	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
 
 public slots:
 	void scan();
@@ -117,7 +120,6 @@ signals:
 private slots:
 	void onAccessPointPathAdded(const QDBusObjectPath& path);
 	void onAccessPointPathRemoved(const QDBusObjectPath& path);
-	void onActiveAccessPointChanged(const QDBusObjectPath& path);
 	void onAccessPointLoaded(NMAccessPoint* ap);
 	void onConnectionLoaded(NMConnectionSettings* conn);
 	void onActiveConnectionLoaded(NMActiveConnection* active);
@@ -128,7 +130,6 @@ private:
 	void initWireless();
 	NMWirelessNetwork* registerNetwork(const QString& ssid);
 
-	QString mActiveApPath;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMWirelessNetwork*> mBackendNetworks;
 
