@@ -1,0 +1,40 @@
+#include "network.hpp"
+
+#include <qdbusconnection.h>
+#include <qdbusconnectioninterface.h>
+#include <qdbusextratypes.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qdbusservicewatcher.h>
+#include <qlogging.h>
+
+#include "nm/backend.hpp"
+
+namespace qs::network {
+
+namespace {
+Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
+} // namespace
+
+Network::Network(QObject* parent): QObject(parent), mWifi(new Wifi(this)) {
+	// NetworkManager
+	auto* nm = new NetworkManager(this);
+	if (nm->isAvailable()) {
+		// clang-format off
+		QObject::connect(nm, &NetworkManager::wifiDeviceAdded, this->wifi(), &Wifi::onDeviceAdded);
+		QObject::connect(nm, &NetworkManager::wifiDeviceRemoved, this->wifi(), &Wifi::onDeviceRemoved);
+		QObject::connect(nm, &NetworkManager::wifiEnabledChanged, this->wifi(), &Wifi::onEnabledSet);
+		QObject::connect(nm, &NetworkManager::wifiHardwareEnabledChanged, this->wifi(), &Wifi::onHardwareEnabledSet);
+		QObject::connect(this->wifi(), &Wifi::requestSetEnabled, nm, &NetworkManager::setWifiEnabled);
+		// clang-format on
+		this->mBackend = nm;
+		this->mBackendType = NetworkBackendType::NetworkManager;
+		return;
+	} else {
+		delete nm;
+	}
+
+	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
+}
+
+} // namespace qs::network
