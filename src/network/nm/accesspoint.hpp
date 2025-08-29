@@ -1,12 +1,7 @@
 #pragma once
 
-#include <qcontainerfwd.h>
 #include <qdbusextratypes.h>
-#include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
-#include <qqmlintegration.h>
-#include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -46,7 +41,11 @@ class NMAccessPoint: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit NMAccessPoint(const QString& path, NMWirelessCapabilities::Enum caps, QObject* parent = nullptr);
+	explicit NMAccessPoint(
+	    const QString& path,
+	    NMWirelessCapabilities::Enum caps,
+	    QObject* parent = nullptr
+	);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
