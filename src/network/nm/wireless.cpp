@@ -1,12 +1,10 @@
 #include "wireless.hpp"
 
-#include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstring.h>
-#include <qtypes.h>
 
 #include "dbus_types.hpp"
 #include "nm/enums.hpp"
@@ -90,11 +88,18 @@ void NMWirelessNetwork::updateSignalStrength() {
 	NMAccessPoint* selectedAp = nullptr;
 
 	for (auto* ap: this->mAccessPoints.values()) {
+		// Always prefer the active AP if found.
+		if (ap->path() == this->mActiveApPath.path()) {
+			selectedStrength = ap->signalStrength();
+			selectedAp = ap;
+			break;
+		}
+
+		// Otherwise, track the strongest signal.
 		if (selectedStrength <= ap->signalStrength()) {
 			selectedStrength = ap->signalStrength();
 			selectedAp = ap;
 		}
-		if (ap->path() == this->mActiveApPath.path()) break;
 	}
 
 	if (selectedStrength != this->mSignalStrength) {
@@ -124,9 +129,7 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 
 void NMWirelessNetwork::removeAccessPoint(NMAccessPoint* ap) {
 	auto* found = this->mAccessPoints.take(ap->path());
-	if (!found) {
-		qCWarning(logNetworkManager) << "Backend network" << this->ssid() << "is not in sync!";
-	} else {
+	if (found) {
 		if (this->mAccessPoints.isEmpty()) {
 			emit this->disappeared();
 		} else {
@@ -149,9 +152,7 @@ void NMWirelessNetwork::addConnectionSettings(NMConnectionSettings* conn) {
 
 void NMWirelessNetwork::removeConnectionSettings(NMConnectionSettings* conn) {
 	auto* found = this->mConnections.take(conn->path());
-	if (!found) {
-		qCWarning(logNetworkManager) << "Backend network" << this->ssid() << "is not in sync!";
-	} else {
+	if (found) {
 		QObject::disconnect(conn, nullptr, this, nullptr);
 		this->updateReferenceConnection();
 		if (mConnections.isEmpty()) {
@@ -162,7 +163,6 @@ void NMWirelessNetwork::removeConnectionSettings(NMConnectionSettings* conn) {
 
 void NMWirelessNetwork::addActiveConnection(NMActiveConnection* active) {
 	if (this->mActiveConnection) {
-		qCWarning(logNetworkManager) << "Backend network" << this->ssid() << "is not in sync!";
 		return;
 	}
 	this->setState(active->state());
@@ -181,8 +181,6 @@ void NMWirelessNetwork::removeActiveConnection(NMActiveConnection* active) {
 		this->setState(NMConnectionState::Deactivated);
 		this->setReason(NMConnectionStateReason::None);
 		this->mActiveConnection = nullptr;
-	} else {
-		qCWarning(logNetworkManager) << "Backend network" << this->ssid() << "is not in sync!";
 	}
 };
 
@@ -228,13 +226,11 @@ void NMWirelessDevice::onAccessPointPathAdded(const QDBusObjectPath& path) {
 
 void NMWirelessDevice::onAccessPointPathRemoved(const QDBusObjectPath& path) {
 	auto* ap = mAccessPoints.take(path.path());
-
 	if (!ap) {
-		qCDebug(logNetworkManager) << "NetworkManager sent removal signal for" << path.path()
+		qCDebug(logNetworkManager) << "Sent removal signal for" << path.path()
 		                           << "which is not registered.";
 		return;
 	}
-
 	emit ap->disappeared();
 	delete ap;
 }
@@ -286,14 +282,12 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 }
 
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
-	auto* backend = new NMWirelessNetwork(ssid, this);
 	// clang-format off
+	auto* backend = new NMWirelessNetwork(ssid, this);
 	backend->setActiveApPath(this->activeApPath());
 	QObject::connect(this, &NMWirelessDevice::activeAccessPointChanged, backend, &NMWirelessNetwork::setActiveApPath);
-	// clang-format on
 
 	auto* frontend = new WifiNetwork(ssid, this);
-	// clang-format off
 	frontend->setSignalStrength(backend->signalStrength());
 	frontend->setState(static_cast<NetworkConnectionState::Enum>(backend->state()));
 	frontend->setKnown(backend->known());
@@ -347,7 +341,8 @@ void NMWirelessDevice::onAccessPointLoaded(NMAccessPoint* ap) {
 
 void NMWirelessDevice::onConnectionLoaded(NMConnectionSettings* conn) {
 	const ConnectionSettingsMap& settings = conn->settings();
-	// Early return for invalid connections
+	// Skip connections that have empty settings, 
+	// or who are this devices own hotspots.
 	if (settings["connection"]["id"].toString().isEmpty()
 	    || settings["connection"]["uuid"].toString().isEmpty()
 	    || !settings.contains("802-11-wireless")
@@ -369,10 +364,10 @@ void NMWirelessDevice::onConnectionLoaded(NMConnectionSettings* conn) {
 }
 
 void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	QString connPath = active->connection().path();
+	QString activeConnPath = active->connection().path();
 	for (auto* net: this->mBackendNetworks.values()) {
 		for (auto* conn: net->connections()) {
-			if (connPath == conn->path()) {
+			if (activeConnPath == conn->path()) {
 				net->addActiveConnection(active);
 				return;
 			}

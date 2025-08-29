@@ -1,12 +1,10 @@
 #include "device.hpp"
 
-#include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstring.h>
-#include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
 
