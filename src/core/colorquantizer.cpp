@@ -13,6 +13,7 @@
 #include <qnumeric.h>
 #include <qobject.h>
 #include <qqmllist.h>
+#include <qrect.h>
 #include <qrgb.h>
 #include <qthreadpool.h>
 #include <qtmetamacros.h>
@@ -24,9 +25,15 @@ namespace {
 QS_LOGGING_CATEGORY(logColorQuantizer, "quickshell.colorquantizer", QtWarningMsg);
 }
 
-ColorQuantizerOperation::ColorQuantizerOperation(QUrl* source, qreal depth, qreal rescaleSize)
+ColorQuantizerOperation::ColorQuantizerOperation(
+    QUrl* source,
+    qreal depth,
+    QRect imageRect,
+    qreal rescaleSize
+)
     : source(source)
     , maxDepth(depth)
+    , imageRect(imageRect)
     , rescaleSize(rescaleSize) {
 	setAutoDelete(false);
 }
@@ -37,6 +44,11 @@ void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCa
 	colors.clear();
 
 	auto image = QImage(source->toLocalFile());
+
+	if (imageRect.isValid()) {
+		image = image.copy(imageRect);
+	}
+
 	if ((image.width() > rescaleSize || image.height() > rescaleSize) && rescaleSize > 0) {
 		image = image.scaled(
 		    static_cast<int>(rescaleSize),
@@ -200,6 +212,15 @@ void ColorQuantizer::setDepth(qreal depth) {
 	}
 }
 
+void ColorQuantizer::setImageRect(QRect imageRect) {
+	if (mImageRect != imageRect) {
+		mImageRect = imageRect;
+		emit this->imageRectChanged();
+
+		if (this->componentCompleted) quantizeAsync();
+	}
+}
+
 void ColorQuantizer::setRescaleSize(int rescaleSize) {
 	if (mRescaleSize != rescaleSize) {
 		mRescaleSize = rescaleSize;
@@ -219,7 +240,7 @@ void ColorQuantizer::quantizeAsync() {
 	if (this->liveOperation) this->cancelAsync();
 
 	qCDebug(logColorQuantizer) << "Starting color quantization asynchronously";
-	this->liveOperation = new ColorQuantizerOperation(&mSource, mDepth, mRescaleSize);
+	this->liveOperation = new ColorQuantizerOperation(&mSource, mDepth, mImageRect, mRescaleSize);
 
 	QObject::connect(
 	    this->liveOperation,
