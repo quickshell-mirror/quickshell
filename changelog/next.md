@@ -29,6 +29,7 @@ set shell id.
 - Added generic WindowManager interface implementing ext-workspace.
 - Added ext-background-effect window blur support.
 - Added per-corner radius support to Region.
+- Added ColorQuantizer region selection.
 
 ## Other Changes
 
