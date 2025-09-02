@@ -24,9 +24,9 @@ HyprlandIpcQml::HyprlandIpcQml() {
 
 	QObject::connect(
 	    instance,
-	    &HyprlandIpc::focusedMonitorChanged,
+	    &HyprlandIpc::focusedWorkspaceChanged,
 	    this,
-	    &HyprlandIpcQml::focusedMonitorChanged
+	    &HyprlandIpcQml::focusedWorkspaceChanged
 	);
 
 	QObject::connect(
