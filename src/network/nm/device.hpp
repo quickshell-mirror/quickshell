@@ -26,7 +26,7 @@ namespace qs::network {
 
 // Proxy of a /org/freedesktop/NetworkManager/Device/* object.
 // Only the members from the org.freedesktop.NetworkManager.Device interface.
-// Owns the lifetime of NMAvailableConnection(s) and NMConnectionSetting(s).
+// Owns the lifetime of NMActiveConnection(s) and NMConnectionSetting(s).
 class NMDevice: public QObject {
 	Q_OBJECT;
 

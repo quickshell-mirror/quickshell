@@ -1,12 +1,7 @@
 #pragma once
 
-#include <qcontainerfwd.h>
-#include <qdbusextratypes.h>
-#include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -25,18 +20,18 @@ class WifiNetwork: public QObject {
 	Q_PROPERTY(QString ssid READ ssid CONSTANT);
 	/// The current signal strength of the network, in percent.
 	Q_PROPERTY(quint8 signalStrength READ signalStrength NOTIFY signalStrengthChanged);
-	/// The connection state of the wifi network.
-	Q_PROPERTY(NetworkConnectionState::Enum state READ state NOTIFY stateChanged);
+	/// True if the network is connected.
+	Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged);
 	/// True if the wifi network has known connection settings saved.
 	Q_PROPERTY(bool known READ known NOTIFY knownChanged);
-	/// The specific reason for the connection state when the backend is NetworkManager.
+	/// A specific reason for the connection state when the backend is NetworkManager.
 	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ nmReason NOTIFY nmReasonChanged);
 	/// The security type of the wifi network when the backend is NetworkManager.
 	Q_PROPERTY(NMWirelessSecurityType::Enum nmSecurity READ nmSecurity NOTIFY nmSecurityChanged);
 
 signals:
 	void signalStrengthChanged();
-	void stateChanged();
+	void connectedChanged();
 	void knownChanged();
 	void nmReasonChanged();
 	void nmSecurityChanged();
@@ -44,7 +39,7 @@ signals:
 
 public slots:
 	void setSignalStrength(quint8 signalStrength);
-	void setState(NetworkConnectionState::Enum state);
+	void setConnected(bool connected);
 	void setNmReason(NMConnectionStateReason::Enum reason);
 	void setNmSecurity(NMWirelessSecurityType::Enum security);
 	void setKnown(bool known);
@@ -57,7 +52,7 @@ public:
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
 	[[nodiscard]] quint8 signalStrength() const { return this->mSignalStrength; };
-	[[nodiscard]] NetworkConnectionState::Enum state() const { return this->mState; };
+	[[nodiscard]] bool connected() const { return this->mConnected; };
 	[[nodiscard]] NMConnectionStateReason::Enum nmReason() const { return this->mNmReason; };
 	[[nodiscard]] NMWirelessSecurityType::Enum nmSecurity() const { return this->mNmSecurity; };
 	[[nodiscard]] bool known() const { return this->mKnown; };
@@ -66,7 +61,7 @@ private:
 	QString mSsid;
 	quint8 mSignalStrength = 0;
 	bool mKnown = false;
-	NetworkConnectionState::Enum mState = NetworkConnectionState::Disconnected;
+	bool mConnected = false;
 	NMConnectionStateReason::Enum mNmReason = NMConnectionStateReason::Unknown;
 	NMWirelessSecurityType::Enum mNmSecurity = NMWirelessSecurityType::Unknown;
 };
@@ -158,3 +153,6 @@ private:
 };
 
 }; // namespace qs::network
+
+QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device);
+QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network);

@@ -1,4 +1,3 @@
-# NetworkManager DBus
 set_source_files_properties(nm/org.freedesktop.NetworkManager.xml PROPERTIES
 	CLASSNAME DBusNetworkManagerProxy
 	NO_NAMESPACE TRUE

@@ -21,6 +21,7 @@ struct DBusDataTransform<qs::network::NMConnectionState::Enum> {
 };
 
 } // namespace qs::dbus
+
 namespace qs::network {
 
 // Proxy of a /org/freedesktop/NetworkManager/Settings/Connection/* object.
@@ -34,11 +35,9 @@ public:
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
-	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
 	void settingsChanged(ConnectionSettingsMap settings);
-	void securityChanged(NMWirelessSecurityType::Enum security);
 	void ssidChanged(QString ssid);
 	void ready();
 	void disappeared();
@@ -47,9 +46,8 @@ private:
 	void updateSettings();
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, NMWirelessSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
-	// clang-format on
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
+	// clang-format on
 
 	DBusNMConnectionSettingsProxy* proxy = nullptr;
 };

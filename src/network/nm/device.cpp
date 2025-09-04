@@ -6,22 +6,14 @@
 #include <qobject.h>
 #include <qstring.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-
-namespace qs::dbus {
-
-DBusResult<qs::network::NMDeviceState::Enum>
-DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
-}
-
-} // namespace qs::dbus
 
 namespace qs::network {
 using namespace qs::dbus;
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
 NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
@@ -40,7 +32,7 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	// clang-format off
 	QObject::connect(this, &NMDevice::availableConnectionPathsChanged, this, &NMDevice::onAvailableConnectionPathsChanged);
 	QObject::connect(this, &NMDevice::activeConnectionPathChanged, this, &NMDevice::onActiveConnectionPathChanged);
-	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->deviceReady(); }, Qt::SingleShotConnection);
+	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, &NMDevice::deviceReady, Qt::SingleShotConnection);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->deviceProxy);
@@ -49,6 +41,8 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 	QString stringPath = path.path();
+
+	// Remove old active connection
 	if (this->mActiveConnection) {
 		QObject::disconnect(this->mActiveConnection, nullptr, this, nullptr);
 		emit this->mActiveConnection->disappeared();
@@ -56,16 +50,22 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 		this->mActiveConnection = nullptr;
 	}
 
+	// Create new active connection
 	if (stringPath != "/") {
 		auto* active = new NMActiveConnection(stringPath, this);
-		this->mActiveConnection = active;
-		QObject::connect(
-		    active,
-		    &NMActiveConnection::ready,
-		    this,
-		    [this, active]() { emit this->activeConnectionLoaded(active); },
-		    Qt::SingleShotConnection
-		);
+		if (!active->isValid()) {
+			qCWarning(logNetworkManager) << "Ignoring invalid registration of" << stringPath;
+			delete active;
+		} else {
+			this->mActiveConnection = active;
+			QObject::connect(
+			    active,
+			    &NMActiveConnection::ready,
+			    this,
+			    [this, active]() { emit this->activeConnectionLoaded(active); },
+			    Qt::SingleShotConnection
+			);
+		}
 	}
 }
 
@@ -119,3 +119,12 @@ QString NMDevice::address() const {
 QString NMDevice::path() const { return this->deviceProxy ? this->deviceProxy->path() : QString(); }
 
 } // namespace qs::network
+
+namespace qs::dbus {
+
+DBusResult<qs::network::NMDeviceState::Enum>
+DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
+}
+
+} // namespace qs::dbus
