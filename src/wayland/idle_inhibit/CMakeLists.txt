@@ -13,7 +13,7 @@ install_qml_module(quickshell-wayland-idle-inhibit)
 
 qs_add_module_deps_light(quickshell-wayland-idle-inhibit Quickshell)
 
-wl_proto(wlp-idle-inhibit idle-inhibit-unstable-v1 "${CMAKE_CURRENT_SOURCE_DIR}")
+wl_proto(wlp-idle-inhibit idle-inhibit-unstable-v1 "${WAYLAND_PROTOCOLS}/unstable/idle-inhibit")
 
 target_link_libraries(quickshell-wayland-idle-inhibit PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
