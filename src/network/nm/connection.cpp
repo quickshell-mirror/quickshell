@@ -6,23 +6,14 @@
 #include <qobject.h>
 #include <qstring.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "nm/utils.hpp"
-
-namespace qs::dbus {
-
-DBusResult<qs::network::NMConnectionState::Enum>
-DBusDataTransform<qs::network::NMConnectionState::Enum>::fromWire(quint32 wire) {
-	return DBusResult(static_cast<qs::network::NMConnectionState::Enum>(wire));
-}
-
-} // namespace qs::dbus
 
 namespace qs::network {
 using namespace qs::dbus;
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
 // NMConnectionAdapter
@@ -42,11 +33,13 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 		return;
 	}
 
-	// clang-format off
-	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::updateSettings);
-	bSecurity.setBinding([&] { return securityFromConnectionSettings(this->bSettings); });
-	// clang-format on
-	//
+	QObject::connect(
+	    this->proxy,
+	    &DBusNMConnectionSettingsProxy::Updated,
+	    this,
+	    &NMConnectionSettings::updateSettings
+	);
+
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
 
@@ -94,7 +87,7 @@ NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QO
 	}
 
 	// clang-format off
-	QObject::connect(&this->activeConnectionProperties, &DBusPropertyGroup::getAllFinished, this, [this]() { emit this->ready(); }, Qt::SingleShotConnection);
+	QObject::connect(&this->activeConnectionProperties, &DBusPropertyGroup::getAllFinished, this, &NMActiveConnection::ready, Qt::SingleShotConnection);
 	QObject::connect(this->proxy, &DBusNMActiveConnectionProxy::StateChanged, this, &NMActiveConnection::onStateChanged);
 	// clang-format on
 
@@ -104,10 +97,9 @@ NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QO
 
 void NMActiveConnection::onStateChanged(quint32 /*state*/, quint32 reason) {
 	auto enumReason = static_cast<NMConnectionStateReason::Enum>(reason);
-	if (this->mStateReason != enumReason) {
-		this->mStateReason = enumReason;
-		emit this->stateReasonChanged(enumReason);
-	}
+	if (this->mStateReason == enumReason) return;
+	this->mStateReason = enumReason;
+	emit this->stateReasonChanged(enumReason);
 }
 
 bool NMActiveConnection::isValid() const { return this->proxy && this->proxy->isValid(); }
@@ -117,3 +109,12 @@ QString NMActiveConnection::address() const {
 QString NMActiveConnection::path() const { return this->proxy ? this->proxy->path() : QString(); }
 
 } // namespace qs::network
+
+namespace qs::dbus {
+
+DBusResult<qs::network::NMConnectionState::Enum>
+DBusDataTransform<qs::network::NMConnectionState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMConnectionState::Enum>(wire));
+}
+
+} // namespace qs::dbus

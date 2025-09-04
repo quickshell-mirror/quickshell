@@ -41,23 +41,17 @@ class NMAccessPoint: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit NMAccessPoint(
-	    const QString& path,
-	    NMWirelessCapabilities::Enum caps,
-	    QObject* parent = nullptr
-	);
+	explicit NMAccessPoint(const QString& path, QObject* parent = nullptr);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QByteArray ssid() const { return this->bSsid; };
-	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() const { return this->mCaps; };
 	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
 	[[nodiscard]] NM80211ApFlags::Enum flags() const { return this->bFlags; };
 	[[nodiscard]] NM80211ApSecurityFlags::Enum wpaFlags() const { return this->bWpaFlags; };
 	[[nodiscard]] NM80211ApSecurityFlags::Enum rsnFlags() const { return this->bRsnFlags; };
 	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; };
-	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
 	void ssidChanged(const QByteArray& ssid);
@@ -65,13 +59,11 @@ signals:
 	void wpaFlagsChanged(NM80211ApSecurityFlags::Enum wpaFlags);
 	void rsnFlagsChanged(NM80211ApSecurityFlags::Enum rsnFlags);
 	void flagsChanged(NM80211ApFlags::Enum flags);
-	void securityChanged(NMWirelessSecurityType::Enum security);
 	void modeChanged(NM80211Mode::Enum mode);
 	void ready();
 	void disappeared();
 
 private:
-	NMWirelessCapabilities::Enum mCaps;
 	bool mActive = false;
 
 	// clang-format off
@@ -81,7 +73,6 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211ApSecurityFlags::Enum, bWpaFlags, &NMAccessPoint::wpaFlagsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211ApSecurityFlags::Enum, bRsnFlags, &NMAccessPoint::rsnFlagsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211Mode::Enum, bMode, &NMAccessPoint::modeChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NMWirelessSecurityType::Enum, bSecurity, &NMAccessPoint::securityChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMAccessPointAdapter, accessPointProperties);
 	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pSsid, bSsid, accessPointProperties, "Ssid");

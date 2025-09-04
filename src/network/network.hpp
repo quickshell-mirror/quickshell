@@ -1,12 +1,7 @@
 #pragma once
 
-#include <qcontainerfwd.h>
-#include <qdbusextratypes.h>
-#include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -22,9 +17,7 @@ class NetworkBackendType: public QObject {
 
 public:
 	enum Enum : quint8 {
-		/// There is no available Network backend.
 		None = 0,
-		/// The backend is NetworkManager.
 		NetworkManager = 1,
 	};
 	Q_ENUM(Enum);
@@ -49,9 +42,9 @@ class Network: public QObject {
 	QML_SINGLETON;
 
 	/// The wifi device service.
-	Q_PROPERTY(Wifi* wifi READ wifi CONSTANT);
+	Q_PROPERTY(qs::network::Wifi* wifi READ wifi CONSTANT);
 	/// The backend being used to power the Network service.
-	Q_PROPERTY(NetworkBackendType::Enum backend READ backend);
+	Q_PROPERTY(qs::network::NetworkBackendType::Enum backend READ backend CONSTANT);
 
 public:
 	explicit Network(QObject* parent = nullptr);

@@ -1,19 +1,16 @@
 #include "wifi.hpp"
 
-#include <qdbusconnection.h>
-#include <qdbusconnectioninterface.h>
-#include <qdbusextratypes.h>
-#include <qdbuspendingcall.h>
-#include <qdbuspendingreply.h>
-#include <qdbusservicewatcher.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
+
+#include "../core/logcat.hpp"
 
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logWifiDevice, "quickshell.wifi.device", QtWarningMsg);
-Q_LOGGING_CATEGORY(logWifiNetwork, "quickshell.wifi.network", QtWarningMsg);
-Q_LOGGING_CATEGORY(logWifi, "quickshell.wifi", QtWarningMsg);
+QS_LOGGING_CATEGORY(logWifiDevice, "quickshell.wifi.device", QtWarningMsg);
+QS_LOGGING_CATEGORY(logWifiNetwork, "quickshell.wifi.network", QtWarningMsg);
+QS_LOGGING_CATEGORY(logWifi, "quickshell.wifi", QtWarningMsg);
 } // namespace
 
 WifiDevice::WifiDevice(QObject* parent): NetworkDevice(parent) {};
@@ -27,11 +24,11 @@ void WifiDevice::scanComplete() {
 
 void WifiDevice::scan() {
 	if (this->mScanning) {
-		qCCritical(logWifiDevice) << "Wireless device" << this->name() << "is already scanning";
+		qCCritical(logWifiDevice) << this << "is already scanning";
 		return;
 	}
 
-	qCDebug(logWifiDevice) << "Requesting scan on wireless device" << this->name();
+	qCDebug(logWifiDevice) << "Requesting scan on" << this;
 	this->mScanning = true;
 	emit this->scanningChanged();
 	this->requestScan();
@@ -48,10 +45,10 @@ void WifiNetwork::setSignalStrength(quint8 signal) {
 	emit this->signalStrengthChanged();
 }
 
-void WifiNetwork::setState(NetworkConnectionState::Enum state) {
-	if (this->mState == state) return;
-	this->mState = state;
-	emit this->stateChanged();
+void WifiNetwork::setConnected(bool connected) {
+	if (this->mConnected == connected) return;
+	this->mConnected = connected;
+	emit this->connectedChanged();
 }
 
 void WifiNetwork::setKnown(bool known) {
@@ -61,12 +58,8 @@ void WifiNetwork::setKnown(bool known) {
 }
 
 void WifiNetwork::connect() {
-	if (this->mState == NetworkConnectionState::Connected) {
-		qCCritical(logWifiNetwork) << this->ssid() << "is already connected.";
-		return;
-	}
-	if (this->mState == NetworkConnectionState::Connecting) {
-		qCCritical(logWifiNetwork) << this->ssid() << "is already connecting.";
+	if (this->mConnected) {
+		qCCritical(logWifiNetwork) << this << "is already connected.";
 		return;
 	}
 	this->requestConnect();
@@ -122,3 +115,29 @@ void Wifi::setDefaultDevice(WifiDevice* dev) {
 }
 
 } // namespace qs::network
+
+QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device) {
+	auto saver = QDebugStateSaver(debug);
+
+	if (device) {
+		debug.nospace() << "WifiDevice(" << static_cast<const void*>(device)
+		                << ", name=" << device->name() << ")";
+	} else {
+		debug << "WifiDevice(nullptr)";
+	}
+
+	return debug;
+}
+
+QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network) {
+	auto saver = QDebugStateSaver(debug);
+
+	if (network) {
+		debug.nospace() << "WifiNetwork(" << static_cast<const void*>(network)
+		                << ", name=" << network->ssid() << ")";
+	} else {
+		debug << "WifiDevice(nullptr)";
+	}
+
+	return debug;
+}

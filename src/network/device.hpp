@@ -1,12 +1,7 @@
 #pragma once
 
-#include <qcontainerfwd.h>
-#include <qdbusextratypes.h>
-#include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -38,9 +33,9 @@ class NetworkDevice: public QObject {
 	QML_ELEMENT;
 	QML_UNCREATABLE("Devices can only be acquired through Network");
 
-	/// The name of the device's interface.
+	/// The name of the device's control interface.
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
-	/// The hardware address of the device's interface in the XX:XX:XX:XX:XX:XX format.
+	/// The hardware address of the device in the XX:XX:XX:XX:XX:XX format.
 	Q_PROPERTY(QString address READ address NOTIFY addressChanged);
 	/// Connection state of the device.
 	Q_PROPERTY(NetworkConnectionState::Enum state READ state NOTIFY stateChanged);
@@ -79,3 +74,5 @@ private:
 };
 
 } // namespace qs::network
+
+QDebug operator<<(QDebug debug, const qs::network::NetworkDevice* device);

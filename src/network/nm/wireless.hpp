@@ -24,28 +24,22 @@ struct DBusDataTransform<qs::network::NMWirelessCapabilities::Enum> {
 } // namespace qs::dbus
 namespace qs::network {
 
-// NMWirelessNetwork aggregates all NMActiveConnection, NMAccessPoint, 
-// and NMConnectionSetting objects with the same ssid.
+// NMWirelessNetwork aggregates all related NMActiveConnection, NMAccessPoint, and NMConnectionSetting objects.
 class NMWirelessNetwork: public QObject {
 	Q_OBJECT;
 
 public:
 	explicit NMWirelessNetwork(QString ssid, QObject* parent = nullptr);
 	void addAccessPoint(NMAccessPoint* ap);
-	void removeAccessPoint(NMAccessPoint* ap);
 	void addConnectionSettings(NMConnectionSettings* conn);
-	void removeConnectionSettings(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
-	void removeActiveConnection(NMActiveConnection* active);
-	void updateSignalStrength();
-	void updateReferenceConnection();
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
-	[[nodiscard]] quint8 signalStrength() const { return this->mSignalStrength; };
-	[[nodiscard]] NMConnectionState::Enum state() const { return this->mState; };
-	[[nodiscard]] bool known() const { return this->mKnown; };
-	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->mReason; };
-	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->mSecurity; };
+	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
+	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
+	[[nodiscard]] bool known() const { return this->bKnown; };
+	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->bReason; };
+	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
 	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
@@ -55,7 +49,7 @@ public slots:
 	void setActiveApPath(const QDBusObjectPath& path);
 	void setState(NMConnectionState::Enum state);
 	void setReason(NMConnectionStateReason::Enum reason);
-	void setKnown(bool known);
+	void setCaps(NMWirelessCapabilities::Enum caps);
 	
 signals:
 	void signalStrengthChanged(quint8 signal);
@@ -67,18 +61,27 @@ signals:
 
 private:
 	QString mSsid;
+	QDBusObjectPath mActiveApPath;
+	NMWirelessCapabilities::Enum mCaps = NMWirelessCapabilities::None;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
 	NMActiveConnection* mActiveConnection = nullptr;
-	QDBusObjectPath mActiveApPath;
-	NMAccessPoint* mReferenceAp = nullptr;
 	NMConnectionSettings* mReferenceConn = nullptr;
-	NMConnectionState::Enum mState = NMConnectionState::Deactivated;
-	NMConnectionStateReason::Enum mReason = NMConnectionStateReason::None;
-	NMWirelessSecurityType::Enum mSecurity = NMWirelessSecurityType::None;
-	quint8 mSignalStrength = 0;
-	bool mKnown = false;
-	bool mActive = false;
+	NMAccessPoint* mReferenceAp = nullptr;
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bKnown, &NMWirelessNetwork::knownChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
+	// clang-format on
+	
+	void updateReferenceAp();
+	void updateReferenceConnection();
+	void removeAccessPoint(NMAccessPoint* ap);
+	void removeConnectionSettings(NMConnectionSettings* conn);
+	void removeActiveConnection(NMActiveConnection* active);
 };
 
 // Proxy of a /org/freedesktop/NetworkManager/Device/* object.

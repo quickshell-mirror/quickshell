@@ -56,18 +56,18 @@ public:
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(NMWirelessSecurityType::Enum type) {
 		switch (type) {
-		case Wpa3SuiteB192: return "WPA3 Suite B 192-bit";
-		case Sae: return "WPA3";
-		case Wpa2Eap: return "WPA2 Enterprise";
-		case Wpa2Psk: return "WPA2";
-		case WpaEap: return "WPA Enterprise";
-		case WpaPsk: return "WPA";
-		case StaticWep: return "WEP";
-		case DynamicWep: return "Dynamic WEP";
-		case Leap: return "LEAP";
-		case Owe: return "OWE";
-		case None: return "None";
-		default: return "Unknown";
+		case Wpa3SuiteB192: return QStringLiteral("WPA3 Suite B 192-bit");
+		case Sae: return QStringLiteral("WPA3");
+		case Wpa2Eap: return QStringLiteral("WPA2 Enterprise");
+		case Wpa2Psk: return QStringLiteral("WPA2");
+		case WpaEap: return QStringLiteral("WPA Enterprise");
+		case WpaPsk: return QStringLiteral("WPA");
+		case StaticWep: return QStringLiteral("WEP");
+		case DynamicWep: return QStringLiteral("Dynamic WEP");
+		case Leap: return QStringLiteral("LEAP");
+		case Owe: return QStringLiteral("OWE");
+		case None: return QStringLiteral("None");
+		default: return QStringLiteral("Unknown");
 		}
 	}
 };
@@ -75,6 +75,8 @@ public:
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceState.
 class NMDeviceState: public QObject {
 	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
 
 public:
 	enum Enum : quint8 {
@@ -93,6 +95,27 @@ public:
 		Failed = 120,
 	};
 	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NMDeviceState::Enum state) {
+		switch (state) {
+		case Unknown: return QStringLiteral("Unknown");
+		case Unmanaged: return QStringLiteral("Not managed by NetworkManager");
+		case Unavailable: return QStringLiteral("Unavailable");
+		case Disconnected: return QStringLiteral("Disconnected");
+		case Prepare: return QStringLiteral("Preparing to connect");
+		case Config: return QStringLiteral("Connecting to a network");
+		case NeedAuth: return QStringLiteral("Waiting for authentication");
+		case IPConfig: return QStringLiteral("Requesting IPv4 and/or IPv6 addresses from the network");
+		case IPCheck:
+			return QStringLiteral(
+			    "Checking whether further action is required for the requested connection"
+			);
+		case Secondaries:
+			return QStringLiteral("Waiting for a required secondary connection to activate");
+		case Activated: return QStringLiteral("Connected");
+		case Deactivating: return QStringLiteral("Disconnecting");
+		case Failed: return QStringLiteral("Failed to connect");
+		};
+	};
 };
 
 // Indicates the 802.11 mode an access point is currently in.

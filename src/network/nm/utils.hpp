@@ -27,7 +27,6 @@ bool deviceSupportsApCiphers(
 bool securityIsValid(
     NMWirelessSecurityType::Enum type,
     NMWirelessCapabilities::Enum caps,
-    bool haveAp,
     bool adhoc,
     NM80211ApFlags::Enum apFlags,
     NM80211ApSecurityFlags::Enum apWpa,
@@ -36,7 +35,6 @@ bool securityIsValid(
 
 NMWirelessSecurityType::Enum findBestWirelessSecurity(
     NMWirelessCapabilities::Enum caps,
-    bool haveAp,
     bool adHoc,
     NM80211ApFlags::Enum apFlags,
     NM80211ApSecurityFlags::Enum apWpa,

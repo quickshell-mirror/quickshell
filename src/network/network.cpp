@@ -1,19 +1,15 @@
 #include "network.hpp"
 
-#include <qdbusconnection.h>
-#include <qdbusconnectioninterface.h>
-#include <qdbusextratypes.h>
-#include <qdbuspendingcall.h>
-#include <qdbuspendingreply.h>
-#include <qdbusservicewatcher.h>
+#include <qloggingcategory.h>
 #include <qlogging.h>
 
+#include "../core/logcat.hpp"
 #include "nm/backend.hpp"
 
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
 
 Network::Network(QObject* parent): QObject(parent), mWifi(new Wifi(this)) {

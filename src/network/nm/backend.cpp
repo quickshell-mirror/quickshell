@@ -4,6 +4,7 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
@@ -14,11 +15,8 @@
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
-
-const QString NM_SERVICE = "org.freedesktop.NetworkManager";
-const QString NM_PATH = "/org/freedesktop/NetworkManager";
 
 NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	qDBusRegisterMetaType<ConnectionSettingsMap>();
@@ -30,11 +28,16 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 		return;
 	}
 
-	this->proxy = new DBusNetworkManagerProxy(NM_SERVICE, NM_PATH, bus, this);
+	this->proxy = new DBusNetworkManagerProxy(
+	    "org.freedesktop.NetworkManager",
+	    "/org/freedesktop/NetworkManager",
+	    bus,
+	    this
+	);
 
 	if (!this->proxy->isValid()) {
 		qCDebug(logNetworkManager
-		) << "NetworkManager service is not currently running. This network backend will not work";
+		) << "NetworkManager is not currently running. This network backend will not work";
 	} else {
 		this->init();
 	}
@@ -91,7 +94,7 @@ void NetworkManager::registerDevice(const QString& path) {
 	auto pending = introspection->asyncCall("Introspect");
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
-	auto responseCallback = [this, path](QDBusPendingCallWatcher* call) {
+	auto responseCallback = [this, path, introspection](QDBusPendingCallWatcher* call) {
 		const QDBusPendingReply<QString> reply = *call;
 
 		if (reply.isError()) {
@@ -112,6 +115,7 @@ void NetworkManager::registerDevice(const QString& path) {
 			}
 		}
 		delete call;
+		delete introspection;
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -150,9 +154,10 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	QObject::connect(wireless, &NMWirelessDevice::wifiNetworkAdded, device, &WifiDevice::networkAdded);
 	QObject::connect(wireless, &NMWirelessDevice::wifiNetworkRemoved, device, &WifiDevice::networkRemoved);
 	QObject::connect(device, &WifiDevice::requestScan, wireless, &NMWirelessDevice::scan);
+	QObject::connect(device, &WifiDevice::requestDisconnect, wireless, &NMWirelessDevice::disconnect);
 	// clang-format on
 
-	emit wifiDeviceAdded(device);
+	emit this->wifiDeviceAdded(device);
 }
 
 void NetworkManager::onDevicePathAdded(const QDBusObjectPath& path) {
@@ -162,14 +167,12 @@ void NetworkManager::onDevicePathAdded(const QDBusObjectPath& path) {
 void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
 	auto iter = this->mDeviceHash.find(path.path());
 	if (iter == this->mDeviceHash.end()) {
-		qCWarning(logNetworkManager) << "NetworkManager sent removal signal for" << path.path()
+		qCWarning(logNetworkManager) << "Sent removal signal for" << path.path()
 		                             << "which is not registered.";
 	} else {
 		auto* device = iter.value();
 		this->mDeviceHash.erase(iter);
-		if (auto* wifi = qobject_cast<WifiDevice*>(device)) {
-			emit wifiDeviceRemoved(wifi);
-		};
+		if (auto* wifi = qobject_cast<WifiDevice*>(device)) emit this->wifiDeviceRemoved(wifi);
 		delete device;
 	}
 }
@@ -185,8 +188,7 @@ void NetworkManager::activateConnection(
 		const QDBusPendingReply<QDBusObjectPath> reply = *call;
 
 		if (reply.isError()) {
-			qCWarning(logNetworkManager)
-			    << "Failed to request connection activation:" << reply.error().message();
+			qCWarning(logNetworkManager) << "Failed to activate connection:" << reply.error().message();
 		}
 		delete call;
 	};
@@ -206,7 +208,7 @@ void NetworkManager::addAndActivateConnection(
 
 		if (reply.isError()) {
 			qCWarning(logNetworkManager)
-			    << "Failed to start add and activate connection:" << reply.error().message();
+			    << "Failed to add and activate connection:" << reply.error().message();
 		}
 		delete call;
 	};

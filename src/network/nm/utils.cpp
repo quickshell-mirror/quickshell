@@ -34,21 +34,16 @@ NMWirelessSecurityType::Enum securityFromConnectionSettings(const ConnectionSett
 			return NMWirelessSecurityType::DynamicWep;
 		}
 	} else if (keyMgmt == "wpa-psk") {
-		if (proto.contains("wpa") && proto.contains("rsn")) {
-			return NMWirelessSecurityType::WpaPsk;
-		}
+		if (proto.contains("wpa") && proto.contains("rsn")) return NMWirelessSecurityType::WpaPsk;
 		return NMWirelessSecurityType::Wpa2Psk;
 	} else if (keyMgmt == "wpa-eap") {
-		if (proto.contains("wpa") && proto.contains("rsn")) {
-			return NMWirelessSecurityType::WpaEap;
-		}
+		if (proto.contains("wpa") && proto.contains("rsn")) return NMWirelessSecurityType::WpaEap;
 		return NMWirelessSecurityType::Wpa2Eap;
 	} else if (keyMgmt == "sae") {
 		return NMWirelessSecurityType::Sae;
 	} else if (keyMgmt == "wpa-eap-suite-b-192") {
 		return NMWirelessSecurityType::Wpa3SuiteB192;
 	}
-
 	return NMWirelessSecurityType::None;
 }
 
@@ -106,232 +101,125 @@ bool deviceSupportsApCiphers(
 bool securityIsValid(
     NMWirelessSecurityType::Enum type,
     NMWirelessCapabilities::Enum caps,
-    bool haveAp,
     bool adhoc,
     NM80211ApFlags::Enum apFlags,
     NM80211ApSecurityFlags::Enum apWpa,
     NM80211ApSecurityFlags::Enum apRsn
 ) {
-	bool good = true;
-
-	if (!haveAp) {
-		if (type == NMWirelessSecurityType::None) {
-			return true;
-		}
-		if ((type == NMWirelessSecurityType::StaticWep)
-		    || ((type == NMWirelessSecurityType::DynamicWep) && !adhoc)
-		    || ((type == NMWirelessSecurityType::Leap) && !adhoc))
-		{
-			return caps & NMWirelessCapabilities::CipherWep40
-			    || caps & NMWirelessCapabilities::CipherWep104;
-		}
-	}
-
 	switch (type) {
 	case NMWirelessSecurityType::None:
-		if (apFlags & NM80211ApFlags::Privacy) {
-			return false;
-		}
-		if (apWpa || apRsn) {
-			return false;
-		}
+		if (apFlags & NM80211ApFlags::Privacy) return false;
+		if (apWpa || apRsn) return false;
 		break;
 	case NMWirelessSecurityType::Leap:
-		if (adhoc) {
-			return false;
-		}
+		if (adhoc) return false;
 	case NMWirelessSecurityType::StaticWep:
-		if (!(apFlags & NM80211ApFlags::Privacy)) {
-			return false;
-		}
+		if (!(apFlags & NM80211ApFlags::Privacy)) return false;
 		if (apWpa || apRsn) {
 			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::StaticWep)) {
-				if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::StaticWep)) {
-					return false;
-				}
+				if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::StaticWep)) return false;
 			}
 		}
 		break;
 	case NMWirelessSecurityType::DynamicWep:
-		if (adhoc) {
-			return false;
-		}
-		if (apRsn || !(apFlags & NM80211ApFlags::Privacy)) {
-			return false;
-		}
+		if (adhoc) return false;
+		if (apRsn || !(apFlags & NM80211ApFlags::Privacy)) return false;
 		if (apWpa) {
-			if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) {
-				return false;
-			}
-			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::DynamicWep)) {
-				return false;
-			}
+			if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
+			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::DynamicWep)) return false;
 		}
 		break;
 	case NMWirelessSecurityType::WpaPsk:
-		if (adhoc) {
-			return false;
-		}
-
-		if (!(caps & NMWirelessCapabilities::Wpa)) {
-			return false;
-		}
-		if (haveAp) {
-			if (apWpa & NM80211ApSecurityFlags::KeyMgmtPsk) {
-				if (apWpa & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip) {
-					return true;
-				}
-				if (apWpa & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
-					return true;
-				}
+		if (adhoc) return false;
+		if (!(caps & NMWirelessCapabilities::Wpa)) return false;
+		if (apWpa & NM80211ApSecurityFlags::KeyMgmtPsk) {
+			if (apWpa & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip) {
+				return true;
 			}
-			return false;
+			if (apWpa & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
+				return true;
+			}
 		}
-		break;
+		return false;
 	case NMWirelessSecurityType::Wpa2Psk:
-		if (!(caps & NMWirelessCapabilities::Rsn)) {
-			return false;
-		}
-		if (haveAp) {
-			if (adhoc) {
-				if (!(caps & NMWirelessCapabilities::IbssRsn)) {
-					return false;
+		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
+		if (adhoc) {
+			if (!(caps & NMWirelessCapabilities::IbssRsn)) return false;
+			if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
+				return true;
+			}
+		} else {
+			if (apRsn & NM80211ApSecurityFlags::KeyMgmtPsk) {
+				if (apRsn & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip) {
+					return true;
 				}
 				if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
 					return true;
 				}
-			} else {
-				if (apRsn & NM80211ApSecurityFlags::KeyMgmtPsk) {
-					if (apRsn & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip)
-					{
-						return true;
-					}
-					if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp)
-					{
-						return true;
-					}
-				}
 			}
-			return false;
 		}
-		break;
+		return false;
 	case NMWirelessSecurityType::WpaEap:
-		if (adhoc) {
-			return false;
-		}
-		if (!(caps & NMWirelessCapabilities::Wpa)) {
-			return false;
-		}
-		if (haveAp) {
-			if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) {
-				return false;
-			}
-			// Ensure at least one WPA cipher is supported
-			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::WpaEap)) {
-				return false;
-			}
-		}
+		if (adhoc) return false;
+		if (!(caps & NMWirelessCapabilities::Wpa)) return false;
+		if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
+		if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::WpaEap)) return false;
 		break;
 	case NMWirelessSecurityType::Wpa2Eap:
-		if (adhoc) {
-			return false;
-		}
-		if (!(caps & NMWirelessCapabilities::Rsn)) {
-			return false;
-		}
-		if (haveAp) {
-			if (!(apRsn & NM80211ApSecurityFlags::KeyMgmt8021x)) {
-				return false;
-			}
-			// Ensure at least one WPA cipher is supported
-			if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::Wpa2Eap)) {
-				return false;
-			}
-		}
+		if (adhoc) return false;
+		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
+		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
+		if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::Wpa2Eap)) return false;
 		break;
 	case NMWirelessSecurityType::Sae:
-		if (!(caps & NMWirelessCapabilities::Rsn)) {
-			return false;
-		}
-		if (haveAp) {
-			if (adhoc) {
-				if (!(caps & NMWirelessCapabilities::IbssRsn)) {
-					return false;
+		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
+		if (adhoc) {
+			if (!(caps & NMWirelessCapabilities::IbssRsn)) return false;
+			if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
+				return true;
+			}
+		} else {
+			if (apRsn & NM80211ApSecurityFlags::KeyMgmtSae) {
+				if (apRsn & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip) {
+					return true;
 				}
 				if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp) {
 					return true;
 				}
-			} else {
-				if (apRsn & NM80211ApSecurityFlags::KeyMgmtSae) {
-					if (apRsn & NM80211ApSecurityFlags::PairTkip && caps & NMWirelessCapabilities::CipherTkip)
-					{
-						return true;
-					}
-					if (apRsn & NM80211ApSecurityFlags::PairCcmp && caps & NMWirelessCapabilities::CipherCcmp)
-					{
-						return true;
-					}
-				}
 			}
-			return false;
 		}
-		break;
+		return false;
 	case NMWirelessSecurityType::Owe:
-		if (adhoc) {
+		if (adhoc) return false;
+		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
+		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmtOwe)
+		    && !(apRsn & NM80211ApSecurityFlags::KeyMgmtOweTm))
+		{
 			return false;
-		}
-		if (!(caps & NMWirelessCapabilities::Rsn)) {
-			return false;
-		}
-		if (haveAp) {
-			if (!(apRsn & NM80211ApSecurityFlags::KeyMgmtOwe)
-			    && !(apRsn & NM80211ApSecurityFlags::KeyMgmtOweTm))
-			{
-				return false;
-			}
 		}
 		break;
 	case NMWirelessSecurityType::Wpa3SuiteB192:
-		if (adhoc) {
-			return false;
-		}
-		if (!(caps & NMWirelessCapabilities::Rsn)) {
-			return false;
-		}
-		if (haveAp && !(apRsn & NM80211ApSecurityFlags::KeyMgmtEapSuiteB192)) {
-			return false;
-		}
+		if (adhoc) return false;
+		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
+		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmtEapSuiteB192)) return false;
 		break;
-	default: good = false; break;
+	default: return false;
 	}
-
-	return good;
+	return true;
 }
 
 NMWirelessSecurityType::Enum findBestWirelessSecurity(
     NMWirelessCapabilities::Enum caps,
-    bool haveAp,
     bool adHoc,
     NM80211ApFlags::Enum apFlags,
     NM80211ApSecurityFlags::Enum apWpa,
     NM80211ApSecurityFlags::Enum apRsn
 ) {
-	const QList<NMWirelessSecurityType::Enum> types = {
-	    NMWirelessSecurityType::Wpa3SuiteB192,
-	    NMWirelessSecurityType::Sae,
-	    NMWirelessSecurityType::Wpa2Eap,
-	    NMWirelessSecurityType::Wpa2Psk,
-	    NMWirelessSecurityType::WpaEap,
-	    NMWirelessSecurityType::WpaPsk,
-	    NMWirelessSecurityType::StaticWep,
-	    NMWirelessSecurityType::DynamicWep,
-	    NMWirelessSecurityType::Leap,
-	    NMWirelessSecurityType::Owe,
-	    NMWirelessSecurityType::None
-	};
-
-	for (NMWirelessSecurityType::Enum type: types) {
-		if (securityIsValid(type, caps, haveAp, adHoc, apFlags, apWpa, apRsn)) {
+	// Loop through security types from most to least secure since the enum
+	// values are sequential and in priority order (0-10, excluding Unknown=11)
+	for (int i = NMWirelessSecurityType::Wpa3SuiteB192; i <= NMWirelessSecurityType::None; ++i) {
+		auto type = static_cast<NMWirelessSecurityType::Enum>(i);
+		if (securityIsValid(type, caps, adHoc, apFlags, apWpa, apRsn)) {
 			return type;
 		}
 	}

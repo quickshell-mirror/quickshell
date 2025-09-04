@@ -1,17 +1,14 @@
 #include "device.hpp"
 
-#include <qdbusconnection.h>
-#include <qdbusconnectioninterface.h>
-#include <qdbusextratypes.h>
-#include <qdbuspendingcall.h>
-#include <qdbuspendingreply.h>
-#include <qdbusservicewatcher.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
+
+#include "../core/logcat.hpp"
 
 namespace qs::network {
 
 namespace {
-Q_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
+QS_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
 } // namespace
 
 NetworkDevice::NetworkDevice(QObject* parent): QObject(parent) {};
@@ -55,13 +52,26 @@ void NetworkDevice::disconnect() {
 
 QString NetworkConnectionState::toString(NetworkConnectionState::Enum state) {
 	switch (state) {
-	case Unknown: return "Unknown";
-	case Connecting: return "Connecting";
-	case Connected: return "Connected";
-	case Disconnecting: return "Disconnecting";
-	case Disconnected: return "Disconnected";
+	case Unknown: return QStringLiteral("Unknown");
+	case Connecting: return QStringLiteral("Connecting");
+	case Connected: return QStringLiteral("Connected");
+	case Disconnecting: return QStringLiteral("Disconnecting");
+	case Disconnected: return QStringLiteral("Disconnected");
+	default: return QStringLiteral("Unknown");
 	}
-	return {};
 }
 
 } // namespace qs::network
+
+QDebug operator<<(QDebug debug, const qs::network::NetworkDevice* device) {
+	auto saver = QDebugStateSaver(debug);
+
+	if (device) {
+		debug.nospace() << "NetworkDevice(" << static_cast<const void*>(device)
+		                << ", name=" << device->name() << ")";
+	} else {
+		debug << "BluetoothDevice(nullptr)";
+	}
+
+	return debug;
+}
