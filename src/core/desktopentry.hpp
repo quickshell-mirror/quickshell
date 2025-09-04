@@ -6,35 +6,67 @@
 #include <qdir.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
+#include <qrunnable.h>
 #include <qtmetamacros.h>
 
+#include "desktopentrymonitor.hpp"
 #include "doc.hpp"
 #include "model.hpp"
 
 class DesktopAction;
+class DesktopEntryMonitor;
+
+struct DesktopActionData {
+	QString id;
+	QString name;
+	QString icon;
+	QString execString;
+	QVector<QString> command;
+	QHash<QString, QString> entries;
+};
+
+struct ParsedDesktopEntryData {
+	QString id;
+	QString name;
+	QString genericName;
+	QString startupClass;
+	bool noDisplay = false;
+	QString comment;
+	QString icon;
+	QString execString;
+	QVector<QString> command;
+	QString workingDirectory;
+	bool terminal = false;
+	QVector<QString> categories;
+	QVector<QString> keywords;
+	QHash<QString, QString> entries;
+	QHash<QString, DesktopActionData> actions;
+};
 
 /// A desktop entry. See @@DesktopEntries for details.
 class DesktopEntry: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
 	/// Name of the specific application, such as "Firefox".
-	Q_PROPERTY(QString name MEMBER mName CONSTANT);
+	// clang-format off
+	Q_PROPERTY(QString name READ default WRITE default NOTIFY nameChanged BINDABLE bindableName);
 	/// Short description of the application, such as "Web Browser". May be empty.
-	Q_PROPERTY(QString genericName MEMBER mGenericName CONSTANT);
+	Q_PROPERTY(QString genericName READ default WRITE default NOTIFY genericNameChanged BINDABLE bindableGenericName);
 	/// Initial class or app id the app intends to use. May be useful for matching running apps
 	/// to desktop entries.
-	Q_PROPERTY(QString startupClass MEMBER mStartupClass CONSTANT);
+	Q_PROPERTY(QString startupClass READ default WRITE default NOTIFY startupClassChanged BINDABLE bindableStartupClass);
 	/// If true, this application should not be displayed in menus and launchers.
-	Q_PROPERTY(bool noDisplay MEMBER mNoDisplay CONSTANT);
+	Q_PROPERTY(bool noDisplay READ default WRITE default NOTIFY noDisplayChanged BINDABLE bindableNoDisplay);
 	/// Long description of the application, such as "View websites on the internet". May be empty.
-	Q_PROPERTY(QString comment MEMBER mComment CONSTANT);
+	Q_PROPERTY(QString comment READ default WRITE default NOTIFY commentChanged BINDABLE bindableComment);
 	/// Name of the icon associated with this application. May be empty.
-	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
+	Q_PROPERTY(QString icon READ default WRITE default NOTIFY iconChanged BINDABLE bindableIcon);
 	/// The raw `Exec` string from the desktop entry.
 	///
 	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
-	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
+	Q_PROPERTY(QString execString READ default WRITE default NOTIFY execStringChanged BINDABLE bindableExecString);
 	/// The parsed `Exec` command in the desktop entry.
 	///
 	/// The entry can be run with @@execute(), or by using this command in
@@ -43,13 +75,14 @@ class DesktopEntry: public QObject {
 	/// the invoked process. See @@execute() for details.
 	///
 	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
-	Q_PROPERTY(QVector<QString> command MEMBER mCommand CONSTANT);
+	Q_PROPERTY(QVector<QString> command READ default WRITE default NOTIFY commandChanged BINDABLE bindableCommand);
 	/// The working directory to execute from.
-	Q_PROPERTY(QString workingDirectory MEMBER mWorkingDirectory CONSTANT);
+	Q_PROPERTY(QString workingDirectory READ default WRITE default NOTIFY workingDirectoryChanged BINDABLE bindableWorkingDirectory);
 	/// If the application should run in a terminal.
-	Q_PROPERTY(bool runInTerminal MEMBER mTerminal CONSTANT);
-	Q_PROPERTY(QVector<QString> categories MEMBER mCategories CONSTANT);
-	Q_PROPERTY(QVector<QString> keywords MEMBER mKeywords CONSTANT);
+	Q_PROPERTY(bool runInTerminal READ default WRITE default NOTIFY runInTerminalChanged BINDABLE bindableRunInTerminal);
+	Q_PROPERTY(QVector<QString> categories READ default WRITE default NOTIFY categoriesChanged BINDABLE bindableCategories);
+	Q_PROPERTY(QVector<QString> keywords READ default WRITE default NOTIFY keywordsChanged BINDABLE bindableKeywords);
+	// clang-format on
 	Q_PROPERTY(QVector<DesktopAction*> actions READ actions CONSTANT);
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopEntry instances must be retrieved from DesktopEntries");
@@ -57,7 +90,8 @@ class DesktopEntry: public QObject {
 public:
 	explicit DesktopEntry(QString id, QObject* parent): QObject(parent), mId(std::move(id)) {}
 
-	void parseEntry(const QString& text);
+	static ParsedDesktopEntryData parseText(const QString& id, const QString& text);
+	void updateState(const ParsedDesktopEntryData& newState);
 
 	/// Run the application. Currently ignores @@runInTerminal and field codes.
 	///
@@ -73,30 +107,65 @@ public:
 	Q_INVOKABLE void execute() const;
 
 	[[nodiscard]] bool isValid() const;
-	[[nodiscard]] bool noDisplay() const;
 	[[nodiscard]] QVector<DesktopAction*> actions() const;
+
+	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
+	[[nodiscard]] QBindable<QString> bindableGenericName() const { return &this->bGenericName; }
+	[[nodiscard]] QBindable<QString> bindableStartupClass() const { return &this->bStartupClass; }
+	[[nodiscard]] QBindable<bool> bindableNoDisplay() const { return &this->bNoDisplay; }
+	[[nodiscard]] QBindable<QString> bindableComment() const { return &this->bComment; }
+	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; }
+	[[nodiscard]] QBindable<QString> bindableExecString() const { return &this->bExecString; }
+	[[nodiscard]] QBindable<QVector<QString>> bindableCommand() const { return &this->bCommand; }
+	[[nodiscard]] QBindable<QString> bindableWorkingDirectory() const {
+		return &this->bWorkingDirectory;
+	}
+	[[nodiscard]] QBindable<bool> bindableRunInTerminal() const { return &this->bRunInTerminal; }
+	[[nodiscard]] QBindable<QVector<QString>> bindableCategories() const {
+		return &this->bCategories;
+	}
+	[[nodiscard]] QBindable<QVector<QString>> bindableKeywords() const { return &this->bKeywords; }
 
 	// currently ignores all field codes.
 	static QVector<QString> parseExecString(const QString& execString);
 	static void doExec(const QList<QString>& execString, const QString& workingDirectory);
 
+signals:
+	void nameChanged();
+	void genericNameChanged();
+	void startupClassChanged();
+	void noDisplayChanged();
+	void commentChanged();
+	void iconChanged();
+	void execStringChanged();
+	void commandChanged();
+	void workingDirectoryChanged();
+	void runInTerminalChanged();
+	void categoriesChanged();
+	void keywordsChanged();
+
 public:
 	QString mId;
-	QString mName;
-	QString mGenericName;
-	QString mStartupClass;
-	bool mNoDisplay = false;
-	QString mComment;
-	QString mIcon;
-	QString mExecString;
-	QVector<QString> mCommand;
-	QString mWorkingDirectory;
-	bool mTerminal = false;
-	QVector<QString> mCategories;
-	QVector<QString> mKeywords;
+
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bName, &DesktopEntry::nameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bGenericName, &DesktopEntry::genericNameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bStartupClass, &DesktopEntry::startupClassChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, bool, bNoDisplay, &DesktopEntry::noDisplayChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bComment, &DesktopEntry::commentChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bIcon, &DesktopEntry::iconChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bExecString, &DesktopEntry::execStringChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bCommand, &DesktopEntry::commandChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bWorkingDirectory, &DesktopEntry::workingDirectoryChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, bool, bRunInTerminal, &DesktopEntry::runInTerminalChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bCategories, &DesktopEntry::categoriesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bKeywords, &DesktopEntry::keywordsChanged);
+	// clang-format on
 
 private:
-	QHash<QString, QString> mEntries;
+	void updateActions(const QHash<QString, DesktopActionData>& newActions);
+
+	ParsedDesktopEntryData state;
 	QHash<QString, DesktopAction*> mActions;
 
 	friend class DesktopAction;
@@ -106,12 +175,13 @@ private:
 class DesktopAction: public QObject {
 	Q_OBJECT;
 	Q_PROPERTY(QString id MEMBER mId CONSTANT);
-	Q_PROPERTY(QString name MEMBER mName CONSTANT);
-	Q_PROPERTY(QString icon MEMBER mIcon CONSTANT);
+	// clang-format off
+	Q_PROPERTY(QString name READ default WRITE default NOTIFY nameChanged BINDABLE bindableName);
+	Q_PROPERTY(QString icon READ default WRITE default NOTIFY iconChanged BINDABLE bindableIcon);
 	/// The raw `Exec` string from the action.
 	///
 	/// > [!WARNING] This cannot be reliably run as a command. See @@command for one you can run.
-	Q_PROPERTY(QString execString MEMBER mExecString CONSTANT);
+	Q_PROPERTY(QString execString READ default WRITE default NOTIFY execStringChanged BINDABLE bindableExecString);
 	/// The parsed `Exec` command in the action.
 	///
 	/// The entry can be run with @@execute(), or by using this command in
@@ -120,7 +190,8 @@ class DesktopAction: public QObject {
 	/// the invoked process.
 	///
 	/// > [!NOTE]	The provided command does not invoke a terminal even if @@runInTerminal is true.
-	Q_PROPERTY(QVector<QString> command MEMBER mCommand CONSTANT);
+	Q_PROPERTY(QVector<QString> command READ default WRITE default NOTIFY commandChanged BINDABLE bindableCommand);
+	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("DesktopAction instances must be retrieved from a DesktopEntry");
 
@@ -136,16 +207,45 @@ public:
 	/// and @@DesktopEntry.workingDirectory.
 	Q_INVOKABLE void execute() const;
 
+	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
+	[[nodiscard]] QBindable<QString> bindableIcon() const { return &this->bIcon; }
+	[[nodiscard]] QBindable<QString> bindableExecString() const { return &this->bExecString; }
+	[[nodiscard]] QBindable<QVector<QString>> bindableCommand() const { return &this->bCommand; }
+
+signals:
+	void nameChanged();
+	void iconChanged();
+	void execStringChanged();
+	void commandChanged();
+
 private:
 	DesktopEntry* entry;
 	QString mId;
-	QString mName;
-	QString mIcon;
-	QString mExecString;
-	QVector<QString> mCommand;
 	QHash<QString, QString> mEntries;
 
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bName, &DesktopAction::nameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bIcon, &DesktopAction::iconChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QString, bExecString, &DesktopAction::execStringChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopAction, QVector<QString>, bCommand, &DesktopAction::commandChanged);
+	// clang-format on
+
 	friend class DesktopEntry;
+};
+
+class DesktopEntryManager;
+
+class DesktopEntryScanner: public QRunnable {
+public:
+	explicit DesktopEntryScanner(DesktopEntryManager* manager);
+
+	void run() override;
+	// clang-format off
+	void scanDirectory(const QDir& dir, const QString& idPrefix, QList<ParsedDesktopEntryData>& entries);
+	// clang-format on
+
+private:
+	DesktopEntryManager* manager;
 };
 
 class DesktopEntryManager: public QObject {
@@ -161,15 +261,26 @@ public:
 
 	static DesktopEntryManager* instance();
 
+	static const QStringList& desktopPaths();
+
+signals:
+	void applicationsChanged();
+
+private slots:
+	void handleFileChanges();
+	void onScanCompleted(const QList<ParsedDesktopEntryData>& scanResults);
+
 private:
 	explicit DesktopEntryManager();
-
-	void populateApplications();
-	void scanPath(const QDir& dir, const QString& prefix = QString());
 
 	QHash<QString, DesktopEntry*> desktopEntries;
 	QHash<QString, DesktopEntry*> lowercaseDesktopEntries;
 	ObjectModel<DesktopEntry> mApplications {this};
+	DesktopEntryMonitor* monitor = nullptr;
+	bool scanInProgress = false;
+	bool scanQueued = false;
+
+	friend class DesktopEntryScanner;
 };
 
 ///! Desktop entry index.
@@ -201,4 +312,7 @@ public:
 	Q_INVOKABLE [[nodiscard]] static DesktopEntry* heuristicLookup(const QString& name);
 
 	[[nodiscard]] static ObjectModel<DesktopEntry>* applications();
+
+signals:
+	void applicationsChanged();
 };
