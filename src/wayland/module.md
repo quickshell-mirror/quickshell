@@ -6,5 +6,6 @@ headers = [
 	"toplevel_management/qml.hpp",
 	"screencopy/view.hpp",
 	"idle_inhibit/inhibitor.hpp",
+	"idle_notify/monitor.hpp",
 ]
 -----
