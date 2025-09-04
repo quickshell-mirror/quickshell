@@ -3,6 +3,7 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 
 #include "../../window/proxywindow.hpp"
@@ -38,6 +39,8 @@ class IdleInhibitor: public QObject {
 
 public:
 	IdleInhibitor();
+	~IdleInhibitor() override;
+	Q_DISABLE_COPY_MOVE(IdleInhibitor);
 
 	[[nodiscard]] QObject* window() const;
 	void setWindow(QObject* window);

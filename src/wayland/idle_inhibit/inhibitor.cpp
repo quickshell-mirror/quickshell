@@ -13,8 +13,12 @@ namespace qs::wayland::idle_inhibit {
 using QtWaylandClient::QWaylandWindow;
 
 IdleInhibitor::IdleInhibitor() {
-	this->bBoundWindow.setBinding([this] { return this->bEnabled ? this->bWindowObject.value() : nullptr; });
+	this->bBoundWindow.setBinding([this] {
+		return this->bEnabled ? this->bWindowObject.value() : nullptr;
+	});
 }
+
+IdleInhibitor::~IdleInhibitor() { delete this->inhibitor; }
 
 QObject* IdleInhibitor::window() const { return this->bWindowObject; }
 
