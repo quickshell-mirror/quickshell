@@ -23,7 +23,7 @@ FloatingWindow {
 				CheckBox {
 					text: "Software"
 					checked: Network.wifi.enabled
-					onClicked: Network.wifi.setEnabled(!Network.wifi.enabled)
+					onClicked: Network.wifi.enabled = !Network.wifi.enabled
 				}
 				CheckBox {
 					enabled: false
