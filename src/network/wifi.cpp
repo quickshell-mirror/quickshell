@@ -20,9 +20,7 @@ void WifiDevice::scan() {
 		qCCritical(logWifiDevice) << this << "is already scanning";
 		return;
 	}
-
 	qCDebug(logWifiDevice) << "Requesting scan on" << this;
-	this->bScanning = true;
 	this->requestScan();
 }
 

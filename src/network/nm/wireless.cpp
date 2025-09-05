@@ -193,6 +193,7 @@ void NMWirelessDevice::initWireless() {
 	QObject::connect(this, &NMWirelessDevice::accessPointLoaded, this, &NMWirelessDevice::onAccessPointLoaded);
 	QObject::connect(this, &NMWirelessDevice::connectionLoaded, this, &NMWirelessDevice::onConnectionLoaded);
 	QObject::connect(this, &NMWirelessDevice::activeConnectionLoaded, this, &NMWirelessDevice::onActiveConnectionLoaded);
+	QObject::connect(this, &NMWirelessDevice::lastScanChanged, this, [this]() { this->bScanning = false; });
 	// clang-format on
 	this->registerAccessPoints();
 }
@@ -344,7 +345,11 @@ void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
 	}
 }
 
-void NMWirelessDevice::scan() { this->wirelessProxy->RequestScan({}); }
+void NMWirelessDevice::scan() { 
+	this->wirelessProxy->RequestScan({}); 
+	this->bScanning = true;
+}
+
 bool NMWirelessDevice::isWirelessValid() const {
 	return this->wirelessProxy && this->wirelessProxy->isValid();
 }

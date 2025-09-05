@@ -95,12 +95,14 @@ public:
 	[[nodiscard]] qint64 lastScan() { return this->bLastScan; };
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
 	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
+	[[nodiscard]] bool scanning() { return this->bScanning; };
 
 public slots:
 	void scan();
 
 signals:
 	void lastScanChanged(qint64 lastScan);
+	void scanningChanged(bool scanning);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeAccessPointChanged(const QDBusObjectPath& path);
 	void accessPointLoaded(NMAccessPoint* ap);
@@ -132,6 +134,7 @@ private:
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, qint64, bLastScan, &NMWirelessDevice::lastScanChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, bool, bScanning, &NMWirelessDevice::scanningChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessDevice::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDBusObjectPath, bActiveAccessPoint, &NMWirelessDevice::activeAccessPointChanged);
 	
