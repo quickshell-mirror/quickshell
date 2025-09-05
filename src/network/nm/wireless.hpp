@@ -44,25 +44,21 @@ public:
 	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
 	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); };
+	[[nodiscard]] QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
+	[[nodiscard]] QBindable<NMWirelessCapabilities::Enum> bindableCapabilities() { return &this->bCaps; };
 
-public slots:
-	void setActiveApPath(const QDBusObjectPath& path);
-	void setState(NMConnectionState::Enum state);
-	void setReason(NMConnectionStateReason::Enum reason);
-	void setCaps(NMWirelessCapabilities::Enum caps);
-	
 signals:
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
 	void reasonChanged(NMConnectionStateReason::Enum reason);
 	void securityChanged(NMWirelessSecurityType::Enum security);
+	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
+	void activeApPathChanged(QString path);
 	void disappeared();
 
 private:
 	QString mSsid;
-	QDBusObjectPath mActiveApPath;
-	NMWirelessCapabilities::Enum mCaps = NMWirelessCapabilities::None;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
 	NMActiveConnection* mActiveConnection = nullptr;
@@ -75,13 +71,15 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessCapabilities::Enum, bCaps, &NMWirelessNetwork::capabilitiesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
 	// clang-format on
 	
 	void updateReferenceAp();
 	void updateReferenceConnection();
-	void removeAccessPoint(NMAccessPoint* ap);
-	void removeConnectionSettings(NMConnectionSettings* conn);
-	void removeActiveConnection(NMActiveConnection* active);
+	void removeAccessPoint();
+	void removeConnectionSettings();
+	void removeActiveConnection();
 };
 
 // Proxy of a /org/freedesktop/NetworkManager/Device/* object.
@@ -94,7 +92,7 @@ public:
 	explicit NMWirelessDevice(const QString& path, QObject* parent = nullptr);
 
 	[[nodiscard]] bool isWirelessValid() const;
-	[[nodiscard]] qint64 getLastScan() { return this->bLastScan; };
+	[[nodiscard]] qint64 lastScan() { return this->bLastScan; };
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
 	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
 

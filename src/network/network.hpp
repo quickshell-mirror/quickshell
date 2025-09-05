@@ -49,8 +49,8 @@ class Network: public QObject {
 public:
 	explicit Network(QObject* parent = nullptr);
 
-	[[nodiscard]] Wifi* wifi() { return this->mWifi; };
-	[[nodiscard]] NetworkBackendType::Enum backend() { return this->mBackendType; };
+	[[nodiscard]] Wifi* wifi() const { return this->mWifi; };
+	[[nodiscard]] NetworkBackendType::Enum backend() const { return this->mBackendType; };
 
 private:
 	Wifi* mWifi;

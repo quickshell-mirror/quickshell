@@ -143,12 +143,17 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	wireless->setParent(device);
 	this->mDeviceHash.insert(path, device);
 
+	device->bindableName().setBinding([wireless]() { return wireless->interface(); });
+	device->bindableAddress().setBinding([wireless]() { return wireless->hwAddress(); });
+	device->bindableNmState().setBinding([wireless]() { return wireless->state(); });
+	device->bindableState().setBinding([wireless]() {
+		return qs::network::NetworkManager::toNetworkDeviceState(wireless->state());
+	});
+	device->bindableScanning().setBinding([wireless]() {
+		(void)wireless->lastScan();
+		return false;
+	});
 	// clang-format off
-	QObject::connect(wireless, &NMWirelessDevice::interfaceChanged, device, &WifiDevice::setName);
-	QObject::connect(wireless, &NMWirelessDevice::hwAddressChanged, device, &WifiDevice::setAddress);
-	QObject::connect(wireless, &NMWirelessDevice::stateChanged, device, &WifiDevice::setNmState);
-	QObject::connect(wireless, &NMWirelessDevice::stateChanged, device, [device](NMDeviceState::Enum state) { device->setState(qs::network::NetworkManager::toNetworkDeviceState(state));});
-	QObject::connect(wireless, &NMWirelessDevice::lastScanChanged, device, &WifiDevice::scanComplete);
 	QObject::connect(wireless, &NMWirelessDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
 	QObject::connect(wireless, &NMWirelessDevice::activateConnection, this, &NetworkManager::activateConnection);
 	QObject::connect(wireless, &NMWirelessDevice::wifiNetworkAdded, device, &WifiDevice::networkAdded);

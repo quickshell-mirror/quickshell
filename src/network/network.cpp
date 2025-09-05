@@ -1,7 +1,7 @@
 #include "network.hpp"
 
-#include <qloggingcategory.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 
 #include "../core/logcat.hpp"
 #include "nm/backend.hpp"
@@ -19,8 +19,8 @@ Network::Network(QObject* parent): QObject(parent), mWifi(new Wifi(this)) {
 		// clang-format off
 		QObject::connect(nm, &NetworkManager::wifiDeviceAdded, this->wifi(), &Wifi::onDeviceAdded);
 		QObject::connect(nm, &NetworkManager::wifiDeviceRemoved, this->wifi(), &Wifi::onDeviceRemoved);
-		QObject::connect(nm, &NetworkManager::wifiEnabledChanged, this->wifi(), &Wifi::onEnabledSet);
-		QObject::connect(nm, &NetworkManager::wifiHardwareEnabledChanged, this->wifi(), &Wifi::onHardwareEnabledSet);
+		this->wifi()->bindableEnabled().setBinding([nm]() { return nm->wifiEnabled(); });
+		this->wifi()->bindableHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); });
 		QObject::connect(this->wifi(), &Wifi::requestSetEnabled, nm, &NetworkManager::setWifiEnabled);
 		// clang-format on
 		this->mBackend = nm;
