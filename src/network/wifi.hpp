@@ -114,7 +114,7 @@ class Wifi: public QObject {
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::WifiDevice>*);
 	/// True when the wifi software switch is enabled.
-	Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged BINDABLE bindableEnabled);
+	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged);
 	/// True when the wifi hardware switch is enabled.
 	Q_PROPERTY(bool hardwareEnabled READ hardwareEnabled NOTIFY hardwareEnabledChanged BINDABLE bindableHardwareEnabled);
 	// clang-format on
@@ -132,11 +132,9 @@ public slots:
 public:
 	explicit Wifi(QObject* parent = nullptr);
 
-	/// Set the state of the wifi software switch.
-	Q_INVOKABLE void setEnabled(bool enabled);
-
 	[[nodiscard]] ObjectModel<WifiDevice>* devices() { return &this->mDevices; };
 	[[nodiscard]] bool enabled() const { return this->bEnabled; };
+	void setEnabled(bool enabled);
 	[[nodiscard]] bool hardwareEnabled() const { return this->bHardwareEnabled; };
 	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
 	QBindable<bool> bindableHardwareEnabled() { return &this->bHardwareEnabled; };
