@@ -26,6 +26,8 @@ signals:
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
 	[[nodiscard]] bool isAvailable() const override;
+	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; };
+	[[nodiscard]] bool wifiHardwareEnabled() const { return this->bWifiHardwareEnabled; };
 
 public slots:
 	void setWifiEnabled(bool enabled);

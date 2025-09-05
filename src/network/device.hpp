@@ -32,15 +32,16 @@ class NetworkDevice: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_UNCREATABLE("Devices can only be acquired through Network");
-
+	// clang-format off
 	/// The name of the device's control interface.
-	Q_PROPERTY(QString name READ name NOTIFY nameChanged);
+	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
 	/// The hardware address of the device in the XX:XX:XX:XX:XX:XX format.
-	Q_PROPERTY(QString address READ address NOTIFY addressChanged);
+	Q_PROPERTY(QString address READ address NOTIFY addressChanged BINDABLE bindableAddress);
 	/// Connection state of the device.
-	Q_PROPERTY(NetworkConnectionState::Enum state READ state NOTIFY stateChanged);
+	Q_PROPERTY(qs::network::NetworkConnectionState::Enum state READ state NOTIFY stateChanged BINDABLE bindableState);
 	/// A more specific device state when the backend is NetworkManager.
-	Q_PROPERTY(NMDeviceState::Enum nmState READ nmState NOTIFY nmStateChanged);
+	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ nmState NOTIFY nmStateChanged BINDABLE bindableNmState);
+	// clang-format on
 
 signals:
 	void nameChanged();
@@ -49,28 +50,28 @@ signals:
 	void nmStateChanged();
 	void requestDisconnect();
 
-public slots:
-	void setName(const QString& name);
-	void setAddress(const QString& address);
-	void setState(NetworkConnectionState::Enum state);
-	void setNmState(NMDeviceState::Enum state);
-
 public:
 	explicit NetworkDevice(QObject* parent = nullptr);
-
-	[[nodiscard]] QString name() const { return this->mName; };
-	[[nodiscard]] QString address() const { return this->mAddress; };
-	[[nodiscard]] NetworkConnectionState::Enum state() const { return this->mState; };
-	[[nodiscard]] NMDeviceState::Enum nmState() const { return this->mNmState; };
 
 	/// Disconnects the device and prevents it from automatically activating further connections.
 	Q_INVOKABLE void disconnect();
 
+	[[nodiscard]] QString name() const { return this->bName; };
+	[[nodiscard]] QString address() const { return this->bAddress; };
+	[[nodiscard]] NetworkConnectionState::Enum state() const { return this->bState; };
+	[[nodiscard]] NMDeviceState::Enum nmState() const { return this->bNmState; };
+	QBindable<QString> bindableName() { return &this->bName; };
+	QBindable<QString> bindableAddress() { return &this->bAddress; };
+	QBindable<NetworkConnectionState::Enum> bindableState() { return &this->bState; };
+	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
+
 private:
-	QString mName;
-	QString mAddress;
-	NetworkConnectionState::Enum mState = NetworkConnectionState::Unknown;
-	NMDeviceState::Enum mNmState = NMDeviceState::Unknown;
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bName, &NetworkDevice::nameChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bAddress, &NetworkDevice::addressChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NetworkConnectionState::Enum, bState, &NetworkDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceState::Enum, bNmState, &NetworkDevice::nmStateChanged);
+	// clang-format on
 };
 
 } // namespace qs::network
