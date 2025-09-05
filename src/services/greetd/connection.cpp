@@ -225,6 +225,11 @@ void GreetdConnection::onSocketReady() {
 
 		this->mResponseRequired = responseRequired;
 		emit this->authMessage(message, error, responseRequired, echoResponse);
+
+		if (!responseRequired)
+			this->sendRequest({
+			        {"type", "post_auth_message_response"}
+			});
 	} else goto unexpected;
 
 	return;
