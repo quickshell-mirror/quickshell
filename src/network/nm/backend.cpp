@@ -149,10 +149,7 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	device->bindableState().setBinding([wireless]() {
 		return qs::network::NetworkManager::toNetworkDeviceState(wireless->state());
 	});
-	device->bindableScanning().setBinding([wireless]() {
-		(void)wireless->lastScan();
-		return false;
-	});
+	device->bindableScanning().setBinding([wireless]() { return wireless->scanning(); });
 	// clang-format off
 	QObject::connect(wireless, &NMWirelessDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
 	QObject::connect(wireless, &NMWirelessDevice::activateConnection, this, &NetworkManager::activateConnection);
