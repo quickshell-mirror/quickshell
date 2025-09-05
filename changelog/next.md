@@ -13,3 +13,4 @@
 - Fixed build issues preventing cross compilation from working.
 - Fixed dekstop entries with lower priority than a hidden entry not being hidden.
 - Fixed desktop entry keys with mismatched modifier or country not being discarded.
+- Fixed greetd hanging when authenticating with a fingerprint.
