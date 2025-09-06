@@ -1,6 +1,5 @@
 #include "qml.hpp"
 #include <cassert>
-#include <cstddef>
 #include <utility>
 
 #include <qlogging.h>
@@ -9,6 +8,7 @@
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
 #include <qstring.h>
+#include <qtmetamacros.h>
 
 #include "input_method.hpp"
 #include "keyboard_grab.hpp"
@@ -78,22 +78,22 @@ void InputMethod::getInput() {
 	    &InputMethod::onHandleActiveChanged
 	);
 	QObject::connect(
-		this->handle.get(),
-		&InputMethodHandle::contentHintChanged,
-		this,
-		&InputMethod::contentHintChanged
+	    this->handle.get(),
+	    &InputMethodHandle::contentHintChanged,
+	    this,
+	    &InputMethod::contentHintChanged
 	);
 	QObject::connect(
-		this->handle.get(),
-		&InputMethodHandle::contentPurposeChanged,
-		this,
-		&InputMethod::contentPurposeChanged
+	    this->handle.get(),
+	    &InputMethodHandle::contentPurposeChanged,
+	    this,
+	    &InputMethod::contentPurposeChanged
 	);
 	QObject::connect(
-		this->handle.get(),
-		&InputMethodHandle::surroundingTextChanged,
-		this,
-		&InputMethod::surroundingTextChanged
+	    this->handle.get(),
+	    &InputMethodHandle::surroundingTextChanged,
+	    this,
+	    &InputMethod::surroundingTextChanged
 	);
 
 	emit hasInputChanged();
@@ -154,19 +154,11 @@ void InputMethod::handleKeyboardActive() {
 	}
 }
 
-const QString& InputMethod::surroundingText() const {
-	return handle->surroundingText();
-}
-uint32_t InputMethod::surroundingTextCursor() const {
-	return handle->surroundingTextCursor();
-}
-uint32_t InputMethod::surroundingTextAnchor() const {
-	return handle->surroundingTextAnchor();
-}
+const QString& InputMethod::surroundingText() const { return handle->surroundingText(); }
+uint32_t InputMethod::surroundingTextCursor() const { return handle->surroundingTextCursor(); }
+uint32_t InputMethod::surroundingTextAnchor() const { return handle->surroundingTextAnchor(); }
 
-QMLContentHint::Enum InputMethod::contentHint() const {
-	return this->handle->contentHint();
-}
+QMLContentHint::Enum InputMethod::contentHint() const { return this->handle->contentHint(); }
 QMLContentPurpose::Enum InputMethod::contentPurpose() const {
 	return this->handle->contentPurpose();
 }

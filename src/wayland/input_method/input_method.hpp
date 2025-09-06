@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <qobject.h>
 #include <qpointer.h>
 #include <qtclasshelpermacros.h>
@@ -70,12 +71,12 @@ private:
 			QString text = "";
 			uint32_t cursor = 0;
 			uint32_t anchor = 0;
-			TextChangeCause textChangeCause = TextChangeCause::INPUT_METHOD;
+			TextChangeCause textChangeCause = TextChangeCause::InputMethod;
 			bool operator==(const SurroundingText& other) const = default;
 		} surroundingText;
 
-		ContentHint contentHint = ContentHint::NONE;
-		ContentPurpose contentPurpose = ContentPurpose::NORMAL;
+		ContentHint contentHint = ContentHint::None;
+		ContentPurpose contentPurpose = ContentPurpose::Normal;
 	};
 
 	State mState;

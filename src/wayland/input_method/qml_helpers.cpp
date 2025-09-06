@@ -1,10 +1,13 @@
 #include "qml_helpers.hpp"
+#include <algorithm>
 
 #include <qjsvalue.h>
 #include <qobject.h>
 #include <qqmlinfo.h>
+#include <qtmetamacros.h>
 
 #include "qml.hpp"
+#include "types.hpp"
 
 namespace qs::wayland::input_method {
 
@@ -17,7 +20,12 @@ KeyboardTextEdit::KeyboardTextEdit(QObject* parent): Keyboard(parent) {
 
 	auto* inputMethod = dynamic_cast<InputMethod*>(parent);
 	if (inputMethod)
-		QObject::connect(inputMethod, &InputMethod::surroundingTextChanged, this, &KeyboardTextEdit::onSurroundingTextChanged);
+		QObject::connect(
+		    inputMethod,
+		    &InputMethod::surroundingTextChanged,
+		    this,
+		    &KeyboardTextEdit::onSurroundingTextChanged
+		);
 }
 
 QJSValue KeyboardTextEdit::transform() const { return this->mTransform; }
@@ -78,11 +86,11 @@ void KeyboardTextEdit::onDeletePress() {
 
 void KeyboardTextEdit::onDirectionPress(QMLDirectionKey::Enum direction) {
 	switch (direction) {
-	case QMLDirectionKey::LEFT: {
+	case QMLDirectionKey::Left: {
 		this->setCursor(this->mCursor - 1);
 		return;
 	}
-	case QMLDirectionKey::RIGHT: {
+	case QMLDirectionKey::Right: {
 		this->setCursor(this->mCursor + 1);
 		return;
 	}
@@ -102,7 +110,7 @@ void KeyboardTextEdit::onReturnPress() {
 }
 
 void KeyboardTextEdit::onSurroundingTextChanged(QMLTextChangeCause::Enum textChangeCause) {
-	if (textChangeCause == QMLTextChangeCause::OTHER) {
+	if (textChangeCause == QMLTextChangeCause::Other) {
 		this->setEditText("");
 	}
 }
