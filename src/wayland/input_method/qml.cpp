@@ -1,5 +1,6 @@
 #include "qml.hpp"
 #include <cassert>
+#include <cstdint>
 #include <utility>
 
 #include <qlogging.h>
