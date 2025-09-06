@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <qwayland-virtual-keyboard-unstable-v1.h>
 #include <wayland-client-protocol.h>
+#include <wayland-virtual-keyboard-unstable-v1-client-protocol.h>
 #include <xkbcommon/xkbcommon.h>
 
 #include "c_helpers.hpp"
@@ -16,7 +17,7 @@ namespace qs::wayland::input_method::impl {
 
 namespace {
 using namespace std::chrono;
-int64_t now() {
+uint32_t now() {
 	return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 } // namespace

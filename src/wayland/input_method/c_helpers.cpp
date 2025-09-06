@@ -7,7 +7,6 @@
 #include <qdebug.h>
 #include <qlogging.h>
 #include <sys/mman.h>
-#include <sys/shm.h>
 #include <unistd.h>
 
 namespace qs::wayland::input_method::impl {
@@ -19,8 +18,7 @@ void FreeDeleter::operator()(const char* p) const {
 SharedMemory::SharedMemory(const char* shmName, int oFlag, size_t size)
     : mShmName(shmName)
     , mSize(size)
-    , fd(shm_open(this->mShmName, oFlag, 0))
-    , map(nullptr) {
+    , fd(shm_open(this->mShmName, oFlag, 0)) {
 	if (this->fd == -1) {
 		perror("");
 		qDebug() << "Virtual keyboard failed to open shared memory";

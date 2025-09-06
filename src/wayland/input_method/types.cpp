@@ -6,10 +6,10 @@ namespace qs::wayland::input_method {
 
 QString QMLDirectionKey::toString(Enum direction) {
 	switch (direction) {
-	case UP: return "UP";
-	case DOWN: return "DOWN";
-	case LEFT: return "LEFT";
-	case RIGHT: return "RIGHT";
+	case Up: return "Up";
+	case Down: return "Down";
+	case Left: return "Left";
+	case Right: return "Right";
 	}
 	return "UNKNOWN";
 }
@@ -19,107 +19,107 @@ QString QMLContentHint::toString(Enum contentHint) {
 
 	bool first = true;
 
-	if (contentHint & COMPLETION) {
+	if (contentHint & Completion) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "COMPLETION";
+		string += "Completion";
 		first = false;
 	}
-	if (contentHint & SPELLCHECK) {
+	if (contentHint & Spellcheck) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "SPELLCHECK";
+		string += "Spellcheck";
 		first = false;
 	}
-	if (contentHint & AUTO_CAPITALIZATION) {
+	if (contentHint & AutoCapitalization) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "AUTO_CAPITALIZATION";
+		string += "AutoCapitalization";
 		first = false;
 	}
-	if (contentHint & LOWERCASE) {
+	if (contentHint & Lowercase) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "LOWERCASE";
+		string += "Lowercase";
 		first = false;
 	}
-	if (contentHint & UPPERCASE) {
+	if (contentHint & Uppercase) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "UPPERCASE";
+		string += "Uppercase";
 		first = false;
 	}
-	if (contentHint & TITLECASE) {
+	if (contentHint & Titlecase) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "TITLECASE";
+		string += "Titlecase";
 		first = false;
 	}
-	if (contentHint & HIDDEN_TEXT) {
+	if (contentHint & HiddenText) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "HIDDEN_TEXT";
+		string += "HiddenText";
 		first = false;
 	}
-	if (contentHint & SENSITIVE_DATA) {
+	if (contentHint & SensitiveData) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "SENSITIVE_DATA";
+		string += "SensitiveData";
 		first = false;
 	}
-	if (contentHint & LATIN) {
+	if (contentHint & Latin) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "LATIN";
+		string += "Latin";
 		first = false;
 	}
-	if (contentHint & MULTILINE) {
+	if (contentHint & Multiline) {
 		if (!first) {
 			string += " | ";
 		}
-		string += "MULTILINE";
+		string += "Multiline";
 		first = false;
 	}
 
-	if (string == "") string = "NONE";
+	if (string == "") string = "None";
 	return string;
 }
 
 QString QMLContentPurpose::toString(Enum contentHint) {
 	switch (contentHint) {
-	case NORMAL: return "NORMAL";
-	case ALPHA: return "ALPHA";
-	case DIGITS: return "DIGITS";
-	case NUMBER: return "NUMBER";
-	case PHONE: return "PHONE";
-	case URL: return "URL";
-	case EMAIL: return "EMAIL";
-	case NAME: return "NAME";
-	case PASSWORD: return "PASSWORD";
-	case PIN: return "PIN";
-	case DATA: return "DATA";
-	case TIME: return "TIME";
-	case DATETIME: return "DATETIME";
-	case TERMINAL: return "TERMINAL";
+	case Normal: return "Normal";
+	case Alpha: return "Alpha";
+	case Digits: return "Digits";
+	case Number: return "Number";
+	case Phone: return "Phone";
+	case Url: return "Url";
+	case Email: return "Email";
+	case Name: return "Name";
+	case Password: return "Password";
+	case Pin: return "Pin";
+	case Data: return "Data";
+	case Time: return "Time";
+	case Datetime: return "Datetime";
+	case Terminal: return "Terminal";
 	}
-	return "UNKNOWN";
+	return "Unknown";
 }
 
 QString QMLTextChangeCause::toString(Enum textChangeCause) {
 	switch (textChangeCause) {
-	case INPUT_METHOD: return "INPUT_METHOD";
-	case OTHER: return "OTHER";
+	case InputMethod: return "InputMethod";
+	case Other: return "Other";
 	}
-	return "UNKNOWN";
+	return "Unknown";
 }
 
 } // namespace qs::wayland::input_method

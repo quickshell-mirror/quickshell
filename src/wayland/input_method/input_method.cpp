@@ -1,5 +1,5 @@
 #include "input_method.hpp"
-#include <cstddef>
+#include <cstdint>
 
 #include <qdebug.h>
 #include <qlogging.h>
@@ -12,6 +12,7 @@
 
 #include "keyboard_grab.hpp"
 #include "manager.hpp"
+#include "types.hpp"
 
 namespace qs::wayland::input_method::impl {
 
@@ -64,12 +65,8 @@ uint32_t InputMethodHandle::surroundingTextAnchor() const {
 	return this->mState.surroundingText.anchor;
 }
 
-ContentHint InputMethodHandle::contentHint() const {
-	return this->mState.contentHint;
-}
-ContentPurpose InputMethodHandle::contentPurpose() const {
-	return this->mState.contentPurpose;
-}
+ContentHint InputMethodHandle::contentHint() const { return this->mState.contentHint; }
+ContentPurpose InputMethodHandle::contentPurpose() const { return this->mState.contentPurpose; }
 
 void InputMethodHandle::zwp_input_method_v2_activate() { this->mNewState.activated = true; }
 
@@ -95,9 +92,8 @@ void InputMethodHandle::zwp_input_method_v2_content_type(uint32_t hint, uint32_t
 };
 
 void InputMethodHandle::zwp_input_method_v2_done() {
-	auto oldState= mState;
+	auto oldState = mState;
 	this->mState = this->mNewState;
-
 
 	if (this->mState.activated != oldState.activated) {
 		if (this->mNewState.activated) emit activated();
@@ -105,9 +101,7 @@ void InputMethodHandle::zwp_input_method_v2_done() {
 	}
 
 	if (this->mState.surroundingText != oldState.surroundingText) {
-		emit surroundingTextChanged(
-		    this->mNewState.surroundingText.textChangeCause
-		);
+		emit surroundingTextChanged(this->mNewState.surroundingText.textChangeCause);
 	}
 
 	if (this->mState.contentHint != oldState.contentHint) {

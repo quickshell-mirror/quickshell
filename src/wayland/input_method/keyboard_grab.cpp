@@ -1,9 +1,11 @@
 #include "keyboard_grab.hpp"
 #include <cassert>
-#include <cstddef>
+#include <cstdint>
 #include <vector>
 
+#if INPUT_METHOD_PRINT
 #include <qdebug.h>
+#endif
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <qwayland-input-method-unstable-v2.h>
@@ -114,7 +116,7 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 	}
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		bool keyHandled = handleKey(key);
+		const bool keyHandled = handleKey(key);
 		if (keyHandled){
 			if (this->mKeyMapState.keyRepeats(key) && this->mRepeatRate > 0) {
 				this->mRepeatKey = key;
@@ -135,19 +137,19 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 bool InputMethodKeyboardGrab::handleKey(xkb_keycode_t key){
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 	if (sym == XKB_KEY_Up) {
-		emit directionPress(DirectionKey::UP);
+		emit directionPress(DirectionKey::Up);
 		return true;
 	}
 	if (sym == XKB_KEY_Down) {
-		emit directionPress(DirectionKey::DOWN);
+		emit directionPress(DirectionKey::Down);
 		return true;
 	}
 	if (sym == XKB_KEY_Left) {
-		emit directionPress(DirectionKey::LEFT);
+		emit directionPress(DirectionKey::Left);
 		return true;
 	}
 	if (sym == XKB_KEY_Right) {
-		emit directionPress(DirectionKey::RIGHT);
+		emit directionPress(DirectionKey::Right);
 		return true;
 	}
 	if (sym == XKB_KEY_BackSpace) {
