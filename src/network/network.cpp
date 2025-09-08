@@ -16,13 +16,12 @@ Network::Network(QObject* parent): QObject(parent), mWifi(new Wifi(this)) {
 	// NetworkManager
 	auto* nm = new NetworkManager(this);
 	if (nm->isAvailable()) {
-		// clang-format off
 		QObject::connect(nm, &NetworkManager::wifiDeviceAdded, this->wifi(), &Wifi::onDeviceAdded);
 		QObject::connect(nm, &NetworkManager::wifiDeviceRemoved, this->wifi(), &Wifi::onDeviceRemoved);
 		this->wifi()->bindableEnabled().setBinding([nm]() { return nm->wifiEnabled(); });
-		this->wifi()->bindableHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); });
+		this->wifi()->bindableHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); }
+		);
 		QObject::connect(this->wifi(), &Wifi::requestSetEnabled, nm, &NetworkManager::setWifiEnabled);
-		// clang-format on
 		this->mBackend = nm;
 		this->mBackendType = NetworkBackendType::NetworkManager;
 		return;

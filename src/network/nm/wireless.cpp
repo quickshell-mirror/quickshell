@@ -123,9 +123,12 @@ void NMWirelessNetwork::removeAccessPoint() {
 void NMWirelessNetwork::addConnectionSettings(NMConnectionSettings* conn) {
 	if (this->mConnections.contains(conn->path())) return;
 	this->mConnections.insert(conn->path(), conn);
-	// clang-format off
-	QObject::connect(conn, &NMConnectionSettings::disappeared, this, &NMWirelessNetwork::removeConnectionSettings);
-	// clang-format on
+	QObject::connect(
+	    conn,
+	    &NMConnectionSettings::disappeared,
+	    this,
+	    &NMWirelessNetwork::removeConnectionSettings
+	);
 	this->updateReferenceConnection();
 	this->bKnown = true;
 };
@@ -146,9 +149,12 @@ void NMWirelessNetwork::addActiveConnection(NMActiveConnection* active) {
 	this->mActiveConnection = active;
 	this->bState.setBinding([active]() { return active->state(); });
 	this->bReason.setBinding([active]() { return active->stateReason(); });
-	// clang-format off
-	QObject::connect(active, &NMActiveConnection::disappeared, this, &NMWirelessNetwork::removeActiveConnection);
-	// clang-format on
+	QObject::connect(
+	    active,
+	    &NMActiveConnection::disappeared,
+	    this,
+	    &NMWirelessNetwork::removeActiveConnection
+	);
 };
 
 void NMWirelessNetwork::removeActiveConnection() {
@@ -260,14 +266,15 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 }
 
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
-	// clang-format off
 	auto* backend = new NMWirelessNetwork(ssid, this);
 	backend->bindableActiveApPath().setBinding([this]() { return this->activeApPath().path(); });
 	backend->bindableCapabilities().setBinding([this]() { return this->capabilities(); });
 
 	auto* frontend = new WifiNetwork(ssid, this);
 	frontend->bindableSignalStrength().setBinding([backend]() { return backend->signalStrength(); });
-	frontend->bindableConnected().setBinding([backend]() { return backend->state() != NMConnectionState::Deactivated; });
+	frontend->bindableConnected().setBinding([backend]() {
+		return backend->state() != NMConnectionState::Deactivated;
+	});
 	frontend->bindableKnown().setBinding([backend]() { return backend->known(); });
 	frontend->bindableNmReason().setBinding([backend]() { return backend->reason(); });
 	frontend->bindableNmSecurity().setBinding([backend]() { return backend->security(); });
@@ -345,8 +352,8 @@ void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
 	}
 }
 
-void NMWirelessDevice::scan() { 
-	this->wirelessProxy->RequestScan({}); 
+void NMWirelessDevice::scan() {
+	this->wirelessProxy->RequestScan({});
 	this->bScanning = true;
 }
 

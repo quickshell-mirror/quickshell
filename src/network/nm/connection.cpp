@@ -16,8 +16,6 @@ namespace {
 QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
-// NMConnectionAdapter
-
 NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent): QObject(parent) {
 	qDBusRegisterMetaType<ConnectionSettingsMap>();
 
