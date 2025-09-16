@@ -7,9 +7,11 @@ let
     url = "https://github.com/nixos/nixpkgs/archive/${commit}.tar.gz";
     inherit sha256;
   }) {};
-in {
+in rec {
   # For old qt versions, grab the commit before the version bump that has all the patches
   # instead of the bumped version.
+
+  latest = qt6_9_0;
 
   qt6_9_0 = byCommit {
     commit = "546c545bd0594809a28ab7e869b5f80dd7243ef6";
