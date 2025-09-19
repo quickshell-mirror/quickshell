@@ -40,6 +40,7 @@ qt_add_library(quickshell-core STATIC
 	scriptmodel.cpp
 	colorquantizer.cpp
 	toolsupport.cpp
+	fzy.cpp
 )
 
 qt_add_qml_module(quickshell-core
