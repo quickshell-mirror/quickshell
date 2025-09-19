@@ -153,13 +153,7 @@ void ProxyWindowBase::createWindow() {
 
 void ProxyWindowBase::deleteWindow(bool keepItemOwnership) {
 	if (this->window != nullptr) emit this->windowDestroyed();
-	if (auto* window = this->disownWindow(keepItemOwnership)) {
-		if (auto* generation = EngineGeneration::findObjectGeneration(this)) {
-			generation->deregisterIncubationController(window->incubationController());
-		}
-
-		window->deleteLater();
-	}
+	if (auto* window = this->disownWindow(keepItemOwnership)) window->deleteLater();
 }
 
 ProxiedWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
@@ -185,7 +179,7 @@ void ProxyWindowBase::connectWindow() {
 	if (auto* generation = EngineGeneration::findObjectGeneration(this)) {
 		// All windows have effectively the same incubation controller so it dosen't matter
 		// which window it belongs to. We do want to replace the delay one though.
-		generation->registerIncubationController(this->window->incubationController());
+		generation->trackWindowIncubationController(this->window);
 	}
 
 	this->window->setProxy(this);
