@@ -33,6 +33,7 @@ struct ParsedDesktopEntryData {
 	QString genericName;
 	QString startupClass;
 	bool noDisplay = false;
+	bool hidden = false;
 	QString comment;
 	QString icon;
 	QString execString;
