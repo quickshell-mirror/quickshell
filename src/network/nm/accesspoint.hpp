@@ -2,6 +2,7 @@
 
 #include <qdbusextratypes.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -54,14 +55,14 @@ public:
 	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; };
 
 signals:
-	void ssidChanged(const QByteArray& ssid);
-	void signalStrengthChanged(quint8 signal);
-	void wpaFlagsChanged(NM80211ApSecurityFlags::Enum wpaFlags);
-	void rsnFlagsChanged(NM80211ApSecurityFlags::Enum rsnFlags);
-	void flagsChanged(NM80211ApFlags::Enum flags);
-	void modeChanged(NM80211Mode::Enum mode);
 	void ready();
 	void disappeared();
+	void ssidChanged(const QByteArray& ssid);
+	void signalStrengthChanged(quint8 signal);
+	void flagsChanged(NM80211ApFlags::Enum flags);
+	void wpaFlagsChanged(NM80211ApSecurityFlags::Enum wpaFlags);
+	void rsnFlagsChanged(NM80211ApSecurityFlags::Enum rsnFlags);
+	void modeChanged(NM80211Mode::Enum mode);
 
 private:
 	bool mActive = false;

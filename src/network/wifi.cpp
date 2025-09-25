@@ -1,9 +1,15 @@
 #include "wifi.hpp"
+#include <utility>
 
+#include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qobject.h>
+#include <qstring.h>
+#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
+#include "device.hpp"
 
 namespace qs::network {
 
@@ -44,7 +50,7 @@ void Wifi::onDeviceRemoved(WifiDevice* dev) { this->mDevices.removeObject(dev); 
 
 void Wifi::setEnabled(bool enabled) {
 	if (this->bEnabled == enabled) {
-		QString state = enabled ? "enabled" : "disabled";
+		const QString state = enabled ? "enabled" : "disabled";
 		qCCritical(logWifi) << "Wifi is already" << state;
 	} else {
 		emit this->requestSetEnabled(enabled);

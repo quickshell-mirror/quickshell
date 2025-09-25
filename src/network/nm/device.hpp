@@ -3,6 +3,7 @@
 #include <qdbusextratypes.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -41,19 +42,19 @@ public:
 	[[nodiscard]] NMDeviceState::Enum state() const { return this->bState; };
 	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; };
 
-public slots:
-	void disconnect();
-
 signals:
-	void interfaceChanged(const QString& interface);
-	void hwAddressChanged(const QString& hwAddress);
-	void stateChanged(NMDeviceState::Enum state);
 	void connectionLoaded(NMConnectionSettings* connection);
 	void connectionRemoved(NMConnectionSettings* connection);
 	void availableConnectionPathsChanged(QList<QDBusObjectPath> paths);
 	void activeConnectionPathChanged(const QDBusObjectPath& connection);
 	void activeConnectionLoaded(NMActiveConnection* active);
 	void deviceReady();
+	void interfaceChanged(const QString& interface);
+	void hwAddressChanged(const QString& hwAddress);
+	void stateChanged(NMDeviceState::Enum state);
+
+public slots:
+	void disconnect();
 
 private slots:
 	void onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths);

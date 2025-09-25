@@ -3,11 +3,14 @@
 #include <qdbusconnection.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qstring.h>
+#include <qtypes.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "enums.hpp"
 #include "nm/dbus_nm_accesspoint.h"
 
 namespace qs::network {

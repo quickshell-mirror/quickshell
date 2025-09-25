@@ -3,6 +3,7 @@
 #include <qdbusextratypes.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -43,9 +44,13 @@ public:
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
 	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
-	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); };
+	[[nodiscard]] QList<NMConnectionSettings*> connections() const {
+		return this->mConnections.values();
+	};
 	[[nodiscard]] QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
-	[[nodiscard]] QBindable<NMWirelessCapabilities::Enum> bindableCapabilities() { return &this->bCaps; };
+	[[nodiscard]] QBindable<NMWirelessCapabilities::Enum> bindableCapabilities() {
+		return &this->bCaps;
+	};
 
 signals:
 	void signalStrengthChanged(quint8 signal);
@@ -58,6 +63,12 @@ signals:
 	void disappeared();
 
 private:
+	void updateReferenceAp();
+	void updateReferenceConnection();
+	void removeAccessPoint();
+	void removeConnectionSettings();
+	void removeActiveConnection();
+
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
@@ -74,12 +85,6 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessCapabilities::Enum, bCaps, &NMWirelessNetwork::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
 	// clang-format on
-	
-	void updateReferenceAp();
-	void updateReferenceConnection();
-	void removeAccessPoint();
-	void removeConnectionSettings();
-	void removeActiveConnection();
 };
 
 // Proxy of a /org/freedesktop/NetworkManager/Device/* object.
@@ -97,14 +102,7 @@ public:
 	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
 	[[nodiscard]] bool scanning() { return this->bScanning; };
 
-public slots:
-	void scan();
-
 signals:
-	void lastScanChanged(qint64 lastScan);
-	void scanningChanged(bool scanning);
-	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
-	void activeAccessPointChanged(const QDBusObjectPath& path);
 	void accessPointLoaded(NMAccessPoint* ap);
 	void accessPointRemoved(NMAccessPoint* ap);
 	void wifiNetworkAdded(WifiNetwork* net);
@@ -115,6 +113,13 @@ signals:
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& apPath
 	);
+	void lastScanChanged(qint64 lastScan);
+	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
+	void activeAccessPointChanged(const QDBusObjectPath& path);
+	void scanningChanged(bool scanning);
+
+public slots:
+	void scan();
 
 private slots:
 	void onAccessPointPathAdded(const QDBusObjectPath& path);

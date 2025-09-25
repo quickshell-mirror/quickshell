@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -38,8 +39,8 @@ protected:
 /// which can be used to view, configure, and connect to various networks.
 class Network: public QObject {
 	Q_OBJECT;
-	QML_NAMED_ELEMENT(Network);
 	QML_SINGLETON;
+	QML_NAMED_ELEMENT(Network);
 
 	/// The wifi device service.
 	Q_PROPERTY(qs::network::Wifi* wifi READ wifi CONSTANT);
