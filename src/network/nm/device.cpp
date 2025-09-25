@@ -1,13 +1,21 @@
 #include "device.hpp"
 
 #include <qdbusconnection.h>
+#include <qdbusextratypes.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
+#include <qset.h>
 #include <qstring.h>
+#include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "enums.hpp"
+#include "nm/dbus_nm_device.h"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -40,7 +48,7 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 }
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
-	QString stringPath = path.path();
+	const QString stringPath = path.path();
 
 	// Remove old active connection
 	if (this->mActiveConnection) {
@@ -75,8 +83,8 @@ void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& p
 		newConnectionPaths.insert(path.path());
 	}
 
-	QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
-	QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
+	const QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
+	const QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
 	for (const QString& path: addedConnections) {
 		registerConnection(path);
 	}

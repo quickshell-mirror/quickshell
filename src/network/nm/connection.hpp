@@ -1,7 +1,10 @@
 #pragma once
 
 #include <qdbusextratypes.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -68,12 +71,12 @@ public:
 	[[nodiscard]] QString uuid() const { return this->bUuid; };
 
 signals:
-	void stateChanged(NMConnectionState::Enum state);
-	void stateReasonChanged(NMConnectionStateReason::Enum reason);
-	void connectionChanged(QDBusObjectPath path);
-	void uuidChanged(const QString& uuid);
 	void ready();
 	void disappeared();
+	void connectionChanged(QDBusObjectPath path);
+	void stateChanged(NMConnectionState::Enum state);
+	void stateReasonChanged(NMConnectionStateReason::Enum reason);
+	void uuidChanged(const QString& uuid);
 
 private slots:
 	void onStateChanged(quint32 state, quint32 reason);

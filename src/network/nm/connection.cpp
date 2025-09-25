@@ -1,13 +1,23 @@
 #include "connection.hpp"
 
 #include <qdbusconnection.h>
+#include <qdbusmetatype.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qstring.h>
+#include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "dbus_types.hpp"
+#include "enums.hpp"
+#include "nm/dbus_nm_active_connection.h"
+#include "nm/dbus_nm_connection_settings.h"
 
 namespace qs::network {
 using namespace qs::dbus;

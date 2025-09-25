@@ -1,14 +1,24 @@
 #include "backend.hpp"
 
+#include <qdbusconnection.h>
 #include <qdbusextratypes.h>
+#include <qdbusmetatype.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qlist.h>
+#include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
+#include <qxmlstream.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../device.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
-#include "device.hpp"
+#include "dbus_types.hpp"
+#include "enums.hpp"
 #include "nm/dbus_nm_backend.h"
 #include "wireless.hpp"
 
@@ -106,7 +116,7 @@ void NetworkManager::registerDevice(const QString& path) {
 				xml.readNext();
 
 				if (xml.isStartElement() && xml.name() == "interface") {
-					QString name = xml.attributes().value("name").toString();
+					const QString name = xml.attributes().value("name").toString();
 					if (name.startsWith("org.freedesktop.NetworkManager.Device.Wireless")) {
 						this->registerWifiDevice(path);
 						break;

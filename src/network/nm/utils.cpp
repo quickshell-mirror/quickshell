@@ -1,14 +1,9 @@
 #include "utils.hpp"
 
 #include <qcontainerfwd.h>
-#include <qdbusextratypes.h>
 #include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
 
 #include "dbus_types.hpp"
 #include "enums.hpp"
@@ -21,9 +16,9 @@ NMWirelessSecurityType::Enum securityFromConnectionSettings(const ConnectionSett
 		return NMWirelessSecurityType::Unknown;
 	};
 
-	QString keyMgmt = security["key-mgmt"].toString();
-	QString authAlg = security["auth-alg"].toString();
-	QList<QVariant> proto = security["proto"].toList();
+	const QString keyMgmt = security["key-mgmt"].toString();
+	const QString authAlg = security["auth-alg"].toString();
+	const QList<QVariant> proto = security["proto"].toList();
 
 	if (keyMgmt == "none") {
 		return NMWirelessSecurityType::StaticWep;

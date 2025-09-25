@@ -2,9 +2,11 @@
 
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qobject.h>
 
 #include "../core/logcat.hpp"
 #include "nm/backend.hpp"
+#include "wifi.hpp"
 
 namespace qs::network {
 

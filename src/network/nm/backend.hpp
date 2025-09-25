@@ -3,13 +3,13 @@
 #include <qdbusextratypes.h>
 #include <qhash.h>
 #include <qobject.h>
+#include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
-#include "device.hpp"
 #include "nm/dbus_nm_backend.h"
 
 namespace qs::network {
@@ -17,17 +17,18 @@ namespace qs::network {
 class NetworkManager: public NetworkBackend {
 	Q_OBJECT;
 
-signals:
-	void wifiEnabledChanged(bool enabled);
-	void wifiHardwareEnabledChanged(bool enabled);
-	void wifiDeviceAdded(WifiDevice* device);
-	void wifiDeviceRemoved(WifiDevice* device);
-
 public:
 	explicit NetworkManager(QObject* parent = nullptr);
+
 	[[nodiscard]] bool isAvailable() const override;
 	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; };
 	[[nodiscard]] bool wifiHardwareEnabled() const { return this->bWifiHardwareEnabled; };
+
+signals:
+	void wifiDeviceAdded(WifiDevice* device);
+	void wifiDeviceRemoved(WifiDevice* device);
+	void wifiEnabledChanged(bool enabled);
+	void wifiHardwareEnabledChanged(bool enabled);
 
 public slots:
 	void setWifiEnabled(bool enabled);
@@ -43,11 +44,11 @@ private slots:
 	);
 
 private:
+	static NetworkConnectionState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
 	void init();
 	void registerDevices();
 	void registerDevice(const QString& path);
 	void registerWifiDevice(const QString& path);
-	static NetworkConnectionState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
 
 	QHash<QString, NetworkDevice*> mDeviceHash;
 

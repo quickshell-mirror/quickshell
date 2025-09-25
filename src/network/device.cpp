@@ -1,7 +1,10 @@
 #include "device.hpp"
 
+#include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qobject.h>
+#include <qstringliteral.h>
 
 #include "../core/logcat.hpp"
 

@@ -1,15 +1,29 @@
 #include "wireless.hpp"
+#include <utility>
 
 #include <qdbusconnection.h>
+#include <qdbusextratypes.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qstring.h>
+#include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../../core/logcat.hpp"
+#include "../../dbus/properties.hpp"
+#include "../wifi.hpp"
+#include "accesspoint.hpp"
+#include "connection.hpp"
 #include "dbus_types.hpp"
-#include "nm/enums.hpp"
-#include "nm/utils.hpp"
+#include "device.hpp"
+#include "enums.hpp"
+#include "nm/dbus_nm_wireless.h"
+#include "utils.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -308,7 +322,7 @@ NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
 }
 
 void NMWirelessDevice::onAccessPointLoaded(NMAccessPoint* ap) {
-	QString ssid = ap->ssid();
+	const QString ssid = ap->ssid();
 	if (!ssid.isEmpty()) {
 		auto* net = this->mBackendNetworks.value(ssid);
 		if (!net) net = registerNetwork(ssid);
@@ -341,7 +355,7 @@ void NMWirelessDevice::onConnectionLoaded(NMConnectionSettings* conn) {
 }
 
 void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	QString activeConnPath = active->connection().path();
+	const QString activeConnPath = active->connection().path();
 	for (auto* net: this->mBackendNetworks.values()) {
 		for (auto* conn: net->connections()) {
 			if (activeConnPath == conn->path()) {

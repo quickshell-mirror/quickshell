@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -43,27 +44,27 @@ class NetworkDevice: public QObject {
 	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ nmState NOTIFY nmStateChanged BINDABLE bindableNmState);
 	// clang-format on
 
-signals:
-	void nameChanged();
-	void addressChanged();
-	void stateChanged();
-	void nmStateChanged();
-	void requestDisconnect();
-
 public:
 	explicit NetworkDevice(QObject* parent = nullptr);
 
 	/// Disconnects the device and prevents it from automatically activating further connections.
 	Q_INVOKABLE void disconnect();
 
-	[[nodiscard]] QString name() const { return this->bName; };
-	[[nodiscard]] QString address() const { return this->bAddress; };
-	[[nodiscard]] NetworkConnectionState::Enum state() const { return this->bState; };
-	[[nodiscard]] NMDeviceState::Enum nmState() const { return this->bNmState; };
 	QBindable<QString> bindableName() { return &this->bName; };
+	[[nodiscard]] QString name() const { return this->bName; };
 	QBindable<QString> bindableAddress() { return &this->bAddress; };
+	[[nodiscard]] QString address() const { return this->bAddress; };
 	QBindable<NetworkConnectionState::Enum> bindableState() { return &this->bState; };
+	[[nodiscard]] NetworkConnectionState::Enum state() const { return this->bState; };
 	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
+	[[nodiscard]] NMDeviceState::Enum nmState() const { return this->bNmState; };
+
+signals:
+	void requestDisconnect();
+	void nameChanged();
+	void addressChanged();
+	void stateChanged();
+	void nmStateChanged();
 
 private:
 	// clang-format off

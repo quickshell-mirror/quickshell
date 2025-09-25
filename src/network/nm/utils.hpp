@@ -2,14 +2,9 @@
 #pragma once
 
 #include <qcontainerfwd.h>
-#include <qdbusextratypes.h>
 #include <qdbusservicewatcher.h>
-#include <qhash.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
-#include <qqmllist.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
 
 #include "dbus_types.hpp"
 #include "enums.hpp"

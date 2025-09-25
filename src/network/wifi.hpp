@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -31,31 +32,31 @@ class WifiNetwork: public QObject {
 	Q_PROPERTY(NMWirelessSecurityType::Enum nmSecurity READ nmSecurity NOTIFY nmSecurityChanged BINDABLE bindableNmSecurity);
 	// clang-format on
 
-signals:
-	void signalStrengthChanged();
-	void connectedChanged();
-	void knownChanged();
-	void nmReasonChanged();
-	void nmSecurityChanged();
-	void requestConnect();
-
 public:
 	explicit WifiNetwork(QString ssid, QObject* parent = nullptr);
 
 	/// Attempt to connect to the wifi network.
 	Q_INVOKABLE void connect();
-	
+
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
-	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
-	[[nodiscard]] bool connected() const { return this->bConnected; };
-	[[nodiscard]] bool known() const { return this->bKnown; };
-	[[nodiscard]] NMConnectionStateReason::Enum nmReason() const { return this->bNmReason; };
-	[[nodiscard]] NMWirelessSecurityType::Enum nmSecurity() const { return this->bNmSecurity; };
 	QBindable<quint8> bindableSignalStrength() { return &this->bSignalStrength; }
+	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
+	[[nodiscard]] bool connected() const { return this->bConnected; };
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
+	[[nodiscard]] bool known() const { return this->bKnown; };
 	QBindable<NMConnectionStateReason::Enum> bindableNmReason() { return &this->bNmReason; }
+	[[nodiscard]] NMConnectionStateReason::Enum nmReason() const { return this->bNmReason; };
 	QBindable<NMWirelessSecurityType::Enum> bindableNmSecurity() { return &this->bNmSecurity; }
+	[[nodiscard]] NMWirelessSecurityType::Enum nmSecurity() const { return this->bNmSecurity; };
+
+signals:
+	void requestConnect();
+	void signalStrengthChanged();
+	void connectedChanged();
+	void knownChanged();
+	void nmReasonChanged();
+	void nmSecurityChanged();
 
 private:
 	QString mSsid;
@@ -96,8 +97,8 @@ public:
 	Q_INVOKABLE void scan();
 
 	[[nodiscard]] ObjectModel<WifiNetwork>* networks() { return &this->mNetworks; };
-	[[nodiscard]] bool scanning() const { return this->bScanning; };
 	QBindable<bool> bindableScanning() { return &this->bScanning; };
+	[[nodiscard]] bool scanning() const { return this->bScanning; };
 
 private:
 	ObjectModel<WifiNetwork> mNetworks {this};
@@ -119,25 +120,24 @@ class Wifi: public QObject {
 	Q_PROPERTY(bool hardwareEnabled READ hardwareEnabled NOTIFY hardwareEnabledChanged BINDABLE bindableHardwareEnabled);
 	// clang-format on
 
-signals:
-	void enabledChanged();
-	void hardwareEnabledChanged();
-	void defaultDeviceChanged();
-	void requestSetEnabled(bool enabled);
-
-public slots:
-	void onDeviceAdded(WifiDevice* dev);
-	void onDeviceRemoved(WifiDevice* dev);
-
 public:
 	explicit Wifi(QObject* parent = nullptr);
 
 	[[nodiscard]] ObjectModel<WifiDevice>* devices() { return &this->mDevices; };
+	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
 	[[nodiscard]] bool enabled() const { return this->bEnabled; };
 	void setEnabled(bool enabled);
-	[[nodiscard]] bool hardwareEnabled() const { return this->bHardwareEnabled; };
-	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
 	QBindable<bool> bindableHardwareEnabled() { return &this->bHardwareEnabled; };
+	[[nodiscard]] bool hardwareEnabled() const { return this->bHardwareEnabled; };
+
+signals:
+	void requestSetEnabled(bool enabled);
+	void enabledChanged();
+	void hardwareEnabledChanged();
+
+public slots:
+	void onDeviceAdded(WifiDevice* dev);
+	void onDeviceRemoved(WifiDevice* dev);
 
 private:
 	ObjectModel<WifiDevice> mDevices {this};

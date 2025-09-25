@@ -3,9 +3,6 @@
 		<method name="GetAllDevices">
 			<arg direction="out" type="ao" name="devices"/>
 		</method>
-		<method name="GetDevices">
-			<arg direction="out" type="ao" name="devices"/>
-		</method>
 		<method name="ActivateConnection">
 			<arg direction="in" type="o" name="connection"/>
 			<arg direction="in" type="o" name="device"/>
@@ -20,7 +17,6 @@
 			<arg direction="out" type="o" name="path"/>
 			<arg direction="out" type="o" name="active_connection"/>
 		</method>
-
 		<signal name="DeviceAdded">
 			<arg type="o" name="device_path"/>
 		</signal> 
