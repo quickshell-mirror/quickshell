@@ -40,7 +40,7 @@ public:
 	           '\0'}
 	      ) {
 		for (auto i = 3; i != 0; i--) {
-			if (chars[i] == ' ') chars[i] = '\0';
+			if (this->chars[i] == ' ') this->chars[i] = '\0';
 			else break;
 		}
 	}

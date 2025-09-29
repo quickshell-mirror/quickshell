@@ -183,7 +183,7 @@ void DBusMenuItem::updateProperties(const QVariantMap& properties, const QString
 		}
 	} else if (removed.isEmpty() || removed.contains("icon-data")) {
 		imageChanged = this->image.hasData();
-		image.data.clear();
+		this->image.data.clear();
 	}
 
 	auto type = properties.value("type");

@@ -68,11 +68,11 @@ void WlrScreencopyContext::captureFrame() {
 	this->request.reset();
 
 	if (this->region.isEmpty()) {
-		this->init(manager->capture_output(this->paintCursors ? 1 : 0, screen->output()));
+		this->init(this->manager->capture_output(this->paintCursors ? 1 : 0, this->screen->output()));
 	} else {
-		this->init(manager->capture_output_region(
+		this->init(this->manager->capture_output_region(
 		    this->paintCursors ? 1 : 0,
-		    screen->output(),
+		    this->screen->output(),
 		    this->region.x(),
 		    this->region.y(),
 		    this->region.width(),

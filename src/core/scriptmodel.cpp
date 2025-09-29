@@ -19,7 +19,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 	auto newIter = newValues.begin();
 
 	// TODO: cache this
-	auto getCmpKey = [&](const QVariant& v) {
+	auto getCmpKey = [this](const QVariant& v) {
 		if (v.canConvert<QVariantMap>()) {
 			auto vMap = v.value<QVariantMap>();
 			if (vMap.contains(this->cmpKey)) {
@@ -30,7 +30,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 		return v;
 	};
 
-	auto variantCmp = [&](const QVariant& a, const QVariant& b) {
+	auto variantCmp = [&, this](const QVariant& a, const QVariant& b) {
 		if (!this->cmpKey.isEmpty()) return getCmpKey(a) == getCmpKey(b);
 		else return a == b;
 	};

@@ -77,7 +77,7 @@ QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer) {
 }
 
 GbmDeviceHandle::~GbmDeviceHandle() {
-	if (device) {
+	if (this->device) {
 		MANAGER->unrefGbmDevice(this->device);
 	}
 }
@@ -522,7 +522,7 @@ WlDmaBuffer::~WlDmaBuffer() {
 bool WlDmaBuffer::isCompatible(const WlBufferRequest& request) const {
 	if (request.width != this->width || request.height != this->height) return false;
 
-	auto matchingFormat = std::ranges::find_if(request.dmabuf.formats, [&](const auto& format) {
+	auto matchingFormat = std::ranges::find_if(request.dmabuf.formats, [this](const auto& format) {
 		return format.format == this->format
 		    && (format.modifiers.isEmpty()
 		        || std::ranges::find(format.modifiers, this->modifier) != format.modifiers.end());

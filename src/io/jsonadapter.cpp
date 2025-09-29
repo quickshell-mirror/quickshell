@@ -44,7 +44,7 @@ void JsonAdapter::deserializeAdapter(const QByteArray& data) {
 
 	this->deserializeRec(json.object(), this, &JsonAdapter::staticMetaObject);
 
-	for (auto* object: oldCreatedObjects) {
+	for (auto* object: this->oldCreatedObjects) {
 		delete object; // FIXME: QMetaType::destroy?
 	}
 
@@ -56,7 +56,7 @@ void JsonAdapter::deserializeAdapter(const QByteArray& data) {
 
 void JsonAdapter::connectNotifiers() {
 	auto notifySlot = JsonAdapter::staticMetaObject.indexOfSlot("onPropertyChanged()");
-	connectNotifiersRec(notifySlot, this, &JsonAdapter::staticMetaObject);
+	this->connectNotifiersRec(notifySlot, this, &JsonAdapter::staticMetaObject);
 }
 
 void JsonAdapter::connectNotifiersRec(int notifySlot, QObject* obj, const QMetaObject* base) {
@@ -71,7 +71,7 @@ void JsonAdapter::connectNotifiersRec(int notifySlot, QObject* obj, const QMetaO
 			auto val = prop.read(obj);
 			if (val.canView<JsonObject*>()) {
 				auto* pobj = prop.read(obj).view<JsonObject*>();
-				if (pobj) connectNotifiersRec(notifySlot, pobj, &JsonObject::staticMetaObject);
+				if (pobj) this->connectNotifiersRec(notifySlot, pobj, &JsonObject::staticMetaObject);
 			} else if (val.canConvert<QQmlListProperty<JsonObject>>()) {
 				auto listVal = val.value<QQmlListProperty<JsonObject>>();
 
@@ -79,7 +79,7 @@ void JsonAdapter::connectNotifiersRec(int notifySlot, QObject* obj, const QMetaO
 				for (auto i = 0; i != len; i++) {
 					auto* pobj = listVal.at(&listVal, i);
 
-					if (pobj) connectNotifiersRec(notifySlot, pobj, &JsonObject::staticMetaObject);
+					if (pobj) this->connectNotifiersRec(notifySlot, pobj, &JsonObject::staticMetaObject);
 				}
 			}
 		}
@@ -111,7 +111,7 @@ QJsonObject JsonAdapter::serializeRec(const QObject* obj, const QMetaObject* bas
 				auto* pobj = val.view<JsonObject*>();
 
 				if (pobj) {
-					json.insert(prop.name(), serializeRec(pobj, &JsonObject::staticMetaObject));
+					json.insert(prop.name(), this->serializeRec(pobj, &JsonObject::staticMetaObject));
 				} else {
 					json.insert(prop.name(), QJsonValue::Null);
 				}
@@ -124,7 +124,7 @@ QJsonObject JsonAdapter::serializeRec(const QObject* obj, const QMetaObject* bas
 					auto* pobj = listVal.at(&listVal, i);
 
 					if (pobj) {
-						array.push_back(serializeRec(pobj, &JsonObject::staticMetaObject));
+						array.push_back(this->serializeRec(pobj, &JsonObject::staticMetaObject));
 					} else {
 						array.push_back(QJsonValue::Null);
 					}
@@ -178,8 +178,8 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 
 						currentValue->setParent(this);
 						this->createdObjects.push_back(currentValue);
-					} else if (oldCreatedObjects.removeOne(currentValue)) {
-						createdObjects.push_back(currentValue);
+					} else if (this->oldCreatedObjects.removeOne(currentValue)) {
+						this->createdObjects.push_back(currentValue);
 					}
 
 					this->deserializeRec(jval.toObject(), currentValue, &JsonObject::staticMetaObject);
@@ -212,8 +212,8 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 						if (jsonValue.isObject()) {
 							if (isNew) {
 								currentValue = lp.at(&lp, i);
-								if (oldCreatedObjects.removeOne(currentValue)) {
-									createdObjects.push_back(currentValue);
+								if (this->oldCreatedObjects.removeOne(currentValue)) {
+									this->createdObjects.push_back(currentValue);
 								}
 							} else {
 								// FIXME: should be the type inside the QQmlListProperty but how can we get that?
