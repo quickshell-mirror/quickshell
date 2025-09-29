@@ -1,6 +1,7 @@
 {
   pkgs ? import <nixpkgs> {},
-  quickshell ? pkgs.callPackage ./default.nix {},
+  stdenv ? pkgs.clangStdenv, # faster compiles than gcc
+  quickshell ? pkgs.callPackage ./default.nix { inherit stdenv; },
   ...
 }: let
   tidyfox = import (pkgs.fetchFromGitea {
