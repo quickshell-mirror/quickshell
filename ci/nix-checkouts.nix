@@ -8,10 +8,17 @@ let
     inherit sha256;
   }) {};
 in rec {
-  # For old qt versions, grab the commit before the version bump that has all the patches
-  # instead of the bumped version.
-
   latest = qt6_9_0;
+
+  qt6_9_2 = byCommit {
+    commit = "e9f00bd893984bc8ce46c895c3bf7cac95331127";
+    sha256 = "0s2mhbrgzxlgkg2yxb0q0hpk8lby1a7w67dxvfmaz4gsmc0bnvfj";
+  };
+
+  qt6_9_1 = byCommit {
+    commit = "4c202d26483c5ccf3cb95e0053163facde9f047e";
+    sha256 = "06l2w4bcgfw7dfanpzpjcf25ydf84in240yplqsss82qx405y9di";
+  };
 
   qt6_9_0 = byCommit {
     commit = "546c545bd0594809a28ab7e869b5f80dd7243ef6";
