@@ -378,7 +378,7 @@ void MprisPlayer::onPlaybackStatusUpdated() {
 
 	// For exceptionally bad players that update playback timestamps at an indeterminate time AFTER
 	// updating playback state. (Youtube)
-	QTimer::singleShot(100, this, [&]() { this->pPosition.requestUpdate(); });
+	QTimer::singleShot(100, this, [this]() { this->pPosition.requestUpdate(); });
 
 	// For exceptionally bad players that don't update length (or other metadata) until a new track actually
 	// starts playing, and then don't trigger a metadata update when they do. (Jellyfin)

@@ -31,7 +31,7 @@ void IdleMonitor::updateNotification() {
 	delete notification;
 	notification = nullptr;
 
-	auto guard = qScopeGuard([&] { this->bNotification = notification; });
+	auto guard = qScopeGuard([&, this] { this->bNotification = notification; });
 
 	auto params = this->bParams.value();
 

@@ -36,7 +36,7 @@ class DBusMenuPngImage: public QsIndexedImageHandle {
 public:
 	explicit DBusMenuPngImage(): QsIndexedImageHandle(QQuickImageProvider::Image) {}
 
-	[[nodiscard]] bool hasData() const { return !data.isEmpty(); }
+	[[nodiscard]] bool hasData() const { return !this->data.isEmpty(); }
 	QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
 
 	QByteArray data;

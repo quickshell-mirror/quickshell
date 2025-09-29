@@ -135,8 +135,8 @@ void PwDevice::polled() {
 	// It is far more likely that the list content has not come in yet than it having no entries,
 	// and there isn't a way to check in the case that there *aren't* actually any entries.
 	if (!this->stagingIndexes.isEmpty()) {
-		this->routeDeviceIndexes.removeIf([&](const std::pair<qint32, qint32>& entry) {
-			if (!stagingIndexes.contains(entry.first)) {
+		this->routeDeviceIndexes.removeIf([&, this](const std::pair<qint32, qint32>& entry) {
+			if (!this->stagingIndexes.contains(entry.first)) {
 				qCDebug(logDevice).nospace() << "Removed device/index pair [device: " << entry.first
 				                             << ", index: " << entry.second << "] for" << this;
 				return true;

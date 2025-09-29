@@ -93,7 +93,8 @@ void FileViewReader::run() {
 		FileViewReader::read(this->owner, this->state, this->doStringConversion, this->shouldCancel);
 
 		if (this->shouldCancel.loadAcquire()) {
-			qCDebug(logFileView) << "Read" << this << "of" << state.path << "canceled for" << this->owner;
+			qCDebug(logFileView) << "Read" << this << "of" << this->state.path << "canceled for"
+			                     << this->owner;
 		}
 	}
 
@@ -206,7 +207,7 @@ void FileViewWriter::run() {
 		FileViewWriter::write(this->owner, this->state, this->doAtomicWrite, this->shouldCancel);
 
 		if (this->shouldCancel.loadAcquire()) {
-			qCDebug(logFileView) << "Write" << this << "of" << state.path << "canceled for"
+			qCDebug(logFileView) << "Write" << this << "of" << this->state.path << "canceled for"
 			                     << this->owner;
 		}
 	}

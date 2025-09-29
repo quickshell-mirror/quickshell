@@ -28,26 +28,28 @@ ColorQuantizerOperation::ColorQuantizerOperation(QUrl* source, qreal depth, qrea
     : source(source)
     , maxDepth(depth)
     , rescaleSize(rescaleSize) {
-	setAutoDelete(false);
+	this->setAutoDelete(false);
 }
 
 void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCancel) {
-	if (shouldCancel.loadAcquire() || source->isEmpty()) return;
+	if (shouldCancel.loadAcquire() || this->source->isEmpty()) return;
 
-	colors.clear();
+	this->colors.clear();
 
-	auto image = QImage(source->toLocalFile());
-	if ((image.width() > rescaleSize || image.height() > rescaleSize) && rescaleSize > 0) {
+	auto image = QImage(this->source->toLocalFile());
+	if ((image.width() > this->rescaleSize || image.height() > this->rescaleSize)
+	    && this->rescaleSize > 0)
+	{
 		image = image.scaled(
-		    static_cast<int>(rescaleSize),
-		    static_cast<int>(rescaleSize),
+		    static_cast<int>(this->rescaleSize),
+		    static_cast<int>(this->rescaleSize),
 		    Qt::KeepAspectRatio,
 		    Qt::SmoothTransformation
 		);
 	}
 
 	if (image.isNull()) {
-		qCWarning(logColorQuantizer) << "Failed to load image from" << source->toString();
+		qCWarning(logColorQuantizer) << "Failed to load image from" << this->source->toString();
 		return;
 	}
 
@@ -63,7 +65,7 @@ void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCa
 
 	auto startTime = QDateTime::currentDateTime();
 
-	colors = quantization(pixels, 0);
+	this->colors = this->quantization(pixels, 0);
 
 	auto endTime = QDateTime::currentDateTime();
 	auto milliseconds = startTime.msecsTo(endTime);
@@ -77,7 +79,7 @@ QList<QColor> ColorQuantizerOperation::quantization(
 ) {
 	if (shouldCancel.loadAcquire()) return QList<QColor>();
 
-	if (depth >= maxDepth || rgbValues.isEmpty()) {
+	if (depth >= this->maxDepth || rgbValues.isEmpty()) {
 		if (rgbValues.isEmpty()) return QList<QColor>();
 
 		auto totalR = 0;
@@ -114,8 +116,8 @@ QList<QColor> ColorQuantizerOperation::quantization(
 	auto rightHalf = rgbValues.mid(mid);
 
 	QList<QColor> result;
-	result.append(quantization(leftHalf, depth + 1));
-	result.append(quantization(rightHalf, depth + 1));
+	result.append(this->quantization(leftHalf, depth + 1));
+	result.append(this->quantization(rightHalf, depth + 1));
 
 	return result;
 }
@@ -159,7 +161,7 @@ void ColorQuantizerOperation::finishRun() {
 }
 
 void ColorQuantizerOperation::finished() {
-	emit this->done(colors);
+	emit this->done(this->colors);
 	delete this;
 }
 
@@ -178,39 +180,39 @@ void ColorQuantizerOperation::run() {
 void ColorQuantizerOperation::tryCancel() { this->shouldCancel.storeRelease(true); }
 
 void ColorQuantizer::componentComplete() {
-	componentCompleted = true;
-	if (!mSource.isEmpty()) quantizeAsync();
+	this->componentCompleted = true;
+	if (!this->mSource.isEmpty()) this->quantizeAsync();
 }
 
 void ColorQuantizer::setSource(const QUrl& source) {
-	if (mSource != source) {
-		mSource = source;
+	if (this->mSource != source) {
+		this->mSource = source;
 		emit this->sourceChanged();
 
-		if (this->componentCompleted && !mSource.isEmpty()) quantizeAsync();
+		if (this->componentCompleted && !this->mSource.isEmpty()) this->quantizeAsync();
 	}
 }
 
 void ColorQuantizer::setDepth(qreal depth) {
-	if (mDepth != depth) {
-		mDepth = depth;
+	if (this->mDepth != depth) {
+		this->mDepth = depth;
 		emit this->depthChanged();
 
-		if (this->componentCompleted) quantizeAsync();
+		if (this->componentCompleted) this->quantizeAsync();
 	}
 }
 
 void ColorQuantizer::setRescaleSize(int rescaleSize) {
-	if (mRescaleSize != rescaleSize) {
-		mRescaleSize = rescaleSize;
+	if (this->mRescaleSize != rescaleSize) {
+		this->mRescaleSize = rescaleSize;
 		emit this->rescaleSizeChanged();
 
-		if (this->componentCompleted) quantizeAsync();
+		if (this->componentCompleted) this->quantizeAsync();
 	}
 }
 
 void ColorQuantizer::operationFinished(const QList<QColor>& result) {
-	bColors = result;
+	this->bColors = result;
 	this->liveOperation = nullptr;
 	emit this->colorsChanged();
 }
@@ -219,7 +221,8 @@ void ColorQuantizer::quantizeAsync() {
 	if (this->liveOperation) this->cancelAsync();
 
 	qCDebug(logColorQuantizer) << "Starting color quantization asynchronously";
-	this->liveOperation = new ColorQuantizerOperation(&mSource, mDepth, mRescaleSize);
+	this->liveOperation =
+	    new ColorQuantizerOperation(&this->mSource, this->mDepth, this->mRescaleSize);
 
 	QObject::connect(
 	    this->liveOperation,

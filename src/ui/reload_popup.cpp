@@ -25,7 +25,7 @@ ReloadPopup::ReloadPopup(QString instanceId, bool failed, QString errorString)
 
 	this->popup = component.createWithInitialProperties({{"reloadInfo", QVariant::fromValue(this)}});
 
-	if (!popup) {
+	if (!this->popup) {
 		qCritical() << "Failed to open reload popup:" << component.errorString();
 	}
 

@@ -101,7 +101,7 @@ QString UPowerDevice::address() const { return this->device ? this->device->serv
 QString UPowerDevice::path() const { return this->device ? this->device->path() : QString(); }
 
 void UPowerDevice::onGetAllFinished() {
-	qCDebug(logUPowerDevice) << "UPowerDevice" << device->path() << "ready.";
+	qCDebug(logUPowerDevice) << "UPowerDevice" << this->device->path() << "ready.";
 	this->bReady = true;
 }
 

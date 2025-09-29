@@ -91,13 +91,13 @@ public:
 
 	[[nodiscard]] QBindable<QList<QColor>> bindableColors() { return &this->bColors; }
 
-	[[nodiscard]] QUrl source() const { return mSource; }
+	[[nodiscard]] QUrl source() const { return this->mSource; }
 	void setSource(const QUrl& source);
 
-	[[nodiscard]] qreal depth() const { return mDepth; }
+	[[nodiscard]] qreal depth() const { return this->mDepth; }
 	void setDepth(qreal depth);
 
-	[[nodiscard]] qreal rescaleSize() const { return mRescaleSize; }
+	[[nodiscard]] qreal rescaleSize() const { return this->mRescaleSize; }
 	void setRescaleSize(int rescaleSize);
 
 signals:
