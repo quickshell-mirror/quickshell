@@ -14,6 +14,7 @@ jobs:
       # Use cachix action over detsys for testing with act.
       # - uses: cachix/install-nix-action@v27
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Download Dependencies
         run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).unwrapped.inputDerivation'
