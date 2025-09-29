@@ -4,23 +4,28 @@
   };
 
   outputs = { self, nixpkgs }: let
+    overlayPkgs = p: p.appendOverlays [ self.overlays.default ];
+
     forEachSystem = fn:
       nixpkgs.lib.genAttrs
         nixpkgs.lib.platforms.linux
-        (system: fn system nixpkgs.legacyPackages.${system});
+        (system: fn system (overlayPkgs nixpkgs.legacyPackages.${system}));
   in {
-    packages = forEachSystem (system: pkgs: rec {
-      quickshell = pkgs.callPackage ./default.nix {
-        gitRev = self.rev or self.dirtyRev;
-      };
+    overlays.default = import ./overlay.nix {
+      rev = self.rev or self.dirtyRev;
+    };
 
+    packages = forEachSystem (system: pkgs: rec {
+      quickshell = pkgs.quickshell;
       default = quickshell;
     });
 
     devShells = forEachSystem (system: pkgs: rec {
       default = import ./shell.nix {
         inherit pkgs;
-        inherit (self.packages.${system}) quickshell;
+        quickshell = self.packages.${system}.quickshell.override {
+          stdenv = pkgs.clangStdenv;
+        };
       };
     });
   };

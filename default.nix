@@ -2,8 +2,8 @@
   lib,
   nix-gitignore,
   pkgs,
+  stdenv,
   keepDebugInfo,
-  buildStdenv ? pkgs.clangStdenv,
 
   pkg-config,
   cmake,
@@ -44,7 +44,7 @@
   withHyprland ? true,
   withI3 ? true,
 }: let
-  unwrapped = buildStdenv.mkDerivation {
+  unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
     version = "0.2.0";
     src = nix-gitignore.gitignoreSource "/default.nix\n" ./.;
