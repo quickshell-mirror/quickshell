@@ -1,6 +1,6 @@
 find_package(PkgConfig REQUIRED)
 find_package(WaylandScanner REQUIRED)
-pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols)
+pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols>=1.41)
 
 # wayland protocols
 
@@ -12,13 +12,13 @@ if(NOT TARGET Qt6::qtwaylandscanner)
 	message(FATAL_ERROR "qtwaylandscanner executable not found. Most likely there is an issue with your Qt installation.")
 endif()
 
-execute_process(
-	COMMAND pkg-config --variable=pkgdatadir wayland-protocols
-	OUTPUT_VARIABLE WAYLAND_PROTOCOLS
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+pkg_get_variable(WAYLAND_PROTOCOLS wayland-protocols pkgdatadir)
 
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+if(WAYLAND_PROTOCOLS)
+	message(STATUS "Found wayland protocols at ${WAYLAND_PROTOCOLS}")
+else()
+	message(FATAL_ERROR "Could not find wayland protocols")
+endif()
 
 qs_add_pchset(wayland-protocol
 	DEPENDENCIES Qt::Core Qt::WaylandClient Qt::WaylandClientPrivate

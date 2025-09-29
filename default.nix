@@ -54,11 +54,13 @@
     nativeBuildInputs = [
       cmake
       ninja
-      qt6.qtshadertools
       spirv-tools
       pkg-config
     ]
-    ++ lib.optional withWayland wayland-scanner;
+    ++ lib.optionals withWayland [
+      qt6.qtwayland # qtwaylandscanner required at build time
+      wayland-scanner
+    ];
 
     buildInputs = [
       qt6.qtbase
