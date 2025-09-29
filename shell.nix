@@ -8,8 +8,8 @@
     domain = "git.outfoxxed.me";
     owner = "outfoxxed";
     repo = "tidyfox";
-    rev = "1f062cc198d1112d13e5128fa1f2ee3dbffe613b";
-    sha256 = "kbt0Zc1qHE5fhqBkKz8iue+B+ZANjF1AR/RdgmX1r0I=";
+    rev = "9d85d7e7dea2602aa74ec3168955fee69967e92f";
+    hash = "sha256-77ERiweF6lumonp2c/124rAoVG6/o9J+Aajhttwtu0w=";
   }) { inherit pkgs; };
 in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
   inputsFrom = [ quickshell ];
