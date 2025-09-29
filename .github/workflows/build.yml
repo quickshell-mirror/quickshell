@@ -16,7 +16,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Download Dependencies
-        run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).inputDerivation'
+        run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).unwrapped.inputDerivation'
 
       - name: Build
         run: nix-build --no-out-link --expr '(import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }'
