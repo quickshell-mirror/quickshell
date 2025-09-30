@@ -5,12 +5,17 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       # Use cachix action over detsys for testing with act.
       # - uses: cachix/install-nix-action@v27
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
       - uses: nicknovitski/nix-develop@v1
 
       - name: Check formatting
