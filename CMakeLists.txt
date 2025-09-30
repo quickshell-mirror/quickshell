@@ -100,6 +100,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets ShaderTools)
+set(QT_PRIVDEPS QuickPrivate)
 
 include(cmake/pch.cmake)
 
@@ -115,6 +116,7 @@ endif()
 
 if (WAYLAND)
 	list(APPEND QT_FPDEPS WaylandClient)
+	list(APPEND QT_PRIVDEPS WaylandClientPrivate)
 endif()
 
 if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS OR BLUETOOTH)
@@ -126,6 +128,13 @@ if (DBUS)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
+
+# In Qt 6.10, private dependencies are required to be explicit,
+# but they could not be explicitly depended on prior to 6.9.
+if (Qt6_VERSION VERSION_GREATER_EQUAL "6.9.0")
+	set(QT_NO_PRIVATE_MODULE_WARNING ON)
+	find_package(Qt6 REQUIRED COMPONENTS ${QT_PRIVDEPS})
+endif()
 
 set(CMAKE_AUTOUIC OFF)
 qt_standard_project_setup(REQUIRES 6.6)
