@@ -61,12 +61,14 @@ struct Locale {
 
 	[[nodiscard]] int matchScore(const Locale& other) const {
 		if (this->language != other.language) return 0;
-		auto territoryMatches = !this->territory.isEmpty() && this->territory == other.territory;
-		auto modifierMatches = !this->modifier.isEmpty() && this->modifier == other.modifier;
+
+		if (!other.modifier.isEmpty() && this->modifier != other.modifier) return 0;
+		if (!other.territory.isEmpty() && this->territory != other.territory) return 0;
 
 		auto score = 1;
-		if (territoryMatches) score += 2;
-		if (modifierMatches) score += 1;
+
+		if (!other.territory.isEmpty()) score += 2;
+		if (!other.modifier.isEmpty()) score += 1;
 
 		return score;
 	}
