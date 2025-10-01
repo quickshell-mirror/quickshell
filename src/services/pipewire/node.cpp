@@ -304,6 +304,8 @@ void PwNodeBoundAudio::updateVolumeProps(const PwVolumeProps& volumeProps) {
 		return;
 	}
 
+	this->volumeStep = volumeProps.volumeStep;
+
 	// It is important that the lengths of channels and volumes stay in sync whenever you read them.
 	auto channelsChanged = false;
 	auto volumesChanged = false;
@@ -435,31 +437,35 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 			                << "via device";
 			this->waitingVolumes = realVolumes;
 		} else {
-			auto significantChange = this->mServerVolumes.isEmpty();
-			for (auto i = 0; i < this->mServerVolumes.length(); i++) {
-				auto serverVolume = this->mServerVolumes.value(i);
-				auto targetVolume = realVolumes.value(i);
-				if (targetVolume == 0 || abs(targetVolume - serverVolume) >= 0.0001) {
-					significantChange = true;
-					break;
-				}
-			}
-
-			if (significantChange) {
-				qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
-				                << "via device";
-				if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
-					return;
+			if (this->volumeStep != -1) {
+				auto significantChange = this->mServerVolumes.isEmpty();
+				for (auto i = 0; i < this->mServerVolumes.length(); i++) {
+					auto serverVolume = this->mServerVolumes.value(i);
+					auto targetVolume = realVolumes.value(i);
+					if (targetVolume == 0 || abs(targetVolume - serverVolume) >= this->volumeStep) {
+						significantChange = true;
+						break;
+					}
 				}
 
-				this->mDeviceVolumes = realVolumes;
-				this->node->device->waitForDevice();
-			} else {
-				// Insignificant changes won't cause an info event on the device, leaving qs hung in the
-				// "waiting for acknowledgement" state forever.
-				qCInfo(logNode) << "Ignoring volume change for" << this->node << "to" << realVolumes
-				                << "from" << this->mServerVolumes
-				                << "as it is a device node and the change is too small.";
+				if (significantChange) {
+					qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
+					                << "via device";
+					if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
+						return;
+					}
+
+					this->mDeviceVolumes = realVolumes;
+					this->node->device->waitForDevice();
+				} else {
+					// Insignificant changes won't cause an info event on the device, leaving qs hung in the
+					// "waiting for acknowledgement" state forever.
+					qCInfo(logNode).nospace()
+					    << "Ignoring volume change for " << this->node << " to " << realVolumes << " from "
+					    << this->mServerVolumes
+					    << " as it is a device node and the change is too small (min step: "
+					    << this->volumeStep << ").";
+				}
 			}
 		}
 	} else {
@@ -519,6 +525,7 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 	const auto* volumesProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelVolumes);
 	const auto* channelsProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelMap);
 	const auto* muteProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
+	const auto* volumeStepProp = spa_pod_find_prop(param, nullptr, SPA_PROP_volumeStep);
 
 	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
 	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
@@ -536,6 +543,12 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 	}
 
 	spa_pod_get_bool(&muteProp->value, &props.mute);
+
+	if (volumeStepProp) {
+		spa_pod_get_float(&volumeStepProp->value, &props.volumeStep);
+	} else {
+		props.volumeStep = -1;
+	}
 
 	return props;
 }
