@@ -23,9 +23,11 @@
     devShells = forEachSystem (system: pkgs: rec {
       default = import ./shell.nix {
         inherit pkgs;
-        quickshell = self.packages.${system}.quickshell.override {
-          stdenv = pkgs.clangStdenv;
-        };
+        quickshell = self.packages.${system}.quickshell.override (prev: {
+          quickshell-unwrapped = prev.quickshell-unwrapped.override {
+            stdenv = pkgs.clangStdenv;
+          };
+        });
       };
     });
   };
