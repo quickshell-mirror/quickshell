@@ -5,7 +5,9 @@
   checkouts = import ./nix-checkouts.nix;
   nixpkgs = checkouts.${builtins.replaceStrings ["."] ["_"] qtver};
   compilerOverride = (nixpkgs.callPackage ./variations.nix {}).${compiler};
-  pkg = (nixpkgs.callPackage ../default.nix {}).override (compilerOverride // {
-    wayland-protocols = checkouts.latest.wayland-protocols;
-  });
+  quickshell-unwrapped = nixpkgs.callPackage ../unwrapped.nix (
+    compilerOverride //
+    {inherit (checkouts.latest) wayland-protocols;}
+  );
+  pkg = (nixpkgs.callPackage ../default.nix {inherit quickshell-unwrapped;});
 in pkg
