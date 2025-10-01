@@ -1,134 +1,26 @@
 {
-  lib,
-  nix-gitignore,
-  pkgs,
-  stdenv,
-  keepDebugInfo,
-
-  pkg-config,
-  cmake,
-  ninja,
-  spirv-tools,
+  callPackage,
+  quickshell-unwrapped ? callPackage ./unwrapped.nix {},
   qt6,
-  breakpad,
-  jemalloc,
-  cli11,
-  wayland,
-  wayland-protocols,
-  wayland-scanner,
-  xorg,
-  libdrm,
-  libgbm ? null,
-  pipewire,
-  pam,
+}: quickshell-unwrapped.stdenv.mkDerivation (final: {
+  inherit (quickshell-unwrapped) version meta buildInputs;
+  pname = "${quickshell-unwrapped.pname}-wrapped";
 
-  gitRev ? (let
-    headExists = builtins.pathExists ./.git/HEAD;
-    headContent = builtins.readFile ./.git/HEAD;
-  in if headExists
-     then (let
-       matches = builtins.match "ref: refs/heads/(.*)\n" headContent;
-     in if matches != null
-        then builtins.readFile ./.git/refs/heads/${builtins.elemAt matches 0}
-        else headContent)
-     else "unknown"),
+  nativeBuildInputs = quickshell-unwrapped.nativeBuildInputs ++ [ qt6.wrapQtAppsHook ];
 
-  debug ? false,
-  withCrashReporter ? true,
-  withJemalloc ? true, # masks heap fragmentation
-  withQtSvg ? true,
-  withWayland ? true,
-  withX11 ? true,
-  withPipewire ? true,
-  withPam ? true,
-  withHyprland ? true,
-  withI3 ? true,
-}: let
-  unwrapped = stdenv.mkDerivation {
-    pname = "quickshell${lib.optionalString debug "-debug"}";
-    version = "0.2.0";
-    src = nix-gitignore.gitignoreSource "/default.nix\n" ./.;
+  dontUnpack = true;
+  dontConfigure = true;
+  dontBuild = true;
 
-    dontWrapQtApps = true; # see wrappers
+  installPhase = ''
+    mkdir -p $out
+    cp -r ${quickshell-unwrapped}/* $out
+  '';
 
-    nativeBuildInputs = [
-      cmake
-      ninja
-      spirv-tools
-      pkg-config
-    ]
-    ++ lib.optionals withWayland [
-      qt6.qtwayland # qtwaylandscanner required at build time
-      wayland-scanner
-    ];
-
-    buildInputs = [
-      qt6.qtbase
-      qt6.qtdeclarative
-      cli11
-    ]
-    ++ lib.optional withQtSvg qt6.qtsvg
-    ++ lib.optional withCrashReporter breakpad
-    ++ lib.optional withJemalloc jemalloc
-    ++ lib.optionals withWayland [ qt6.qtwayland wayland wayland-protocols ]
-    ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
-    ++ lib.optional withX11 xorg.libxcb
-    ++ lib.optional withPam pam
-    ++ lib.optional withPipewire pipewire;
-
-    cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
-
-    cmakeFlags = [
-      (lib.cmakeFeature "DISTRIBUTOR" "Official-Nix-Flake")
-      (lib.cmakeFeature "INSTALL_QML_PREFIX" qt6.qtbase.qtQmlPrefix)
-      (lib.cmakeBool "DISTRIBUTOR_DEBUGINFO_AVAILABLE" true)
-      (lib.cmakeFeature "GIT_REVISION" gitRev)
-      (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
-      (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
-      (lib.cmakeBool "WAYLAND" withWayland)
-      (lib.cmakeBool "SCREENCOPY" (libgbm != null))
-      (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
-      (lib.cmakeBool "SERVICE_PAM" withPam)
-      (lib.cmakeBool "HYPRLAND" withHyprland)
-      (lib.cmakeBool "I3" withI3)
-    ];
-
-    # How to get debuginfo in gdb from a release build:
-    # 1. build `quickshell.debug`
-    # 2. set NIX_DEBUG_INFO_DIRS="<quickshell.debug store path>/lib/debug"
-    # 3. launch gdb / coredumpctl and debuginfo will work
-    separateDebugInfo = !debug;
-    dontStrip = debug;
-
-    meta = with lib; {
-      homepage = "https://quickshell.org";
-      description = "Flexbile QtQuick based desktop shell toolkit";
-      license = licenses.lgpl3Only;
-      platforms = platforms.linux;
-      mainProgram = "quickshell";
-    };
+  passthru = {
+    unwrapped = quickshell-unwrapped;
+    withModules = modules: final.finalPackage.overrideAttrs (prev: {
+      buildInputs = prev.buildInputs ++ modules;
+    });
   };
-
-  wrapper = unwrapped.stdenv.mkDerivation {
-    inherit (unwrapped) version meta buildInputs;
-    pname = "${unwrapped.pname}-wrapped";
-
-    nativeBuildInputs = unwrapped.nativeBuildInputs ++ [ qt6.wrapQtAppsHook ];
-
-    dontUnpack = true;
-    dontConfigure = true;
-    dontBuild = true;
-
-    installPhase = ''
-      mkdir -p $out
-      cp -r ${unwrapped}/* $out
-    '';
-
-    passthru = {
-      unwrapped = unwrapped;
-      withModules = modules: wrapper.overrideAttrs (prev: {
-        buildInputs = prev.buildInputs ++ modules;
-      });
-    };
-  };
-in wrapper
+})
