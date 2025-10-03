@@ -14,6 +14,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qmutex.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
@@ -220,6 +221,7 @@ void LogManager::messageHandler(
 	}
 
 	if (display) {
+		auto locker = QMutexLocker(&self->stdoutMutex);
 		LogMessage::formatMessage(
 		    self->stdoutStream,
 		    message,
