@@ -57,6 +57,7 @@
       spirv-tools
       pkg-config
     ]
+    ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
     ++ lib.optionals withWayland [
       qt6.qtwayland # qtwaylandscanner required at build time
       wayland-scanner
@@ -70,7 +71,8 @@
     ++ lib.optional withQtSvg qt6.qtsvg
     ++ lib.optional withCrashReporter breakpad
     ++ lib.optional withJemalloc jemalloc
-    ++ lib.optionals withWayland [ qt6.qtwayland wayland wayland-protocols ]
+    ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
+    ++ lib.optionals withWayland [ wayland wayland-protocols ]
     ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
     ++ lib.optional withX11 xorg.libxcb
     ++ lib.optional withPam pam
