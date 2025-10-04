@@ -10,10 +10,11 @@
 QtWaylandClient::QWaylandShellSurface*
 QSWaylandSessionLockIntegration::createShellSurface(QtWaylandClient::QWaylandWindow* window) {
 	auto* lock = LockWindowExtension::get(window->window());
-	if (lock == nullptr || lock->surface == nullptr || !lock->surface->isExposed()) {
+	if (lock == nullptr || lock->surface == nullptr) {
 		qFatal() << "Visibility canary failed. A window with a LockWindowExtension MUST be set to "
 		            "visible via LockWindowExtension::setVisible";
 	}
 
-	return lock->surface;
+	QSWaylandSessionLockSurface* surface = lock->surface; // shut up the unused include linter
+	return surface;
 }
