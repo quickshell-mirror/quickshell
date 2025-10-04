@@ -161,7 +161,10 @@ void qsCheckCrash(int argc, char** argv) {
 		auto infoFd = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD").toInt();
 
 		QFile file;
-		file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		if (!file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+			qFatal() << "Failed to open instance info fd.";
+		}
+
 		file.seek(0);
 
 		auto ds = QDataStream(&file);

@@ -100,7 +100,7 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 		} else return static_cast<qlonglong>(-1);
 	});
 
-	this->bLengthSupported.setBinding([this]() { return this->bInternalLength != -1; });
+	this->bLengthSupported.setBinding([this]() { return this->bInternalLength.value() != -1; });
 
 	this->bIsPlaying.setBinding([this]() {
 		return this->bPlaybackState == MprisPlaybackState::Playing;

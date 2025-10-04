@@ -313,8 +313,12 @@ void ThreadLogging::init() {
 
 	if (logMfd != -1) {
 		this->file = new QFile();
-		this->file->open(logMfd, QFile::ReadWrite, QFile::AutoCloseHandle);
-		this->fileStream.setDevice(this->file);
+
+		if (this->file->open(logMfd, QFile::ReadWrite, QFile::AutoCloseHandle)) {
+			this->fileStream.setDevice(this->file);
+		} else {
+			qCCritical(logLogging) << "Failed to open early logging memfd.";
+		}
 	}
 
 	if (dlogMfd != -1) {
@@ -322,14 +326,19 @@ void ThreadLogging::init() {
 
 		this->detailedFile = new QFile();
 		// buffered by WriteBuffer
-		this->detailedFile->open(dlogMfd, QFile::ReadWrite | QFile::Unbuffered, QFile::AutoCloseHandle);
-		this->detailedWriter.setDevice(this->detailedFile);
+		if (this->detailedFile
+		        ->open(dlogMfd, QFile::ReadWrite | QFile::Unbuffered, QFile::AutoCloseHandle))
+		{
+			this->detailedWriter.setDevice(this->detailedFile);
 
-		if (!this->detailedWriter.writeHeader()) {
-			qCCritical(logLogging) << "Could not write header for detailed logs.";
-			this->detailedWriter.setDevice(nullptr);
-			delete this->detailedFile;
-			this->detailedFile = nullptr;
+			if (!this->detailedWriter.writeHeader()) {
+				qCCritical(logLogging) << "Could not write header for detailed logs.";
+				this->detailedWriter.setDevice(nullptr);
+				delete this->detailedFile;
+				this->detailedFile = nullptr;
+			}
+		} else {
+			qCCritical(logLogging) << "Failed to open early detailed logging memfd.";
 		}
 	}
 

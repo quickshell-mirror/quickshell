@@ -32,7 +32,10 @@ void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 		auto lastInfoFd = lastInfoFdStr.toInt();
 
 		QFile file;
-		file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+			qFatal() << "Failed to open crash info fd. Cannot restart.";
+		}
+
 		file.seek(0);
 
 		auto ds = QDataStream(&file);

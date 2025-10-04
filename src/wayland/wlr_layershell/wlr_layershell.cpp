@@ -28,9 +28,10 @@ WlrLayershell::WlrLayershell(QObject* parent): ProxyWindowBase(parent) {
 			case Qt::BottomEdge: return this->bImplicitHeight + margins.top;
 			case Qt::LeftEdge: return this->bImplicitWidth + margins.right;
 			case Qt::RightEdge: return this->bImplicitWidth + margins.left;
-			default: return 0;
 			}
 		}
+
+		return 0;
 	});
 
 	this->bcExclusionEdge.setBinding([this] { return this->bAnchors.value().exclusionEdge(); });
