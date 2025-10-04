@@ -532,7 +532,7 @@ QString I3IpcEvent::eventToString(EventCode event) {
 	case EventCode::BarStateUpdate: return "bar_state_update"; break;
 	case EventCode::Input: return "input"; break;
 
-	case EventCode::Unknown: return "unknown"; break;
+	default: return "unknown"; break;
 	}
 }
 

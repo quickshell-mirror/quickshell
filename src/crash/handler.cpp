@@ -77,7 +77,11 @@ void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
 	}
 
 	QFile file;
-	file.open(this->d->infoFd, QFile::ReadWrite);
+
+	if (!file.open(this->d->infoFd, QFile::ReadWrite)) {
+		qCCritical(logCrashHandler
+		) << "Failed to open instance info memfd, crash recovery will not work.";
+	}
 
 	QDataStream ds(&file);
 	ds << info;

@@ -73,7 +73,7 @@ UPowerDevice::UPowerDevice(QObject* parent): QObject(parent) {
 		return this->bType == UPowerDeviceType::Battery && this->bPowerSupply;
 	});
 
-	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage != 0; });
+	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage.value() != 0; });
 }
 
 void UPowerDevice::init(const QString& path) {
