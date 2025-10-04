@@ -61,12 +61,14 @@ struct Locale {
 
 	[[nodiscard]] int matchScore(const Locale& other) const {
 		if (this->language != other.language) return 0;
-		auto territoryMatches = !this->territory.isEmpty() && this->territory == other.territory;
-		auto modifierMatches = !this->modifier.isEmpty() && this->modifier == other.modifier;
+
+		if (!other.modifier.isEmpty() && this->modifier != other.modifier) return 0;
+		if (!other.territory.isEmpty() && this->territory != other.territory) return 0;
 
 		auto score = 1;
-		if (territoryMatches) score += 2;
-		if (modifierMatches) score += 1;
+
+		if (!other.territory.isEmpty()) score += 2;
+		if (!other.modifier.isEmpty()) score += 1;
 
 		return score;
 	}
@@ -108,7 +110,6 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	auto finishCategory = [&data, &groupName, &entries]() {
 		if (groupName == "Desktop Entry") {
 			if (entries.value("Type").second != "Application") return;
-			if (entries.value("Hidden").second == "true") return;
 
 			for (const auto& [key, pair]: entries.asKeyValueRange()) {
 				auto& [_, value] = pair;
@@ -118,6 +119,7 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				else if (key == "GenericName") data.genericName = value;
 				else if (key == "StartupWMClass") data.startupClass = value;
 				else if (key == "NoDisplay") data.noDisplay = value == "true";
+				else if (key == "Hidden") data.hidden = value == "true";
 				else if (key == "Comment") data.comment = value;
 				else if (key == "Icon") data.icon = value;
 				else if (key == "Exec") {
@@ -495,6 +497,21 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 	auto newLowercaseEntries = QHash<QString, DesktopEntry*>();
 
 	for (const auto& data: scanResults) {
+		auto lowerId = data.id.toLower();
+
+		if (data.hidden) {
+			if (auto* victim = newEntries.take(data.id)) victim->deleteLater();
+			newLowercaseEntries.remove(lowerId);
+
+			if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
+				it.value()->deleteLater();
+				oldEntries.erase(it);
+			}
+
+			qCDebug(logDesktopEntry) << "Masking hidden desktop entry" << data.id;
+			continue;
+		}
+
 		DesktopEntry* dentry = nullptr;
 
 		if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
@@ -516,7 +533,6 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 
 		qCDebug(logDesktopEntry) << "Found desktop entry" << data.id;
 
-		auto lowerId = data.id.toLower();
 		auto conflictingId = newEntries.contains(data.id);
 
 		if (conflictingId) {
