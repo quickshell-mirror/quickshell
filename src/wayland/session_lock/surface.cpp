@@ -48,16 +48,6 @@ void QSWaylandSessionLockSurface::applyConfigure() {
 	this->window()->resizeFromApplyConfigure(this->size);
 }
 
-bool QSWaylandSessionLockSurface::handleExpose(const QRegion& region) {
-	if (this->initBuf != nullptr) {
-		// at this point qt's next commit to the surface will have a new buffer, and we can safely delete this one.
-		delete this->initBuf;
-		this->initBuf = nullptr;
-	}
-
-	return this->QtWaylandClient::QWaylandShellSurface::handleExpose(region);
-}
-
 void QSWaylandSessionLockSurface::setExtension(LockWindowExtension* ext) {
 	if (ext == nullptr) {
 		if (this->window() != nullptr) this->window()->window()->close();
@@ -69,11 +59,6 @@ void QSWaylandSessionLockSurface::setExtension(LockWindowExtension* ext) {
 		this->ext = ext;
 		this->ext->surface = this;
 	}
-}
-
-void QSWaylandSessionLockSurface::setVisible() {
-	if (this->configured && !this->visible) this->initVisible();
-	this->visible = true;
 }
 
 void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
@@ -97,12 +82,40 @@ void QSWaylandSessionLockSurface::ext_session_lock_surface_v1_configure(
 #else
 		this->window()->updateExposure();
 #endif
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
 		if (this->visible) this->initVisible();
+#endif
 	} else {
 		// applyConfigureWhenPossible runs too late and causes a protocol error on reconfigure.
 		this->window()->resizeFromApplyConfigure(this->size);
 	}
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+
+bool QSWaylandSessionLockSurface::commitSurfaceRole() const { return false; }
+
+void QSWaylandSessionLockSurface::setVisible() { this->window()->window()->setVisible(true); }
+
+#else
+
+bool QSWaylandSessionLockSurface::handleExpose(const QRegion& region) {
+	if (this->initBuf != nullptr) {
+		// at this point qt's next commit to the surface will have a new buffer, and we can safely delete this one.
+		delete this->initBuf;
+		this->initBuf = nullptr;
+	}
+
+	return this->QtWaylandClient::QWaylandShellSurface::handleExpose(region);
+}
+
+void QSWaylandSessionLockSurface::setVisible() {
+	if (this->configured && !this->visible) this->initVisible();
+	this->visible = true;
+}
+
+#endif
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 
@@ -123,7 +136,7 @@ void QSWaylandSessionLockSurface::initVisible() {
 	this->window()->window()->setVisible(true);
 }
 
-#else
+#elif QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
 
 #include <cmath>
 

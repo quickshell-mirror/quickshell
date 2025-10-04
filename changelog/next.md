@@ -4,6 +4,9 @@
 - Added support for wayland idle timeouts.
 - Changes to desktop entries are now tracked in real time.
 
+## Other Changes
+- Added support for Qt 6.10
+
 ## Bug Fixes
 
 - Fixed volumes getting stuck on change for pipewire devices with few volume steps.
