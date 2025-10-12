@@ -240,6 +240,9 @@ public:
 
 	PwDevice* device = nullptr;
 	qint32 routeDevice = -1;
+	bool proAudio = false;
+
+	[[nodiscard]] bool shouldUseDevice() const { return this->device && !this->proAudio; }
 
 signals:
 	void propertiesChanged();

@@ -23,6 +23,7 @@
 #include <spa/pod/vararg.h>
 #include <spa/utils/dict.h>
 #include <spa/utils/keys.h>
+#include <spa/utils/string.h>
 #include <spa/utils/type.h>
 
 #include "../../core/logcat.hpp"
@@ -195,6 +196,16 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PROPS) != 0) {
 		auto properties = QMap<QString, QString>();
 
+		bool proAudio = false;
+		if (const auto* proAudioStr = spa_dict_lookup(info->props, "device.profile.pro")) {
+			proAudio = spa_atob(proAudioStr);
+		}
+
+		if (proAudio != self->proAudio) {
+			qCDebug(logNode) << self << "pro audio state changed:" << proAudio;
+			self->proAudio = proAudio;
+		}
+
 		if (self->device) {
 			if (const auto* routeDevice = spa_dict_lookup(info->props, "card.profile.device")) {
 				auto ok = false;
@@ -286,7 +297,7 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* param) {
 	if (id == SPA_PARAM_Props && index == 0) {
-		if (this->node->device) {
+		if (this->node->shouldUseDevice()) {
 			qCDebug(logNode) << "Skipping node volume props update for" << this->node
 			                 << "in favor of device updates.";
 			return;
@@ -358,7 +369,7 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 
 	if (muted == this->mMuted) return;
 
-	if (this->node->device) {
+	if (this->node->shouldUseDevice()) {
 		qCInfo(logNode) << "Changing muted state of" << this->node << "to" << muted << "via device";
 		if (!this->node->device->setMuted(this->node->routeDevice, muted)) {
 			return;
@@ -431,7 +442,7 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 		return;
 	}
 
-	if (this->node->device) {
+	if (this->node->shouldUseDevice()) {
 		if (this->node->device->waitingForDevice()) {
 			qCInfo(logNode) << "Waiting to change volumes of" << this->node << "to" << realVolumes
 			                << "via device";
@@ -511,7 +522,7 @@ void PwNodeBoundAudio::onDeviceVolumesChanged(
     qint32 routeDevice,
     const PwVolumeProps& volumeProps
 ) {
-	if (this->node->device && this->node->routeDevice == routeDevice) {
+	if (this->node->shouldUseDevice() && this->node->routeDevice == routeDevice) {
 		qCDebug(logNode) << "Got updated device volume props for" << this->node << "via"
 		                 << this->node->device;
 
