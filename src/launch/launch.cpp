@@ -78,6 +78,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		QHash<QString, QString> envOverrides;
 		QString dataDir;
 		QString stateDir;
+		QString cacheDir;
 	} pragmas;
 
 	auto stream = QTextStream(&file);
@@ -109,6 +110,8 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 				pragmas.dataDir = pragma.sliced(8).trimmed();
 			} else if (pragma.startsWith("StateDir ")) {
 				pragmas.stateDir = pragma.sliced(9).trimmed();
+			} else if (pragma.startsWith("CacheDir ")) {
+				pragmas.cacheDir = pragma.sliced(9).trimmed();
 			} else {
 				qCritical() << "Unrecognized pragma" << pragma;
 				return -1;
@@ -150,7 +153,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	}
 #endif
 
-	QsPaths::init(shellId, pathId, pragmas.dataDir, pragmas.stateDir);
+	QsPaths::init(shellId, pathId, pragmas.dataDir, pragmas.stateDir, pragmas.cacheDir);
 	QsPaths::instance()->linkRunDir();
 	QsPaths::instance()->linkPathDir();
 	LogManager::initFs();

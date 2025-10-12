@@ -17,7 +17,13 @@ QDataStream& operator>>(QDataStream& stream, InstanceLockInfo& info);
 class QsPaths {
 public:
 	static QsPaths* instance();
-	static void init(QString shellId, QString pathId, QString dataOverride, QString stateOverride);
+	static void init(
+	    QString shellId,
+	    QString pathId,
+	    QString dataOverride,
+	    QString stateOverride,
+	    QString cacheOverride
+	);
 	static QDir crashDir(const QString& id);
 	static QString basePath(const QString& id);
 	static QString ipcPath(const QString& id);
@@ -65,4 +71,5 @@ private:
 
 	QString shellDataOverride;
 	QString shellStateOverride;
+	QString shellCacheOverride;
 };

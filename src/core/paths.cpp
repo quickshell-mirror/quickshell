@@ -27,12 +27,19 @@ QsPaths* QsPaths::instance() {
 	return instance;
 }
 
-void QsPaths::init(QString shellId, QString pathId, QString dataOverride, QString stateOverride) {
+void QsPaths::init(
+    QString shellId,
+    QString pathId,
+    QString dataOverride,
+    QString stateOverride,
+    QString cacheOverride
+) {
 	auto* instance = QsPaths::instance();
 	instance->shellId = std::move(shellId);
 	instance->pathId = std::move(pathId);
 	instance->shellDataOverride = std::move(dataOverride);
 	instance->shellStateOverride = std::move(stateOverride);
+	instance->shellCacheOverride = std::move(cacheOverride);
 }
 
 QDir QsPaths::crashDir(const QString& id) {
@@ -316,9 +323,16 @@ QDir QsPaths::shellStateDir() {
 
 QDir QsPaths::shellCacheDir() {
 	if (this->shellCacheState == DirState::Unknown) {
-		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
-		dir = QDir(dir.filePath("by-shell"));
-		dir = QDir(dir.filePath(this->shellId));
+		QDir dir;
+		if (this->shellCacheOverride.isEmpty()) {
+			dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+			dir = QDir(dir.filePath("by-shell"));
+			dir = QDir(dir.filePath(this->shellId));
+		} else {
+			auto basedir = QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation);
+			dir = QDir(this->shellCacheOverride.replace("$BASE", basedir));
+		}
+
 		this->mShellCacheDir = dir;
 
 		qCDebug(logPaths) << "Initialized cache path:" << dir.path();
