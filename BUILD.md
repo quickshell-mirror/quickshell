@@ -55,7 +55,7 @@ On some distros, private Qt headers are in separate packages which you may have 
 We currently require private headers for the following libraries:
 
 - `qt6declarative`
-- `qt6wayland`
+- `qt6wayland` (for Qt versions prior to 6.10)
 
 We recommend an implicit dependency on `qt6svg`. If it is not installed, svg images and
 svg icons will not work, including system ones.
@@ -104,7 +104,7 @@ Currently supported Qt versions: `6.6`, `6.7`.
 To disable: `-DWAYLAND=OFF`
 
 Dependencies:
- - `qt6wayland`
+ - `qt6wayland` (for Qt versions prior to 6.10)
  - `wayland` (libwayland-client)
  - `wayland-scanner` (build time)
  - `wayland-protocols` (static library)
