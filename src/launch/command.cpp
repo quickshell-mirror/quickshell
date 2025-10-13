@@ -13,6 +13,7 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qguiapplication.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -178,7 +179,8 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+		auto [liveInstances, deadInstances] =
+		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		liveInstances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
@@ -228,7 +230,8 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+		auto [liveInstances, deadInstances] =
+		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		auto instances = liveInstances;
 		if (instances.isEmpty() && deadFallback) {
@@ -311,7 +314,10 @@ int listInstances(CommandState& cmd) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+	auto [liveInstances, deadInstances] = QsPaths::collectInstances(
+	    path,
+	    cmd.config.anyDisplay || cmd.instance.all ? "" : getDisplayConnection()
+	);
 
 	sortInstances(liveInstances, cmd.config.newest);
 
@@ -373,6 +379,7 @@ int listInstances(CommandState& cmd) {
 				    << "  Process ID: " << instance.instance.pid << '\n'
 				    << "  Shell ID: " << instance.instance.shellId << '\n'
 				    << "  Config path: " << instance.instance.configPath << '\n'
+				    << "  Display connection: " << instance.instance.display << '\n'
 				    << "  Launch time: " << launchTimeStr
 				    << (isDead ? "" : " (running for " + runtimeStr + ")") << '\n'
 				    << (gray ? "\033[0m" : "");
@@ -543,6 +550,20 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	return 0;
+}
+
+QString getDisplayConnection() {
+	auto platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+	auto wlDisplay = qEnvironmentVariable("WAYLAND_DISPLAY");
+	auto xDisplay = qEnvironmentVariable("DISPLAY");
+
+	if (platform == "wayland" || (platform.isEmpty() && !wlDisplay.isEmpty())) {
+		return "wayland," + wlDisplay;
+	} else if (platform == "xcb" || (platform.isEmpty() && !xDisplay.isEmpty())) {
+		return "x11," + xDisplay;
+	} else {
+		return "unk," + QGuiApplication::platformName();
+	}
 }
 
 } // namespace qs::launch

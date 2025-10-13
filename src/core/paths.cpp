@@ -411,7 +411,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 }
 
 QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
-QsPaths::collectInstances(const QString& path) {
+QsPaths::collectInstances(const QString& path, const QString& display) {
 	qCDebug(logPaths) << "Collecting instances from" << path;
 	auto liveInstances = QVector<InstanceLockInfo>();
 	auto deadInstances = QVector<InstanceLockInfo>();
@@ -424,6 +424,11 @@ QsPaths::collectInstances(const QString& path) {
 		if (QsPaths::checkLock(path, &info, true)) {
 			qCDebug(logPaths).nospace() << "Found instance " << info.instance.instanceId << " (pid "
 			                            << info.pid << ") at " << path;
+
+			if (!display.isEmpty() && info.instance.display != display) {
+				qCDebug(logPaths) << "Skipped instance with mismatched display at" << path;
+				continue;
+			}
 
 			if (info.pid == -1) {
 				deadInstances.push_back(info);

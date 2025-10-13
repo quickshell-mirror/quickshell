@@ -134,6 +134,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	    .shellId = shellId,
 	    .launchTime = qs::Common::LAUNCH_TIME,
 	    .pid = getpid(),
+	    .display = getDisplayConnection(),
 	};
 
 #if CRASH_REPORTER

@@ -30,7 +30,7 @@ public:
 	static bool
 	checkLock(const QString& path, InstanceLockInfo* info = nullptr, bool allowDead = false);
 	static QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
-	collectInstances(const QString& path);
+	collectInstances(const QString& path, const QString& display);
 
 	QDir* baseRunDir();
 	QDir* shellRunDir();

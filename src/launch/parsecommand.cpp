@@ -16,7 +16,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	    .argv = argv,
 	};
 
-	auto addConfigSelection = [&](CLI::App* cmd, bool withNewestOption = false) {
+	auto addConfigSelection = [&](CLI::App* cmd, bool filtering = false) {
 		auto* group =
 		    cmd->add_option_group("Config Selection")
 		        ->description(
@@ -49,9 +49,13 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->envname("QS_MANIFEST")
 		    ->excludes(path);
 
-		if (withNewestOption) {
+		if (filtering) {
 			group->add_flag("-n,--newest", state.config.newest)
 			    ->description("Operate on the most recently launched instance instead of the oldest");
+
+			group->add_flag("--any-display", state.config.anyDisplay)
+			    ->description("If passed, instances will not be filtered by the display connection they "
+			                  "were launched on.");
 		}
 
 		return group;

@@ -11,6 +11,7 @@ struct InstanceInfo {
 	QString shellId;
 	QDateTime launchTime;
 	pid_t pid = -1;
+	QString display;
 
 	static InstanceInfo CURRENT; // NOLINT
 };
