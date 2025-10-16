@@ -22,21 +22,24 @@ FloatingWindow {
 				}
 				CheckBox {
 					text: "Software"
-					checked: Network.wifi.enabled
-					onClicked: Network.wifi.enabled = !Network.wifi.enabled
+					checked: Network.wifiEnabled
+					onClicked: Network.wifiEnabled = !Network.wifiEnabled
 				}
 				CheckBox {
 					enabled: false
 					text: "Hardware"
-					checked: Network.wifi.hardwareEnabled
+					checked: Network.wifiHardwareEnabled
 				}
 			}
 		}
 
 		ListView {
+			clip: true
 			Layout.fillWidth: true
 			Layout.fillHeight: true
-			model: Network.wifi.devices
+			model: {
+				return Network.devices.values.filter(device => device.type === DeviceType.Wifi)
+			}
 
 			delegate: WrapperRectangle {
 				width: parent.width
@@ -55,18 +58,18 @@ FloatingWindow {
 				}
 
 				ColumnLayout {
-					Label { text: `Device: ${modelData.name} (${modelData.address})` }
+					Label { text: `Device: ${modelData.name} (Hardware address: ${modelData.address}) (Type: ${DeviceType.toString(modelData.type)})` }
 					RowLayout {
 						Label {
-							text: NetworkConnectionState.toString(modelData.state)
-							color: modelData.state == NetworkConnectionState.Connected ? palette.link : palette.placeholderText
+							text: DeviceConnectionState.toString(modelData.state)
+							color: modelData.state == DeviceConnectionState.Connected ? palette.link : palette.placeholderText
 						}
 						Label {
-							visible: modelData.state == NetworkConnectionState.Connecting || modelData.state == NetworkConnectionState.Disconnecting
+							visible: modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting
 							text: `(${NMDeviceState.toString(modelData.nmState)})`
 						}
 						Button {
-							visible: modelData.state == NetworkConnectionState.Connected
+							visible: modelData.state == DeviceConnectionState.Connected
 							text: "Disconnect"
 							onClicked: modelData.disconnect()
 						}
@@ -83,7 +86,7 @@ FloatingWindow {
 
 						WrapperRectangle {
 							Layout.fillWidth: true
-							color: modelData.connected ? "lightsteelblue" : palette.button
+							color: modelData.connected ? palette.highlight : palette.button
 							border.color: palette.mid
 							border.width: 1
 							margin: 5
@@ -92,7 +95,7 @@ FloatingWindow {
 								ColumnLayout {
 									Layout.fillWidth: true
 									RowLayout {
-										Label { text: modelData.ssid; font.bold: true }
+										Label { text: modelData.name; font.bold: true }
 										Label {
 											text: modelData.known ? "Known" : ""
 											color: palette.placeholderText
@@ -100,11 +103,11 @@ FloatingWindow {
 									}
 									RowLayout {
 										Label { 
-											text: `Security: ${NMWirelessSecurityType.toString(modelData.nmSecurity)}`
+											text: `Security: ${WifiSecurityType.toString(modelData.security)}`
 											color: palette.placeholderText
 										}
 										Label {
-											text: `| Signal strength: ${modelData.signalStrength}%`
+											text: `| Signal strength: ${modelData.signalStrength*100}%`
 											color: palette.placeholderText
 										}
 									}

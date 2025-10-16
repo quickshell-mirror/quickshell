@@ -18,7 +18,6 @@
 #include "../network.hpp"
 #include "../wifi.hpp"
 #include "dbus_types.hpp"
-#include "enums.hpp"
 #include "nm/dbus_nm_backend.h"
 #include "wireless.hpp"
 
@@ -131,16 +130,6 @@ void NetworkManager::registerDevice(const QString& path) {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-NetworkConnectionState::Enum NetworkManager::toNetworkDeviceState(NMDeviceState::Enum state) {
-	switch (state) {
-	case 0 ... 20: return NetworkConnectionState::Unknown;
-	case 30: return NetworkConnectionState::Disconnected;
-	case 40 ... 90: return NetworkConnectionState::Connecting;
-	case 100: return NetworkConnectionState::Connected;
-	case 110 ... 120: return NetworkConnectionState::Disconnecting;
-	}
-}
-
 void NetworkManager::registerWifiDevice(const QString& path) {
 	auto* wireless = new NMWirelessDevice(path);
 	if (!wireless->isWirelessValid() || !wireless->isDeviceValid()) {
@@ -157,7 +146,13 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	device->bindableAddress().setBinding([wireless]() { return wireless->hwAddress(); });
 	device->bindableNmState().setBinding([wireless]() { return wireless->state(); });
 	device->bindableState().setBinding([wireless]() {
-		return qs::network::NetworkManager::toNetworkDeviceState(wireless->state());
+		switch (wireless->state()) {
+		case 0 ... 20: return DeviceConnectionState::Unknown;
+		case 30: return DeviceConnectionState::Disconnected;
+		case 40 ... 90: return DeviceConnectionState::Connecting;
+		case 100: return DeviceConnectionState::Connected;
+		case 110 ... 120: return DeviceConnectionState::Disconnecting;
+		}
 	});
 	device->bindableScanning().setBinding([wireless]() { return wireless->scanning(); });
 	// clang-format off
@@ -169,7 +164,7 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	QObject::connect(device, &WifiDevice::requestDisconnect, wireless, &NMWirelessDevice::disconnect);
 	// clang-format on
 
-	emit this->wifiDeviceAdded(device);
+	emit this->deviceAdded(device);
 }
 
 void NetworkManager::onDevicePathAdded(const QDBusObjectPath& path) {
@@ -184,7 +179,7 @@ void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
 	} else {
 		auto* device = iter.value();
 		this->mDeviceHash.erase(iter);
-		if (auto* wifi = qobject_cast<WifiDevice*>(device)) emit this->wifiDeviceRemoved(wifi);
+		emit this->deviceRemoved(device);
 		delete device;
 	}
 }

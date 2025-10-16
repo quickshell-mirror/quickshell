@@ -25,8 +25,8 @@ public:
 	[[nodiscard]] bool wifiHardwareEnabled() const { return this->bWifiHardwareEnabled; };
 
 signals:
-	void wifiDeviceAdded(WifiDevice* device);
-	void wifiDeviceRemoved(WifiDevice* device);
+	void deviceAdded(NetworkDevice* device);
+	void deviceRemoved(NetworkDevice* device);
 	void wifiEnabledChanged(bool enabled);
 	void wifiHardwareEnabledChanged(bool enabled);
 
@@ -44,7 +44,6 @@ private slots:
 	);
 
 private:
-	static NetworkConnectionState::Enum toNetworkDeviceState(NMDeviceState::Enum state);
 	void init();
 	void registerDevices();
 	void registerDevice(const QString& path);

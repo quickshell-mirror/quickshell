@@ -33,45 +33,6 @@ public:
 	Q_ENUM(Enum);
 };
 
-class NMWirelessSecurityType: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Wpa3SuiteB192 = 0,
-		Sae = 1,
-		Wpa2Eap = 2,
-		Wpa2Psk = 3,
-		WpaEap = 4,
-		WpaPsk = 5,
-		StaticWep = 6,
-		DynamicWep = 7,
-		Leap = 8,
-		Owe = 9,
-		None = 10,
-		Unknown = 11,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NMWirelessSecurityType::Enum type) {
-		switch (type) {
-		case Wpa3SuiteB192: return QStringLiteral("WPA3 Suite B 192-bit");
-		case Sae: return QStringLiteral("WPA3");
-		case Wpa2Eap: return QStringLiteral("WPA2 Enterprise");
-		case Wpa2Psk: return QStringLiteral("WPA2");
-		case WpaEap: return QStringLiteral("WPA Enterprise");
-		case WpaPsk: return QStringLiteral("WPA");
-		case StaticWep: return QStringLiteral("WEP");
-		case DynamicWep: return QStringLiteral("Dynamic WEP");
-		case Leap: return QStringLiteral("LEAP");
-		case Owe: return QStringLiteral("OWE");
-		case None: return QStringLiteral("None");
-		default: return QStringLiteral("Unknown");
-		}
-	}
-};
-
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceState.
 class NMDeviceState: public QObject {
 	Q_OBJECT;

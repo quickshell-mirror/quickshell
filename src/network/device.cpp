@@ -14,14 +14,33 @@ namespace {
 QS_LOGGING_CATEGORY(logNetworkDevice, "quickshell.network.device", QtWarningMsg);
 } // namespace
 
-NetworkDevice::NetworkDevice(QObject* parent): QObject(parent) {};
+QString DeviceConnectionState::toString(DeviceConnectionState::Enum state) {
+	switch (state) {
+	case Unknown: return QStringLiteral("Unknown");
+	case Connecting: return QStringLiteral("Connecting");
+	case Connected: return QStringLiteral("Connected");
+	case Disconnecting: return QStringLiteral("Disconnecting");
+	case Disconnected: return QStringLiteral("Disconnected");
+	}
+}
+
+QString DeviceType::toString(DeviceType::Enum type) {
+	switch (type) {
+	case None: return QStringLiteral("None");
+	case Wifi: return QStringLiteral("Wifi");
+	}
+}
+
+NetworkDevice::NetworkDevice(DeviceType::Enum type, QObject* parent)
+    : QObject(parent)
+    , mType(type) {};
 
 void NetworkDevice::disconnect() {
-	if (this->bState == NetworkConnectionState::Disconnected) {
+	if (this->bState == DeviceConnectionState::Disconnected) {
 		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnected";
 		return;
 	}
-	if (this->bState == NetworkConnectionState::Disconnecting) {
+	if (this->bState == DeviceConnectionState::Disconnecting) {
 		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnecting";
 		return;
 	}
@@ -29,28 +48,4 @@ void NetworkDevice::disconnect() {
 	this->requestDisconnect();
 }
 
-QString NetworkConnectionState::toString(NetworkConnectionState::Enum state) {
-	switch (state) {
-	case Unknown: return QStringLiteral("Unknown");
-	case Connecting: return QStringLiteral("Connecting");
-	case Connected: return QStringLiteral("Connected");
-	case Disconnecting: return QStringLiteral("Disconnecting");
-	case Disconnected: return QStringLiteral("Disconnected");
-	default: return QStringLiteral("Unknown");
-	}
-}
-
 } // namespace qs::network
-
-QDebug operator<<(QDebug debug, const qs::network::NetworkDevice* device) {
-	auto saver = QDebugStateSaver(debug);
-
-	if (device) {
-		debug.nospace() << "NetworkDevice(" << static_cast<const void*>(device)
-		                << ", name=" << device->name() << ")";
-	} else {
-		debug << "BluetoothDevice(nullptr)";
-	}
-
-	return debug;
-}
