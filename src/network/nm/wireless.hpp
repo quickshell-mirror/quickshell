@@ -37,10 +37,10 @@ public:
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
 	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
+	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
 	[[nodiscard]] bool known() const { return this->bKnown; };
 	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->bReason; };
-	[[nodiscard]] NMWirelessSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
 	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
@@ -56,8 +56,8 @@ signals:
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
+	void securityChanged(WifiSecurityType::Enum security);
 	void reasonChanged(NMConnectionStateReason::Enum reason);
-	void securityChanged(NMWirelessSecurityType::Enum security);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeApPathChanged(QString path);
 	void disappeared();
@@ -78,9 +78,9 @@ private:
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bKnown, &NMWirelessNetwork::knownChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessCapabilities::Enum, bCaps, &NMWirelessNetwork::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);

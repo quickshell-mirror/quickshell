@@ -5,15 +5,16 @@
 #include <qobject.h>
 #include <qqmlintegration.h>
 
+#include "../wifi.hpp"
 #include "dbus_types.hpp"
 #include "enums.hpp"
 
 namespace qs::network {
 
-NMWirelessSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings) {
+WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings) {
 	const QVariantMap& security = settings.value("802-11-wireless-security");
 	if (security.isEmpty()) {
-		return NMWirelessSecurityType::Unknown;
+		return WifiSecurityType::Unknown;
 	};
 
 	const QString keyMgmt = security["key-mgmt"].toString();
@@ -21,37 +22,37 @@ NMWirelessSecurityType::Enum securityFromConnectionSettings(const ConnectionSett
 	const QList<QVariant> proto = security["proto"].toList();
 
 	if (keyMgmt == "none") {
-		return NMWirelessSecurityType::StaticWep;
+		return WifiSecurityType::StaticWep;
 	} else if (keyMgmt == "ieee8021x") {
 		if (authAlg == "leap") {
-			return NMWirelessSecurityType::Leap;
+			return WifiSecurityType::Leap;
 		} else {
-			return NMWirelessSecurityType::DynamicWep;
+			return WifiSecurityType::DynamicWep;
 		}
 	} else if (keyMgmt == "wpa-psk") {
-		if (proto.contains("wpa") && proto.contains("rsn")) return NMWirelessSecurityType::WpaPsk;
-		return NMWirelessSecurityType::Wpa2Psk;
+		if (proto.contains("wpa") && proto.contains("rsn")) return WifiSecurityType::WpaPsk;
+		return WifiSecurityType::Wpa2Psk;
 	} else if (keyMgmt == "wpa-eap") {
-		if (proto.contains("wpa") && proto.contains("rsn")) return NMWirelessSecurityType::WpaEap;
-		return NMWirelessSecurityType::Wpa2Eap;
+		if (proto.contains("wpa") && proto.contains("rsn")) return WifiSecurityType::WpaEap;
+		return WifiSecurityType::Wpa2Eap;
 	} else if (keyMgmt == "sae") {
-		return NMWirelessSecurityType::Sae;
+		return WifiSecurityType::Sae;
 	} else if (keyMgmt == "wpa-eap-suite-b-192") {
-		return NMWirelessSecurityType::Wpa3SuiteB192;
+		return WifiSecurityType::Wpa3SuiteB192;
 	}
-	return NMWirelessSecurityType::None;
+	return WifiSecurityType::Open;
 }
 
 bool deviceSupportsApCiphers(
     NMWirelessCapabilities::Enum caps,
     NM80211ApSecurityFlags::Enum apFlags,
-    NMWirelessSecurityType::Enum type
+    WifiSecurityType::Enum type
 ) {
 	bool havePair = false;
 	bool haveGroup = false;
 	// Device needs to support at least one pairwise and one group cipher
 
-	if (type == NMWirelessSecurityType::StaticWep) {
+	if (type == WifiSecurityType::StaticWep) {
 		// Static WEP only uses group ciphers
 		havePair = true;
 	} else {
@@ -77,7 +78,7 @@ bool deviceSupportsApCiphers(
 	{
 		haveGroup = true;
 	}
-	if (type == NMWirelessSecurityType::StaticWep) {
+	if (type == WifiSecurityType::StaticWep) {
 		if (caps & NMWirelessCapabilities::CipherTkip && apFlags & NM80211ApSecurityFlags::GroupTkip) {
 			haveGroup = true;
 		}
@@ -89,12 +90,8 @@ bool deviceSupportsApCiphers(
 	return (havePair && haveGroup);
 }
 
-// In sync with NetworkManager/libnm-core/nm-utils.c:nm_utils_security_valid()
-// Given a set of device capabilities, and a desired security type to check
-// against, determines whether the combination of device, desired security type,
-// and AP capabilities intersect.
 bool securityIsValid(
-    NMWirelessSecurityType::Enum type,
+    WifiSecurityType::Enum type,
     NMWirelessCapabilities::Enum caps,
     bool adhoc,
     NM80211ApFlags::Enum apFlags,
@@ -102,29 +99,29 @@ bool securityIsValid(
     NM80211ApSecurityFlags::Enum apRsn
 ) {
 	switch (type) {
-	case NMWirelessSecurityType::None:
+	case WifiSecurityType::Open:
 		if (apFlags & NM80211ApFlags::Privacy) return false;
 		if (apWpa || apRsn) return false;
 		break;
-	case NMWirelessSecurityType::Leap:
+	case WifiSecurityType::Leap:
 		if (adhoc) return false;
-	case NMWirelessSecurityType::StaticWep:
+	case WifiSecurityType::StaticWep:
 		if (!(apFlags & NM80211ApFlags::Privacy)) return false;
 		if (apWpa || apRsn) {
-			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::StaticWep)) {
-				if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::StaticWep)) return false;
+			if (!deviceSupportsApCiphers(caps, apWpa, WifiSecurityType::StaticWep)) {
+				if (!deviceSupportsApCiphers(caps, apRsn, WifiSecurityType::StaticWep)) return false;
 			}
 		}
 		break;
-	case NMWirelessSecurityType::DynamicWep:
+	case WifiSecurityType::DynamicWep:
 		if (adhoc) return false;
 		if (apRsn || !(apFlags & NM80211ApFlags::Privacy)) return false;
 		if (apWpa) {
 			if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
-			if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::DynamicWep)) return false;
+			if (!deviceSupportsApCiphers(caps, apWpa, WifiSecurityType::DynamicWep)) return false;
 		}
 		break;
-	case NMWirelessSecurityType::WpaPsk:
+	case WifiSecurityType::WpaPsk:
 		if (adhoc) return false;
 		if (!(caps & NMWirelessCapabilities::Wpa)) return false;
 		if (apWpa & NM80211ApSecurityFlags::KeyMgmtPsk) {
@@ -136,7 +133,7 @@ bool securityIsValid(
 			}
 		}
 		return false;
-	case NMWirelessSecurityType::Wpa2Psk:
+	case WifiSecurityType::Wpa2Psk:
 		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
 		if (adhoc) {
 			if (!(caps & NMWirelessCapabilities::IbssRsn)) return false;
@@ -154,19 +151,19 @@ bool securityIsValid(
 			}
 		}
 		return false;
-	case NMWirelessSecurityType::WpaEap:
+	case WifiSecurityType::WpaEap:
 		if (adhoc) return false;
 		if (!(caps & NMWirelessCapabilities::Wpa)) return false;
 		if (!(apWpa & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
-		if (!deviceSupportsApCiphers(caps, apWpa, NMWirelessSecurityType::WpaEap)) return false;
+		if (!deviceSupportsApCiphers(caps, apWpa, WifiSecurityType::WpaEap)) return false;
 		break;
-	case NMWirelessSecurityType::Wpa2Eap:
+	case WifiSecurityType::Wpa2Eap:
 		if (adhoc) return false;
 		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
 		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmt8021x)) return false;
-		if (!deviceSupportsApCiphers(caps, apRsn, NMWirelessSecurityType::Wpa2Eap)) return false;
+		if (!deviceSupportsApCiphers(caps, apRsn, WifiSecurityType::Wpa2Eap)) return false;
 		break;
-	case NMWirelessSecurityType::Sae:
+	case WifiSecurityType::Sae:
 		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
 		if (adhoc) {
 			if (!(caps & NMWirelessCapabilities::IbssRsn)) return false;
@@ -184,7 +181,7 @@ bool securityIsValid(
 			}
 		}
 		return false;
-	case NMWirelessSecurityType::Owe:
+	case WifiSecurityType::Owe:
 		if (adhoc) return false;
 		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
 		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmtOwe)
@@ -193,7 +190,7 @@ bool securityIsValid(
 			return false;
 		}
 		break;
-	case NMWirelessSecurityType::Wpa3SuiteB192:
+	case WifiSecurityType::Wpa3SuiteB192:
 		if (adhoc) return false;
 		if (!(caps & NMWirelessCapabilities::Rsn)) return false;
 		if (!(apRsn & NM80211ApSecurityFlags::KeyMgmtEapSuiteB192)) return false;
@@ -203,7 +200,7 @@ bool securityIsValid(
 	return true;
 }
 
-NMWirelessSecurityType::Enum findBestWirelessSecurity(
+WifiSecurityType::Enum findBestWirelessSecurity(
     NMWirelessCapabilities::Enum caps,
     bool adHoc,
     NM80211ApFlags::Enum apFlags,
@@ -212,13 +209,13 @@ NMWirelessSecurityType::Enum findBestWirelessSecurity(
 ) {
 	// Loop through security types from most to least secure since the enum
 	// values are sequential and in priority order (0-10, excluding Unknown=11)
-	for (int i = NMWirelessSecurityType::Wpa3SuiteB192; i <= NMWirelessSecurityType::None; ++i) {
-		auto type = static_cast<NMWirelessSecurityType::Enum>(i);
+	for (int i = WifiSecurityType::Wpa3SuiteB192; i <= WifiSecurityType::Open; ++i) {
+		auto type = static_cast<WifiSecurityType::Enum>(i);
 		if (securityIsValid(type, caps, adHoc, apFlags, apWpa, apRsn)) {
 			return type;
 		}
 	}
-	return NMWirelessSecurityType::Unknown;
+	return WifiSecurityType::Unknown;
 }
 
 } // namespace qs::network

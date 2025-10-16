@@ -86,7 +86,7 @@ void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& p
 	const QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
 	const QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
 	for (const QString& path: addedConnections) {
-		registerConnection(path);
+		this->registerConnection(path);
 	}
 	for (const QString& path: removedConnections) {
 		auto* connection = this->mConnectionMap.take(path);

@@ -8,28 +8,50 @@
 
 #include "../core/model.hpp"
 #include "device.hpp"
+#include "network.hpp"
 #include "nm/enums.hpp"
 
 namespace qs::network {
 
+///! The security type of a wifi network.
+class WifiSecurityType: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		Wpa3SuiteB192 = 0,
+		Sae = 1,
+		Wpa2Eap = 2,
+		Wpa2Psk = 3,
+		WpaEap = 4,
+		WpaPsk = 5,
+		StaticWep = 6,
+		DynamicWep = 7,
+		Leap = 8,
+		Owe = 9,
+		Open = 10,
+		Unknown = 11,
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
+};
+
 ///! An available wifi network.
-class WifiNetwork: public QObject {
+class WifiNetwork: public BaseNetwork {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_UNCREATABLE("WifiNetwork can only be acquired through WifiDevice");
 	// clang-format off
-	/// The SSID (service set identifier) of the wifi network.
-	Q_PROPERTY(QString ssid READ ssid CONSTANT);
-	/// The current signal strength of the network, in percent.
-	Q_PROPERTY(quint8 signalStrength READ signalStrength NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
-	/// True if the network is connected.
-	Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged BINDABLE bindableConnected);
+	/// The current signal strength of the network, from 0.0 to 1.0.
+	Q_PROPERTY(qreal signalStrength READ signalStrength NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
 	/// True if the wifi network has known connection settings saved.
 	Q_PROPERTY(bool known READ known NOTIFY knownChanged BINDABLE bindableKnown);
+	/// The security type of the wifi network.
+	Q_PROPERTY(WifiSecurityType::Enum security READ security NOTIFY securityChanged BINDABLE bindableSecurity);
 	/// A specific reason for the connection state when the backend is NetworkManager.
 	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ nmReason NOTIFY nmReasonChanged BINDABLE bindableNmReason);
-	/// The security type of the wifi network when the backend is NetworkManager.
-	Q_PROPERTY(NMWirelessSecurityType::Enum nmSecurity READ nmSecurity NOTIFY nmSecurityChanged BINDABLE bindableNmSecurity);
 	// clang-format on
 
 public:
@@ -38,34 +60,28 @@ public:
 	/// Attempt to connect to the wifi network.
 	Q_INVOKABLE void connect();
 
-	[[nodiscard]] QString ssid() const { return this->mSsid; };
-	QBindable<quint8> bindableSignalStrength() { return &this->bSignalStrength; }
-	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
-	QBindable<bool> bindableConnected() { return &this->bConnected; }
-	[[nodiscard]] bool connected() const { return this->bConnected; };
+	QBindable<qreal> bindableSignalStrength() { return &this->bSignalStrength; }
+	[[nodiscard]] qreal signalStrength() const { return this->bSignalStrength; };
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
 	[[nodiscard]] bool known() const { return this->bKnown; };
 	QBindable<NMConnectionStateReason::Enum> bindableNmReason() { return &this->bNmReason; }
 	[[nodiscard]] NMConnectionStateReason::Enum nmReason() const { return this->bNmReason; };
-	QBindable<NMWirelessSecurityType::Enum> bindableNmSecurity() { return &this->bNmSecurity; }
-	[[nodiscard]] NMWirelessSecurityType::Enum nmSecurity() const { return this->bNmSecurity; };
+	QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
+	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
 	void requestConnect();
 	void signalStrengthChanged();
-	void connectedChanged();
 	void knownChanged();
+	void securityChanged();
 	void nmReasonChanged();
-	void nmSecurityChanged();
 
 private:
-	QString mSsid;
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, quint8, bSignalStrength, &WifiNetwork::signalStrengthChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bConnected, &WifiNetwork::connectedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, qreal, bSignalStrength, &WifiNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bKnown, &WifiNetwork::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, NMConnectionStateReason::Enum, bNmReason, &WifiNetwork::nmReasonChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, NMWirelessSecurityType::Enum, bNmSecurity, &WifiNetwork::nmSecurityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, WifiSecurityType::Enum, bSecurity, &WifiNetwork::securityChanged);
 	// clang-format on
 };
 
@@ -104,48 +120,7 @@ private:
 	ObjectModel<WifiNetwork> mNetworks {this};
 	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, bool, bScanning, &WifiDevice::scanningChanged);
 };
-
-///! A manager for all wifi state and devices.
-class Wifi: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_UNCREATABLE("Wifi can only be acquired through Network");
-	// clang-format off
-	/// A list of all wifi devices.
-	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
-	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::WifiDevice>*);
-	/// True when the wifi software switch is enabled.
-	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged);
-	/// True when the wifi hardware switch is enabled.
-	Q_PROPERTY(bool hardwareEnabled READ hardwareEnabled NOTIFY hardwareEnabledChanged BINDABLE bindableHardwareEnabled);
-	// clang-format on
-
-public:
-	explicit Wifi(QObject* parent = nullptr);
-
-	[[nodiscard]] ObjectModel<WifiDevice>* devices() { return &this->mDevices; };
-	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
-	[[nodiscard]] bool enabled() const { return this->bEnabled; };
-	void setEnabled(bool enabled);
-	QBindable<bool> bindableHardwareEnabled() { return &this->bHardwareEnabled; };
-	[[nodiscard]] bool hardwareEnabled() const { return this->bHardwareEnabled; };
-
-signals:
-	void requestSetEnabled(bool enabled);
-	void enabledChanged();
-	void hardwareEnabledChanged();
-
-public slots:
-	void onDeviceAdded(WifiDevice* dev);
-	void onDeviceRemoved(WifiDevice* dev);
-
-private:
-	ObjectModel<WifiDevice> mDevices {this};
-	Q_OBJECT_BINDABLE_PROPERTY(Wifi, bool, bEnabled, &Wifi::enabledChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(Wifi, bool, bHardwareEnabled, &Wifi::hardwareEnabledChanged);
-};
-
 }; // namespace qs::network
 
-QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device);
 QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network);
+QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device);

@@ -6,58 +6,73 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstring.h>
-#include <qtmetamacros.h>
+#include <qstringliteral.h>
 
 #include "../core/logcat.hpp"
 #include "device.hpp"
+#include "network.hpp"
 
 namespace qs::network {
 
 namespace {
-QS_LOGGING_CATEGORY(logWifiDevice, "quickshell.wifi.device", QtWarningMsg);
-QS_LOGGING_CATEGORY(logWifiNetwork, "quickshell.wifi.network", QtWarningMsg);
-QS_LOGGING_CATEGORY(logWifi, "quickshell.wifi", QtWarningMsg);
+QS_LOGGING_CATEGORY(logWifi, "quickshell.network.wifi", QtWarningMsg);
 } // namespace
 
-WifiDevice::WifiDevice(QObject* parent): NetworkDevice(parent) {};
+QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
+	switch (type) {
+	case Wpa3SuiteB192: return QStringLiteral("WPA3 Suite B 192-bit");
+	case Sae: return QStringLiteral("WPA3");
+	case Wpa2Eap: return QStringLiteral("WPA2 Enterprise");
+	case Wpa2Psk: return QStringLiteral("WPA2");
+	case WpaEap: return QStringLiteral("WPA Enterprise");
+	case WpaPsk: return QStringLiteral("WPA");
+	case StaticWep: return QStringLiteral("WEP");
+	case DynamicWep: return QStringLiteral("Dynamic WEP");
+	case Leap: return QStringLiteral("LEAP");
+	case Owe: return QStringLiteral("OWE");
+	case Open: return QStringLiteral("Open");
+	case Unknown: return QStringLiteral("Unknown");
+	}
+}
+
+WifiNetwork::WifiNetwork(QString ssid, QObject* parent): BaseNetwork(std::move(ssid), parent) {};
+
+void WifiNetwork::connect() {
+	if (this->bConnected) {
+		qCCritical(logWifi) << this << "is already connected.";
+		return;
+	}
+	this->requestConnect();
+}
+
+WifiDevice::WifiDevice(QObject* parent): NetworkDevice(DeviceType::Wifi, parent) {};
 
 void WifiDevice::scan() {
 	if (this->bScanning) {
-		qCCritical(logWifiDevice) << this << "is already scanning";
+		qCCritical(logWifi) << this << "is already scanning";
 		return;
 	}
-	qCDebug(logWifiDevice) << "Requesting scan on" << this;
+	qCDebug(logWifi) << "Requesting scan on" << this;
 	this->requestScan();
 }
 
 void WifiDevice::networkAdded(WifiNetwork* net) { this->mNetworks.insertObject(net); }
 void WifiDevice::networkRemoved(WifiNetwork* net) { this->mNetworks.removeObject(net); }
 
-WifiNetwork::WifiNetwork(QString ssid, QObject* parent): QObject(parent), mSsid(std::move(ssid)) {};
-
-void WifiNetwork::connect() {
-	if (this->bConnected) {
-		qCCritical(logWifiNetwork) << this << "is already connected.";
-		return;
-	}
-	this->requestConnect();
-}
-
-Wifi::Wifi(QObject* parent): QObject(parent) {};
-
-void Wifi::onDeviceAdded(WifiDevice* dev) { this->mDevices.insertObject(dev); }
-void Wifi::onDeviceRemoved(WifiDevice* dev) { this->mDevices.removeObject(dev); }
-
-void Wifi::setEnabled(bool enabled) {
-	if (this->bEnabled == enabled) {
-		const QString state = enabled ? "enabled" : "disabled";
-		qCCritical(logWifi) << "Wifi is already" << state;
-	} else {
-		emit this->requestSetEnabled(enabled);
-	}
-}
-
 } // namespace qs::network
+
+QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network) {
+	auto saver = QDebugStateSaver(debug);
+
+	if (network) {
+		debug.nospace() << "WifiNetwork(" << static_cast<const void*>(network)
+		                << ", name=" << network->name() << ")";
+	} else {
+		debug << "WifiNetwork(nullptr)";
+	}
+
+	return debug;
+}
 
 QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device) {
 	auto saver = QDebugStateSaver(debug);
@@ -65,19 +80,6 @@ QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device) {
 	if (device) {
 		debug.nospace() << "WifiDevice(" << static_cast<const void*>(device)
 		                << ", name=" << device->name() << ")";
-	} else {
-		debug << "WifiDevice(nullptr)";
-	}
-
-	return debug;
-}
-
-QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network) {
-	auto saver = QDebugStateSaver(debug);
-
-	if (network) {
-		debug.nospace() << "WifiNetwork(" << static_cast<const void*>(network)
-		                << ", name=" << network->ssid() << ")";
 	} else {
 		debug << "WifiDevice(nullptr)";
 	}
