@@ -16,9 +16,7 @@ public:
 	QmlScanner() = default;
 	QmlScanner(const QDir& rootPath): rootPath(rootPath) {}
 
-	// path must be canonical
 	void scanDir(const QString& path);
-
 	void scanQmlRoot(const QString& path);
 
 	QVector<QString> scannedDirs;
