@@ -1,6 +1,7 @@
 #include "wireless.hpp"
 #include <utility>
 
+#include <qdatetime.h>
 #include <qdbusconnection.h>
 #include <qdbusextratypes.h>
 #include <qdbuspendingcall.h>
@@ -181,7 +182,9 @@ void NMWirelessNetwork::removeActiveConnection() {
 	}
 };
 
-NMWirelessDevice::NMWirelessDevice(const QString& path, QObject* parent): NMDevice(path, parent) {
+NMWirelessDevice::NMWirelessDevice(const QString& path, QObject* parent)
+    : NMDevice(path, parent)
+    , mScanTimer(this) {
 	this->wirelessProxy = new DBusNMWirelessProxy(
 	    "org.freedesktop.NetworkManager",
 	    path,
@@ -202,6 +205,9 @@ NMWirelessDevice::NMWirelessDevice(const QString& path, QObject* parent): NMDevi
 	    Qt::SingleShotConnection
 	);
 
+	QObject::connect(&this->mScanTimer, &QTimer::timeout, this, &NMWirelessDevice::onScanTimeout);
+	this->mScanTimer.setSingleShot(true);
+
 	this->wirelessProperties.setInterface(this->wirelessProxy);
 	this->wirelessProperties.updateAllViaGetAll();
 }
@@ -213,7 +219,6 @@ void NMWirelessDevice::initWireless() {
 	QObject::connect(this, &NMWirelessDevice::accessPointLoaded, this, &NMWirelessDevice::onAccessPointLoaded);
 	QObject::connect(this, &NMWirelessDevice::connectionLoaded, this, &NMWirelessDevice::onConnectionLoaded);
 	QObject::connect(this, &NMWirelessDevice::activeConnectionLoaded, this, &NMWirelessDevice::onActiveConnectionLoaded);
-	QObject::connect(this, &NMWirelessDevice::lastScanChanged, this, [this]() { this->bScanning = false; });
 	// clang-format on
 	this->registerAccessPoints();
 }
@@ -279,25 +284,47 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 	);
 }
 
+// Only make WifiNetworks visible to the frontend WifiDevice when
+// scanning is enabled or the network is connected or the network has known settings.
+void NMWirelessDevice::updateNetworkVisibility(WifiNetwork* net) {
+	const bool show = this->mScanning || net->connected() || net->known();
+	const bool visible = this->mVisibleNetworks.contains(net);
+
+	if (show && !visible) {
+		this->mVisibleNetworks.insert(net);
+		emit this->networkAdded(net);
+	} else if (!show && visible) {
+		this->mVisibleNetworks.remove(net);
+		emit this->networkRemoved(net);
+	}
+}
+
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
 	auto* backend = new NMWirelessNetwork(ssid, this);
 	backend->bindableActiveApPath().setBinding([this]() { return this->activeApPath().path(); });
 	backend->bindableCapabilities().setBinding([this]() { return this->capabilities(); });
 
 	auto* frontend = new WifiNetwork(ssid, this);
-	frontend->bindableSignalStrength().setBinding([backend]() { return backend->signalStrength()/100.0; });
+	frontend->bindableSignalStrength().setBinding([backend]() {
+		return backend->signalStrength() / 100.0;
+	});
 	frontend->bindableConnected().setBinding([backend]() {
-		return backend->state() != NMConnectionState::Deactivated;
+		return backend->state() == NMConnectionState::Activated;
 	});
 	frontend->bindableKnown().setBinding([backend]() { return backend->known(); });
 	frontend->bindableNmReason().setBinding([backend]() { return backend->reason(); });
 	frontend->bindableSecurity().setBinding([backend]() { return backend->security(); });
 	QObject::connect(backend, &NMWirelessNetwork::disappeared, this, [this, frontend, backend]() {
 		QObject::disconnect(backend, nullptr, nullptr, nullptr);
-		emit this->wifiNetworkRemoved(frontend);
+		QObject::disconnect(frontend, nullptr, nullptr, nullptr);
 		this->mBackendNetworks.remove(backend->ssid());
-		delete backend;
+		this->mNetworks.remove(frontend->name());
+		if (this->mVisibleNetworks.contains(frontend)) {
+			this->mVisibleNetworks.remove(frontend);
+			emit this->networkRemoved(frontend);
+		}
 		delete frontend;
+		delete backend;
 	});
 	QObject::connect(frontend, &WifiNetwork::requestConnect, this, [this, backend]() {
 		if (backend->referenceConnection()) {
@@ -315,9 +342,16 @@ NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
 			);
 		}
 	});
+	QObject::connect(frontend, &WifiNetwork::connectedChanged, this, [this, frontend]() {
+		this->updateNetworkVisibility(frontend);
+	});
+	QObject::connect(frontend, &WifiNetwork::knownChanged, this, [this, frontend]() {
+		this->updateNetworkVisibility(frontend);
+	});
 
 	this->mBackendNetworks.insert(ssid, backend);
-	emit this->wifiNetworkAdded(frontend);
+	this->mNetworks.insert(ssid, frontend);
+	this->updateNetworkVisibility(frontend);
 	return backend;
 }
 
@@ -343,7 +377,7 @@ void NMWirelessDevice::onConnectionLoaded(NMConnectionSettings* conn) {
 		return;
 	}
 
-	const QString ssid = settings["802-11-wireless"]["ssid"].toString();
+	const auto ssid = settings["802-11-wireless"]["ssid"].toString();
 	auto* net = this->mBackendNetworks.value(ssid);
 	if (!net) net = this->registerNetwork(ssid);
 
@@ -366,9 +400,33 @@ void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
 	}
 }
 
-void NMWirelessDevice::scan() {
-	this->wirelessProxy->RequestScan({});
-	this->bScanning = true;
+void NMWirelessDevice::onScanTimeout() {
+	const QDateTime now = QDateTime::currentDateTime();
+	const QDateTime lastScan = this->bLastScan;
+	const QDateTime lastScanRequest = this->mLastScanRequest;
+
+	if (lastScan.isValid() && lastScan.msecsTo(now) < this->mScanIntervalMs) {
+		// Rate limit if backend scan property updated within the interval
+		auto diff = static_cast<int>(this->mScanIntervalMs - lastScan.msecsTo(now));
+		this->mScanTimer.start(diff);
+	} else if (lastScanRequest.isValid() && lastScanRequest.msecsTo(now) < this->mScanIntervalMs) {
+		// Rate limit if frontend changes scanner state within the interval
+		auto diff = static_cast<int>(this->mScanIntervalMs - lastScanRequest.msecsTo(now));
+		this->mScanTimer.start(diff);
+	} else {
+		this->wirelessProxy->RequestScan({});
+		this->mLastScanRequest = now;
+		this->mScanTimer.start(this->mScanIntervalMs);
+	}
+}
+
+void NMWirelessDevice::handleScanner(bool enabled) {
+	if (this->mScanning == enabled) return;
+	this->mScanning = enabled;
+	for (WifiNetwork* net: this->mNetworks) {
+		this->updateNetworkVisibility(net);
+	}
+	enabled ? this->onScanTimeout() : this->mScanTimer.stop();
 }
 
 bool NMWirelessDevice::isWirelessValid() const {
@@ -382,6 +440,10 @@ namespace qs::dbus {
 DBusResult<qs::network::NMWirelessCapabilities::Enum>
 DBusDataTransform<qs::network::NMWirelessCapabilities::Enum>::fromWire(quint32 wire) {
 	return DBusResult(static_cast<qs::network::NMWirelessCapabilities::Enum>(wire));
+}
+
+DBusResult<QDateTime> DBusDataTransform<QDateTime>::fromWire(qint64 wire) {
+	return DBusResult(network::clockBootTimeToDateTime(wire));
 }
 
 } // namespace qs::dbus

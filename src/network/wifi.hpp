@@ -9,7 +9,6 @@
 #include "../core/model.hpp"
 #include "device.hpp"
 #include "network.hpp"
-#include "nm/enums.hpp"
 
 namespace qs::network {
 
@@ -36,6 +35,62 @@ public:
 	};
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
+};
+
+///! NetworkManager-specific reason for a WifiNetworks connection state.
+/// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
+class NMConnectionStateReason: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		None = 1,
+		UserDisconnected = 2,
+		DeviceDisconnected = 3,
+		ServiceStopped = 4,
+		IpConfigInvalid = 5,
+		ConnectTimeout = 6,
+		ServiceStartTimeout = 7,
+		ServiceStartFailed = 8,
+		NoSecrets = 9,
+		LoginFailed = 10,
+		ConnectionRemoved = 11,
+		DependencyFailed = 12,
+		DeviceRealizeFailed = 13,
+		DeviceRemoved = 14
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NMConnectionStateReason::Enum reason);
+};
+
+///! Scans for available wifi networks.
+/// When enabled, the scanner populates its respective WifiDevice with an active list of available WifiNetworks.
+class WifiScanner: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_UNCREATABLE("Scanner can only be acquired through WifiDevice");
+
+	// clang-format off
+	/// True when currently scanning for networks.
+	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged BINDABLE bindableEnabled);
+	// clang-format on
+
+public:
+	explicit WifiScanner(QObject* parent = nullptr);
+
+	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
+	[[nodiscard]] bool enabled() const { return this->bEnabled; };
+	void setEnabled(bool enabled);
+
+signals:
+	void requestEnabled(bool enabled);
+	void enabledChanged();
+
+private:
+	Q_OBJECT_BINDABLE_PROPERTY(WifiScanner, bool, bEnabled, &WifiScanner::enabledChanged);
 };
 
 ///! An available wifi network.
@@ -85,21 +140,17 @@ private:
 	// clang-format on
 };
 
-///! Wireless variant of a network device.
+///! Wireless variant of a NetworkDevice.
 class WifiDevice: public NetworkDevice {
 	Q_OBJECT;
 	QML_ELEMENT;
 	QML_UNCREATABLE("WifiDevices can only be acquired through Wifi");
 
-	/// True if the wifi device is currently scanning for available wifi networks.
-	Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged);
-	/// A list of all wifi networks currently available.
+	/// A list of this available and connected wifi networks.
 	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<WifiNetwork>*)
-
-signals:
-	void requestScan();
-	void scanningChanged();
+	/// The wifi scanner for this device.
+	Q_PROPERTY(WifiScanner* wifiScanner READ wifiScanner CONSTANT);
 
 public slots:
 	void networkAdded(WifiNetwork* net);
@@ -108,18 +159,14 @@ public slots:
 public:
 	explicit WifiDevice(QObject* parent = nullptr);
 
-	/// Request the wireless device to scan for available WiFi networks.
-	/// This should be invoked everytime you want to show the user an accurate list of available networks.
-	Q_INVOKABLE void scan();
-
 	[[nodiscard]] ObjectModel<WifiNetwork>* networks() { return &this->mNetworks; };
-	QBindable<bool> bindableScanning() { return &this->bScanning; };
-	[[nodiscard]] bool scanning() const { return this->bScanning; };
+	[[nodiscard]] WifiScanner* wifiScanner() { return &this->mScanner; };
 
 private:
 	ObjectModel<WifiNetwork> mNetworks {this};
-	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, bool, bScanning, &WifiDevice::scanningChanged);
+	WifiScanner mScanner;
 };
+
 }; // namespace qs::network
 
 QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network);

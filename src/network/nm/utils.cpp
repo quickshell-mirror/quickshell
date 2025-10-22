@@ -1,9 +1,15 @@
 #include "utils.hpp"
 
+// We depend on non-std Linux extensions that ctime doesn't put in the global namespace
+// NOLINTNEXTLINE(modernize-deprecated-headers)
+#include <time.h>
+
 #include <qcontainerfwd.h>
+#include <qdatetime.h>
 #include <qdbusservicewatcher.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qtypes.h>
 
 #include "../wifi.hpp"
 #include "dbus_types.hpp"
@@ -217,5 +223,26 @@ WifiSecurityType::Enum findBestWirelessSecurity(
 	}
 	return WifiSecurityType::Unknown;
 }
+
+// NOLINTBEGIN
+QDateTime clockBootTimeToDateTime(qint64 clockBootTime) {
+	clockid_t clkId = CLOCK_BOOTTIME;
+	struct timespec tp {};
+
+	const QDateTime now = QDateTime::currentDateTime();
+	int r = clock_gettime(clkId, &tp);
+	if (r == -1 && errno == EINVAL) {
+		clkId = CLOCK_MONOTONIC;
+		r = clock_gettime(clkId, &tp);
+	}
+
+	// Convert to milliseconds
+	const qint64 nowInMs = tp.tv_sec * 1000 + tp.tv_nsec / 1000000;
+
+	// Return a QDateTime of the millisecond diff
+	const qint64 offset = clockBootTime - nowInMs;
+	return QDateTime::fromMSecsSinceEpoch(now.toMSecsSinceEpoch() + offset);
+}
+// NOLINTEND
 
 } // namespace qs::network

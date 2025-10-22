@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <qcontainerfwd.h>
@@ -40,5 +39,7 @@ WifiSecurityType::Enum findBestWirelessSecurity(
     NM80211ApSecurityFlags::Enum apWpa,
     NM80211ApSecurityFlags::Enum apRsn
 );
+
+QDateTime clockBootTimeToDateTime(qint64 clockBootTime);
 
 } // namespace qs::network

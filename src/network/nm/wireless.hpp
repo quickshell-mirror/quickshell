@@ -22,6 +22,13 @@ struct DBusDataTransform<qs::network::NMWirelessCapabilities::Enum> {
 	static DBusResult<Data> fromWire(Wire wire);
 };
 
+template <>
+struct DBusDataTransform<QDateTime> {
+	using Wire = qint64;
+	using Data = QDateTime;
+	static DBusResult<Data> fromWire(Wire wire);
+};
+
 } // namespace qs::dbus
 namespace qs::network {
 
@@ -97,29 +104,26 @@ public:
 	explicit NMWirelessDevice(const QString& path, QObject* parent = nullptr);
 
 	[[nodiscard]] bool isWirelessValid() const;
-	[[nodiscard]] qint64 lastScan() { return this->bLastScan; };
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
 	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
-	[[nodiscard]] bool scanning() { return this->bScanning; };
 
 signals:
 	void accessPointLoaded(NMAccessPoint* ap);
 	void accessPointRemoved(NMAccessPoint* ap);
-	void wifiNetworkAdded(WifiNetwork* net);
-	void wifiNetworkRemoved(WifiNetwork* net);
+	void networkAdded(WifiNetwork* net);
+	void networkRemoved(WifiNetwork* net);
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
 	    const ConnectionSettingsMap& settings,
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& apPath
 	);
-	void lastScanChanged(qint64 lastScan);
+	void lastScanChanged(QDateTime lastScan);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeAccessPointChanged(const QDBusObjectPath& path);
-	void scanningChanged(bool scanning);
 
 public slots:
-	void scan();
+	void handleScanner(bool enabled);
 
 private slots:
 	void onAccessPointPathAdded(const QDBusObjectPath& path);
@@ -127,9 +131,11 @@ private slots:
 	void onAccessPointLoaded(NMAccessPoint* ap);
 	void onConnectionLoaded(NMConnectionSettings* conn);
 	void onActiveConnectionLoaded(NMActiveConnection* active);
+	void onScanTimeout();
 
 private:
 	void registerAccessPoint(const QString& path);
+	void updateNetworkVisibility(WifiNetwork* net);
 	void registerAccessPoints();
 	void initWireless();
 	NMWirelessNetwork* registerNetwork(const QString& ssid);
@@ -137,9 +143,16 @@ private:
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMWirelessNetwork*> mBackendNetworks;
 
+	QHash<QString, WifiNetwork*> mNetworks;
+	QSet<WifiNetwork*> mVisibleNetworks;
+
+	QDateTime mLastScanRequest;
+	QTimer mScanTimer;
+	bool mScanning = false;
+	qint32 mScanIntervalMs = 10001;
+
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, qint64, bLastScan, &NMWirelessDevice::lastScanChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, bool, bScanning, &NMWirelessDevice::scanningChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDateTime, bLastScan, &NMWirelessDevice::lastScanChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessDevice::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDBusObjectPath, bActiveAccessPoint, &NMWirelessDevice::activeAccessPointChanged);
 	

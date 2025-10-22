@@ -9,7 +9,6 @@
 
 #include "../../dbus/properties.hpp"
 #include "connection.hpp"
-#include "enums.hpp"
 #include "nm/dbus_nm_device.h"
 
 namespace qs::dbus {
