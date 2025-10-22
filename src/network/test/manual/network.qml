@@ -37,9 +37,7 @@ FloatingWindow {
 			clip: true
 			Layout.fillWidth: true
 			Layout.fillHeight: true
-			model: {
-				return Network.devices.values.filter(device => device.type === DeviceType.Wifi)
-			}
+			model: Network.devices
 
 			delegate: WrapperRectangle {
 				width: parent.width
@@ -47,15 +45,6 @@ FloatingWindow {
 				border.color: palette.button
 				border.width: 1
 				margin: 5
-
-				property var sortedNetworks: {
-					return [...modelData.networks.values].sort((a, b) => {
-						if (a.connected !== b.connected) {
-							return b.connected - a.connected
-						}
-						return b.signalStrength - a.signalStrength
-					})
-				}
 
 				ColumnLayout {
 					Label { text: `Device: ${modelData.name} (Hardware address: ${modelData.address}) (Type: ${DeviceType.toString(modelData.type)})` }
@@ -65,7 +54,7 @@ FloatingWindow {
 							color: modelData.state == DeviceConnectionState.Connected ? palette.link : palette.placeholderText
 						}
 						Label {
-							visible: modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting
+							visible: Network.backend == NetworkBackendType.NetworkManager && (modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting)
 							text: `(${NMDeviceState.toString(modelData.nmState)})`
 						}
 						Button {
@@ -73,16 +62,25 @@ FloatingWindow {
 							text: "Disconnect"
 							onClicked: modelData.disconnect()
 						}
-						Button {
-							text: "Scan"
-							onClicked: modelData.scan()
-							visible: modelData.scanning === false
+						CheckBox {
+							text: "Scanner"
+							checked: modelData.wifiScanner.enabled
+							onClicked: modelData.wifiScanner.enabled = !modelData.wifiScanner.enabled
+							visible: modelData.type === DeviceType.Wifi
 						}
 					}
 
 					Repeater {
 						Layout.fillWidth: true
-						model: sortedNetworks
+						model: {
+							if (modelData.type !== DeviceType.Wifi) return []
+							return [...modelData.networks.values].sort((a, b) => {
+								if (a.connected !== b.connected) {
+									return b.connected - a.connected
+								}
+								return b.signalStrength - a.signalStrength
+							})
+						}
 
 						WrapperRectangle {
 							Layout.fillWidth: true
@@ -112,7 +110,7 @@ FloatingWindow {
 										}
 									}
 									Label {
-										visible: modelData.nmReason != NMConnectionStateReason.Unknown && modelData.nmReason != NMConnectionStateReason.None
+										visible: Network.backend == NetworkBackendType.NetworkManager && (modelData.nmReason != NMConnectionStateReason.Unknown && modelData.nmReason != NMConnectionStateReason.None)
 										text: `Connection change reason: ${NMConnectionStateReason.toString(modelData.nmReason)}`
 									}
 								}

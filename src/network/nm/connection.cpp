@@ -14,6 +14,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../wifi.hpp"
 #include "dbus_types.hpp"
 #include "enums.hpp"
 #include "nm/dbus_nm_active_connection.h"

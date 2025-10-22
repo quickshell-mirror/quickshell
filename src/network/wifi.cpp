@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qstring.h>
 #include <qstringliteral.h>
+#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
 #include "device.hpp"
@@ -35,6 +36,39 @@ QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
 	}
 }
 
+QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) {
+	switch (reason) {
+	case Unknown: return "Unknown";
+	case None: return "No reason";
+	case UserDisconnected: return "User disconnection";
+	case DeviceDisconnected: return "The device the connection was using was disconnected.";
+	case ServiceStopped: return "The service providing the VPN connection was stopped.";
+	case IpConfigInvalid: return "The IP config of the active connection was invalid.";
+	case ConnectTimeout: return "The connection attempt to the VPN service timed out.";
+	case ServiceStartTimeout:
+		return "A timeout occurred while starting the service providing the VPN connection.";
+	case ServiceStartFailed: return "Starting the service providing the VPN connection failed.";
+	case NoSecrets: return "Necessary secrets for the connection were not provided.";
+	case LoginFailed: return "Authentication to the server failed.";
+	case ConnectionRemoved: return "Necessary secrets for the connection were not provided.";
+	case DependencyFailed: return " Master connection of this connection failed to activate.";
+	case DeviceRealizeFailed: return "Could not create the software device link.";
+	case DeviceRemoved: return "The device this connection depended on disappeared.";
+	};
+};
+
+WifiScanner::WifiScanner(QObject* parent): QObject(parent) {};
+
+void WifiScanner::setEnabled(bool enabled) {
+	if (this->bEnabled == enabled) {
+		const QString state = enabled ? "enabled" : "disabled";
+		qCCritical(logWifi) << "Scanner is already" << state;
+	} else {
+		this->bEnabled = enabled;
+		emit this->requestEnabled(enabled);
+	}
+}
+
 WifiNetwork::WifiNetwork(QString ssid, QObject* parent): BaseNetwork(std::move(ssid), parent) {};
 
 void WifiNetwork::connect() {
@@ -46,15 +80,6 @@ void WifiNetwork::connect() {
 }
 
 WifiDevice::WifiDevice(QObject* parent): NetworkDevice(DeviceType::Wifi, parent) {};
-
-void WifiDevice::scan() {
-	if (this->bScanning) {
-		qCCritical(logWifi) << this << "is already scanning";
-		return;
-	}
-	qCDebug(logWifi) << "Requesting scan on" << this;
-	this->requestScan();
-}
 
 void WifiDevice::networkAdded(WifiNetwork* net) { this->mNetworks.insertObject(net); }
 void WifiDevice::networkRemoved(WifiNetwork* net) { this->mNetworks.removeObject(net); }

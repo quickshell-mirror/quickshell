@@ -6,8 +6,6 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "nm/enums.hpp"
-
 namespace qs::network {
 
 ///! Connection state of a NetworkDevice.
@@ -41,6 +39,33 @@ public:
 	};
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(DeviceType::Enum type);
+};
+
+///! NetworkManager-specific device state.
+/// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceState.
+class NMDeviceState: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		Unmanaged = 10,
+		Unavailable = 20,
+		Disconnected = 30,
+		Prepare = 40,
+		Config = 50,
+		NeedAuth = 60,
+		IPConfig = 70,
+		IPCheck = 80,
+		Secondaries = 90,
+		Activated = 100,
+		Deactivating = 110,
+		Failed = 120,
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NMDeviceState::Enum state);
 };
 
 ///! A network device.

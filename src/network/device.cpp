@@ -31,6 +31,27 @@ QString DeviceType::toString(DeviceType::Enum type) {
 	}
 }
 
+QString NMDeviceState::toString(NMDeviceState::Enum state) {
+	switch (state) {
+	case Unknown: return QStringLiteral("Unknown");
+	case Unmanaged: return QStringLiteral("Not managed by NetworkManager");
+	case Unavailable: return QStringLiteral("Unavailable");
+	case Disconnected: return QStringLiteral("Disconnected");
+	case Prepare: return QStringLiteral("Preparing to connect");
+	case Config: return QStringLiteral("Connecting to a network");
+	case NeedAuth: return QStringLiteral("Waiting for authentication");
+	case IPConfig: return QStringLiteral("Requesting IPv4 and/or IPv6 addresses from the network");
+	case IPCheck:
+		return QStringLiteral("Checking whether further action is required for the requested connection"
+		);
+	case Secondaries:
+		return QStringLiteral("Waiting for a required secondary connection to activate");
+	case Activated: return QStringLiteral("Connected");
+	case Deactivating: return QStringLiteral("Disconnecting");
+	case Failed: return QStringLiteral("Failed to connect");
+	};
+}
+
 NetworkDevice::NetworkDevice(DeviceType::Enum type, QObject* parent)
     : QObject(parent)
     , mType(type) {};

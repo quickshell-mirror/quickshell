@@ -14,7 +14,6 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "enums.hpp"
 #include "nm/dbus_nm_device.h"
 
 namespace qs::network {

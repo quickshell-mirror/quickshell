@@ -114,7 +114,7 @@ void NetworkManager::registerDevice(const QString& path) {
 			while (!xml.atEnd() && !xml.hasError()) {
 				xml.readNext();
 
-				if (xml.isStartElement() && xml.name() == "interface") {
+				if (xml.isStartElement() && xml.name() == u"interface") {
 					const QString name = xml.attributes().value("name").toString();
 					if (name.startsWith("org.freedesktop.NetworkManager.Device.Wireless")) {
 						this->registerWifiDevice(path);
@@ -139,6 +139,7 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 	}
 
 	auto* device = new WifiDevice(this);
+	auto* scanner = device->wifiScanner();
 	wireless->setParent(device);
 	this->mDeviceHash.insert(path, device);
 
@@ -154,13 +155,12 @@ void NetworkManager::registerWifiDevice(const QString& path) {
 		case 110 ... 120: return DeviceConnectionState::Disconnecting;
 		}
 	});
-	device->bindableScanning().setBinding([wireless]() { return wireless->scanning(); });
 	// clang-format off
 	QObject::connect(wireless, &NMWirelessDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
 	QObject::connect(wireless, &NMWirelessDevice::activateConnection, this, &NetworkManager::activateConnection);
-	QObject::connect(wireless, &NMWirelessDevice::wifiNetworkAdded, device, &WifiDevice::networkAdded);
-	QObject::connect(wireless, &NMWirelessDevice::wifiNetworkRemoved, device, &WifiDevice::networkRemoved);
-	QObject::connect(device, &WifiDevice::requestScan, wireless, &NMWirelessDevice::scan);
+	QObject::connect(wireless, &NMWirelessDevice::networkAdded, device, &WifiDevice::networkAdded);
+	QObject::connect(wireless, &NMWirelessDevice::networkRemoved, device, &WifiDevice::networkRemoved);
+	QObject::connect(scanner, &WifiScanner::requestEnabled, wireless, &NMWirelessDevice::handleScanner);
 	QObject::connect(device, &WifiDevice::requestDisconnect, wireless, &NMWirelessDevice::disconnect);
 	// clang-format on
 
