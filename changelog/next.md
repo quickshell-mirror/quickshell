@@ -22,3 +22,4 @@ set shell id.
 ## Bug Fixes
 
 - Fixed volume control breaking with pipewire pro audio mode.
+- Fixed escape sequence handling in desktop entries.
