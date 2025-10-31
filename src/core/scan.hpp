@@ -16,10 +16,10 @@ public:
 	QmlScanner() = default;
 	QmlScanner(const QDir& rootPath): rootPath(rootPath) {}
 
-	void scanDir(const QString& path);
+	void scanDir(const QDir& dir);
 	void scanQmlRoot(const QString& path);
 
-	QVector<QString> scannedDirs;
+	QVector<QDir> scannedDirs;
 	QVector<QString> scannedFiles;
 	QHash<QString, QString> fileIntercepts;
 
