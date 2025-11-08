@@ -11,6 +11,11 @@ target_link_libraries(quickshell-launch PRIVATE
 	Qt::Quick Qt::Widgets CLI11::CLI11 quickshell-build
 )
 
+if(WEBVIEW)
+    add_compile_definitions(WEBVIEW_ENABLED)
+    target_link_libraries(quickshell-launch PRIVATE Qt::WebView)
+endif()
+
 qs_add_pchset(launch
 	DEPENDENCIES Qt::Core CLI11::CLI11
 	HEADERS

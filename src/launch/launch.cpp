@@ -17,6 +17,10 @@
 #include <qtextstream.h>
 #include <unistd.h>
 
+#ifdef WEBVIEW_ENABLED
+#include <QtWebView>
+#endif
+
 #include "../core/common.hpp"
 #include "../core/instanceinfo.hpp"
 #include "../core/logging.hpp"
@@ -222,7 +226,13 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	delete coreApplication;
 
 	QGuiApplication* app = nullptr;
-	auto qArgC = 0;
+	auto qArgC = 1;
+
+#ifdef WEBVIEW_ENABLED
+	if (qEnvironmentVariable("QS_WEBVIEW", "0") == "1") {
+		QtWebView::initialize();
+	}
+#endif
 
 	if (pragmas.useQApplication) {
 		app = new QApplication(qArgC, argv);
