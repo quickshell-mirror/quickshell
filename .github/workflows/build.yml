@@ -53,6 +53,7 @@ jobs:
             libxcb \
             libpipewire \
             cli11 \
+            polkit \
             jemalloc
 
       - name: Build

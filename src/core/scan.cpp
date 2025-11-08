@@ -19,12 +19,13 @@
 
 QS_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
 
-void QmlScanner::scanDir(const QString& path) {
-	if (this->scannedDirs.contains(path)) return;
-	this->scannedDirs.push_back(path);
+void QmlScanner::scanDir(const QDir& dir) {
+	if (this->scannedDirs.contains(dir)) return;
+	this->scannedDirs.push_back(dir);
+
+	const auto& path = dir.path();
 
 	qCDebug(logQmlScanner) << "Scanning directory" << path;
-	auto dir = QDir(path);
 
 	struct Entry {
 		QString name;
@@ -163,10 +164,10 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 		qCDebug(logQmlScanner) << "Found imports" << imports;
 	}
 
-	auto currentdir = QDir(QFileInfo(path).canonicalPath());
+	auto currentdir = QDir(QFileInfo(path).absolutePath());
 
 	// the root can never be a singleton so it dosent matter if we skip it
-	this->scanDir(currentdir.path());
+	this->scanDir(currentdir);
 
 	for (auto& import: imports) {
 		QString ipath;
@@ -179,9 +180,9 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 		}
 
 		auto pathInfo = QFileInfo(ipath);
-		auto cpath = pathInfo.canonicalFilePath();
+		auto cpath = pathInfo.absoluteFilePath();
 
-		if (cpath.isEmpty()) {
+		if (!pathInfo.exists()) {
 			qCWarning(logQmlScanner) << "Ignoring unresolvable import" << ipath << "from" << path;
 			continue;
 		}

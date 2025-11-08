@@ -269,16 +269,22 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 					currentArgument += '\\';
 					escape = 0;
 				}
+			} else if (escape == 2) {
+				currentArgument += c;
+				escape = 0;
 			} else if (escape != 0) {
-				if (escape != 2) {
-					// Technically this is an illegal state, but the spec has a terrible double escape
-					// rule in strings for no discernable reason. Assuming someone might understandably
-					// misunderstand it, treat it as a normal escape and log it.
+				switch (c.unicode()) {
+				case 's': currentArgument += u' '; break;
+				case 'n': currentArgument += u'\n'; break;
+				case 't': currentArgument += u'\t'; break;
+				case 'r': currentArgument += u'\r'; break;
+				case '\\': currentArgument += u'\\'; break;
+				default:
 					qCWarning(logDesktopEntry).noquote()
 					    << "Illegal escape sequence in desktop entry exec string:" << execString;
+					currentArgument += c;
+					break;
 				}
-
-				currentArgument += c;
 				escape = 0;
 			} else if (c == u'"' || c == u'\'') {
 				parsingString = false;

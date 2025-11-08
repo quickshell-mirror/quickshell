@@ -110,7 +110,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 					}
 
 					if (split[0].trimmed() == *cmd.config.name) {
-						path = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
+						path = QDir(QFileInfo(file).absolutePath()).filePath(split[1].trimmed());
 						break;
 					}
 				}
@@ -140,8 +140,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 				return -1;
 			}
 
-			path = QFileInfo(path).canonicalFilePath();
-			return 0;
+			goto rpath;
 		}
 	}
 
@@ -154,7 +153,8 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 		return -1;
 	}
 
-	path = QFileInfo(path).canonicalFilePath();
+rpath:
+	path = QFileInfo(path).absoluteFilePath();
 	return 0;
 }
 
