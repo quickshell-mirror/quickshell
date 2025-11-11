@@ -5,8 +5,7 @@
 
 namespace qs::web_engine {
 
-inline void init() 
-{
+inline void init() {
 	using InitializeFunc = void (*)();
 
 	QLibrary lib("Qt6WebEngineQuick");
@@ -20,7 +19,8 @@ inline void init()
 
 	qDebug() << "Loaded library Qt6WebEngineQuick";
 
-	auto initialize = reinterpret_cast<InitializeFunc>(lib.resolve("_ZN16QtWebEngineQuick10initializeEv"));
+	auto initialize =
+	    reinterpret_cast<InitializeFunc>(lib.resolve("_ZN16QtWebEngineQuick10initializeEv"));
 	if (!initialize) {
 		qWarning() << "Failed to resolve symbol 'void QtWebEngineQuick::initialize()' in lib "
 		              "Qt6WebEngineQuick. This should not happen";

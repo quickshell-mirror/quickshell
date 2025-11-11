@@ -227,7 +227,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	QGuiApplication* app = nullptr;
 	auto qArgC = 1;
 
-	if(pragmas.useQtWebEngineQuick) {
+	if (pragmas.useQtWebEngineQuick) {
 		web_engine::init();
 	}
 
