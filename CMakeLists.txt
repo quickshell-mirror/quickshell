@@ -72,7 +72,6 @@ boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 boption(BLUETOOTH "Bluetooth" ON)
-boption(WEBVIEW "WebView" ON)
 
 include(cmake/install-qml-module.cmake)
 include(cmake/util.cmake)
