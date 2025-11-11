@@ -129,10 +129,6 @@ if (DBUS)
 	list(APPEND QT_FPDEPS DBus)
 endif()
 
-if (WEBVIEW)
-	list(APPEND QT_FPDEPS WebView)
-endif()
-
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 # In Qt 6.10, private dependencies are required to be explicit,
