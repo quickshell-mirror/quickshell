@@ -3,6 +3,8 @@ qt_add_library(quickshell-i3-ipc STATIC
 	qml.cpp
 	workspace.cpp
 	monitor.cpp
+	controller.cpp
+	listener.cpp
 )
 
 qt_add_qml_module(quickshell-i3-ipc
