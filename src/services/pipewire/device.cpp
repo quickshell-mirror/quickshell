@@ -125,10 +125,20 @@ void PwDevice::addDeviceIndexPairs(const spa_pod* param) {
 	// Insert into the main map as well, staging's purpose is to remove old entries.
 	this->routeDeviceIndexes.insert(device, index);
 
+	// Used for initial node volume if the device is bound before the node
+	// (e.g. multiple nodes pointing to the same device)
+	this->routeDeviceVolumes.insert(device, volumeProps);
+
 	qCDebug(logDevice).nospace() << "Registered device/index pair for " << this
 	                             << ": [device: " << device << ", index: " << index << ']';
 
 	emit this->routeVolumesChanged(device, volumeProps);
+}
+
+bool PwDevice::tryLoadVolumeProps(qint32 routeDevice, PwVolumeProps& volumeProps) {
+	if (!this->routeDeviceVolumes.contains(routeDevice)) return false;
+	volumeProps = this->routeDeviceVolumes.value(routeDevice);
+	return true;
 }
 
 void PwDevice::polled() {

@@ -169,6 +169,7 @@ public:
 	virtual ~PwNodeBoundData() = default;
 	Q_DISABLE_COPY_MOVE(PwNodeBoundData);
 
+	virtual void onDeviceChanged() {};
 	virtual void onInfo(const pw_node_info* /*info*/) {}
 	virtual void onSpaParam(quint32 /*id*/, quint32 /*index*/, const spa_pod* /*param*/) {}
 	virtual void onUnbind() {}
@@ -182,6 +183,7 @@ class PwNodeBoundAudio
 public:
 	explicit PwNodeBoundAudio(PwNode* node);
 
+	void onDeviceChanged() override;
 	void onInfo(const pw_node_info* info) override;
 	void onSpaParam(quint32 id, quint32 index, const spa_pod* param) override;
 	void onUnbind() override;
