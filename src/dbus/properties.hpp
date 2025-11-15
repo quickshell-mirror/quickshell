@@ -217,7 +217,7 @@ protected:
 
 private:
 	[[nodiscard]] constexpr Owner* owner() const {
-		auto* self = std::bit_cast<char*>(this);
+		auto* self = std::bit_cast<char*>(this);       // NOLINT
 		return std::bit_cast<Owner*>(self - offset()); // NOLINT
 	}
 

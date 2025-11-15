@@ -746,11 +746,11 @@ bool EncodedLogReader::readVarInt(quint32* slot) {
 		if (!this->reader.skip(1)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if ((bytes[1] != 0xff || bytes[2] != 0xff) && readLength >= 3) {
-		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1);
+		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1); // NOLINT
 		if (!this->reader.skip(3)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if (readLength == 7) {
-		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3);
+		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3); // NOLINT
 		if (!this->reader.skip(7)) return false;
 		*slot = qFromLittleEndian(n);
 	} else return false;

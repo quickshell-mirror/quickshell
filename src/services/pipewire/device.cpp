@@ -107,7 +107,7 @@ void PwDevice::addDeviceIndexPairs(const spa_pod* param) {
 	qint32 device = 0;
 	qint32 index = 0;
 
-	spa_pod* props = nullptr;
+	const spa_pod* props = nullptr;
 
 	// clang-format off
 	quint32 id = SPA_PARAM_Route;
