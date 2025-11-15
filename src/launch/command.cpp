@@ -90,9 +90,9 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 		}
 
 		if (!manifestPath.isEmpty()) {
-			qWarning(
-			) << "Config manifests (manifest.conf) are deprecated and will be removed in a future "
-			     "release.";
+			qWarning()
+			    << "Config manifests (manifest.conf) are deprecated and will be removed in a future "
+			       "release.";
 			qWarning() << "Consider using symlinks to a subfolder of quickshell's XDG config dirs.";
 
 			auto file = QFile(manifestPath);
@@ -130,7 +130,8 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 
 			if (path.isEmpty()) {
 				if (name == "default") {
-					qCCritical(logBare
+					qCCritical(
+					    logBare
 					) << "Could not find \"default\" config directory or shell.qml in any valid config path.";
 				} else {
 					qCCritical(logBare) << "Could not find" << name

@@ -12,8 +12,8 @@ namespace qs::widgets {
 MarginWrapperManager::MarginWrapperManager(QObject* parent): WrapperManager(parent) {
 	this->bTopMargin.setBinding([this] {
 		return this->bExtraMargin
-		     + (this->bOverrides.value().testFlag(TopMargin) ? this->bTopMarginOverride : this->bMargin
-		     );
+		     + (this->bOverrides.value().testFlag(TopMargin) ? this->bTopMarginOverride
+		                                                     : this->bMargin);
 	});
 
 	this->bBottomMargin.setBinding([this] {

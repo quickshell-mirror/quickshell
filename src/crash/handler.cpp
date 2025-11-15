@@ -55,7 +55,8 @@ void CrashHandler::init() {
 	this->d->minidumpFd = memfd_create("quickshell:minidump", MFD_CLOEXEC);
 
 	if (this->d->minidumpFd == -1) {
-		qCCritical(logCrashHandler
+		qCCritical(
+		    logCrashHandler
 		) << "Failed to allocate minidump memfd, minidumps will be saved in the working directory.";
 		createHandler(MinidumpDescriptor("."));
 	} else {
@@ -71,7 +72,8 @@ void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
 	this->d->infoFd = memfd_create("quickshell:instance_info", MFD_CLOEXEC);
 
 	if (this->d->infoFd == -1) {
-		qCCritical(logCrashHandler
+		qCCritical(
+		    logCrashHandler
 		) << "Failed to allocate instance info memfd, crash recovery will not work.";
 		return;
 	}
@@ -79,7 +81,8 @@ void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
 	QFile file;
 
 	if (!file.open(this->d->infoFd, QFile::ReadWrite)) {
-		qCCritical(logCrashHandler
+		qCCritical(
+		    logCrashHandler
 		) << "Failed to open instance info memfd, crash recovery will not work.";
 	}
 

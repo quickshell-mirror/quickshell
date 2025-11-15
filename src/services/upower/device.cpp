@@ -126,8 +126,8 @@ DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
 	);
 }
 
-DBusResult<UPowerDeviceType::Enum> DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire
-) {
+DBusResult<UPowerDeviceType::Enum>
+DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire) {
 	if (wire >= UPowerDeviceType::Unknown && wire <= UPowerDeviceType::BluetoothGeneric) {
 		return DBusResult(static_cast<UPowerDeviceType::Enum>(wire));
 	}

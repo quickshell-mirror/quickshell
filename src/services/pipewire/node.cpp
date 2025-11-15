@@ -172,7 +172,8 @@ void PwNode::initProps(const spa_dict* props) {
 			this->device = this->registry->devices.value(id);
 
 			if (this->device == nullptr) {
-				qCCritical(logNode
+				qCCritical(
+				    logNode
 				) << this
 				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
 			}
@@ -212,7 +213,8 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 				auto id = QString::fromUtf8(routeDevice).toInt(&ok);
 
 				if (!ok) {
-					qCCritical(logNode
+					qCCritical(
+					    logNode
 					) << self
 					  << "has a card.profile.device property but the value is not an integer. Value:" << id;
 				}

@@ -414,7 +414,8 @@ WlBuffer* LinuxDmabufManager::createDmabuf(
 
 	if (modifiers.modifiers.isEmpty()) {
 		if (!modifiers.implicit) {
-			qCritical(logDmabuf
+			qCritical(
+			    logDmabuf
 			) << "Failed to create gbm_bo: format supports no implicit OR explicit modifiers.";
 			return nullptr;
 		}

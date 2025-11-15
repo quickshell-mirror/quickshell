@@ -36,7 +36,8 @@ void IpcServer::start() {
 		auto path = run->filePath("ipc.sock");
 		new IpcServer(path);
 	} else {
-		qCCritical(logIpc
+		qCCritical(
+		    logIpc
 		) << "Could not start IPC server as the instance runtime path could not be created.";
 	}
 }

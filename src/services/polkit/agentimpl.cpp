@@ -143,7 +143,8 @@ void PolkitAgentImpl::activateAuthenticationRequest() {
 		if (obj) identities.append(obj);
 	}
 	if (identities.isEmpty()) {
-		qCWarning(logPolkit
+		qCWarning(
+		    logPolkit
 		) << "no supported identities available for authentication request, cancelling.";
 		req->cancel("Error requesting authentication: no supported identities available.");
 		delete req;

@@ -72,8 +72,8 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 					do {
 						++iter;
 					} while (iter != this->mValues.end()
-					         && std::find_if(newIter, newValues.end(), eqPredicate(*iter)) == newValues.end()
-					);
+					         && std::find_if(newIter, newValues.end(), eqPredicate(*iter))
+					                == newValues.end());
 
 					auto index = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 					auto startIndex = static_cast<qint32>(std::distance(this->mValues.begin(), startIter));

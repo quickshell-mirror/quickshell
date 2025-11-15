@@ -65,7 +65,8 @@ void HyprlandWindow::setOpacity(qreal opacity) {
 	if (opacity == this->mOpacity) return;
 
 	if (opacity < 0.0 || opacity > 1.0) {
-		qmlWarning(this
+		qmlWarning(
+		    this
 		) << "Cannot set HyprlandWindow.opacity to a value larger than 1.0 or smaller than 0.0";
 		return;
 	}

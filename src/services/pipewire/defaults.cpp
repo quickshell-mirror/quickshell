@@ -201,7 +201,8 @@ bool PwDefaultTracker::setConfiguredDefault(const char* key, const QString& valu
 	}
 
 	if (!meta->hasSetPermission()) {
-		qCCritical(logDefaults
+		qCCritical(
+		    logDefaults
 		) << "Cannot set default node as write+execute permissions are missing for"
 		  << meta;
 		return false;

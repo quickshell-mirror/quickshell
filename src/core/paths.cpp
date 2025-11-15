@@ -175,7 +175,8 @@ void QsPaths::linkRunDir() {
 		auto* shellDir = this->shellRunDir();
 
 		if (!shellDir) {
-			qCCritical(logPaths
+			qCCritical(
+			    logPaths
 			) << "Could not create by-id symlink as the shell runtime path could not be created.";
 		} else {
 			auto shellPath = shellDir->filePath(runDir->dirName());
@@ -378,7 +379,8 @@ void QsPaths::createLock() {
 			qCDebug(logPaths) << "Created instance lock at" << path;
 		}
 	} else {
-		qCCritical(logPaths
+		qCCritical(
+		    logPaths
 		) << "Could not create instance lock, as the instance runtime directory could not be created.";
 	}
 }

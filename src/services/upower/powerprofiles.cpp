@@ -66,7 +66,8 @@ PowerProfiles::PowerProfiles() {
 	auto bus = QDBusConnection::systemBus();
 
 	if (!bus.isConnected()) {
-		qCWarning(logPowerProfiles
+		qCWarning(
+		    logPowerProfiles
 		) << "Could not connect to DBus. PowerProfiles services will not work.";
 	}
 
@@ -79,7 +80,8 @@ PowerProfiles::PowerProfiles() {
 	);
 
 	if (!this->service->isValid()) {
-		qCDebug(logPowerProfiles
+		qCDebug(
+		    logPowerProfiles
 		) << "PowerProfilesDaemon is not currently running, attempting to start it.";
 
 		dbus::tryLaunchService(this, bus, "org.freedesktop.UPower.PowerProfiles", [this](bool success) {
@@ -103,13 +105,15 @@ void PowerProfiles::init() {
 
 void PowerProfiles::setProfile(PowerProfile::Enum profile) {
 	if (!this->properties.isConnected()) {
-		qCCritical(logPowerProfiles
+		qCCritical(
+		    logPowerProfiles
 		) << "Cannot set power profile: power-profiles-daemon not accessible or not running";
 		return;
 	}
 
 	if (profile == PowerProfile::Performance && !this->bHasPerformanceProfile) {
-		qCCritical(logPowerProfiles
+		qCCritical(
+		    logPowerProfiles
 		) << "Cannot request performance profile as it is not present for this device.";
 		return;
 	} else if (profile < PowerProfile::PowerSaver || profile > PowerProfile::Performance) {
@@ -135,8 +139,9 @@ PowerProfilesQml::PowerProfilesQml(QObject* parent): QObject(parent) {
 		return instance->bHasPerformanceProfile.value();
 	});
 
-	this->bDegradationReason.setBinding([instance]() { return instance->bDegradationReason.value(); }
-	);
+	this->bDegradationReason.setBinding([instance]() {
+		return instance->bDegradationReason.value();
+	});
 
 	this->bHolds.setBinding([instance]() { return instance->bHolds.value(); });
 }

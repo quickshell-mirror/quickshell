@@ -199,7 +199,8 @@ void GreetdConnection::onSocketReady() {
 		// Special case this error in case a session was already running.
 		// This cancels and restarts the session.
 		if (errorType == "error" && desc == "a session is already being configured") {
-			qCDebug(logGreetd
+			qCDebug(
+			    logGreetd
 			) << "A session was already in progress, cancelling it and starting a new one.";
 			this->setActive(false);
 			this->setActive(true);

@@ -8,6 +8,6 @@
 class QSWaylandSessionLockIntegration: public QtWaylandClient::QWaylandShellIntegration {
 public:
 	bool initialize(QtWaylandClient::QWaylandDisplay* /* display */) override { return true; }
-	QtWaylandClient::QWaylandShellSurface* createShellSurface(QtWaylandClient::QWaylandWindow* window
-	) override;
+	QtWaylandClient::QWaylandShellSurface*
+	createShellSurface(QtWaylandClient::QWaylandWindow* window) override;
 };

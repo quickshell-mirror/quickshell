@@ -361,7 +361,8 @@ void ThreadLogging::initFs() {
 	auto* runDir = QsPaths::instance()->instanceRunDir();
 
 	if (!runDir) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logging as the runtime directory could not be created.";
 		return;
 	}
@@ -372,7 +373,8 @@ void ThreadLogging::initFs() {
 	auto* detailedFile = new QFile(detailedPath);
 
 	if (!file->open(QFile::ReadWrite | QFile::Truncate)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logger as the log file could not be created:"
 		  << path;
 		delete file;
@@ -383,7 +385,8 @@ void ThreadLogging::initFs() {
 
 	// buffered by WriteBuffer
 	if (!detailedFile->open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start detailed filesystem logger as the log file could not be created:"
 		  << detailedPath;
 		delete detailedFile;

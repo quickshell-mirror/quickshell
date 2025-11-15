@@ -214,8 +214,10 @@ void DBusPropertyGroup::updatePropertySet(const QVariantMap& properties, bool co
 	}
 }
 
-void DBusPropertyGroup::tryUpdateProperty(DBusPropertyCore* property, const QVariant& variant)
-    const {
+void DBusPropertyGroup::tryUpdateProperty(
+    DBusPropertyCore* property,
+    const QVariant& variant
+) const {
 	property->mExists = true;
 
 	auto error = property->store(variant);

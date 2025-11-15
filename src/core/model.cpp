@@ -1,7 +1,7 @@
 #include "model.hpp"
 
-#include <qhash.h>
 #include <qbytearray.h>
+#include <qhash.h>
 #include <qnamespace.h>
 
 QHash<int, QByteArray> UntypedObjectModel::roleNames() const {
