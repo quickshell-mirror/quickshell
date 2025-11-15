@@ -11,12 +11,14 @@
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
 #include <qrect.h>
+#include <qregion.h>
 #include <qsize.h>
 #include <qtversionchecks.h>
 #include <qtypes.h>
 #include <qvariant.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 #include <qwindow.h>
+#include <wayland-client-protocol.h>
 
 #include "../../window/panelinterface.hpp"
 #include "shell_integration.hpp"
@@ -30,8 +32,8 @@ namespace qs::wayland::layershell {
 
 namespace {
 
-[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer
+toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
 	switch (layer) {
 	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
 	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
@@ -42,8 +44,8 @@ namespace {
 	return QtWayland::zwlr_layer_shell_v1::layer_top;
 }
 
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor
+toWaylandAnchors(const Anchors& anchors) noexcept {
 	quint32 wl = 0;
 	if (anchors.mLeft) wl |= QtWayland::zwlr_layer_surface_v1::anchor_left;
 	if (anchors.mRight) wl |= QtWayland::zwlr_layer_surface_v1::anchor_right;
@@ -81,9 +83,7 @@ void LayerSurfaceBridge::commitState() {
 LayerSurfaceBridge* LayerSurfaceBridge::get(QWindow* window) {
 	auto v = window->property("layershell_bridge");
 
-	if (v.canConvert<LayerSurfaceBridge*>()) {
-		return v.value<LayerSurfaceBridge*>();
-	}
+	if (v.canConvert<LayerSurfaceBridge*>()) { return v.value<LayerSurfaceBridge*>(); }
 
 	return nullptr;
 }
@@ -146,8 +146,8 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 		if (waylandScreen != nullptr) {
 			output = waylandScreen->output();
 		} else {
-			qWarning(
-			) << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
+			qWarning()
+			    << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
 		}
 	}
 
@@ -174,9 +174,7 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 }
 
 LayerSurface::~LayerSurface() {
-	if (this->bridge && this->bridge->surface == this) {
-		this->bridge->surface = nullptr;
-	}
+	if (this->bridge && this->bridge->surface == this) { this->bridge->surface = nullptr; }
 
 	this->destroy();
 }
@@ -218,9 +216,7 @@ void LayerSurface::commit() {
 		this->set_size(size.width(), size.height());
 	}
 
-	if (p.anchors != c.anchors) {
-		this->set_anchor(toWaylandAnchors(p.anchors));
-	}
+	if (p.anchors != c.anchors) { this->set_anchor(toWaylandAnchors(p.anchors)); }
 
 	if (p.margins != c.margins) {
 		this->set_margin(
@@ -231,9 +227,7 @@ void LayerSurface::commit() {
 		);
 	}
 
-	if (p.layer != c.layer) {
-		this->set_layer(p.layer);
-	}
+	if (p.layer != c.layer) { this->set_layer(p.layer); }
 
 	if (p.exclusiveZone != c.exclusiveZone) {
 		this->set_exclusive_zone(QHighDpi::toNativePixels(p.exclusiveZone, this->qwindow()));
@@ -241,6 +235,19 @@ void LayerSurface::commit() {
 
 	if (p.keyboardFocus != c.keyboardFocus) {
 		this->set_keyboard_interactivity(toWaylandKeyboardFocus(p.keyboardFocus));
+	}
+
+	if (p.inputMode != c.inputMode) {
+		auto* wlSurface = this->window()->waylandSurface()->object();
+
+		if (p.inputMode == WlrInputMode::None) {
+			auto* display = this->window()->display();
+			auto* wlRegion = display->createRegion(QRegion());
+			wl_surface_set_input_region(wlSurface, wlRegion); // NOLINT(misc-include-cleaner)
+			wl_region_destroy(wlRegion);                      // NOLINT(misc-include-cleaner)
+		} else {
+			wl_surface_set_input_region(wlSurface, nullptr); // NOLINT(misc-include-cleaner)
+		}
 	}
 
 	c = p;

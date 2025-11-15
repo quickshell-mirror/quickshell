@@ -84,17 +84,13 @@ void WlrLayershell::connectWindow() {
 ProxiedWindow* WlrLayershell::disownWindow(bool keepItemOwnership) {
 	auto* window = this->ProxyWindowBase::disownWindow(keepItemOwnership);
 
-	if (this->bridge) {
-		this->connectBridge(nullptr);
-	}
+	if (this->bridge) { this->connectBridge(nullptr); }
 
 	return window;
 }
 
 void WlrLayershell::connectBridge(LayerSurfaceBridge* bridge) {
-	if (this->bridge) {
-		QObject::disconnect(this->bridge, nullptr, this, nullptr);
-	}
+	if (this->bridge) { QObject::disconnect(this->bridge, nullptr, this, nullptr); }
 
 	this->bridge = bridge;
 
@@ -153,6 +149,7 @@ LayerSurfaceState WlrLayershell::computeState() const {
 	    .layer = this->bLayer,
 	    .exclusiveZone = this->bcExclusiveZone,
 	    .keyboardFocus = this->bKeyboardFocus,
+	    .inputMode = this->bInputMode,
 	    .compositorPickesScreen = this->compositorPicksScreen,
 	    .mNamespace = this->bNamespace,
 	};

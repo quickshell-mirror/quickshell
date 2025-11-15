@@ -22,6 +22,7 @@ struct LayerSurfaceState {
 	WlrLayer::Enum layer = WlrLayer::Top;
 	qint32 exclusiveZone = 0;
 	WlrKeyboardFocus::Enum keyboardFocus = WlrKeyboardFocus::None;
+	WlrInputMode::Enum inputMode = WlrInputMode::Full;
 
 	bool compositorPickesScreen = true;
 	QString mNamespace = "quickshell";

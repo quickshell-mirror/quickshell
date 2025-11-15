@@ -68,6 +68,22 @@ Q_ENUM_NS(Enum);
 
 } // namespace WlrKeyboardFocus
 
+///! WlrLayershell input region mode
+/// See @@WlrLayershell.inputMode.
+namespace WlrInputMode { // NOLINT
+Q_NAMESPACE;
+QML_ELEMENT;
+
+enum Enum : quint8 {
+	/// The entire window receives input events. (default)
+	Full = 0,
+	/// No input events are received. Clicks pass through to windows below.
+	None = 1,
+};
+Q_ENUM_NS(Enum);
+
+} // namespace WlrInputMode
+
 ///! Wlroots layershell window
 /// Decorationless window that can be attached to the screen edges using the [zwlr_layer_shell_v1] protocol.
 ///
@@ -113,6 +129,11 @@ class WlrLayershell: public ProxyWindowBase {
 	QSDOC_HIDE Q_PROPERTY(Margins margins READ margins WRITE setMargins NOTIFY marginsChanged);
 	QSDOC_HIDE Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY layerChanged);
 	QSDOC_HIDE Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY keyboardFocusChanged);
+	/// The input region mode. Defaults to `WlrInputMode.Full`.
+	///
+	/// Set to `WlrInputMode.None` to make clicks pass through to windows below.
+	/// Useful for wallpaper-style backgrounds.
+	Q_PROPERTY(qs::wayland::layershell::WlrInputMode::Enum inputMode READ inputMode WRITE setInputMode NOTIFY inputModeChanged);
 	QML_ATTACHED(WlrLayershell);
 	QML_ELEMENT;
 	// clang-format on
@@ -164,6 +185,9 @@ public:
 	[[nodiscard]] bool focusable() const;
 	void setFocusable(bool focusable);
 
+	[[nodiscard]] WlrInputMode::Enum inputMode() const { return this->bInputMode; }
+	void setInputMode(WlrInputMode::Enum inputMode) { this->bInputMode = inputMode; }
+
 	static WlrLayershell* qmlAttachedProperties(QObject* object);
 
 signals:
@@ -174,6 +198,7 @@ signals:
 	QSDOC_HIDE void exclusiveZoneChanged();
 	QSDOC_HIDE void exclusionModeChanged();
 	QSDOC_HIDE void marginsChanged();
+	void inputModeChanged();
 
 private slots:
 	void updateAutoExclusion();
@@ -196,6 +221,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bExclusiveZone, &WlrLayershell::exclusiveZoneChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, WlrKeyboardFocus::Enum, bKeyboardFocus, &WlrLayershell::keyboardFocusChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(WlrLayershell, ExclusionMode::Enum, bExclusionMode, ExclusionMode::Auto, &WlrLayershell::exclusionModeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, WlrInputMode::Enum, bInputMode, &WlrLayershell::inputModeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, qint32, bcExclusiveZone);
 	Q_OBJECT_BINDABLE_PROPERTY(WlrLayershell, Qt::Edge, bcExclusionEdge);
 
@@ -204,6 +230,7 @@ private:
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bMargins, onStateChanged, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bcExclusiveZone, onStateChanged, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bKeyboardFocus, onStateChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(WlrLayershell, bInputMode, onStateChanged, onValueChanged);
 	// clang-format on
 };
 
