@@ -9,5 +9,6 @@ QHash<int, QByteArray> UntypedObjectModel::roleNames() const {
 }
 
 UntypedObjectModel* UntypedObjectModel::emptyInstance() {
-	return ObjectModel<void>::emptyInstance();
+	static auto* instance = new ObjectModel<void>(nullptr);
+	return instance;
 }
