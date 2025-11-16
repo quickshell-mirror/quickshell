@@ -14,13 +14,14 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 	QString iconName;
 	QString fallbackName;
 	QString path;
+	auto fallbackPaths = QIcon::fallbackSearchPaths();
 
 	auto splitIdx = id.indexOf("?path=");
 	if (splitIdx != -1) {
 		iconName = id.sliced(0, splitIdx);
 		path = id.sliced(splitIdx + 6);
-		qWarning() << "Searching custom icon paths is not yet supported. Icon path will be ignored for"
-		           << id;
+		fallbackPaths.prepend(path);
+		QIcon::setFallbackSearchPaths(fallbackPaths);
 	} else {
 		splitIdx = id.indexOf("?fallback=");
 		if (splitIdx != -1) {
@@ -41,6 +42,11 @@ IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& re
 	if (pixmap.isNull()) {
 		qWarning() << "Could not load icon" << id << "at size" << targetSize << "from request";
 		pixmap = IconImageProvider::missingPixmap(targetSize);
+	}
+
+	if (!path.isEmpty()) {
+		fallbackPaths.removeFirst();
+		QIcon::setFallbackSearchPaths(fallbackPaths);
 	}
 
 	if (size != nullptr) *size = pixmap.size();
