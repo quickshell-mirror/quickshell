@@ -1,0 +1,4 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.AccessPoint">
+	</interface>
+</node>
