@@ -5,6 +5,7 @@
 #include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qqmlparserstatus.h>
+#include <qrect.h>
 #include <qrunnable.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -16,7 +17,7 @@ class ColorQuantizerOperation
 	Q_OBJECT;
 
 public:
-	explicit ColorQuantizerOperation(QUrl* source, qreal depth, qreal rescaleSize);
+	explicit ColorQuantizerOperation(QUrl* source, qreal depth, QRect imageRect, qreal rescaleSize);
 
 	void run() override;
 	void tryCancel();
@@ -44,6 +45,7 @@ private:
 	QList<QColor> colors;
 	QUrl* source;
 	qreal maxDepth;
+	QRect imageRect;
 	qreal rescaleSize;
 };
 
@@ -78,6 +80,9 @@ class ColorQuantizer
 	/// binary split of the color space
 	Q_PROPERTY(qreal depth READ depth WRITE setDepth NOTIFY depthChanged);
 
+	/// Rectangle that the source image is cropped to.
+	Q_PROPERTY(QRect imageRect READ imageRect WRITE setImageRect NOTIFY imageRectChanged);
+
 	/// The size to rescale the image to, when rescaleSize is 0 then no scaling will be done.
 	/// > [!NOTE] Results from color quantization doesn't suffer much when rescaling, it's
 	/// > reccommended to rescale, otherwise the quantization process will take much longer.
@@ -97,6 +102,9 @@ public:
 	[[nodiscard]] qreal depth() const { return this->mDepth; }
 	void setDepth(qreal depth);
 
+	[[nodiscard]] QRect imageRect() const { return this->mImageRect; }
+	void setImageRect(QRect imageRect);
+
 	[[nodiscard]] qreal rescaleSize() const { return this->mRescaleSize; }
 	void setRescaleSize(int rescaleSize);
 
@@ -104,6 +112,7 @@ signals:
 	void colorsChanged();
 	void sourceChanged();
 	void depthChanged();
+	void imageRectChanged();
 	void rescaleSizeChanged();
 
 public slots:
@@ -117,6 +126,7 @@ private:
 	ColorQuantizerOperation* liveOperation = nullptr;
 	QUrl mSource;
 	qreal mDepth = 0;
+	QRect mImageRect;
 	qreal mRescaleSize = 0;
 
 	Q_OBJECT_BINDABLE_PROPERTY(
