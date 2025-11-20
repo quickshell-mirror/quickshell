@@ -25,24 +25,24 @@ InputMethodHandle::~InputMethodHandle() {
 	this->destroy();
 }
 
-void InputMethodHandle::commitString(const QString& text) { commit_string(text); }
+void InputMethodHandle::commitString(const QString& text) { this->commit_string(text); }
 void InputMethodHandle::sendPreeditString(
     const QString& text,
     int32_t cursorBegin,
     int32_t cursorEnd
 ) {
-	set_preedit_string(text, cursorBegin, cursorEnd);
+	this->set_preedit_string(text, cursorBegin, cursorEnd);
 }
 void InputMethodHandle::deleteText(int before, int after) {
-	zwp_input_method_v2::delete_surrounding_text(before, after);
+	this->zwp_input_method_v2::delete_surrounding_text(before, after);
 }
-void InputMethodHandle::commit() { zwp_input_method_v2::commit(this->serial++); }
+void InputMethodHandle::commit() { this->zwp_input_method_v2::commit(this->serial++); }
 
 bool InputMethodHandle::hasKeyboard() const { return this->keyboard != nullptr; }
 QPointer<InputMethodKeyboardGrab> InputMethodHandle::grabKeyboard() {
 	if (this->keyboard) return this->keyboard;
 
-	this->keyboard = new InputMethodKeyboardGrab(this, grab_keyboard());
+	this->keyboard = new InputMethodKeyboardGrab(this, this->grab_keyboard());
 
 	return this->keyboard;
 }
@@ -92,24 +92,24 @@ void InputMethodHandle::zwp_input_method_v2_content_type(uint32_t hint, uint32_t
 };
 
 void InputMethodHandle::zwp_input_method_v2_done() {
-	auto oldState = mState;
+	auto oldState = this->mState;
 	this->mState = this->mNewState;
 
 	if (this->mState.activated != oldState.activated) {
-		if (this->mNewState.activated) emit activated();
-		else emit deactivated();
+		if (this->mNewState.activated) emit this->activated();
+		else emit this->deactivated();
 	}
 
 	if (this->mState.surroundingText != oldState.surroundingText) {
-		emit surroundingTextChanged(this->mNewState.surroundingText.textChangeCause);
+		emit this->surroundingTextChanged(this->mNewState.surroundingText.textChangeCause);
 	}
 
 	if (this->mState.contentHint != oldState.contentHint) {
-		emit contentHintChanged();
+		emit this->contentHintChanged();
 	}
 
 	if (this->mState.contentPurpose != oldState.contentPurpose) {
-		emit contentPurposeChanged();
+		emit this->contentPurposeChanged();
 	}
 }
 

@@ -45,7 +45,7 @@ void KeyboardTextEdit::setCursor(int value) {
 	if (this->mCursor == value) return;
 	this->mCursor = value;
 	this->updatePreedit();
-	emit cursorChanged();
+	emit this->cursorChanged();
 }
 
 QString KeyboardTextEdit::editText() const { return this->mEditText; }
@@ -53,11 +53,11 @@ void KeyboardTextEdit::setEditText(const QString& value) {
 	if (this->mEditText == value) return;
 	this->mEditText = value;
 	this->updatePreedit();
-	emit editTextChanged();
+	emit this->editTextChanged();
 }
 
 void KeyboardTextEdit::updatePreedit() {
-	auto* inputMethod = dynamic_cast<InputMethod*>(parent());
+	auto* inputMethod = dynamic_cast<InputMethod*>(this->parent());
 	if (!inputMethod) {
 		return;
 	}
@@ -67,21 +67,21 @@ void KeyboardTextEdit::updatePreedit() {
 void KeyboardTextEdit::onKeyPress(QChar character) {
 	this->mEditText.insert(this->mCursor, character);
 	this->updatePreedit();
-	emit editTextChanged();
+	emit this->editTextChanged();
 	this->setCursor(this->mCursor + 1);
 }
 void KeyboardTextEdit::onBackspacePress() {
 	if (this->mCursor == 0) return;
 	this->mEditText.remove(this->mCursor - 1, 1);
 	this->updatePreedit();
-	emit editTextChanged();
+	emit this->editTextChanged();
 	this->setCursor(this->mCursor - 1);
 }
 void KeyboardTextEdit::onDeletePress() {
 	if (this->mCursor == this->mEditText.size()) return;
 	this->mEditText.remove(this->mCursor, 1);
 	this->updatePreedit();
-	emit editTextChanged();
+	emit this->editTextChanged();
 }
 
 void KeyboardTextEdit::onDirectionPress(QMLDirectionKey::Enum direction) {
@@ -99,7 +99,7 @@ void KeyboardTextEdit::onDirectionPress(QMLDirectionKey::Enum direction) {
 }
 
 void KeyboardTextEdit::onReturnPress() {
-	auto* inputMethod = dynamic_cast<InputMethod*>(parent());
+	auto* inputMethod = dynamic_cast<InputMethod*>(this->parent());
 	if (!inputMethod) return;
 	QString text = "";
 	if (this->mTransform.isCallable())

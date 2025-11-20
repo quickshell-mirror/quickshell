@@ -28,9 +28,9 @@ InputMethodKeyboardGrab::InputMethodKeyboardGrab(
 )
     : QObject(parent)
     , zwp_input_method_keyboard_grab_v2(keyboard) {
-	this->mRepeatTimer.callOnTimeout(this, [&](){
+	this->mRepeatTimer.callOnTimeout(this, [this](){
 		this->mRepeatTimer.setInterval(1000 / this->mRepeatRate);
-		handleKey(mRepeatKey);
+		this->handleKey(this->mRepeatKey);
 	});
 }
 
@@ -100,11 +100,11 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 
 	if (sym == XKB_KEY_Escape) {
-		if (state == WL_KEYBOARD_KEY_STATE_PRESSED) emit escapePress();
+		if (state == WL_KEYBOARD_KEY_STATE_PRESSED) emit this->escapePress();
 		return;
 	}
 	if (sym == XKB_KEY_Return) {
-		if (state == WL_KEYBOARD_KEY_STATE_PRESSED) emit returnPress();
+		if (state == WL_KEYBOARD_KEY_STATE_PRESSED) emit this->returnPress();
 		return;
 	}
 
@@ -116,7 +116,7 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 	}
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		const bool keyHandled = handleKey(key);
+		const bool keyHandled = this->handleKey(key);
 		if (keyHandled){
 			if (this->mKeyMapState.keyRepeats(key) && this->mRepeatRate > 0) {
 				this->mRepeatKey = key;
@@ -137,33 +137,33 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 bool InputMethodKeyboardGrab::handleKey(xkb_keycode_t key){
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 	if (sym == XKB_KEY_Up) {
-		emit directionPress(DirectionKey::Up);
+		emit this->directionPress(DirectionKey::Up);
 		return true;
 	}
 	if (sym == XKB_KEY_Down) {
-		emit directionPress(DirectionKey::Down);
+		emit this->directionPress(DirectionKey::Down);
 		return true;
 	}
 	if (sym == XKB_KEY_Left) {
-		emit directionPress(DirectionKey::Left);
+		emit this->directionPress(DirectionKey::Left);
 		return true;
 	}
 	if (sym == XKB_KEY_Right) {
-		emit directionPress(DirectionKey::Right);
+		emit this->directionPress(DirectionKey::Right);
 		return true;
 	}
 	if (sym == XKB_KEY_BackSpace) {
-		emit backspacePress();
+		emit this->backspacePress();
 		return true;
 	}
 	if (sym == XKB_KEY_Delete) {
-		emit deletePress();
+		emit this->deletePress();
 		return true;
 	}
 
 	const QChar character = this->mKeyMapState.getChar(key);
 	if (character != '\0') {
-		emit keyPress(character);
+		emit this->keyPress(character);
 		return true;
 	}
 	return false;
@@ -188,8 +188,8 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_repeat_info(
     int32_t rate,
     int32_t delay
 ) {
-	mRepeatRate = rate;
-	mRepeatDelay = delay;
+	this->mRepeatRate = rate;
+	this->mRepeatDelay = delay;
 }
 
 } // namespace qs::wayland::input_method::impl

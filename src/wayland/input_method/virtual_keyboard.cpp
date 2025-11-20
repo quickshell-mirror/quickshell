@@ -28,7 +28,7 @@ VirtualKeyboardHandle::VirtualKeyboardHandle(
     const KeyMapState& keymap
 )
     : QtWayland::zwp_virtual_keyboard_v1(keyboard) {
-	setKeymapState(keymap);
+	this->setKeymapState(keymap);
 }
 
 VirtualKeyboardHandle::~VirtualKeyboardHandle() { this->destroy(); }
@@ -59,9 +59,9 @@ void VirtualKeyboardHandle::sendKey(xkb_keycode_t keycode, wl_keyboard_key_state
 
 void VirtualKeyboardHandle::sendModifiers() {
 	auto mods = this->mKeyMapState.serialiseMods();
-	modifiers(mods.depressed, mods.latched, mods.locked, mods.depressedLayout);
+	this->modifiers(mods.depressed, mods.latched, mods.locked, mods.depressedLayout);
 }
 
-bool VirtualKeyboardHandle::getGood() const { return good; }
+bool VirtualKeyboardHandle::getGood() const { return this->good; }
 
 }; // namespace qs::wayland::input_method::impl

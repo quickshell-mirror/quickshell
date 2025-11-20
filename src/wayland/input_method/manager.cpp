@@ -31,7 +31,7 @@ wl_seat* getSeat() {
 QPointer<InputMethodHandle> InputMethodManager::acquireInput() {
 	if (this->inputMethod && this->inputMethod->isAvailable()) return this->inputMethod;
 
-	this->inputMethod = new InputMethodHandle(this, get_input_method(getSeat()));
+	this->inputMethod = new InputMethodHandle(this, this->get_input_method(getSeat()));
 
 	return this->inputMethod;
 }
@@ -53,7 +53,7 @@ VirtualKeyboardManager* VirtualKeyboardManager::instance() {
 
 std::unique_ptr<VirtualKeyboardHandle>
 VirtualKeyboardManager::createVirtualKeyboard(const KeyMapState& keymap) {
-	return std::make_unique<VirtualKeyboardHandle>(create_virtual_keyboard(getSeat()), keymap);
+	return std::make_unique<VirtualKeyboardHandle>(this->create_virtual_keyboard(getSeat()), keymap);
 }
 
 } // namespace qs::wayland::input_method::impl

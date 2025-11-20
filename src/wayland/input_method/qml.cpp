@@ -49,7 +49,7 @@ QQmlComponent* InputMethod::keyboardComponent() const { return this->mKeyboardCo
 void InputMethod::setKeyboardComponent(QQmlComponent* keyboardComponent) {
 	if (this->mKeyboardComponent == keyboardComponent) return;
 	this->mKeyboardComponent = keyboardComponent;
-	emit keyboardComponentChanged();
+	emit this->keyboardComponentChanged();
 
 	if (this->keyboard) {
 		this->keyboard->deleteLater();
@@ -59,7 +59,7 @@ void InputMethod::setKeyboardComponent(QQmlComponent* keyboardComponent) {
 	this->handleKeyboardActive();
 }
 
-bool InputMethod::hasInput() const { return handle && handle->isAvailable(); }
+bool InputMethod::hasInput() const { return this->handle && this->handle->isAvailable(); }
 
 void InputMethod::getInput() {
 	if (this->hasInput()) return;
@@ -97,13 +97,13 @@ void InputMethod::getInput() {
 	    &InputMethod::surroundingTextChanged
 	);
 
-	emit hasInputChanged();
+	emit this->hasInputChanged();
 }
 
 void InputMethod::releaseInput() {
 	if (!this->handle) return;
 	InputMethodManager::instance()->releaseInput();
-	emit hasInputChanged();
+	emit this->hasInputChanged();
 }
 
 bool InputMethod::hasKeyboard() const {
@@ -131,12 +131,12 @@ void InputMethod::grabKeyboard() {
 	}
 
 	instance->setParent(this);
-	instance->setKeyboard(handle->grabKeyboard());
+	instance->setKeyboard(this->handle->grabKeyboard());
 	// Always have a way to release the keyboard
 	QObject::connect(instance, &Keyboard::escapePress, this, &InputMethod::releaseKeyboard);
 
 	this->keyboard = instance;
-	emit hasKeyboardChanged();
+	emit this->hasKeyboardChanged();
 }
 
 void InputMethod::releaseKeyboard() {
@@ -145,7 +145,7 @@ void InputMethod::releaseKeyboard() {
 	this->keyboard = nullptr;
 	this->handle->releaseKeyboard();
 	if (this->mClearPreeditOnKeyboardRelease) this->sendPreeditString("");
-	emit hasKeyboardChanged();
+	emit this->hasKeyboardChanged();
 }
 
 void InputMethod::handleKeyboardActive() {
@@ -155,9 +155,9 @@ void InputMethod::handleKeyboardActive() {
 	}
 }
 
-const QString& InputMethod::surroundingText() const { return handle->surroundingText(); }
-uint32_t InputMethod::surroundingTextCursor() const { return handle->surroundingTextCursor(); }
-uint32_t InputMethod::surroundingTextAnchor() const { return handle->surroundingTextAnchor(); }
+const QString& InputMethod::surroundingText() const { return this->handle->surroundingText(); }
+uint32_t InputMethod::surroundingTextCursor() const { return this->handle->surroundingTextCursor(); }
+uint32_t InputMethod::surroundingTextAnchor() const { return this->handle->surroundingTextAnchor(); }
 
 QMLContentHint::Enum InputMethod::contentHint() const { return this->handle->contentHint(); }
 QMLContentPurpose::Enum InputMethod::contentPurpose() const {
@@ -166,7 +166,7 @@ QMLContentPurpose::Enum InputMethod::contentPurpose() const {
 
 void InputMethod::onHandleActiveChanged() {
 	this->handleKeyboardActive();
-	emit activeChanged();
+	emit this->activeChanged();
 }
 
 Keyboard::Keyboard(QObject* parent): QObject(parent) {}

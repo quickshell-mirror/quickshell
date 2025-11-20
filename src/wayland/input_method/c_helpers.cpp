@@ -59,8 +59,8 @@ SharedMemory& SharedMemory::operator=(SharedMemory&& other) noexcept {
 	return *this;
 }
 
-SharedMemory::operator bool() const { return fd != -1 && map != MAP_FAILED; }
-[[nodiscard]] int SharedMemory::get() const { return fd; }
+SharedMemory::operator bool() const { return this->fd != -1 && this->map != MAP_FAILED; }
+[[nodiscard]] int SharedMemory::get() const { return this->fd; }
 
 void SharedMemory::write(const char* string) {
 	if (!this->map) return;
