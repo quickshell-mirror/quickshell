@@ -40,7 +40,7 @@ signals:
 	void deletePress();
 
 private:
-	QPointer<impl::InputMethodKeyboardGrab> mKeyboard = nullptr;
+	QPointer<impl::InputMethodKeyboardGrab> mKeyboard;
 	// QQmlComponent* mSurfaceComponent = nullptr;
 };
 
