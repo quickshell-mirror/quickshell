@@ -1,8 +1,8 @@
-#include <QtTest>
+#include <qobject.h>
 
 class WebEngineInitTest: public QObject {
 	Q_OBJECT
 
 private slots:
-	void init();
+	static void init();
 };
