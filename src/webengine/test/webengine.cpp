@@ -1,6 +1,7 @@
 #include "webengine.hpp"
 
 #include <qtest.h>
+#include <qtestcase.h>
 
 #include "../webengine.hpp"
 
