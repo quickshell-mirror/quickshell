@@ -7,12 +7,12 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "connection.hpp"
+#include "controller.hpp"
 #include "workspace.hpp"
 
 namespace qs::i3::ipc {
 
-I3Monitor::I3Monitor(I3Ipc* ipc): QObject(ipc), ipc(ipc) {
+I3Monitor::I3Monitor(I3IpcController* ipc): QObject(ipc), ipc(ipc) {
 	// clang-format off
 	this->bFocused.setBinding([this]() { return this->ipc->bindableFocusedMonitor().value() == this; });
 	// clang-format on

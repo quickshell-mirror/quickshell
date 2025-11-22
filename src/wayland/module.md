@@ -7,5 +7,6 @@ headers = [
 	"screencopy/view.hpp",
 	"idle_inhibit/inhibitor.hpp",
 	"idle_notify/monitor.hpp",
+	"shortcuts_inhibit/inhibitor.hpp",
 ]
 -----

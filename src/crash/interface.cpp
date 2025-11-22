@@ -66,7 +66,8 @@ CrashReporterGui::CrashReporterGui(QString reportFolder, int pid)
 	mainLayout->addSpacing(textHeight);
 
 	if (qtVersionMatches) {
-		mainLayout->addWidget(new QLabel("Please open a bug report for this issue via github or email.")
+		mainLayout->addWidget(
+		    new QLabel("Please open a bug report for this issue via github or email.")
 		);
 	} else {
 		mainLayout->addWidget(new QLabel(

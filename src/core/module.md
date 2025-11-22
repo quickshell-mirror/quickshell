@@ -21,7 +21,6 @@ headers = [
 	"model.hpp",
 	"elapsedtimer.hpp",
 	"desktopentry.hpp",
-	"objectrepeater.hpp",
 	"qsmenu.hpp",
 	"retainable.hpp",
 	"popupanchor.hpp",

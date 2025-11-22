@@ -38,7 +38,8 @@ void QmlScanner::scanDir(const QDir& dir) {
 
 	for (auto& name: dir.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
 		if (name == "qmldir") {
-			qCDebug(logQmlScanner
+			qCDebug(
+			    logQmlScanner
 			) << "Found qmldir file, qmldir synthesization will be disabled for directory"
 			  << path;
 			seenQmldir = true;

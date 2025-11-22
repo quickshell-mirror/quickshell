@@ -30,8 +30,8 @@ namespace qs::wayland::layershell {
 
 namespace {
 
-[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer
+toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
 	switch (layer) {
 	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
 	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
@@ -42,8 +42,8 @@ namespace {
 	return QtWayland::zwlr_layer_shell_v1::layer_top;
 }
 
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor
+toWaylandAnchors(const Anchors& anchors) noexcept {
 	quint32 wl = 0;
 	if (anchors.mLeft) wl |= QtWayland::zwlr_layer_surface_v1::anchor_left;
 	if (anchors.mRight) wl |= QtWayland::zwlr_layer_surface_v1::anchor_right;
@@ -146,8 +146,8 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 		if (waylandScreen != nullptr) {
 			output = waylandScreen->output();
 		} else {
-			qWarning(
-			) << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
+			qWarning()
+			    << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
 		}
 	}
 

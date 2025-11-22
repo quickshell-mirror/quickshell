@@ -120,6 +120,9 @@ list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleInhibitor)
 add_subdirectory(idle_notify)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleNotify)
 
+add_subdirectory(shortcuts_inhibit)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._ShortcutsInhibitor)
+
 # widgets for qmenu
 target_link_libraries(quickshell-wayland PRIVATE
 	Qt::Quick Qt::Widgets Qt::WaylandClient Qt::WaylandClientPrivate

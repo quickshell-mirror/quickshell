@@ -43,9 +43,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->excludes(path);
 
 		group->add_option("-m,--manifest", state.config.manifest)
-		    ->description("[DEPRECATED] Path to a quickshell manifest.\n"
-		                  "If a manifest is specified, configs named by -c will point to its entries.\n"
-		                  "Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf")
+		    ->description(
+		        "[DEPRECATED] Path to a quickshell manifest.\n"
+		        "If a manifest is specified, configs named by -c will point to its entries.\n"
+		        "Defaults to $XDG_CONFIG_HOME/quickshell/manifest.conf"
+		    )
 		    ->envname("QS_MANIFEST")
 		    ->excludes(path);
 
@@ -54,8 +56,10 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 			    ->description("Operate on the most recently launched instance instead of the oldest");
 
 			group->add_flag("--any-display", state.config.anyDisplay)
-			    ->description("If passed, instances will not be filtered by the display connection they "
-			                  "were launched on.");
+			    ->description(
+			        "If passed, instances will not be filtered by the display connection they "
+			        "were launched on."
+			    );
 		}
 
 		return group;
@@ -79,9 +83,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		auto* group = noGroup ? cmd : cmd->add_option_group(noDisplay ? "" : "Logging");
 
 		group->add_flag("--no-color", state.log.noColor)
-		    ->description("Disables colored logging.\n"
-		                  "Colored logging can also be disabled by specifying a non empty value "
-		                  "for the NO_COLOR environment variable.");
+		    ->description(
+		        "Disables colored logging.\n"
+		        "Colored logging can also be disabled by specifying a non empty value "
+		        "for the NO_COLOR environment variable."
+		    );
 
 		group->add_flag("--log-times", state.log.timestamp)
 		    ->description("Log timestamps with each message.");
@@ -90,9 +96,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->description("Log rules to apply, in the format of QT_LOGGING_RULES.");
 
 		group->add_flag("-v,--verbose", [&](size_t count) { state.log.verbosity = count; })
-		    ->description("Increases log verbosity.\n"
-		                  "-v will show INFO level internal logs.\n"
-		                  "-vv will show DEBUG level internal logs.");
+		    ->description(
+		        "Increases log verbosity.\n"
+		        "-v will show INFO level internal logs.\n"
+		        "-vv will show DEBUG level internal logs."
+		    );
 
 		auto* hgroup = cmd->add_option_group("");
 		hgroup->add_flag("--no-detailed-logs", state.log.sparse);
@@ -102,9 +110,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		auto* group = cmd->add_option_group("Instance Selection");
 
 		group->add_option("-i,--id", state.instance.id)
-		    ->description("The instance id to operate on.\n"
-		                  "You may also use a substring the id as long as it is unique, "
-		                  "for example \"abc\" will select \"abcdefg\".");
+		    ->description(
+		        "The instance id to operate on.\n"
+		        "You may also use a substring the id as long as it is unique, "
+		        "for example \"abc\" will select \"abcdefg\"."
+		    );
 
 		group->add_option("--pid", state.instance.pid)
 		    ->description("The process id of the instance to operate on.");
@@ -161,9 +171,11 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		auto* sub = cli->add_subcommand("list", "List running quickshell instances.");
 
 		auto* all = sub->add_flag("-a,--all", state.instance.all)
-		                ->description("List all instances.\n"
-		                              "If unspecified, only instances of"
-		                              "the selected config will be listed.");
+		                ->description(
+		                    "List all instances.\n"
+		                    "If unspecified, only instances of"
+		                    "the selected config will be listed."
+		                );
 
 		sub->add_flag("-j,--json", state.output.json, "Output the list as a json.");
 
@@ -239,8 +251,10 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		    ->allow_extra_args();
 
 		sub->add_flag("-s,--show", state.ipc.showOld)
-		    ->description("Print information about a function or target if given, or all available "
-		                  "targets if not.");
+		    ->description(
+		        "Print information about a function or target if given, or all available "
+		        "targets if not."
+		    );
 
 		auto* instance = addInstanceSelection(sub);
 		addConfigSelection(sub, true)->excludes(instance);

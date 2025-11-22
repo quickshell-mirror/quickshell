@@ -29,7 +29,7 @@ struct StringLiteral16 {
 	}
 
 	[[nodiscard]] constexpr const QChar* qCharPtr() const noexcept {
-		return std::bit_cast<const QChar*>(&this->value);
+		return std::bit_cast<const QChar*>(&this->value); // NOLINT
 	}
 
 	[[nodiscard]] Q_ALWAYS_INLINE operator QString() const noexcept {

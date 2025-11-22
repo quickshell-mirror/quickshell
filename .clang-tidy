@@ -20,6 +20,7 @@ Checks: >
   -cppcoreguidelines-avoid-do-while,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-use-enum-class,
   google-global-names-in-headers,
   google-readability-casting,
   google-runtime-int,
@@ -62,6 +63,8 @@ CheckOptions:
   readability-identifier-naming.MethodCase: camelBack
   readability-identifier-naming.ParameterCase: camelBack
   readability-identifier-naming.VariableCase: camelBack
+
+  misc-const-correctness.WarnPointersAsPointers: false
 
   # does not appear to work
   readability-operators-representation.BinaryOperators: '&&;&=;&;|;~;!;!=;||;|=;^;^='

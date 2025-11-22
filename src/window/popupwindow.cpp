@@ -67,7 +67,8 @@ void ProxyPopupWindow::updateTransientParent() {
 void ProxyPopupWindow::onParentUpdated() { this->updateTransientParent(); }
 
 void ProxyPopupWindow::setScreen(QuickshellScreenInfo* /*unused*/) {
-	qmlWarning(this
+	qmlWarning(
+	    this
 	) << "Cannot set screen of popup window, as that is controlled by the parent window";
 }
 

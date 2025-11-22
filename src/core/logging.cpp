@@ -361,7 +361,8 @@ void ThreadLogging::initFs() {
 	auto* runDir = QsPaths::instance()->instanceRunDir();
 
 	if (!runDir) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logging as the runtime directory could not be created.";
 		return;
 	}
@@ -372,7 +373,8 @@ void ThreadLogging::initFs() {
 	auto* detailedFile = new QFile(detailedPath);
 
 	if (!file->open(QFile::ReadWrite | QFile::Truncate)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logger as the log file could not be created:"
 		  << path;
 		delete file;
@@ -383,7 +385,8 @@ void ThreadLogging::initFs() {
 
 	// buffered by WriteBuffer
 	if (!detailedFile->open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start detailed filesystem logger as the log file could not be created:"
 		  << detailedPath;
 		delete detailedFile;
@@ -746,11 +749,11 @@ bool EncodedLogReader::readVarInt(quint32* slot) {
 		if (!this->reader.skip(1)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if ((bytes[1] != 0xff || bytes[2] != 0xff) && readLength >= 3) {
-		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1);
+		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1); // NOLINT
 		if (!this->reader.skip(3)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if (readLength == 7) {
-		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3);
+		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3); // NOLINT
 		if (!this->reader.skip(7)) return false;
 		*slot = qFromLittleEndian(n);
 	} else return false;

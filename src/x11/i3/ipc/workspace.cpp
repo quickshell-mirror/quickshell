@@ -7,12 +7,12 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "connection.hpp"
+#include "controller.hpp"
 #include "monitor.hpp"
 
 namespace qs::i3::ipc {
 
-I3Workspace::I3Workspace(I3Ipc* ipc): QObject(ipc), ipc(ipc) {
+I3Workspace::I3Workspace(I3IpcController* ipc): QObject(ipc), ipc(ipc) {
 	Qt::beginPropertyUpdateGroup();
 
 	this->bActive.setBinding([this]() {

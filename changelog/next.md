@@ -14,6 +14,7 @@ set shell id.
 - Added support for creating Polkit agents.
 - Added support for creating wayland idle inhibitors.
 - Added support for wayland idle timeouts.
+- Added support for inhibiting wayland compositor shortcuts for focused windows.
 - Added the ability to override Quickshell.cacheDir with a custom path.
 
 ## Other Changes
@@ -24,6 +25,7 @@ set shell id.
 
 - Fixed volume control breaking with pipewire pro audio mode.
 - Fixed escape sequence handling in desktop entries.
+- Fixed volumes not initializing if a pipewire device was already loaded before its node.
 
 ## Packaging Changes
 

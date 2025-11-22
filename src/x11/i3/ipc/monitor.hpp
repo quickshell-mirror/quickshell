@@ -4,6 +4,7 @@
 #include <qproperty.h>
 
 #include "connection.hpp"
+#include "controller.hpp"
 
 namespace qs::i3::ipc {
 
@@ -39,10 +40,10 @@ class I3Monitor: public QObject {
 	Q_PROPERTY(QVariantMap lastIpcObject READ lastIpcObject NOTIFY lastIpcObjectChanged);
 	// clang-format on
 	QML_ELEMENT;
-	QML_UNCREATABLE("I3Monitors must be retrieved from the I3Ipc object.");
+	QML_UNCREATABLE("I3Monitors must be retrieved from the I3IpcController object.");
 
 public:
-	explicit I3Monitor(I3Ipc* ipc);
+	explicit I3Monitor(I3IpcController* ipc);
 
 	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
@@ -79,7 +80,7 @@ signals:
 	void focusedChanged();
 
 private:
-	I3Ipc* ipc;
+	I3IpcController* ipc;
 
 	QVariantMap mLastIpcObject;
 

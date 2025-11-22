@@ -165,7 +165,8 @@ WlrScreencopyContext::OutputTransformQuery::~OutputTransformQuery() {
 	if (this->isInitialized()) this->release();
 }
 
-void WlrScreencopyContext::OutputTransformQuery::setScreen(QtWaylandClient::QWaylandScreen* screen
+void WlrScreencopyContext::OutputTransformQuery::setScreen(
+    QtWaylandClient::QWaylandScreen* screen
 ) {
 	// cursed hack
 	class QWaylandScreenReflector: public QtWaylandClient::QWaylandScreen {

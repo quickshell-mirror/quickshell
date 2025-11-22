@@ -172,7 +172,8 @@ void PwNode::initProps(const spa_dict* props) {
 			this->device = this->registry->devices.value(id);
 
 			if (this->device == nullptr) {
-				qCCritical(logNode
+				qCCritical(
+				    logNode
 				) << this
 				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
 			}
@@ -212,12 +213,14 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 				auto id = QString::fromUtf8(routeDevice).toInt(&ok);
 
 				if (!ok) {
-					qCCritical(logNode
+					qCCritical(
+					    logNode
 					) << self
 					  << "has a card.profile.device property but the value is not an integer. Value:" << id;
 				}
 
 				self->routeDevice = id;
+				if (self->boundData) self->boundData->onDeviceChanged();
 			} else {
 				qCCritical(logNode) << self << "has attached device" << self->device
 				                    << "but no card.profile.device property.";
@@ -277,6 +280,15 @@ PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): QObject(node), node(node) {
 	}
 }
 
+void PwNodeBoundAudio::onDeviceChanged() {
+	PwVolumeProps volumeProps;
+	if (this->node->device->tryLoadVolumeProps(this->node->routeDevice, volumeProps)) {
+		qCDebug(logNode) << "Initializing volume props for" << this->node
+		                 << "with known values from backing device.";
+		this->updateVolumeProps(volumeProps);
+	}
+}
+
 void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PARAMS) != 0) {
 		for (quint32 i = 0; i < info->n_params; i++) {
@@ -299,7 +311,8 @@ void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* para
 	if (id == SPA_PARAM_Props && index == 0) {
 		if (this->node->shouldUseDevice()) {
 			qCDebug(logNode) << "Skipping node volume props update for" << this->node
-			                 << "in favor of device updates.";
+			                 << "in favor of device updates from routeDevice" << this->node->routeDevice
+			                 << "of" << this->node->device;
 			return;
 		}
 
