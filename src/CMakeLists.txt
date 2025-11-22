@@ -33,3 +33,5 @@ add_subdirectory(services)
 if (BLUETOOTH)
 	add_subdirectory(bluetooth)
 endif()
+
+add_subdirectory(webengine)

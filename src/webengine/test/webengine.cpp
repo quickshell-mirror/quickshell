@@ -4,7 +4,7 @@
 
 #include "../webengine.hpp"
 
-void WebEngineInitTest::initDoesNotCrash() {
+void WebEngineInitTest::init() {
 	QVERIFY(qs::web_engine::init());
 }
 
