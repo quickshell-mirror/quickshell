@@ -4,8 +4,6 @@
 
 #include "../webengine.hpp"
 
-void WebEngineInitTest::init() {
-	QVERIFY(qs::web_engine::init());
-}
+void WebEngineInitTest::init() { QVERIFY(qs::web_engine::init()); }
 
 QTEST_MAIN(WebEngineInitTest)
