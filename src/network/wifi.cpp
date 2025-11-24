@@ -7,7 +7,6 @@
 #include <qobject.h>
 #include <qstring.h>
 #include <qstringliteral.h>
-#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
 #include "device.hpp"
@@ -36,24 +35,43 @@ QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
 	}
 }
 
+QString WifiDeviceMode::toString(WifiDeviceMode::Enum mode) {
+	switch (mode) {
+	case AdHoc: return QStringLiteral("Ad-Hoc");
+	case Station: return QStringLiteral("Station");
+	case AccessPoint: return QStringLiteral("Access Point");
+	case Mesh: return QStringLiteral("Mesh");
+	case Unknown: return QStringLiteral("Unknown");
+	};
+}
+
 QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) {
 	switch (reason) {
-	case Unknown: return "Unknown";
-	case None: return "No reason";
-	case UserDisconnected: return "User disconnection";
-	case DeviceDisconnected: return "The device the connection was using was disconnected.";
-	case ServiceStopped: return "The service providing the VPN connection was stopped.";
-	case IpConfigInvalid: return "The IP config of the active connection was invalid.";
-	case ConnectTimeout: return "The connection attempt to the VPN service timed out.";
+	case Unknown: return QStringLiteral("Unknown");
+	case None: return QStringLiteral("No reason");
+	case UserDisconnected: return QStringLiteral("User disconnection");
+	case DeviceDisconnected:
+		return QStringLiteral("The device the connection was using was disconnected.");
+	case ServiceStopped:
+		return QStringLiteral("The service providing the VPN connection was stopped.");
+	case IpConfigInvalid:
+		return QStringLiteral("The IP config of the active connection was invalid.");
+	case ConnectTimeout:
+		return QStringLiteral("The connection attempt to the VPN service timed out.");
 	case ServiceStartTimeout:
-		return "A timeout occurred while starting the service providing the VPN connection.";
-	case ServiceStartFailed: return "Starting the service providing the VPN connection failed.";
-	case NoSecrets: return "Necessary secrets for the connection were not provided.";
-	case LoginFailed: return "Authentication to the server failed.";
-	case ConnectionRemoved: return "Necessary secrets for the connection were not provided.";
-	case DependencyFailed: return " Master connection of this connection failed to activate.";
-	case DeviceRealizeFailed: return "Could not create the software device link.";
-	case DeviceRemoved: return "The device this connection depended on disappeared.";
+		return QStringLiteral(
+		    "A timeout occurred while starting the service providing the VPN connection."
+		);
+	case ServiceStartFailed:
+		return QStringLiteral("Starting the service providing the VPN connection failed.");
+	case NoSecrets: return QStringLiteral("Necessary secrets for the connection were not provided.");
+	case LoginFailed: return QStringLiteral("Authentication to the server failed.");
+	case ConnectionRemoved:
+		return QStringLiteral("Necessary secrets for the connection were not provided.");
+	case DependencyFailed:
+		return QStringLiteral("Master connection of this connection failed to activate.");
+	case DeviceRealizeFailed: return QStringLiteral("Could not create the software device link.");
+	case DeviceRemoved: return QStringLiteral("The device this connection depended on disappeared.");
 	};
 };
 
@@ -65,7 +83,6 @@ void WifiScanner::setEnabled(bool enabled) {
 		qCCritical(logWifi) << "Scanner is already" << state;
 	} else {
 		this->bEnabled = enabled;
-		emit this->requestEnabled(enabled);
 	}
 }
 

@@ -19,6 +19,7 @@
 #include "enums.hpp"
 #include "nm/dbus_nm_active_connection.h"
 #include "nm/dbus_nm_connection_settings.h"
+#include "nm/utils.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -48,6 +49,7 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 	    this,
 	    &NMConnectionSettings::updateSettings
 	);
+	this->bSecurity.setBinding([this]() { return securityFromConnectionSettings(this->bSettings); });
 
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
@@ -69,7 +71,10 @@ void NMConnectionSettings::updateSettings() {
 			this->bSettings = reply.value();
 		}
 
-		emit this->ready();
+		if (!this->mLoaded) {
+			emit this->loaded();
+			this->mLoaded = true;
+		}
 		delete call;
 	};
 
@@ -96,7 +101,7 @@ NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QO
 	}
 
 	// clang-format off
-	QObject::connect(&this->activeConnectionProperties, &DBusPropertyGroup::getAllFinished, this, &NMActiveConnection::ready, Qt::SingleShotConnection);
+	QObject::connect(&this->activeConnectionProperties, &DBusPropertyGroup::getAllFinished, this, &NMActiveConnection::loaded, Qt::SingleShotConnection);
 	QObject::connect(this->proxy, &DBusNMActiveConnectionProxy::StateChanged, this, &NMActiveConnection::onStateChanged);
 	// clang-format on
 

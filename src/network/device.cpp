@@ -42,8 +42,7 @@ QString NMDeviceState::toString(NMDeviceState::Enum state) {
 	case NeedAuth: return QStringLiteral("Waiting for authentication");
 	case IPConfig: return QStringLiteral("Requesting IPv4 and/or IPv6 addresses from the network");
 	case IPCheck:
-		return QStringLiteral("Checking whether further action is required for the requested connection"
-		);
+		return QStringLiteral("Checking if further action is required for the requested connection");
 	case Secondaries:
 		return QStringLiteral("Waiting for a required secondary connection to activate");
 	case Activated: return QStringLiteral("Connected");

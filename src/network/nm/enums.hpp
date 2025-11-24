@@ -7,6 +7,51 @@
 
 namespace qs::network {
 
+// Indicates the type of hardware represented by a device object.
+class NMDeviceType: public QObject {
+	Q_OBJECT;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		Ethernet = 1,
+		Wifi = 2,
+		Unused1 = 3,
+		Unused2 = 4,
+		Bluetooth = 5,
+		OlpcMesh = 6,
+		Wimax = 7,
+		Modem = 8,
+		InfiniBand = 9,
+		Bond = 10,
+		Vlan = 11,
+		Adsl = 12,
+		Bridge = 13,
+		Generic = 14,
+		Team = 15,
+		Tun = 16,
+		IpTunnel = 17,
+		MacVlan = 18,
+		VxLan = 19,
+		Veth = 20,
+		MacSec = 21,
+		Dummy = 22,
+		Ppp = 23,
+		OvsInterface = 24,
+		OvsPort = 25,
+		OvsBridge = 26,
+		Wpan = 27,
+		Lowpan = 28,
+		Wireguard = 29,
+		WifiP2P = 30,
+		Vrf = 31,
+		Loopback = 32,
+		Hsr = 33,
+		IpVlan = 34,
+	};
+	Q_ENUM(Enum);
+};
+
 // 802.11 specific device encryption and authentication capabilities.
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceWifiCapabilities.
 class NMWirelessCapabilities: public QObject {
@@ -44,7 +89,7 @@ public:
 		Adhoc = 1,
 		Infra = 2,
 		Ap = 3,
-		Mesh = 3,
+		Mesh = 4,
 	};
 	Q_ENUM(Enum);
 };

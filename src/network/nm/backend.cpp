@@ -10,7 +10,6 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
-#include <qxmlstream.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
@@ -18,6 +17,8 @@
 #include "../network.hpp"
 #include "../wifi.hpp"
 #include "dbus_types.hpp"
+#include "device.hpp"
+#include "enums.hpp"
 #include "nm/dbus_nm_backend.h"
 #include "wireless.hpp"
 
@@ -86,85 +87,116 @@ void NetworkManager::registerDevices() {
 }
 
 void NetworkManager::registerDevice(const QString& path) {
-	if (this->mDeviceHash.contains(path)) {
+	if (this->mDevices.contains(path)) {
 		qCDebug(logNetworkManager) << "Skipping duplicate registration of device" << path;
 		return;
 	}
 
-	// Introspect to decide the device variant. (For now, only Wireless)
-	auto* introspection = new QDBusInterface(
+	// Create a temporary interface to decide the device type which won't change.
+	auto* temp = new QDBusInterface(
 	    "org.freedesktop.NetworkManager",
 	    path,
-	    "org.freedesktop.DBus.Introspectable",
+	    "org.freedesktop.DBus.Properties",
 	    QDBusConnection::systemBus(),
 	    this
 	);
 
-	auto pending = introspection->asyncCall("Introspect");
+	auto pending = temp->asyncCall("Get", "org.freedesktop.NetworkManager.Device", "DeviceType");
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
-	auto responseCallback = [this, path, introspection](QDBusPendingCallWatcher* call) {
-		const QDBusPendingReply<QString> reply = *call;
-
+	auto responseCallback = [this, path, temp](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<QVariant> reply = *call;
 		if (reply.isError()) {
-			qCWarning(logNetworkManager) << "Failed to introspect device: " << reply.error().message();
+			qCWarning(logNetworkManager) << "Failed to get device type: " << reply.error().message();
 		} else {
-			QXmlStreamReader xml(reply.value());
+			auto type = static_cast<qs::network::NMDeviceType::Enum>(reply.value().toInt());
+			NMDevice* dev = nullptr;
 
-			while (!xml.atEnd() && !xml.hasError()) {
-				xml.readNext();
-
-				if (xml.isStartElement() && xml.name() == u"interface") {
-					const QString name = xml.attributes().value("name").toString();
-					if (name.startsWith("org.freedesktop.NetworkManager.Device.Wireless")) {
-						this->registerWifiDevice(path);
-						break;
-					}
-				}
+			switch (type) {
+			case NMDeviceType::Wifi: dev = new NMWirelessDevice(path); break;
+			default: return;
 			}
+
+			if (!dev->isValid()) {
+				qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
+				delete dev;
+				return;
+			}
+
+			// Only register a frontend device while it's managed by NM.
+			auto onManagedChanged = [this, dev, type](bool managed) {
+				managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
+			};
+			// clang-format off
+			QObject::connect(dev, &NMDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
+			QObject::connect(dev, &NMDevice::activateConnection, this, &NetworkManager::activateConnection);
+			QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
+			// clang-format on
+
+			this->mDevices.insert(path, dev);
+			if (dev->managed()) this->registerFrontendDevice(type, dev);
 		}
 		delete call;
-		delete introspection;
+		delete temp;
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void NetworkManager::registerWifiDevice(const QString& path) {
-	auto* wireless = new NMWirelessDevice(path);
-	if (!wireless->isWirelessValid() || !wireless->isDeviceValid()) {
-		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
-		delete wireless;
-		return;
+void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* dev) {
+	NetworkDevice* frontendDev = nullptr;
+	switch (type) {
+	case NMDeviceType::Wifi: {
+		auto* frontendWifiDev = new WifiDevice(dev);
+		auto* wifiDev = qobject_cast<NMWirelessDevice*>(dev);
+		// Bind WifiDevice-specific properties
+		auto translateMode = [wifiDev]() {
+			switch (wifiDev->mode()) {
+			case NM80211Mode::Unknown: return WifiDeviceMode::Unknown;
+			case NM80211Mode::Adhoc: return WifiDeviceMode::AdHoc;
+			case NM80211Mode::Infra: return WifiDeviceMode::Station;
+			case NM80211Mode::Ap: return WifiDeviceMode::AccessPoint;
+			case NM80211Mode::Mesh: return WifiDeviceMode::Mesh;
+			}
+		};
+		// clang-format off
+		frontendWifiDev->bindableMode().setBinding(translateMode);
+		wifiDev->bindableScanning().setBinding([frontendWifiDev]() { return frontendWifiDev->wifiScanner()->enabled(); });
+		QObject::connect(wifiDev, &NMWirelessDevice::networkAdded, frontendWifiDev, &WifiDevice::networkAdded);
+		QObject::connect(wifiDev, &NMWirelessDevice::networkRemoved, frontendWifiDev, &WifiDevice::networkRemoved);
+		// clang-format on
+		frontendDev = frontendWifiDev;
+		break;
+	}
+	default: return;
 	}
 
-	auto* device = new WifiDevice(this);
-	auto* scanner = device->wifiScanner();
-	wireless->setParent(device);
-	this->mDeviceHash.insert(path, device);
-
-	device->bindableName().setBinding([wireless]() { return wireless->interface(); });
-	device->bindableAddress().setBinding([wireless]() { return wireless->hwAddress(); });
-	device->bindableNmState().setBinding([wireless]() { return wireless->state(); });
-	device->bindableState().setBinding([wireless]() {
-		switch (wireless->state()) {
+	// Bind generic NetworkDevice properties
+	auto translateState = [dev]() {
+		switch (dev->state()) {
 		case 0 ... 20: return DeviceConnectionState::Unknown;
 		case 30: return DeviceConnectionState::Disconnected;
 		case 40 ... 90: return DeviceConnectionState::Connecting;
 		case 100: return DeviceConnectionState::Connected;
 		case 110 ... 120: return DeviceConnectionState::Disconnecting;
 		}
-	});
-	// clang-format off
-	QObject::connect(wireless, &NMWirelessDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
-	QObject::connect(wireless, &NMWirelessDevice::activateConnection, this, &NetworkManager::activateConnection);
-	QObject::connect(wireless, &NMWirelessDevice::networkAdded, device, &WifiDevice::networkAdded);
-	QObject::connect(wireless, &NMWirelessDevice::networkRemoved, device, &WifiDevice::networkRemoved);
-	QObject::connect(scanner, &WifiScanner::requestEnabled, wireless, &NMWirelessDevice::handleScanner);
-	QObject::connect(device, &WifiDevice::requestDisconnect, wireless, &NMWirelessDevice::disconnect);
-	// clang-format on
+	};
+	frontendDev->bindableName().setBinding([dev]() { return dev->interface(); });
+	frontendDev->bindableAddress().setBinding([dev]() { return dev->hwAddress(); });
+	frontendDev->bindableNmState().setBinding([dev]() { return dev->state(); });
+	frontendDev->bindableState().setBinding(translateState);
+	QObject::connect(frontendDev, &WifiDevice::requestDisconnect, dev, &NMDevice::disconnect);
 
-	emit this->deviceAdded(device);
+	this->mFrontendDevices.insert(dev->path(), frontendDev);
+	emit this->deviceAdded(frontendDev);
+}
+
+void NetworkManager::removeFrontendDevice(NMDevice* dev) {
+	auto* frontendDev = this->mFrontendDevices.take(dev->path());
+	if (frontendDev) {
+		emit this->deviceRemoved(frontendDev);
+		delete frontendDev;
+	}
 }
 
 void NetworkManager::onDevicePathAdded(const QDBusObjectPath& path) {
@@ -172,15 +204,15 @@ void NetworkManager::onDevicePathAdded(const QDBusObjectPath& path) {
 }
 
 void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
-	auto iter = this->mDeviceHash.find(path.path());
-	if (iter == this->mDeviceHash.end()) {
+	auto iter = this->mDevices.find(path.path());
+	if (iter == this->mDevices.end()) {
 		qCWarning(logNetworkManager) << "Sent removal signal for" << path.path()
 		                             << "which is not registered.";
 	} else {
-		auto* device = iter.value();
-		this->mDeviceHash.erase(iter);
-		emit this->deviceRemoved(device);
-		delete device;
+		auto* dev = iter.value();
+		this->removeFrontendDevice(dev);
+		this->mDevices.erase(iter);
+		delete dev;
 	}
 }
 

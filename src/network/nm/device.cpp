@@ -14,6 +14,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../device.hpp"
 #include "nm/dbus_nm_device.h"
 
 namespace qs::network {
@@ -39,7 +40,6 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	// clang-format off
 	QObject::connect(this, &NMDevice::availableConnectionPathsChanged, this, &NMDevice::onAvailableConnectionPathsChanged);
 	QObject::connect(this, &NMDevice::activeConnectionPathChanged, this, &NMDevice::onActiveConnectionPathChanged);
-	QObject::connect(&this->deviceProperties, &DBusPropertyGroup::getAllFinished, this, &NMDevice::deviceReady, Qt::SingleShotConnection);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->deviceProxy);
@@ -67,7 +67,7 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 			this->mActiveConnection = active;
 			QObject::connect(
 			    active,
-			    &NMActiveConnection::ready,
+			    &NMActiveConnection::loaded,
 			    this,
 			    [this, active]() { emit this->activeConnectionLoaded(active); },
 			    Qt::SingleShotConnection
@@ -88,10 +88,9 @@ void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& p
 		this->registerConnection(path);
 	}
 	for (const QString& path: removedConnections) {
-		auto* connection = this->mConnectionMap.take(path);
+		auto* connection = this->mConnections.take(path);
 		if (!connection) {
-			qCDebug(logNetworkManager) << "NetworkManager backend sent removal signal for" << path
-			                           << "which is not registered.";
+			qCDebug(logNetworkManager) << "Sent removal signal for" << path << "which is not registered.";
 		} else {
 			emit connection->disappeared();
 			delete connection;
@@ -106,11 +105,11 @@ void NMDevice::registerConnection(const QString& path) {
 		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
 		delete connection;
 	} else {
-		this->mConnectionMap.insert(path, connection);
+		this->mConnections.insert(path, connection);
 		this->mConnectionPaths.insert(path);
 		QObject::connect(
 		    connection,
-		    &NMConnectionSettings::ready,
+		    &NMConnectionSettings::loaded,
 		    this,
 		    [this, connection]() { emit this->connectionLoaded(connection); },
 		    Qt::SingleShotConnection
@@ -119,7 +118,7 @@ void NMDevice::registerConnection(const QString& path) {
 }
 
 void NMDevice::disconnect() { this->deviceProxy->Disconnect(); }
-bool NMDevice::isDeviceValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }
+bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }
 QString NMDevice::address() const {
 	return this->deviceProxy ? this->deviceProxy->service() : QString();
 }
