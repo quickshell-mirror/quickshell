@@ -47,7 +47,11 @@ FloatingWindow {
 				margin: 5
 
 				ColumnLayout {
-					Label { text: `Device: ${modelData.name} (Hardware address: ${modelData.address}) (Type: ${DeviceType.toString(modelData.type)})` }
+					RowLayout {
+						Label { text: modelData.name; font.bold: true }
+						Label { text: modelData.address }
+						Label { text: `(Type: ${DeviceType.toString(modelData.type)})` }
+					}
 					RowLayout {
 						Label {
 							text: DeviceConnectionState.toString(modelData.state)
@@ -61,6 +65,10 @@ FloatingWindow {
 							visible: modelData.state == DeviceConnectionState.Connected
 							text: "Disconnect"
 							onClicked: modelData.disconnect()
+						}
+						Label { 
+							text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}` 
+							visible: modelData.type == DeviceType.Wifi
 						}
 						CheckBox {
 							text: "Scanner"
@@ -105,7 +113,7 @@ FloatingWindow {
 											color: palette.placeholderText
 										}
 										Label {
-											text: `| Signal strength: ${modelData.signalStrength*100}%`
+											text: `| Signal strength: ${Math.round(modelData.signalStrength*100)}%`
 											color: palette.placeholderText
 										}
 									}

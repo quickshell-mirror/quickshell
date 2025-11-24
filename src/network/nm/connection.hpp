@@ -39,17 +39,22 @@ public:
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
+	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
+	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; };
 
 signals:
-	void settingsChanged(ConnectionSettingsMap settings);
-	void ssidChanged(QString ssid);
-	void ready();
+	void loaded();
 	void disappeared();
+	void settingsChanged(ConnectionSettingsMap settings);
+	void securityChanged(WifiSecurityType::Enum security);
+	void ssidChanged(QString ssid);
 
 private:
+	bool mLoaded = false;
 	void updateSettings();
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
 	// clang-format on
 
@@ -69,10 +74,9 @@ public:
 	[[nodiscard]] QDBusObjectPath connection() const { return this->bConnection; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
 	[[nodiscard]] NMConnectionStateReason::Enum stateReason() const { return this->mStateReason; };
-	[[nodiscard]] QString uuid() const { return this->bUuid; };
 
 signals:
-	void ready();
+	void loaded();
 	void disappeared();
 	void connectionChanged(QDBusObjectPath path);
 	void stateChanged(NMConnectionState::Enum state);

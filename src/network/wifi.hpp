@@ -37,6 +37,29 @@ public:
 	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
 };
 
+///! The 802.11 mode of a wifi device.
+class WifiDeviceMode: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		/// The device is part of an Ad-Hoc network without a central access point.
+		AdHoc = 0,
+		/// The device is a station that can connect to networks.
+		Station = 1,
+		/// The device is a local hotspot/access point.
+		AccessPoint = 2,
+		/// The device is an 802.11s mesh point.
+		Mesh = 3,
+		/// The device mode is unknown.
+		Unknown = 4,
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(WifiDeviceMode::Enum mode);
+};
+
 ///! NetworkManager-specific reason for a WifiNetworks connection state.
 /// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
 class NMConnectionStateReason: public QObject {
@@ -86,8 +109,7 @@ public:
 	void setEnabled(bool enabled);
 
 signals:
-	void requestEnabled(bool enabled);
-	void enabledChanged();
+	void enabledChanged(bool enabled);
 
 private:
 	Q_OBJECT_BINDABLE_PROPERTY(WifiScanner, bool, bEnabled, &WifiScanner::enabledChanged);
@@ -151,6 +173,8 @@ class WifiDevice: public NetworkDevice {
 	QSDOC_TYPE_OVERRIDE(ObjectModel<WifiNetwork>*)
 	/// The wifi scanner for this device.
 	Q_PROPERTY(WifiScanner* wifiScanner READ wifiScanner CONSTANT);
+	/// The 802.11 mode the device is in.
+	Q_PROPERTY(WifiDeviceMode::Enum mode READ mode NOTIFY modeChanged BINDABLE bindableMode);
 
 public slots:
 	void networkAdded(WifiNetwork* net);
@@ -161,10 +185,16 @@ public:
 
 	[[nodiscard]] ObjectModel<WifiNetwork>* networks() { return &this->mNetworks; };
 	[[nodiscard]] WifiScanner* wifiScanner() { return &this->mScanner; };
+	QBindable<WifiDeviceMode::Enum> bindableMode() { return &this->bMode; }
+	[[nodiscard]] WifiDeviceMode::Enum mode() const { return this->bMode; };
+
+signals:
+	void modeChanged();
 
 private:
 	ObjectModel<WifiNetwork> mNetworks {this};
 	WifiScanner mScanner;
+	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, WifiDeviceMode::Enum, bMode, &WifiDevice::modeChanged);
 };
 
 }; // namespace qs::network

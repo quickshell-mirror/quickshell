@@ -7,6 +7,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
+#include "../wifi.hpp"
 #include "enums.hpp"
 #include "nm/dbus_nm_accesspoint.h"
 
@@ -53,9 +54,11 @@ public:
 	[[nodiscard]] NM80211ApSecurityFlags::Enum wpaFlags() const { return this->bWpaFlags; };
 	[[nodiscard]] NM80211ApSecurityFlags::Enum rsnFlags() const { return this->bRsnFlags; };
 	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; };
+	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; };
+	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
-	void ready();
+	void loaded();
 	void disappeared();
 	void ssidChanged(const QByteArray& ssid);
 	void signalStrengthChanged(quint8 signal);
@@ -63,10 +66,9 @@ signals:
 	void wpaFlagsChanged(NM80211ApSecurityFlags::Enum wpaFlags);
 	void rsnFlagsChanged(NM80211ApSecurityFlags::Enum rsnFlags);
 	void modeChanged(NM80211Mode::Enum mode);
+	void securityChanged(WifiSecurityType::Enum security);
 
 private:
-	bool mActive = false;
-
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, QByteArray, bSsid, &NMAccessPoint::ssidChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, quint8, bSignalStrength, &NMAccessPoint::signalStrengthChanged);
@@ -74,6 +76,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211ApSecurityFlags::Enum, bWpaFlags, &NMAccessPoint::wpaFlagsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211ApSecurityFlags::Enum, bRsnFlags, &NMAccessPoint::rsnFlagsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211Mode::Enum, bMode, &NMAccessPoint::modeChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, WifiSecurityType::Enum, bSecurity, &NMAccessPoint::securityChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMAccessPointAdapter, accessPointProperties);
 	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pSsid, bSsid, accessPointProperties, "Ssid");

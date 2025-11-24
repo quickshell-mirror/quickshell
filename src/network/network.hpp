@@ -48,9 +48,9 @@ class Network: public QObject {
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::Network::Device>*);
 	/// The backend being used to power the Network service.
 	Q_PROPERTY(qs::network::NetworkBackendType::Enum backend READ backend CONSTANT);
-	/// Master switch for the status of the rfkill software block of all wireless devices.
+	/// Switch for the rfkill software block of all wireless devices.
 	Q_PROPERTY(bool wifiEnabled READ wifiEnabled WRITE setWifiEnabled NOTIFY wifiEnabledChanged);
-	/// Master switch for the status of the rfkill hardware block of all wireless devices.
+	/// Switch for the rfkill hardware block of all wireless devices.
 	Q_PROPERTY(bool wifiHardwareEnabled READ wifiHardwareEnabled NOTIFY wifiHardwareEnabledChanged BINDABLE bindableWifiHardwareEnabled);
 	// clang-format on
 
@@ -90,9 +90,9 @@ class BaseNetwork: public QObject {
 	QML_ELEMENT;
 	QML_UNCREATABLE("BaseNetwork can only be aqcuired through network devices");
 
-	/// The name of the network
+	/// The name of the network.
 	Q_PROPERTY(QString name READ name CONSTANT);
-	/// True if the network is connected to.
+	/// True if the network is connected.
 	Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged BINDABLE bindableConnected);
 
 public:

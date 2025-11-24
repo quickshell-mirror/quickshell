@@ -17,14 +17,15 @@ QS_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
 
 Network::Network(QObject* parent): QObject(parent) {
-	// NetworkManager
+	// Try to create the NetworkManager backend and bind to it.
 	auto* nm = new NetworkManager(this);
 	if (nm->isAvailable()) {
 		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::onDeviceAdded);
 		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::onDeviceRemoved);
+		QObject::connect(this, &Network::requestSetWifiEnabled, nm, &NetworkManager::setWifiEnabled);
 		this->bindableWifiEnabled().setBinding([nm]() { return nm->wifiEnabled(); });
 		this->bindableWifiHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); });
-		QObject::connect(this, &Network::requestSetWifiEnabled, nm, &NetworkManager::setWifiEnabled);
+
 		this->mBackend = nm;
 		this->mBackendType = NetworkBackendType::NetworkManager;
 		return;
@@ -41,7 +42,7 @@ void Network::onDeviceRemoved(NetworkDevice* dev) { this->mDevices.removeObject(
 void Network::setWifiEnabled(bool enabled) {
 	if (this->bWifiEnabled == enabled) {
 		const QString state = enabled ? "enabled" : "disabled";
-		qCCritical(logNetwork) << "Wifi is already software" << state;
+		qCCritical(logNetwork) << "Wifi is already globally software" << state;
 	} else {
 		emit this->requestSetWifiEnabled(enabled);
 	}

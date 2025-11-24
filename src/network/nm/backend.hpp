@@ -9,7 +9,7 @@
 
 #include "../../dbus/properties.hpp"
 #include "../network.hpp"
-#include "../wifi.hpp"
+#include "device.hpp"
 #include "nm/dbus_nm_backend.h"
 
 namespace qs::network {
@@ -47,9 +47,11 @@ private:
 	void init();
 	void registerDevices();
 	void registerDevice(const QString& path);
-	void registerWifiDevice(const QString& path);
+	void registerFrontendDevice(NMDeviceType::Enum type, NMDevice* dev);
+	void removeFrontendDevice(NMDevice* dev);
 
-	QHash<QString, NetworkDevice*> mDeviceHash;
+	QHash<QString, NMDevice*> mDevices;
+	QHash<QString, NetworkDevice*> mFrontendDevices;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiEnabled, &NetworkManager::wifiEnabledChanged);

@@ -38,8 +38,9 @@ class NMWirelessNetwork: public QObject {
 
 public:
 	explicit NMWirelessNetwork(QString ssid, QObject* parent = nullptr);
+
 	void addAccessPoint(NMAccessPoint* ap);
-	void addConnectionSettings(NMConnectionSettings* conn);
+	void addConnection(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
@@ -53,13 +54,14 @@ public:
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
 	[[nodiscard]] QList<NMConnectionSettings*> connections() const {
 		return this->mConnections.values();
-	};
+	}
 	[[nodiscard]] QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
-	[[nodiscard]] QBindable<NMWirelessCapabilities::Enum> bindableCapabilities() {
-		return &this->bCaps;
-	};
+	[[nodiscard]] QBindable<bool> bindableVisible() { return &this->bVisible; };
+	[[nodiscard]] bool visible() const { return this->bVisible; };
 
 signals:
+	void disappeared();
+	void visibilityChanged(bool visible);
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
@@ -67,29 +69,25 @@ signals:
 	void reasonChanged(NMConnectionStateReason::Enum reason);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeApPathChanged(QString path);
-	void disappeared();
 
 private:
 	void updateReferenceAp();
 	void updateReferenceConnection();
-	void removeAccessPoint();
-	void removeConnectionSettings();
-	void removeActiveConnection();
 
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
-	NMActiveConnection* mActiveConnection = nullptr;
-	NMConnectionSettings* mReferenceConn = nullptr;
 	NMAccessPoint* mReferenceAp = nullptr;
+	NMConnectionSettings* mReferenceConn = nullptr;
+	NMActiveConnection* mActiveConnection = nullptr;
 
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bVisible, &NMWirelessNetwork::visibilityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bKnown, &NMWirelessNetwork::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMWirelessCapabilities::Enum, bCaps, &NMWirelessNetwork::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
 	// clang-format on
 };
@@ -103,63 +101,62 @@ class NMWirelessDevice: public NMDevice {
 public:
 	explicit NMWirelessDevice(const QString& path, QObject* parent = nullptr);
 
-	[[nodiscard]] bool isWirelessValid() const;
+	[[nodiscard]] bool isValid() const override;
 	[[nodiscard]] NMWirelessCapabilities::Enum capabilities() { return this->bCapabilities; };
 	[[nodiscard]] const QDBusObjectPath& activeApPath() { return this->bActiveAccessPoint; };
+	[[nodiscard]] NM80211Mode::Enum mode() { return this->bMode; };
+	[[nodiscard]] QBindable<bool> bindableScanning() { return &this->bScanning; };
 
 signals:
 	void accessPointLoaded(NMAccessPoint* ap);
 	void accessPointRemoved(NMAccessPoint* ap);
 	void networkAdded(WifiNetwork* net);
 	void networkRemoved(WifiNetwork* net);
-	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
-	void addAndActivateConnection(
-	    const ConnectionSettingsMap& settings,
-	    const QDBusObjectPath& devPath,
-	    const QDBusObjectPath& apPath
-	);
 	void lastScanChanged(QDateTime lastScan);
+	void scanningChanged(bool scanning);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeAccessPointChanged(const QDBusObjectPath& path);
-
-public slots:
-	void handleScanner(bool enabled);
+	void modeChanged(NM80211Mode::Enum mode);
 
 private slots:
-	void onAccessPointPathAdded(const QDBusObjectPath& path);
-	void onAccessPointPathRemoved(const QDBusObjectPath& path);
+	void onAccessPointAdded(const QDBusObjectPath& path);
+	void onAccessPointRemoved(const QDBusObjectPath& path);
 	void onAccessPointLoaded(NMAccessPoint* ap);
 	void onConnectionLoaded(NMConnectionSettings* conn);
 	void onActiveConnectionLoaded(NMActiveConnection* active);
 	void onScanTimeout();
+	void onScanningChanged(bool scanning);
 
 private:
 	void registerAccessPoint(const QString& path);
-	void updateNetworkVisibility(WifiNetwork* net);
+	void registerFrontendNetwork(NMWirelessNetwork* net);
+	void removeFrontendNetwork(NMWirelessNetwork* net);
+	void removeNetwork();
+	bool checkVisibility(WifiNetwork* net);
 	void registerAccessPoints();
 	void initWireless();
 	NMWirelessNetwork* registerNetwork(const QString& ssid);
 
 	QHash<QString, NMAccessPoint*> mAccessPoints;
-	QHash<QString, NMWirelessNetwork*> mBackendNetworks;
-
-	QHash<QString, WifiNetwork*> mNetworks;
-	QSet<WifiNetwork*> mVisibleNetworks;
+	QHash<QString, NMWirelessNetwork*> mNetworks;
+	QHash<QString, WifiNetwork*> mFrontendNetworks;
 
 	QDateTime mLastScanRequest;
 	QTimer mScanTimer;
-	bool mScanning = false;
 	qint32 mScanIntervalMs = 10001;
 
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, bool, bScanning, &NMWirelessDevice::scanningChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDateTime, bLastScan, &NMWirelessDevice::lastScanChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NMWirelessCapabilities::Enum, bCapabilities, &NMWirelessDevice::capabilitiesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, QDBusObjectPath, bActiveAccessPoint, &NMWirelessDevice::activeAccessPointChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessDevice, NM80211Mode::Enum, bMode, &NMWirelessDevice::modeChanged);
 	
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMWireless, wirelessProperties);
 	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pLastScan, bLastScan, wirelessProperties, "LastScan");
 	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pCapabilities, bCapabilities, wirelessProperties, "WirelessCapabilities");
 	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pActiveAccessPoint, bActiveAccessPoint, wirelessProperties, "ActiveAccessPoint");
+	QS_DBUS_PROPERTY_BINDING(NMWirelessDevice, pMode, bMode, wirelessProperties, "Mode");
 	// clang-format on
 
 	DBusNMWirelessProxy* wirelessProxy = nullptr;

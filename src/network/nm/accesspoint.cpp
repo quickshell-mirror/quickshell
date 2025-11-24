@@ -29,7 +29,7 @@ NMAccessPoint::NMAccessPoint(const QString& path, QObject* parent): QObject(pare
 	);
 
 	if (!this->proxy->isValid()) {
-		qCWarning(logNetworkManager) << "Cannot create DBus interface for AP at" << path;
+		qCWarning(logNetworkManager) << "Cannot create DBus interface for access point at" << path;
 		return;
 	}
 
@@ -37,7 +37,7 @@ NMAccessPoint::NMAccessPoint(const QString& path, QObject* parent): QObject(pare
 	    &this->accessPointProperties,
 	    &DBusPropertyGroup::getAllFinished,
 	    this,
-	    &NMAccessPoint::ready,
+	    &NMAccessPoint::loaded,
 	    Qt::SingleShotConnection
 	);
 
