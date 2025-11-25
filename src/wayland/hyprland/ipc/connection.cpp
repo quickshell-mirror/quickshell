@@ -484,6 +484,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		}
 
 		auto* toplevel = *toplevelIter;
+		if (toplevel == this->bActiveToplevel.value()) this->bActiveToplevel = nullptr;
 		auto index = toplevelIter - mList.begin();
 		this->mToplevels.removeAt(index);
 
