@@ -16,6 +16,8 @@ set shell id.
 - Added support for wayland idle timeouts.
 - Added support for inhibiting wayland compositor shortcuts for focused windows.
 - Added the ability to override Quickshell.cacheDir with a custom path.
+- Added minimized, maximized, and fullscreen properties to FloatingWindow.
+- Added the ability to handle move and resize events to FloatingWindow.
 
 ## Other Changes
 
