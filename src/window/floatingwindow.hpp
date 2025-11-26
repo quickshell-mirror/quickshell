@@ -18,6 +18,10 @@ public:
 	explicit ProxyFloatingWindow(QObject* parent = nullptr): ProxyWindowBase(parent) {}
 
 	void connectWindow() override;
+	void postCompleteWindow() override;
+
+	[[nodiscard]] QObject* parentWindow() const;
+	void setParentWindow(QObject* window);
 
 	// Setting geometry while the window is visible makes the content item shrink but not the window
 	// which is awful so we disable it for floating windows.
@@ -33,6 +37,9 @@ private:
 	void onMinimumSizeChanged();
 	void onMaximumSizeChanged();
 	void onTitleChanged();
+
+	QObject* mParentWindow = nullptr;
+	ProxyWindowBase* mParentProxyWindow = nullptr;
 
 public:
 	Q_OBJECT_BINDABLE_PROPERTY(
@@ -68,6 +75,11 @@ class FloatingWindowInterface: public WindowInterface {
 	Q_PROPERTY(QSize minimumSize READ default WRITE default NOTIFY minimumSizeChanged BINDABLE bindableMinimumSize);
 	/// Maximum window size given to the window system.
 	Q_PROPERTY(QSize maximumSize READ default WRITE default NOTIFY maximumSizeChanged BINDABLE bindableMaximumSize);
+	/// The parent window of this window. Setting this makes the window a child of the parent,
+	/// which affects window stacking behavior.
+	///
+	/// > [!NOTE] This property cannot be changed after the window is visible.
+	Q_PROPERTY(QObject* parentWindow READ parentWindow WRITE setParentWindow);
 	// clang-format on
 	QML_NAMED_ELEMENT(FloatingWindow);
 
@@ -81,6 +93,9 @@ public:
 	QBindable<QSize> bindableMinimumSize() { return &this->window->bMinimumSize; }
 	QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
 	QBindable<QString> bindableTitle() { return &this->window->bTitle; }
+
+	[[nodiscard]] QObject* parentWindow() const;
+	void setParentWindow(QObject* window);
 
 signals:
 	void minimumSizeChanged();
