@@ -3,7 +3,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlengine.h>
-#include <qqmllist.h>
+#include <qqmlinfo.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
@@ -17,6 +17,13 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setTitle(this->bTitle);
 	this->window->setMinimumSize(this->bMinimumSize);
 	this->window->setMaximumSize(this->bMaximumSize);
+}
+
+void ProxyFloatingWindow::postCompleteWindow() {
+	auto* parentBacking =
+	    this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+
+	this->window->setTransientParent(parentBacking);
 }
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
@@ -44,6 +51,28 @@ void ProxyFloatingWindow::onMinimumSizeChanged() {
 void ProxyFloatingWindow::onMaximumSizeChanged() {
 	if (this->window) this->window->setMaximumSize(this->bMaximumSize);
 	emit this->maximumSizeChanged();
+}
+
+QObject* ProxyFloatingWindow::parentWindow() const { return this->mParentWindow; }
+
+void ProxyFloatingWindow::setParentWindow(QObject* window) {
+	if (window == this->mParentWindow) return;
+
+	if (window) {
+		if (auto* proxy = qobject_cast<ProxyWindowBase*>(window)) {
+			this->mParentProxyWindow = proxy;
+		} else if (auto* interface = qobject_cast<WindowInterface*>(window)) {
+			this->mParentProxyWindow = interface->proxyWindow();
+		} else {
+			qmlWarning(this) << "parentWindow must be a quickshell window.";
+			return;
+		}
+
+		this->mParentWindow = window;
+	} else {
+		this->mParentWindow = nullptr;
+		this->mParentProxyWindow = nullptr;
+	}
 }
 
 // FloatingWindowInterface
@@ -168,4 +197,10 @@ bool FloatingWindowInterface::startSystemResize(Qt::Edges edges) const {
 	auto* qw = this->window->backingWindow();
 	if (!qw) return false;
 	return qw->startSystemResize(edges);
+}
+
+QObject* FloatingWindowInterface::parentWindow() const { return this->window->parentWindow(); }
+
+void FloatingWindowInterface::setParentWindow(QObject* window) {
+	this->window->setParentWindow(window);
 }
