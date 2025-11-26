@@ -1,5 +1,6 @@
 #include "floatingwindow.hpp"
 
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
