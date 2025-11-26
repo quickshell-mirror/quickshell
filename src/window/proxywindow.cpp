@@ -248,6 +248,7 @@ void ProxyWindowBase::onVisibleChanged() {
 	}
 
 	emit this->visibleChanged();
+	emit this->windowVisibilityChanged();
 }
 
 bool ProxyWindowBase::deleteOnInvisible() const { return false; }
