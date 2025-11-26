@@ -27,6 +27,7 @@ set shell id.
 - Fixed escape sequence handling in desktop entries.
 - Fixed volumes not initializing if a pipewire device was already loaded before its node.
 - Fixed hyprland active toplevel not resetting after window closes.
+- Fixed hyprland ipc window names and titles being reversed.
 
 ## Packaging Changes
 
