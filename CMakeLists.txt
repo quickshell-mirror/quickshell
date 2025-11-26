@@ -4,6 +4,7 @@ project(quickshell VERSION "0.2.1" LANGUAGES CXX C)
 set(UNRELEASED_FEATURES
 	"network.2"
 	"colorquant-imagerect"
+	"window-parent"
 )
 
 set(QT_MIN_VERSION "6.6.0")

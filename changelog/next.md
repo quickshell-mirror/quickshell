@@ -30,6 +30,7 @@ set shell id.
 - Added ext-background-effect window blur support.
 - Added per-corner radius support to Region.
 - Added ColorQuantizer region selection.
+- Added dialog window support to FloatingWindow.
 
 ## Other Changes
 
