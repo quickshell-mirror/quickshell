@@ -147,7 +147,6 @@ signals:
 	void windowDestroyed();
 	void visibleChanged();
 	void backerVisibilityChanged();
-	void windowVisibilityChanged();
 	void xChanged();
 	void yChanged();
 	void implicitWidthChanged();

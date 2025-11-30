@@ -116,7 +116,8 @@ signals:
 	void fullscreenChanged();
 
 private slots:
-	void onVisibilityChanged();
+	void onWindowConnected();
+	void onWindowStateChanged();
 
 private:
 	ProxyFloatingWindow* window;
