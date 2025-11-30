@@ -63,8 +63,6 @@
                    "-DCRASH_REPORTER=OFF")
            #:phases
            #~(modify-phases %standard-phases
-               (replace 'build (lambda _ (invoke "cmake" "--build" ".")))
-               (replace 'install (lambda _ (invoke "cmake" "--install" ".")))
                (add-after 'install 'wrap-program
                  (lambda* (#:key inputs #:allow-other-keys)
                    (wrap-program (string-append #$output "/bin/quickshell")
