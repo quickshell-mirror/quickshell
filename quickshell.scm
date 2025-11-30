@@ -1,5 +1,6 @@
 (define-module (quickshell)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
@@ -30,15 +31,16 @@
                         #:select? (or (git-predicate (current-source-directory))
                                       (const #t))))
     (build-system cmake-build-system)
-    (propagated-inputs (list qtbase qtdeclarative qtsvg))
+    (propagated-inputs (list qtsvg))
     (native-inputs (list ninja
                          gcc-14
                          pkg-config
                          qtshadertools
                          spirv-tools
-                         wayland-protocols
-                         cli11))
-    (inputs (list jemalloc
+                         wayland-protocols))
+    (inputs (list bash-minimal
+                  cli11
+                  jemalloc
                   libdrm
                   libxcb
                   libxkbcommon
