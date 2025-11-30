@@ -69,10 +69,12 @@ class FloatingWindowInterface: public WindowInterface {
 	Q_PROPERTY(QSize minimumSize READ default WRITE default NOTIFY minimumSizeChanged BINDABLE bindableMinimumSize);
 	/// Maximum window size given to the window system.
 	Q_PROPERTY(QSize maximumSize READ default WRITE default NOTIFY maximumSizeChanged BINDABLE bindableMaximumSize);
+	/// Whether the window is currently minimized.
+	Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged);
 	/// Whether the window is currently maximized.
-	Q_PROPERTY(bool maximized READ maximized NOTIFY maximizedChanged);
+	Q_PROPERTY(bool maximized READ isMaximized NOTIFY maximizedChanged);
 	/// Whether the window is currently fullscreen.
-	Q_PROPERTY(bool fullscreen READ fullscreen NOTIFY fullscreenChanged);
+	Q_PROPERTY(bool fullscreen READ isFullscreen NOTIFY fullscreenChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(FloatingWindow);
 
@@ -87,8 +89,9 @@ public:
 	[[nodiscard]] QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
 	[[nodiscard]] QBindable<QString> bindableTitle() { return &this->window->bTitle; }
 
-	[[nodiscard]] bool maximized() const;
-	[[nodiscard]] bool fullscreen() const;
+	[[nodiscard]] bool isMinimized() const;
+	[[nodiscard]] bool isMaximized() const;
+	[[nodiscard]] bool isFullscreen() const;
 
 	/// Start a system move operation. Must be called during a pointer press/drag.
 	Q_INVOKABLE [[nodiscard]] bool startSystemMove() const;
@@ -97,17 +100,18 @@ public:
 
 	/// Show the window in normal (restored) state.
 	Q_INVOKABLE void showNormal() const;
-	/// Show the window maximized.
-	Q_INVOKABLE void showMaximized() const;
-	/// Show the window minimized.
-	Q_INVOKABLE void showMinimized() const;
-	/// Show the window fullscreen.
-	Q_INVOKABLE void showFullScreen() const;
+	/// Maximize the window.
+	Q_INVOKABLE void maximize() const;
+	/// Minimize the window.
+	Q_INVOKABLE void minimize() const;
+	/// Fullscreen the window.
+	Q_INVOKABLE void fullscreen() const;
 
 signals:
 	void minimumSizeChanged();
 	void maximumSizeChanged();
 	void titleChanged();
+	void minimizedChanged();
 	void maximizedChanged();
 	void fullscreenChanged();
 
@@ -116,6 +120,7 @@ private slots:
 
 private:
 	ProxyFloatingWindow* window;
+	bool mMinimized = false;
 	bool mMaximized = false;
 	bool mFullscreen = false;
 };

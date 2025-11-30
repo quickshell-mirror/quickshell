@@ -6,7 +6,6 @@
 #include <qqmllist.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
-#include <qwindow.h>
 
 #include "proxywindow.hpp"
 #include "windowinterface.hpp"
@@ -72,10 +71,16 @@ ProxyWindowBase* FloatingWindowInterface::proxyWindow() const { return this->win
 
 void FloatingWindowInterface::onVisibilityChanged() {
 	auto* qw = this->window->backingWindow();
-	auto visibility = qw ? qw->visibility() : QWindow::Hidden;
+	auto states = qw ? qw->windowStates() : Qt::WindowStates();
 
-	auto maximized = visibility == QWindow::Maximized;
-	auto fullscreen = visibility == QWindow::FullScreen;
+	auto minimized = states.testFlag(Qt::WindowMinimized);
+	auto maximized = states.testFlag(Qt::WindowMaximized);
+	auto fullscreen = states.testFlag(Qt::WindowFullScreen);
+
+	if (minimized != this->mMinimized) {
+		this->mMinimized = minimized;
+		emit this->minimizedChanged();
+	}
 
 	if (maximized != this->mMaximized) {
 		this->mMaximized = maximized;
@@ -88,8 +93,23 @@ void FloatingWindowInterface::onVisibilityChanged() {
 	}
 }
 
-bool FloatingWindowInterface::maximized() const { return this->mMaximized; }
-bool FloatingWindowInterface::fullscreen() const { return this->mFullscreen; }
+bool FloatingWindowInterface::isMinimized() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mMinimized;
+	return qw->windowStates().testFlag(Qt::WindowMinimized);
+}
+
+bool FloatingWindowInterface::isMaximized() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mMaximized;
+	return qw->windowStates().testFlag(Qt::WindowMaximized);
+}
+
+bool FloatingWindowInterface::isFullscreen() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mFullscreen;
+	return qw->windowStates().testFlag(Qt::WindowFullScreen);
+}
 
 bool FloatingWindowInterface::startSystemMove() const {
 	auto* qw = this->window->backingWindow();
@@ -107,14 +127,14 @@ void FloatingWindowInterface::showNormal() const {
 	if (auto* qw = this->window->backingWindow()) qw->showNormal();
 }
 
-void FloatingWindowInterface::showMaximized() const {
+void FloatingWindowInterface::maximize() const {
 	if (auto* qw = this->window->backingWindow()) qw->showMaximized();
 }
 
-void FloatingWindowInterface::showMinimized() const {
+void FloatingWindowInterface::minimize() const {
 	if (auto* qw = this->window->backingWindow()) qw->showMinimized();
 }
 
-void FloatingWindowInterface::showFullScreen() const {
+void FloatingWindowInterface::fullscreen() const {
 	if (auto* qw = this->window->backingWindow()) qw->showFullScreen();
 }
