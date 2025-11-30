@@ -70,7 +70,7 @@
                    (wrap-program (string-append #$output "/bin/quickshell")
                      `("QML_IMPORT_PATH" ":"
                        = (,(getenv "QML_IMPORT_PATH")))))))))
-    (home-page "https://quickshell.outfoxxed.me")
+    (home-page "https://quickshell.org")
     (synopsis "QtQuick-based desktop shell toolkit")
     (description
      "Quickshell is a flexible QtQuick-based toolkit for creating and
