@@ -49,7 +49,7 @@
 }: let
   unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
-    version = "0.2.0";
+    version = "0.2.1";
     src = nix-gitignore.gitignoreSource "/default.nix\n" ./.;
 
     dontWrapQtApps = true; # see wrappers
