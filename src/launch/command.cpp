@@ -461,7 +461,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
 			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
 			                    << " without rebuilding the package. This is likely to cause crashes, so "
-			                       "you must rebuild the quickshell package.\n";
+			                       "you must rebuild the quickshell package.\n\033[0m";
 			return 1;
 		}
 
