@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qsize.h>
@@ -68,6 +69,12 @@ class FloatingWindowInterface: public WindowInterface {
 	Q_PROPERTY(QSize minimumSize READ default WRITE default NOTIFY minimumSizeChanged BINDABLE bindableMinimumSize);
 	/// Maximum window size given to the window system.
 	Q_PROPERTY(QSize maximumSize READ default WRITE default NOTIFY maximumSizeChanged BINDABLE bindableMaximumSize);
+	/// Whether the window is currently minimized.
+	Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged);
+	/// Whether the window is currently maximized.
+	Q_PROPERTY(bool maximized READ isMaximized NOTIFY maximizedChanged);
+	/// Whether the window is currently fullscreen.
+	Q_PROPERTY(bool fullscreen READ isFullscreen NOTIFY fullscreenChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(FloatingWindow);
 
@@ -78,15 +85,43 @@ public:
 
 	[[nodiscard]] ProxyWindowBase* proxyWindow() const override;
 
-	QBindable<QSize> bindableMinimumSize() { return &this->window->bMinimumSize; }
-	QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
-	QBindable<QString> bindableTitle() { return &this->window->bTitle; }
+	[[nodiscard]] QBindable<QSize> bindableMinimumSize() { return &this->window->bMinimumSize; }
+	[[nodiscard]] QBindable<QSize> bindableMaximumSize() { return &this->window->bMaximumSize; }
+	[[nodiscard]] QBindable<QString> bindableTitle() { return &this->window->bTitle; }
+
+	[[nodiscard]] bool isMinimized() const;
+	[[nodiscard]] bool isMaximized() const;
+	[[nodiscard]] bool isFullscreen() const;
+
+	/// Start a system move operation. Must be called during a pointer press/drag.
+	Q_INVOKABLE [[nodiscard]] bool startSystemMove() const;
+	/// Start a system resize operation. Must be called during a pointer press/drag.
+	Q_INVOKABLE [[nodiscard]] bool startSystemResize(Qt::Edges edges) const;
+
+	/// Show the window in normal (restored) state.
+	Q_INVOKABLE void showNormal() const;
+	/// Maximize the window.
+	Q_INVOKABLE void maximize() const;
+	/// Minimize the window.
+	Q_INVOKABLE void minimize() const;
+	/// Fullscreen the window.
+	Q_INVOKABLE void fullscreen() const;
 
 signals:
 	void minimumSizeChanged();
 	void maximumSizeChanged();
 	void titleChanged();
+	void minimizedChanged();
+	void maximizedChanged();
+	void fullscreenChanged();
+
+private slots:
+	void onWindowConnected();
+	void onWindowStateChanged();
 
 private:
 	ProxyFloatingWindow* window;
+	bool mMinimized = false;
+	bool mMaximized = false;
+	bool mFullscreen = false;
 };
