@@ -20,6 +20,7 @@ QS_LOGGING_CATEGORY(logWifi, "quickshell.network.wifi", QtWarningMsg);
 
 QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
 	switch (type) {
+	case Unknown: return QStringLiteral("Unknown");
 	case Wpa3SuiteB192: return QStringLiteral("WPA3 Suite B 192-bit");
 	case Sae: return QStringLiteral("WPA3");
 	case Wpa2Eap: return QStringLiteral("WPA2 Enterprise");
@@ -31,17 +32,18 @@ QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
 	case Leap: return QStringLiteral("LEAP");
 	case Owe: return QStringLiteral("OWE");
 	case Open: return QStringLiteral("Open");
-	case Unknown: return QStringLiteral("Unknown");
+	default: return QStringLiteral("Unknown");
 	}
 }
 
 QString WifiDeviceMode::toString(WifiDeviceMode::Enum mode) {
 	switch (mode) {
+	case Unknown: return QStringLiteral("Unknown");
 	case AdHoc: return QStringLiteral("Ad-Hoc");
 	case Station: return QStringLiteral("Station");
 	case AccessPoint: return QStringLiteral("Access Point");
 	case Mesh: return QStringLiteral("Mesh");
-	case Unknown: return QStringLiteral("Unknown");
+	default: return QStringLiteral("Unknown");
 	};
 }
 
@@ -72,19 +74,9 @@ QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) 
 		return QStringLiteral("Master connection of this connection failed to activate.");
 	case DeviceRealizeFailed: return QStringLiteral("Could not create the software device link.");
 	case DeviceRemoved: return QStringLiteral("The device this connection depended on disappeared.");
+	default: return QStringLiteral("Unknown");
 	};
 };
-
-WifiScanner::WifiScanner(QObject* parent): QObject(parent) {};
-
-void WifiScanner::setEnabled(bool enabled) {
-	if (this->bEnabled == enabled) {
-		const QString state = enabled ? "enabled" : "disabled";
-		qCCritical(logWifi) << "Scanner is already" << state;
-	} else {
-		this->bEnabled = enabled;
-	}
-}
 
 WifiNetwork::WifiNetwork(QString ssid, QObject* parent): BaseNetwork(std::move(ssid), parent) {};
 
@@ -96,7 +88,14 @@ void WifiNetwork::connect() {
 	this->requestConnect();
 }
 
+void WifiNetwork::forget() { this->requestForget(); }
+
 WifiDevice::WifiDevice(QObject* parent): NetworkDevice(DeviceType::Wifi, parent) {};
+
+void WifiDevice::setScannerEnabled(bool enabled) {
+	if (this->bScannerEnabled == enabled) return;
+	this->bScannerEnabled = enabled;
+}
 
 void WifiDevice::networkAdded(WifiNetwork* net) { this->mNetworks.insertObject(net); }
 void WifiDevice::networkRemoved(WifiNetwork* net) { this->mNetworks.removeObject(net); }

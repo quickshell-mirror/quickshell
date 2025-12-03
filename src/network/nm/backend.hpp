@@ -9,8 +9,8 @@
 
 #include "../../dbus/properties.hpp"
 #include "../network.hpp"
+#include "dbus_nm_backend.h"
 #include "device.hpp"
-#include "nm/dbus_nm_backend.h"
 
 namespace qs::network {
 

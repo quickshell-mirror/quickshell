@@ -9,7 +9,7 @@
 
 #include "../../dbus/properties.hpp"
 #include "connection.hpp"
-#include "nm/dbus_nm_device.h"
+#include "dbus_nm_device.h"
 
 namespace qs::dbus {
 
@@ -40,6 +40,7 @@ public:
 	[[nodiscard]] QString hwAddress() const { return this->bHwAddress; };
 	[[nodiscard]] bool managed() const { return this->bManaged; };
 	[[nodiscard]] NMDeviceState::Enum state() const { return this->bState; };
+	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
 	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; };
 
 signals:
@@ -58,9 +59,11 @@ signals:
 	void hwAddressChanged(const QString& hwAddress);
 	void managedChanged(bool managed);
 	void stateChanged(NMDeviceState::Enum state);
+	void autoconnectChanged(bool autoconnect);
 
 public slots:
 	void disconnect();
+	void setAutoconnect(bool autoconnect);
 
 private slots:
 	void onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths);
@@ -69,7 +72,6 @@ private slots:
 private:
 	void registerConnection(const QString& path);
 
-	QSet<QString> mConnectionPaths;
 	QHash<QString, NMConnectionSettings*> mConnections;
 	NMActiveConnection* mActiveConnection = nullptr;
 
@@ -78,6 +80,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QString, bHwAddress, &NMDevice::hwAddressChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bManaged, &NMDevice::managedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceState::Enum, bState, &NMDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bAutoconnect, &NMDevice::autoconnectChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableConnectionPathsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
 
@@ -86,6 +89,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAddress, bHwAddress, deviceProperties, "HwAddress");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pManaged, bManaged, deviceProperties, "Managed");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pState, bState, deviceProperties, "State");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pAutoconnect, bAutoconnect, deviceProperties, "Autoconnect");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
 	// clang-format on

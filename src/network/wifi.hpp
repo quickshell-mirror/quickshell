@@ -89,32 +89,6 @@ public:
 	Q_INVOKABLE static QString toString(NMConnectionStateReason::Enum reason);
 };
 
-///! Scans for available wifi networks.
-/// When enabled, the scanner populates its respective WifiDevice with an active list of available WifiNetworks.
-class WifiScanner: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_UNCREATABLE("Scanner can only be acquired through WifiDevice");
-
-	// clang-format off
-	/// True when currently scanning for networks.
-	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged BINDABLE bindableEnabled);
-	// clang-format on
-
-public:
-	explicit WifiScanner(QObject* parent = nullptr);
-
-	QBindable<bool> bindableEnabled() { return &this->bEnabled; };
-	[[nodiscard]] bool enabled() const { return this->bEnabled; };
-	void setEnabled(bool enabled);
-
-signals:
-	void enabledChanged(bool enabled);
-
-private:
-	Q_OBJECT_BINDABLE_PROPERTY(WifiScanner, bool, bEnabled, &WifiScanner::enabledChanged);
-};
-
 ///! An available wifi network.
 class WifiNetwork: public BaseNetwork {
 	Q_OBJECT;
@@ -122,13 +96,13 @@ class WifiNetwork: public BaseNetwork {
 	QML_UNCREATABLE("WifiNetwork can only be acquired through WifiDevice");
 	// clang-format off
 	/// The current signal strength of the network, from 0.0 to 1.0.
-	Q_PROPERTY(qreal signalStrength READ signalStrength NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
+	Q_PROPERTY(qreal signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
 	/// True if the wifi network has known connection settings saved.
-	Q_PROPERTY(bool known READ known NOTIFY knownChanged BINDABLE bindableKnown);
+	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	/// The security type of the wifi network.
-	Q_PROPERTY(WifiSecurityType::Enum security READ security NOTIFY securityChanged BINDABLE bindableSecurity);
+	Q_PROPERTY(WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
 	/// A specific reason for the connection state when the backend is NetworkManager.
-	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ nmReason NOTIFY nmReasonChanged BINDABLE bindableNmReason);
+	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ default NOTIFY nmReasonChanged BINDABLE bindableNmReason);
 	// clang-format on
 
 public:
@@ -136,18 +110,17 @@ public:
 
 	/// Attempt to connect to the wifi network.
 	Q_INVOKABLE void connect();
+	/// Forget all connection settings for this wifi network.
+	Q_INVOKABLE void forget();
 
 	QBindable<qreal> bindableSignalStrength() { return &this->bSignalStrength; }
-	[[nodiscard]] qreal signalStrength() const { return this->bSignalStrength; };
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
-	[[nodiscard]] bool known() const { return this->bKnown; };
 	QBindable<NMConnectionStateReason::Enum> bindableNmReason() { return &this->bNmReason; }
-	[[nodiscard]] NMConnectionStateReason::Enum nmReason() const { return this->bNmReason; };
 	QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
-	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 
 signals:
 	void requestConnect();
+	void requestForget();
 	void signalStrengthChanged();
 	void knownChanged();
 	void securityChanged();
@@ -168,32 +141,36 @@ class WifiDevice: public NetworkDevice {
 	QML_ELEMENT;
 	QML_UNCREATABLE("WifiDevices can only be acquired through Wifi");
 
+	// clang-format off
 	/// A list of this available and connected wifi networks.
 	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<WifiNetwork>*)
-	/// The wifi scanner for this device.
-	Q_PROPERTY(WifiScanner* wifiScanner READ wifiScanner CONSTANT);
+	/// True when currently scanning for networks.
+	/// When enabled, the scanner populates the device with an active list of available wifi networks.
+	Q_PROPERTY(bool scannerEnabled READ scannerEnabled WRITE setScannerEnabled NOTIFY scannerEnabledChanged BINDABLE bindableScannerEnabled);
 	/// The 802.11 mode the device is in.
-	Q_PROPERTY(WifiDeviceMode::Enum mode READ mode NOTIFY modeChanged BINDABLE bindableMode);
-
-public slots:
-	void networkAdded(WifiNetwork* net);
-	void networkRemoved(WifiNetwork* net);
+	Q_PROPERTY(WifiDeviceMode::Enum mode READ default NOTIFY modeChanged BINDABLE bindableMode);
+	// clang-format on
 
 public:
 	explicit WifiDevice(QObject* parent = nullptr);
 
+	void networkAdded(WifiNetwork* net);
+	void networkRemoved(WifiNetwork* net);
+
 	[[nodiscard]] ObjectModel<WifiNetwork>* networks() { return &this->mNetworks; };
-	[[nodiscard]] WifiScanner* wifiScanner() { return &this->mScanner; };
+	QBindable<bool> bindableScannerEnabled() { return &this->bScannerEnabled; };
+	[[nodiscard]] bool scannerEnabled() const { return this->bScannerEnabled; };
+	void setScannerEnabled(bool enabled);
 	QBindable<WifiDeviceMode::Enum> bindableMode() { return &this->bMode; }
-	[[nodiscard]] WifiDeviceMode::Enum mode() const { return this->bMode; };
 
 signals:
 	void modeChanged();
+	void scannerEnabledChanged(bool enabled);
 
 private:
 	ObjectModel<WifiNetwork> mNetworks {this};
-	WifiScanner mScanner;
+	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, bool, bScannerEnabled, &WifiDevice::scannerEnabledChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, WifiDeviceMode::Enum, bMode, &WifiDevice::modeChanged);
 };
 

@@ -20,8 +20,8 @@ Network::Network(QObject* parent): QObject(parent) {
 	// Try to create the NetworkManager backend and bind to it.
 	auto* nm = new NetworkManager(this);
 	if (nm->isAvailable()) {
-		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::onDeviceAdded);
-		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::onDeviceRemoved);
+		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Network::deviceAdded);
+		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Network::deviceRemoved);
 		QObject::connect(this, &Network::requestSetWifiEnabled, nm, &NetworkManager::setWifiEnabled);
 		this->bindableWifiEnabled().setBinding([nm]() { return nm->wifiEnabled(); });
 		this->bindableWifiHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); });
@@ -36,16 +36,12 @@ Network::Network(QObject* parent): QObject(parent) {
 	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
 
-void Network::onDeviceAdded(NetworkDevice* dev) { this->mDevices.insertObject(dev); }
-void Network::onDeviceRemoved(NetworkDevice* dev) { this->mDevices.removeObject(dev); }
+void Network::deviceAdded(NetworkDevice* dev) { this->mDevices.insertObject(dev); }
+void Network::deviceRemoved(NetworkDevice* dev) { this->mDevices.removeObject(dev); }
 
 void Network::setWifiEnabled(bool enabled) {
-	if (this->bWifiEnabled == enabled) {
-		const QString state = enabled ? "enabled" : "disabled";
-		qCCritical(logNetwork) << "Wifi is already globally software" << state;
-	} else {
-		emit this->requestSetWifiEnabled(enabled);
-	}
+	if (this->bWifiEnabled == enabled) return;
+	emit this->requestSetWifiEnabled(enabled);
 }
 
 BaseNetwork::BaseNetwork(QString name, QObject* parent): QObject(parent), mName(std::move(name)) {};

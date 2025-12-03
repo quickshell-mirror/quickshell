@@ -5,6 +5,7 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstringliteral.h>
+#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
 
@@ -21,6 +22,7 @@ QString DeviceConnectionState::toString(DeviceConnectionState::Enum state) {
 	case Connected: return QStringLiteral("Connected");
 	case Disconnecting: return QStringLiteral("Disconnecting");
 	case Disconnected: return QStringLiteral("Disconnected");
+	default: return QStringLiteral("Unknown");
 	}
 }
 
@@ -28,6 +30,7 @@ QString DeviceType::toString(DeviceType::Enum type) {
 	switch (type) {
 	case None: return QStringLiteral("None");
 	case Wifi: return QStringLiteral("Wifi");
+	default: return QStringLiteral("Unknown");
 	}
 }
 
@@ -48,12 +51,20 @@ QString NMDeviceState::toString(NMDeviceState::Enum state) {
 	case Activated: return QStringLiteral("Connected");
 	case Deactivating: return QStringLiteral("Disconnecting");
 	case Failed: return QStringLiteral("Failed to connect");
+	default: return QStringLiteral("Unknown");
 	};
 }
 
-NetworkDevice::NetworkDevice(DeviceType::Enum type, QObject* parent)
-    : QObject(parent)
-    , mType(type) {};
+NetworkDevice::NetworkDevice(DeviceType::Enum type, QObject* parent): QObject(parent), mType(type) {
+	this->bindableConnected().setBinding([this]() {
+		return this->bState == DeviceConnectionState::Connected;
+	});
+};
+
+void NetworkDevice::setAutoconnect(bool autoconnect) {
+	if (this->bAutoconnect == autoconnect) return;
+	emit this->requestSetAutoconnect(autoconnect);
+}
 
 void NetworkDevice::disconnect() {
 	if (this->bState == DeviceConnectionState::Disconnected) {

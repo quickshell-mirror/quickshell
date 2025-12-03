@@ -10,9 +10,9 @@
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
 #include "connection.hpp"
+#include "dbus_nm_wireless.h"
 #include "device.hpp"
 #include "enums.hpp"
-#include "nm/dbus_nm_wireless.h"
 
 namespace qs::dbus {
 template <>
@@ -42,6 +42,7 @@ public:
 	void addAccessPoint(NMAccessPoint* ap);
 	void addConnection(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
+	void forget();
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
 	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };

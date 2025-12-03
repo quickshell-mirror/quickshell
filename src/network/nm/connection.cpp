@@ -15,11 +15,11 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../wifi.hpp"
+#include "dbus_nm_active_connection.h"
+#include "dbus_nm_connection_settings.h"
 #include "dbus_types.hpp"
 #include "enums.hpp"
-#include "nm/dbus_nm_active_connection.h"
-#include "nm/dbus_nm_connection_settings.h"
-#include "nm/utils.hpp"
+#include "utils.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -74,6 +74,23 @@ void NMConnectionSettings::updateSettings() {
 		if (!this->mLoaded) {
 			emit this->loaded();
 			this->mLoaded = true;
+		}
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void NMConnectionSettings::forget() {
+	auto pending = this->proxy->Delete();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logNetworkManager)
+			    << "Failed to forget" << this->path() << ":" << reply.error().message();
 		}
 		delete call;
 	};

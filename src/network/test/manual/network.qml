@@ -55,7 +55,7 @@ FloatingWindow {
 					RowLayout {
 						Label {
 							text: DeviceConnectionState.toString(modelData.state)
-							color: modelData.state == DeviceConnectionState.Connected ? palette.link : palette.placeholderText
+							color: modelData.connected ? palette.link : palette.placeholderText
 						}
 						Label {
 							visible: Network.backend == NetworkBackendType.NetworkManager && (modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting)
@@ -65,6 +65,11 @@ FloatingWindow {
 							visible: modelData.state == DeviceConnectionState.Connected
 							text: "Disconnect"
 							onClicked: modelData.disconnect()
+						}						
+						CheckBox {
+							text: "Autoconnect"
+							checked: modelData.autoconnect
+							onClicked: modelData.autoconnect = !modelData.autoconnect
 						}
 						Label { 
 							text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}` 
@@ -72,8 +77,8 @@ FloatingWindow {
 						}
 						CheckBox {
 							text: "Scanner"
-							checked: modelData.wifiScanner.enabled
-							onClicked: modelData.wifiScanner.enabled = !modelData.wifiScanner.enabled
+							checked: modelData.scannerEnabled
+							onClicked: modelData.scannerEnabled = !modelData.scannerEnabled
 							visible: modelData.type === DeviceType.Wifi
 						}
 					}
@@ -122,13 +127,17 @@ FloatingWindow {
 										text: `Connection change reason: ${NMConnectionStateReason.toString(modelData.nmReason)}`
 									}
 								}
-								ColumnLayout {
+								RowLayout {
 									Layout.alignment: Qt.AlignRight
 									Button {
-										Layout.alignment: Qt.AlignRight
 										text: "Connect"
 										onClicked: modelData.connect()
 										visible: !modelData.connected
+									}
+									Button {
+										text: "Forget"
+										onClicked: modelData.forget()
+										visible: modelData.known
 									}
 								}
 							}

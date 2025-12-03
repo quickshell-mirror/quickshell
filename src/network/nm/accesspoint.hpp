@@ -8,8 +8,8 @@
 
 #include "../../dbus/properties.hpp"
 #include "../wifi.hpp"
+#include "dbus_nm_accesspoint.h"
 #include "enums.hpp"
-#include "nm/dbus_nm_accesspoint.h"
 
 namespace qs::dbus {
 
@@ -59,7 +59,6 @@ public:
 
 signals:
 	void loaded();
-	void disappeared();
 	void ssidChanged(const QByteArray& ssid);
 	void signalStrengthChanged(quint8 signal);
 	void flagsChanged(NM80211ApFlags::Enum flags);
