@@ -10,10 +10,10 @@
 
 #include "../../dbus/properties.hpp"
 #include "../wifi.hpp"
+#include "dbus_nm_active_connection.h"
+#include "dbus_nm_connection_settings.h"
 #include "dbus_types.hpp"
 #include "enums.hpp"
-#include "nm/dbus_nm_active_connection.h"
-#include "nm/dbus_nm_connection_settings.h"
 
 namespace qs::dbus {
 
@@ -35,6 +35,8 @@ class NMConnectionSettings: public QObject {
 public:
 	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
 
+	void forget();
+
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
@@ -44,7 +46,6 @@ public:
 
 signals:
 	void loaded();
-	void disappeared();
 	void settingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
 	void ssidChanged(QString ssid);
@@ -77,7 +78,6 @@ public:
 
 signals:
 	void loaded();
-	void disappeared();
 	void connectionChanged(QDBusObjectPath path);
 	void stateChanged(NMConnectionState::Enum state);
 	void stateReasonChanged(NMConnectionStateReason::Enum reason);

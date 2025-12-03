@@ -79,11 +79,15 @@ class NetworkDevice: public QObject {
 	/// The name of the device's control interface.
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
 	/// The hardware address of the device in the XX:XX:XX:XX:XX:XX format.
-	Q_PROPERTY(QString address READ address NOTIFY addressChanged BINDABLE bindableAddress);
+	Q_PROPERTY(QString address READ default NOTIFY addressChanged BINDABLE bindableAddress);
+	/// True if the device is connected.
+	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 	/// Connection state of the device.
-	Q_PROPERTY(qs::network::DeviceConnectionState::Enum state READ state NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(qs::network::DeviceConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// A more specific device state when the backend is NetworkManager.
-	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ nmState NOTIFY nmStateChanged BINDABLE bindableNmState);
+	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
+	/// True if the device is allowed to autoconnect.
+	Q_PROPERTY(bool autoconnect READ autoconnect WRITE setAutoconnect NOTIFY autoconnectChanged);
 	// clang-format on
 
 public:
@@ -96,26 +100,32 @@ public:
 	QBindable<QString> bindableName() { return &this->bName; };
 	[[nodiscard]] QString name() const { return this->bName; };
 	QBindable<QString> bindableAddress() { return &this->bAddress; };
-	[[nodiscard]] QString address() const { return this->bAddress; };
+	QBindable<bool> bindableConnected() { return &this->bConnected; };
 	QBindable<DeviceConnectionState::Enum> bindableState() { return &this->bState; };
-	[[nodiscard]] DeviceConnectionState::Enum state() const { return this->bState; };
 	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
-	[[nodiscard]] NMDeviceState::Enum nmState() const { return this->bNmState; };
+	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
+	QBindable<bool> bindableAutoconnect() { return &this->bAutoconnect; };
+	void setAutoconnect(bool autoconnect);
 
 signals:
 	void requestDisconnect();
+	void requestSetAutoconnect(bool autoconnect);
 	void nameChanged();
 	void addressChanged();
+	void connectedChanged();
 	void stateChanged();
 	void nmStateChanged();
+	void autoconnectChanged();
 
 private:
 	DeviceType::Enum mType;
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bName, &NetworkDevice::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, QString, bAddress, &NetworkDevice::addressChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bConnected, &NetworkDevice::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, DeviceConnectionState::Enum, bState, &NetworkDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceState::Enum, bNmState, &NetworkDevice::nmStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bAutoconnect, &NetworkDevice::autoconnectChanged);
 	// clang-format on
 };
 

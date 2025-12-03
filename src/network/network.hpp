@@ -50,8 +50,8 @@ class Network: public QObject {
 	Q_PROPERTY(qs::network::NetworkBackendType::Enum backend READ backend CONSTANT);
 	/// Switch for the rfkill software block of all wireless devices.
 	Q_PROPERTY(bool wifiEnabled READ wifiEnabled WRITE setWifiEnabled NOTIFY wifiEnabledChanged);
-	/// Switch for the rfkill hardware block of all wireless devices.
-	Q_PROPERTY(bool wifiHardwareEnabled READ wifiHardwareEnabled NOTIFY wifiHardwareEnabledChanged BINDABLE bindableWifiHardwareEnabled);
+	/// State of the rfkill hardware block of all wireless devices.
+	Q_PROPERTY(bool wifiHardwareEnabled READ default NOTIFY wifiHardwareEnabledChanged BINDABLE bindableWifiHardwareEnabled);
 	// clang-format on
 
 public:
@@ -63,16 +63,15 @@ public:
 	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; };
 	void setWifiEnabled(bool enabled);
 	QBindable<bool> bindableWifiHardwareEnabled() { return &this->bWifiHardwareEnabled; };
-	[[nodiscard]] bool wifiHardwareEnabled() const { return this->bWifiHardwareEnabled; };
 
 signals:
 	void requestSetWifiEnabled(bool enabled);
 	void wifiEnabledChanged();
 	void wifiHardwareEnabledChanged();
 
-public slots:
-	void onDeviceAdded(NetworkDevice* dev);
-	void onDeviceRemoved(NetworkDevice* dev);
+private slots:
+	void deviceAdded(NetworkDevice* dev);
+	void deviceRemoved(NetworkDevice* dev);
 
 private:
 	ObjectModel<NetworkDevice> mDevices {this};
@@ -93,14 +92,13 @@ class BaseNetwork: public QObject {
 	/// The name of the network.
 	Q_PROPERTY(QString name READ name CONSTANT);
 	/// True if the network is connected.
-	Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged BINDABLE bindableConnected);
+	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 
 public:
 	explicit BaseNetwork(QString name, QObject* parent = nullptr);
 
 	[[nodiscard]] QString name() const { return this->mName; };
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
-	[[nodiscard]] bool connected() const { return this->bConnected; };
 
 signals:
 	void connectedChanged();

@@ -15,7 +15,8 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../device.hpp"
-#include "nm/dbus_nm_device.h"
+#include "connection.hpp"
+#include "dbus_nm_device.h"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -52,7 +53,6 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 	// Remove old active connection
 	if (this->mActiveConnection) {
 		QObject::disconnect(this->mActiveConnection, nullptr, this, nullptr);
-		emit this->mActiveConnection->disappeared();
 		delete this->mActiveConnection;
 		this->mActiveConnection = nullptr;
 	}
@@ -77,13 +77,16 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 }
 
 void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths) {
-	QSet<QString> newConnectionPaths;
+	QSet<QString> newPathSet;
 	for (const QDBusObjectPath& path: paths) {
-		newConnectionPaths.insert(path.path());
+		newPathSet.insert(path.path());
 	}
+	const auto existingPaths = this->mConnections.keys();
+	const QSet<QString> existingPathSet(existingPaths.begin(), existingPaths.end());
 
-	const QSet<QString> addedConnections = newConnectionPaths - this->mConnectionPaths;
-	const QSet<QString> removedConnections = this->mConnectionPaths - newConnectionPaths;
+	const auto addedConnections = newPathSet - existingPathSet;
+	const auto removedConnections = existingPathSet - newPathSet;
+
 	for (const QString& path: addedConnections) {
 		this->registerConnection(path);
 	}
@@ -92,10 +95,8 @@ void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& p
 		if (!connection) {
 			qCDebug(logNetworkManager) << "Sent removal signal for" << path << "which is not registered.";
 		} else {
-			emit connection->disappeared();
 			delete connection;
 		}
-		this->mConnectionPaths.remove(path);
 	};
 }
 
@@ -106,7 +107,6 @@ void NMDevice::registerConnection(const QString& path) {
 		delete connection;
 	} else {
 		this->mConnections.insert(path, connection);
-		this->mConnectionPaths.insert(path);
 		QObject::connect(
 		    connection,
 		    &NMConnectionSettings::loaded,
@@ -118,6 +118,13 @@ void NMDevice::registerConnection(const QString& path) {
 }
 
 void NMDevice::disconnect() { this->deviceProxy->Disconnect(); }
+
+void NMDevice::setAutoconnect(bool autoconnect) {
+	if (autoconnect == this->bAutoconnect) return;
+	this->bAutoconnect = autoconnect;
+	this->pAutoconnect.write();
+}
+
 bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }
 QString NMDevice::address() const {
 	return this->deviceProxy ? this->deviceProxy->service() : QString();

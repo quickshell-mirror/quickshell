@@ -10,8 +10,8 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "dbus_nm_accesspoint.h"
 #include "enums.hpp"
-#include "nm/dbus_nm_accesspoint.h"
 
 namespace qs::network {
 using namespace qs::dbus;
