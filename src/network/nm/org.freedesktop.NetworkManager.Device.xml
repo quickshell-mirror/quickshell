@@ -1,0 +1,5 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Device">
+    <method name="Disconnect"/>
+  </interface>
+</node>

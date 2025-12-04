@@ -33,3 +33,7 @@ add_subdirectory(services)
 if (BLUETOOTH)
 	add_subdirectory(bluetooth)
 endif()
+
+if (NETWORK)
+	add_subdirectory(network)
+endif()
