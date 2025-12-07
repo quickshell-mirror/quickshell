@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <qobject.h>
-#include <qpointer.h>
 #include <qtclasshelpermacros.h>
 #include <qwayland-input-method-unstable-v2.h>
 
@@ -25,12 +24,12 @@ public:
 
 	void commitString(const QString& text);
 	// By default hides the cursor
-	void sendPreeditString(const QString& text, int32_t cursorBegin = -1, int32_t cursorEnd = -1);
+	void setPreeditString(const QString& text, int32_t cursorBegin = -1, int32_t cursorEnd = -1);
 	void deleteText(int before, int after);
 	void commit();
 
 	[[nodiscard]] bool hasKeyboard() const;
-	QPointer<InputMethodKeyboardGrab> grabKeyboard();
+	InputMethodKeyboardGrab* grabKeyboard();
 	void releaseKeyboard();
 
 	[[nodiscard]] bool isActive() const;

@@ -4,7 +4,6 @@
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qobject.h>
-#include <qpointer.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
 #include <qwayland-input-method-unstable-v2.h>
@@ -21,12 +20,12 @@ InputMethodHandle::InputMethodHandle(QObject* parent, ::zwp_input_method_v2* inp
     , zwp_input_method_v2(inputMethod) {}
 
 InputMethodHandle::~InputMethodHandle() {
-	this->sendPreeditString("");
+	this->setPreeditString("");
 	this->destroy();
 }
 
 void InputMethodHandle::commitString(const QString& text) { this->commit_string(text); }
-void InputMethodHandle::sendPreeditString(
+void InputMethodHandle::setPreeditString(
     const QString& text,
     int32_t cursorBegin,
     int32_t cursorEnd
@@ -39,7 +38,7 @@ void InputMethodHandle::deleteText(int before, int after) {
 void InputMethodHandle::commit() { this->zwp_input_method_v2::commit(this->serial++); }
 
 bool InputMethodHandle::hasKeyboard() const { return this->keyboard != nullptr; }
-QPointer<InputMethodKeyboardGrab> InputMethodHandle::grabKeyboard() {
+InputMethodKeyboardGrab* InputMethodHandle::grabKeyboard() {
 	if (this->keyboard) return this->keyboard;
 
 	this->keyboard = new InputMethodKeyboardGrab(this, this->grab_keyboard());
@@ -48,7 +47,7 @@ QPointer<InputMethodKeyboardGrab> InputMethodHandle::grabKeyboard() {
 }
 void InputMethodHandle::releaseKeyboard() {
 	if (!this->keyboard) return;
-	this->keyboard->deleteLater();
+	delete this->keyboard;
 	this->keyboard = nullptr;
 }
 

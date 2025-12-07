@@ -17,80 +17,43 @@ QString QMLDirectionKey::toString(Enum direction) {
 QString QMLContentHint::toString(Enum contentHint) {
 	QString string = "";
 
-	bool first = true;
-
 	if (contentHint & Completion) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Completion";
-		first = false;
+		string += "Completion | ";
 	}
 	if (contentHint & Spellcheck) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Spellcheck";
-		first = false;
+		string += "Spellcheck | ";
 	}
 	if (contentHint & AutoCapitalization) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "AutoCapitalization";
-		first = false;
+		string += "AutoCapitalization | ";
 	}
 	if (contentHint & Lowercase) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Lowercase";
-		first = false;
+		string += "Lowercase | ";
 	}
 	if (contentHint & Uppercase) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Uppercase";
-		first = false;
+		string += "Uppercase | ";
 	}
 	if (contentHint & Titlecase) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Titlecase";
-		first = false;
+		string += "Titlecase | ";
 	}
 	if (contentHint & HiddenText) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "HiddenText";
-		first = false;
+		string += "HiddenText | ";
 	}
 	if (contentHint & SensitiveData) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "SensitiveData";
-		first = false;
+		string += "SensitiveData | ";
 	}
 	if (contentHint & Latin) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Latin";
-		first = false;
+		string += "Latin | ";
 	}
 	if (contentHint & Multiline) {
-		if (!first) {
-			string += " | ";
-		}
-		string += "Multiline";
-		first = false;
+		string += "Multiline | ";
 	}
 
-	if (string == "") string = "None";
+	if (string == "") {
+		string = "None";
+	} else {
+		// Erase the " | " from end of string
+		string.resize(string.size() - 3);
+	}
 	return string;
 }
 

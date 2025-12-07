@@ -22,42 +22,37 @@ using namespace impl;
 
 InputMethod::InputMethod(QObject* parent): QObject(parent) { this->getInput(); }
 
-void InputMethod::sendString(const QString& text) {
+void InputMethod::commitString(const QString& text) {
 	if (!this->isActive()) return;
 
 	this->handle->commitString(text);
-	this->handle->commit();
 }
 
-void InputMethod::sendPreeditString(const QString& text, int32_t cursorBegin, int32_t cursorEnd) {
+void InputMethod::setPreeditString() {
 	if (!this->isActive()) return;
 
-	this->handle->sendPreeditString(text, cursorBegin, cursorEnd);
-	this->handle->commit();
+	if (mCursorEnd == -1) {
+		this->handle->setPreeditString(mPreeditString, mCursorBegin, mCursorBegin);
+	} else {
+		this->handle->setPreeditString(mPreeditString, mCursorBegin, mCursorEnd);
+	}
 }
 
-void InputMethod::deleteText(int before, int after) {
+void InputMethod::deleteSuroundingText(int before, int after) {
 	if (!this->isActive()) return;
 
 	this->handle->deleteText(before, after);
+}
+
+void InputMethod::commit() {
+	if (!this->isActive()) return;
+
 	this->handle->commit();
 }
 
 bool InputMethod::isActive() const { return this->hasInput() && this->handle->isActive(); }
 
-QQmlComponent* InputMethod::keyboardComponent() const { return this->mKeyboardComponent; }
-void InputMethod::setKeyboardComponent(QQmlComponent* keyboardComponent) {
-	if (this->mKeyboardComponent == keyboardComponent) return;
-	this->mKeyboardComponent = keyboardComponent;
-	emit this->keyboardComponentChanged();
-
-	if (this->keyboard) {
-		this->keyboard->deleteLater();
-		this->keyboard = nullptr;
-	}
-
-	this->handleKeyboardActive();
-}
+QPointer<Keyboard> InputMethod::keyboard() const { return this->mKeyboard; }
 
 bool InputMethod::hasInput() const { return this->handle && this->handle->isAvailable(); }
 
@@ -108,10 +103,10 @@ void InputMethod::releaseInput() {
 
 bool InputMethod::hasKeyboard() const {
 	// The lifetime of keyboard should be less than handle's
-	if (this->keyboard) {
+	if (this->mKeyboard) {
 		assert(this->handle->hasKeyboard());
 	}
-	return this->keyboard;
+	return this->mKeyboard;
 }
 
 void InputMethod::grabKeyboard() {
@@ -120,44 +115,71 @@ void InputMethod::grabKeyboard() {
 		qmlDebug(this) << "Only one input method can grad a keyboard at any one time";
 		return;
 	}
-	auto* instanceObj =
-	    this->mKeyboardComponent->create(QQmlEngine::contextForObject(this->mKeyboardComponent));
-	auto* instance = qobject_cast<Keyboard*>(instanceObj);
+	this->mKeyboard = new Keyboard(this);
 
-	if (instance == nullptr) {
-		qWarning() << "Failed to create input method keyboard component";
-		if (instanceObj != nullptr) instanceObj->deleteLater();
-		return;
-	}
-
-	instance->setParent(this);
-	instance->setKeyboard(this->handle->grabKeyboard());
+	this->mKeyboard->setKeyboard(this->handle->grabKeyboard());
 	// Always have a way to release the keyboard
-	QObject::connect(instance, &Keyboard::escapePress, this, &InputMethod::releaseKeyboard);
+	QObject::connect(this->mKeyboard, &Keyboard::escapePress, this, &InputMethod::releaseKeyboard);
 
-	this->keyboard = instance;
 	emit this->hasKeyboardChanged();
 }
 
 void InputMethod::releaseKeyboard() {
 	if (!this->hasKeyboard()) return;
-	this->keyboard->deleteLater();
-	this->keyboard = nullptr;
+	delete this->mKeyboard;
+	this->mKeyboard = nullptr;
 	this->handle->releaseKeyboard();
-	if (this->mClearPreeditOnKeyboardRelease) this->sendPreeditString("");
+	if (this->mClearPreeditOnKeyboardRelease) {
+		this->mPreeditString = "";
+		this->mCursorBegin = -1;
+		this->mCursorEnd = -1;
+		this->setPreeditString();
+		this->preeditStringChanged();
+		this->cursorBeginChanged();
+		this->cursorEndChanged();
+	}
 	emit this->hasKeyboardChanged();
 }
 
+const QString& InputMethod::preeditString() const { return this->mPreeditString; }
+QString& InputMethod::preeditString() { return this->mPreeditString; }
+void InputMethod::setPreeditString(const QString& string) {
+	if (this->mPreeditString == string) return;
+	this->mPreeditString = string;
+	this->setPreeditString();
+	this->commit();
+	this->preeditStringChanged();
+}
+int32_t InputMethod::cursorBegin() const { return this->mCursorBegin; }
+void InputMethod::setCursorBegin(int32_t position) {
+	if (this->mCursorBegin == position) return;
+	this->mCursorBegin = position;
+	this->setPreeditString();
+	this->commit();
+	this->cursorBeginChanged();
+}
+int32_t InputMethod::cursorEnd() const { return this->mCursorEnd; }
+void InputMethod::setCursorEnd(int32_t position) {
+	if (this->mCursorEnd == position) return;
+	this->mCursorEnd = position;
+	this->setPreeditString();
+	this->commit();
+	this->cursorEndChanged();
+}
+
 void InputMethod::handleKeyboardActive() {
-	if (!this->mKeyboardComponent) return;
-	if (this->keyboard) {
+	if (this->mKeyboard) {
 		this->releaseKeyboard();
 	}
 }
 
 const QString& InputMethod::surroundingText() const { return this->handle->surroundingText(); }
-uint32_t InputMethod::surroundingTextCursor() const { return this->handle->surroundingTextCursor(); }
-uint32_t InputMethod::surroundingTextAnchor() const { return this->handle->surroundingTextAnchor(); }
+uint32_t InputMethod::surroundingTextCursor() const {
+	return this->handle->surroundingTextCursor();
+}
+uint32_t InputMethod::surroundingTextAnchor() const {
+	return this->handle->surroundingTextAnchor();
+}
 
 QMLContentHint::Enum InputMethod::contentHint() const { return this->handle->contentHint(); }
 QMLContentPurpose::Enum InputMethod::contentPurpose() const {

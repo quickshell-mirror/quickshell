@@ -15,8 +15,12 @@ InputMethodManager::InputMethodManager(): QWaylandClientExtensionTemplate(1) { t
 InputMethodManager::~InputMethodManager() { this->destroy(); }
 
 InputMethodManager* InputMethodManager::instance() {
-	// The OS should free this memory when we exit
-	static auto* instance = new InputMethodManager();
+	static InputMethodManager* instance = nullptr;
+
+	if (instance == nullptr) {
+		instance = new InputMethodManager();
+	}
+
 	return instance;
 }
 
@@ -37,7 +41,7 @@ QPointer<InputMethodHandle> InputMethodManager::acquireInput() {
 }
 
 void InputMethodManager::releaseInput() {
-	this->inputMethod->deleteLater();
+	delete this->inputMethod;
 	this->inputMethod = nullptr;
 }
 
@@ -46,8 +50,11 @@ VirtualKeyboardManager::VirtualKeyboardManager(): QWaylandClientExtensionTemplat
 }
 
 VirtualKeyboardManager* VirtualKeyboardManager::instance() {
-	// The OS should free this memory when we exit
-	static auto* instance = new VirtualKeyboardManager();
+	static VirtualKeyboardManager* instance = nullptr;
+
+	if (instance == nullptr) {
+		instance = new VirtualKeyboardManager();
+	}
 	return instance;
 }
 

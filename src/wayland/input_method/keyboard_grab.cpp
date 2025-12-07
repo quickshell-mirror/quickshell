@@ -16,9 +16,12 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "../../core/logcat.hpp"
 #include "manager.hpp"
 #include "types.hpp"
 #include "virtual_keyboard.hpp"
+
+QS_LOGGING_CATEGORY(inputMethodKeyboardKeys, "quickshell.wayland.inputMethod.keyboardKeys", QtWarningMsg);
 
 namespace qs::wayland::input_method::impl {
 
@@ -91,11 +94,9 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 
 	key += WAYLAND_KEY_OFFSET;
 
-#if INPUT_METHOD_PRINT
-	qDebug() << KeyMapState::keyStateName(static_cast<wl_keyboard_key_state>(state))
+	qCInfo(inputMethodKeyboardKeys) << KeyMapState::keyStateName(static_cast<wl_keyboard_key_state>(state))
 	         << this->mKeyMapState.keyName(key) << "[" << key << "]"
 	         << this->mKeyMapState.getChar(key);
-#endif
 
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 

@@ -17,13 +17,11 @@ class InputMethodKeyboardGrab;
 } // namespace impl
 
 /// Provides keyboard handling logic for an @@InputMethod$'s grab protocol.
-/// Use @@KeyboardTextEdit$ for a higher level and easier to use version.
+/// Use @@KeyboardTextEdit for a higher level and easier to use version.
 class Keyboard: public QObject {
 	Q_OBJECT;
-	/// TODO The surface that will be created for the keyboard. Must create a @@KeyboardSurface$.
-	// Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
-	// Q_CLASSINFO("DefaultProperty", "surface");
 	QML_ELEMENT;
+	QML_UNCREATABLE("Input Method Keyboard must be retrieved from an Input Method object.");
 
 public:
 	explicit Keyboard(QObject* parent = nullptr);
@@ -41,7 +39,6 @@ signals:
 
 private:
 	QPointer<impl::InputMethodKeyboardGrab> mKeyboard;
-	// QQmlComponent* mSurfaceComponent = nullptr;
 };
 
 /// Provides the ability to send text input to the compositor
@@ -66,6 +63,13 @@ class InputMethod: public QObject {
 	Q_PROPERTY(bool hasInput READ hasInput NOTIFY hasInputChanged);
 	/// If the input method has grabbed the keyboard
 	Q_PROPERTY(bool hasKeyboard READ hasKeyboard NOTIFY hasKeyboardChanged);
+	/// Provides virtual text in the text input so the user can visualise what they write
+	Q_PROPERTY(QString preeditString READ preeditString WRITE setPreeditString NOTIFY preeditStringChanged);
+	/// If `cursorBegin == cursorEnd == -1` the text input will not show a cursor
+	/// If `cursorBegin == cursorEnd == n` or `cursorBegin == n && cursorEnd == -1` the text input will show a cursor at n
+	/// If `cursorBegin == n` and `cursorEnd == m` the text from n to m will be highlighted
+	Q_PROPERTY(int32_t cursorBegin READ cursorBegin WRITE setCursorBegin NOTIFY cursorBeginChanged);
+	Q_PROPERTY(int32_t cursorEnd READ cursorEnd WRITE setCursorEnd NOTIFY cursorEndChanged);
 	/// The text around the where we will insert
 	Q_PROPERTY(QString surroundingText READ surroundingText NOTIFY surroundingTextChanged);
 	Q_PROPERTY(uint32_t surroundingTextCurosr READ surroundingTextCursor NOTIFY surroundingTextChanged);
@@ -79,70 +83,80 @@ class InputMethod: public QObject {
 	    bool clearPreeditOnKeyboardRelease MEMBER mClearPreeditOnKeyboardRelease NOTIFY
 	        clearPreeditOnKeyboardReleaseChanged
 	);
-	/// The @@Keyboard$ that will handle the grabbed keyboard.
-	/// Use @@KeyboardTextEdit$ for most cases.
-	Q_PROPERTY(
-	    QQmlComponent* keyboard READ keyboardComponent WRITE setKeyboardComponent NOTIFY
-	        keyboardComponentChanged
-	);
+	/// The @@Keyboard that will handle the grabbed keyboard.
+	/// Use @@KeyboardTextEdit for most cases.
+	Q_PROPERTY(QPointer<Keyboard> keyboard READ keyboard NOTIFY keyboardChanged);
+	// Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
+	// Q_CLASSINFO("DefaultProperty", "surface");
 	Q_CLASSINFO("DefaultProperty", "keyboard");
 	QML_NAMED_ELEMENT(QSInputMethod);
 
 public:
 	explicit InputMethod(QObject* parent = nullptr);
 
-	/// Sends a string to the text input currently focused
-	Q_INVOKABLE void sendString(const QString& text);
-	/// Provides virtual text in the text input so the user can visualise what they write
-	/// This will override any previous preedit text
-	/// If `cursorBegin == cursorEnd == -1` the text input will not show a cursor
-	/// If `cursorBegin == cursorEnd == n` the text input will show a cursor at n
-	/// If `cursorBegin == n` and `cursorEnd == m` the text from n to m will be highlighted
-	Q_INVOKABLE void
-	sendPreeditString(const QString& text, int32_t cursorBegin = -1, int32_t cursorEnd = -1);
+	/// Sends a string to the text input currently focused. Will be updated after $$commit is called.
+	Q_INVOKABLE void commitString(const QString& text);
 	/// Removes text before the cursor by `before` and after by `after`.
 	/// If preedit text is present, then text will be deleted before the preedit text and after the preedit text instead of the cursor.
-	Q_INVOKABLE void deleteText(int before = 1, int after = 0);
+	/// Will be updated after $$commit is called.
+	Q_INVOKABLE void deleteSuroundingText(int before = 1, int after = 0);
+
+	/// Apply state changes from commitString, setPreeditString and deleteSurroundingText requests.
+	Q_INVOKABLE void commit();
 
 	/// If there is a focused text input that we can write to
-	Q_INVOKABLE [[nodiscard]] bool isActive() const;
+	[[nodiscard]] bool isActive() const;
 
-	/// @@keyboard$
-	Q_INVOKABLE [[nodiscard]] QQmlComponent* keyboardComponent() const;
-	/// @@keyboard$
-	Q_INVOKABLE void setKeyboardComponent(QQmlComponent* keyboardComponent);
+	/// @@keyboard
+	Q_INVOKABLE [[nodiscard]] QPointer<Keyboard> keyboard() const;
 
-	/// @@hasInput$
-	Q_INVOKABLE [[nodiscard]] bool hasInput() const;
+	/// @@hasInput
+	[[nodiscard]] bool hasInput() const;
 	/// Retries getting the input method.
 	Q_INVOKABLE void getInput();
 	/// Releases the input method so another program can use it.
 	Q_INVOKABLE void releaseInput();
 
-	/// @@hasKeyboard$
-	Q_INVOKABLE [[nodiscard]] bool hasKeyboard() const;
-	/// Grabs the current keyboard so the input can be intercepted by the @@keyboard$ object
+	/// @@hasKeyboard
+	[[nodiscard]] bool hasKeyboard() const;
+	/// Grabs the current keyboard so the input can be intercepted by the @@keyboard object
 	Q_INVOKABLE void grabKeyboard();
 	/// Releases the grabbed keyboard so it can be used normally.
 	Q_INVOKABLE void releaseKeyboard();
 
-	Q_INVOKABLE [[nodiscard]] const QString& surroundingText() const;
-	Q_INVOKABLE [[nodiscard]] uint32_t surroundingTextCursor() const;
-	Q_INVOKABLE [[nodiscard]] uint32_t surroundingTextAnchor() const;
+	[[nodiscard]] const QString& preeditString() const;
+	Q_INVOKABLE void setPreeditString(const QString& string);
+	[[nodiscard]] int32_t cursorBegin() const;
+	Q_INVOKABLE void setCursorBegin(int32_t position);
+	[[nodiscard]] int32_t cursorEnd() const;
+	Q_INVOKABLE void setCursorEnd(int32_t position);
 
-	Q_INVOKABLE [[nodiscard]] QMLContentHint::Enum contentHint() const;
-	Q_INVOKABLE [[nodiscard]] QMLContentPurpose::Enum contentPurpose() const;
+	[[nodiscard]] const QString& surroundingText() const;
+	[[nodiscard]] uint32_t surroundingTextCursor() const;
+	[[nodiscard]] uint32_t surroundingTextAnchor() const;
+
+	[[nodiscard]] QMLContentHint::Enum contentHint() const;
+	[[nodiscard]] QMLContentPurpose::Enum contentPurpose() const;
 
 signals:
 	void activeChanged();
 	void hasInputChanged();
 	void hasKeyboardChanged();
+	void preeditStringChanged();
+	void cursorBeginChanged();
+	void cursorEndChanged();
 	void clearPreeditOnKeyboardReleaseChanged();
-	void keyboardComponentChanged();
+	void keyboardChanged();
 	void contentHintChanged();
 	void contentPurposeChanged();
 
 	void surroundingTextChanged(QMLTextChangeCause::Enum textChangeCause);
+
+protected:
+	/// Sends the preedit string to compositor
+	void setPreeditString();
+	/// Make sure to call $$setPreeditString if you mutate
+	[[nodiscard]] QString& preeditString();
 
 private slots:
 	void onHandleActiveChanged();
@@ -151,10 +165,13 @@ private:
 	void handleKeyboardActive();
 
 	QPointer<impl::InputMethodHandle> handle;
-	Keyboard* keyboard = nullptr;
-	QQmlComponent* mKeyboardComponent = nullptr;
+	Keyboard* mKeyboard = nullptr;
 
 	bool mClearPreeditOnKeyboardRelease = true;
+
+	QString mPreeditString;
+	int32_t mCursorBegin = 0;
+	int32_t mCursorEnd = 0;
 };
 
 } // namespace qs::wayland::input_method
