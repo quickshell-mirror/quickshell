@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include <qobject.h>
 #include <qtclasshelpermacros.h>
 #include <qwayland-input-method-unstable-v2.h>
@@ -54,7 +55,11 @@ signals:
 private:
 	void zwp_input_method_v2_activate() override;
 	void zwp_input_method_v2_deactivate() override;
-	void zwp_input_method_v2_surrounding_text(const QString& text, uint32_t cursor, uint32_t anchor) override;
+	void zwp_input_method_v2_surrounding_text(
+	    const QString& text,
+	    uint32_t cursor,
+	    uint32_t anchor
+	) override;
 	void zwp_input_method_v2_text_change_cause(uint32_t cause) override;
 	void zwp_input_method_v2_content_type(uint32_t hint, uint32_t purpose) override;
 	void zwp_input_method_v2_done() override;

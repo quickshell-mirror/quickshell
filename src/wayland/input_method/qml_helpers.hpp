@@ -14,7 +14,7 @@ namespace qs::wayland::input_method {
 /// A cursor enables some control over the composition of the text.
 /// When return is pressed the transform function is called and the returned string is sent to the input text
 /// and the keyboard is released.
-/// 
+///
 /// ```
 ///  KeyboardTextEdit {
 ///   id: keyboard_text_edit

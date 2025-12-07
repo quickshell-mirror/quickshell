@@ -98,7 +98,7 @@ std::string_view KeyMapState::keyStateName(wl_keyboard_key_state state) {
 }
 
 bool KeyMapState::keyRepeats(xkb_keycode_t key) const {
-	 return xkb_keymap_key_repeats(this->xkbKeymap, key);
+	return xkb_keymap_key_repeats(this->xkbKeymap, key);
 }
 
 xkb_context* KeyMapState::xkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);

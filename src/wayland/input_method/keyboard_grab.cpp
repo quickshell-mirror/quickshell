@@ -21,7 +21,11 @@
 #include "types.hpp"
 #include "virtual_keyboard.hpp"
 
-QS_LOGGING_CATEGORY(inputMethodKeyboardKeys, "quickshell.wayland.inputMethod.keyboardKeys", QtWarningMsg);
+QS_LOGGING_CATEGORY(
+    inputMethodKeyboardKeys,
+    "quickshell.wayland.inputMethod.keyboardKeys",
+    QtWarningMsg
+);
 
 namespace qs::wayland::input_method::impl {
 
@@ -31,7 +35,7 @@ InputMethodKeyboardGrab::InputMethodKeyboardGrab(
 )
     : QObject(parent)
     , zwp_input_method_keyboard_grab_v2(keyboard) {
-	this->mRepeatTimer.callOnTimeout(this, [this](){
+	this->mRepeatTimer.callOnTimeout(this, [this]() {
 		this->mRepeatTimer.setInterval(1000 / this->mRepeatRate);
 		this->handleKey(this->mRepeatKey);
 	});
@@ -94,9 +98,10 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 
 	key += WAYLAND_KEY_OFFSET;
 
-	qCInfo(inputMethodKeyboardKeys) << KeyMapState::keyStateName(static_cast<wl_keyboard_key_state>(state))
-	         << this->mKeyMapState.keyName(key) << "[" << key << "]"
-	         << this->mKeyMapState.getChar(key);
+	qCInfo(inputMethodKeyboardKeys) << KeyMapState::keyStateName(
+	    static_cast<wl_keyboard_key_state>(state)
+	) << this->mKeyMapState.keyName(key)
+	                                << "[" << key << "]" << this->mKeyMapState.getChar(key);
 
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 
@@ -118,7 +123,7 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		const bool keyHandled = this->handleKey(key);
-		if (keyHandled){
+		if (keyHandled) {
 			if (this->mKeyMapState.keyRepeats(key) && this->mRepeatRate > 0) {
 				this->mRepeatKey = key;
 				this->mRepeatTimer.setInterval(this->mRepeatDelay);
@@ -135,7 +140,7 @@ void InputMethodKeyboardGrab::zwp_input_method_keyboard_grab_v2_key(
 	this->mVirturalKeyboard->sendKey(key, static_cast<wl_keyboard_key_state>(state));
 }
 
-bool InputMethodKeyboardGrab::handleKey(xkb_keycode_t key){
+bool InputMethodKeyboardGrab::handleKey(xkb_keycode_t key) {
 	const xkb_keysym_t sym = this->mKeyMapState.getOneSym(key);
 	if (sym == XKB_KEY_Up) {
 		emit this->directionPress(DirectionKey::Up);

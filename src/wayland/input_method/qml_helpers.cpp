@@ -13,29 +13,49 @@ namespace qs::wayland::input_method {
 
 KeyboardTextEdit::KeyboardTextEdit(QObject* parent): InputMethod(parent) {
 	QObject::connect(
-		this,
-		&InputMethod::hasKeyboardChanged,
-		this,
-		&KeyboardTextEdit::onHasKeyboardChanged
+	    this,
+	    &InputMethod::hasKeyboardChanged,
+	    this,
+	    &KeyboardTextEdit::onHasKeyboardChanged
 	);
 
 	QObject::connect(
-		this,
-		&InputMethod::surroundingTextChanged,
-		this,
-		&KeyboardTextEdit::onSurroundingTextChanged
+	    this,
+	    &InputMethod::surroundingTextChanged,
+	    this,
+	    &KeyboardTextEdit::onSurroundingTextChanged
 	);
 }
 
 void KeyboardTextEdit::onHasKeyboardChanged() {
-	if(!this->hasKeyboard()) {
+	if (!this->hasKeyboard()) {
 		return;
 	}
 	QObject::connect(this->keyboard(), &Keyboard::keyPress, this, &KeyboardTextEdit::onKeyPress);
-	QObject::connect(this->keyboard(), &Keyboard::returnPress, this, &KeyboardTextEdit::onReturnPress);
-	QObject::connect(this->keyboard(), &Keyboard::directionPress, this, &KeyboardTextEdit::onDirectionPress);
-	QObject::connect(this->keyboard(), &Keyboard::backspacePress, this, &KeyboardTextEdit::onBackspacePress);
-	QObject::connect(this->keyboard(), &Keyboard::deletePress, this, &KeyboardTextEdit::onDeletePress);
+	QObject::connect(
+	    this->keyboard(),
+	    &Keyboard::returnPress,
+	    this,
+	    &KeyboardTextEdit::onReturnPress
+	);
+	QObject::connect(
+	    this->keyboard(),
+	    &Keyboard::directionPress,
+	    this,
+	    &KeyboardTextEdit::onDirectionPress
+	);
+	QObject::connect(
+	    this->keyboard(),
+	    &Keyboard::backspacePress,
+	    this,
+	    &KeyboardTextEdit::onBackspacePress
+	);
+	QObject::connect(
+	    this->keyboard(),
+	    &Keyboard::deletePress,
+	    this,
+	    &KeyboardTextEdit::onDeletePress
+	);
 }
 
 QJSValue KeyboardTextEdit::transform() const { return this->mTransform; }

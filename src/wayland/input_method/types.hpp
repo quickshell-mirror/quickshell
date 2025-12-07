@@ -1,11 +1,11 @@
 #pragma once
 
+#include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
-#include <xkbcommon/xkbcommon.h>
 #include <wayland-text-input-unstable-v3-client-protocol.h>
-#include <qobject.h>
+#include <xkbcommon/xkbcommon.h>
 
 namespace qs::wayland::input_method {
 
@@ -15,9 +15,7 @@ class QMLDirectionKey: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum : quint8 {
-		Up, Down, Left, Right
-	};
+	enum Enum : quint8 { Up, Down, Left, Right };
 	Q_ENUM(Enum);
 
 	Q_INVOKABLE static QString toString(Enum direction);
@@ -53,7 +51,7 @@ class QMLContentPurpose: public QObject {
 	QML_SINGLETON;
 
 public:
-	enum Enum : quint8{
+	enum Enum : quint8 {
 		Normal = ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_NORMAL,
 		Alpha = ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_ALPHA,
 		Digits = ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_DIGITS,
@@ -97,5 +95,5 @@ using ContentPurpose = QMLContentPurpose::Enum;
 using TextChangeCause = QMLTextChangeCause::Enum;
 
 inline constexpr xkb_keycode_t WAYLAND_KEY_OFFSET = 8;
-}
-} // namespace qs::wayland::input_method::impl
+} // namespace impl
+} // namespace qs::wayland::input_method

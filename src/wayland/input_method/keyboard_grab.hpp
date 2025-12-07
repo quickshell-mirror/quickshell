@@ -2,8 +2,8 @@
 
 #include <qobject.h>
 #include <qtclasshelpermacros.h>
-#include <qwayland-input-method-unstable-v2.h>
 #include <qtimer.h>
+#include <qwayland-input-method-unstable-v2.h>
 
 #include "key_map_state.hpp"
 #include "types.hpp"

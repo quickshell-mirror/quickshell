@@ -64,7 +64,9 @@ class InputMethod: public QObject {
 	/// If the input method has grabbed the keyboard
 	Q_PROPERTY(bool hasKeyboard READ hasKeyboard NOTIFY hasKeyboardChanged);
 	/// Provides virtual text in the text input so the user can visualise what they write
-	Q_PROPERTY(QString preeditString READ preeditString WRITE setPreeditString NOTIFY preeditStringChanged);
+	Q_PROPERTY(
+	    QString preeditString READ preeditString WRITE setPreeditString NOTIFY preeditStringChanged
+	);
 	/// If `cursorBegin == cursorEnd == -1` the text input will not show a cursor
 	/// If `cursorBegin == cursorEnd == n` or `cursorBegin == n && cursorEnd == -1` the text input will show a cursor at n
 	/// If `cursorBegin == n` and `cursorEnd == m` the text from n to m will be highlighted
@@ -72,12 +74,18 @@ class InputMethod: public QObject {
 	Q_PROPERTY(int32_t cursorEnd READ cursorEnd WRITE setCursorEnd NOTIFY cursorEndChanged);
 	/// The text around the where we will insert
 	Q_PROPERTY(QString surroundingText READ surroundingText NOTIFY surroundingTextChanged);
-	Q_PROPERTY(uint32_t surroundingTextCurosr READ surroundingTextCursor NOTIFY surroundingTextChanged);
-	Q_PROPERTY(uint32_t surroundingTextAnchor READ surroundingTextAnchor NOTIFY surroundingTextChanged);
+	Q_PROPERTY(
+	    uint32_t surroundingTextCurosr READ surroundingTextCursor NOTIFY surroundingTextChanged
+	);
+	Q_PROPERTY(
+	    uint32_t surroundingTextAnchor READ surroundingTextAnchor NOTIFY surroundingTextChanged
+	);
 	/// The content_hint of the text input see https://wayland.app/protocols/text-input-unstable-v3#zwp_text_input_v3:enum:content_hint
 	Q_PROPERTY(QMLContentHint::Enum contentHint READ contentHint NOTIFY contentHintChanged);
 	/// The content_purpose of the text input see https://wayland.app/protocols/text-input-unstable-v3#zwp_text_input_v3:enum:content_purpose
-	Q_PROPERTY(QMLContentPurpose::Enum contentPurpose READ contentPurpose NOTIFY contentPurposeChanged);
+	Q_PROPERTY(
+	    QMLContentPurpose::Enum contentPurpose READ contentPurpose NOTIFY contentPurposeChanged
+	);
 	/// Clear the preedit text when the keyboard grab is released
 	Q_PROPERTY(
 	    bool clearPreeditOnKeyboardRelease MEMBER mClearPreeditOnKeyboardRelease NOTIFY
