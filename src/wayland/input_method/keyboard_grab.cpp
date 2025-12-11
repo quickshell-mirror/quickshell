@@ -3,9 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#if INPUT_METHOD_PRINT
-#include <qdebug.h>
-#endif
+#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <qwayland-input-method-unstable-v2.h>
@@ -21,11 +19,15 @@
 #include "types.hpp"
 #include "virtual_keyboard.hpp"
 
+namespace {
+
 QS_LOGGING_CATEGORY(
     inputMethodKeyboardKeys,
     "quickshell.wayland.inputMethod.keyboardKeys",
     QtWarningMsg
 );
+
+}
 
 namespace qs::wayland::input_method::impl {
 

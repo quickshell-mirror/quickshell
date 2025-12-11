@@ -6,7 +6,6 @@
 #include <qlogging.h>
 #include <qobject.h>
 #include <qpointer.h>
-#include <qqmlengine.h>
 #include <qqmlinfo.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
@@ -32,9 +31,9 @@ void InputMethod::setPreeditString() {
 	if (!this->isActive()) return;
 
 	if (mCursorEnd == -1) {
-		this->handle->setPreeditString(mPreeditString, mCursorBegin, mCursorBegin);
+		this->handle->setPreeditString(this->mPreeditString, this->mCursorBegin, this->mCursorBegin);
 	} else {
-		this->handle->setPreeditString(mPreeditString, mCursorBegin, mCursorEnd);
+		this->handle->setPreeditString(this->mPreeditString, this->mCursorBegin, this->mCursorEnd);
 	}
 }
 
