@@ -3,6 +3,8 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qstring.h>
+#include <qtypes.h>
+#include <qvector.h>
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"

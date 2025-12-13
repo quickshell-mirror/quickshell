@@ -101,8 +101,8 @@ I3Ipc::I3Ipc(const QList<QString>& events): mEvents(events) {
 		}
 	} else {
 		this->mCompositor = "scroll";
-		mEvents.append("scroller");
-		mEvents.append("trails");
+		this->mEvents.append("scroller");
+		this->mEvents.append("trails");
 	}
 
 	this->mSocketPath = sock;

@@ -5,7 +5,6 @@
 #include <qproperty.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 
 #include "controller.hpp"
 
@@ -24,7 +23,7 @@ void I3Scroller::updateFromObject(const QVariantMap& obj) {
 	Qt::beginPropertyUpdateGroup();
 
 	auto workspace = obj.value("workspace").value<QString>();
-	this->bWorkspace = ipc->findWorkspaceByName(workspace);
+	this->bWorkspace = this->ipc->findWorkspaceByName(workspace);
 	this->bOverview = obj.value("overview").value<bool>();
 	this->bScaled = obj.value("scaled").value<bool>();
 	this->bScale = obj.value("scale").value<double>();

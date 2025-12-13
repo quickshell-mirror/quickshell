@@ -5,7 +5,6 @@
 #include <qproperty.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 #include <qjsonarray.h>
 
 #include "controller.hpp"
@@ -32,7 +31,7 @@ void I3Window::updateFromObject(const QVariantMap& obj) {
 		this->bTitle = container["name"].toString();
 		auto marks = container["marks"];
 		this->bMark = !(marks.isNull() || marks.toArray().empty());
-		if (ipc->compositor() == "scroll") {
+		if (this->ipc->compositor() == "scroll") {
 			this->bTrailmark = container["trailmark"].toBool();
 		}
 	} else if (change == "title") {
@@ -48,7 +47,7 @@ void I3Window::updateFromObject(const QVariantMap& obj) {
 			auto marks = container["marks"];
 			this->bMark = !(marks.isNull() || marks.toArray().empty());
 		}
-	} else if (ipc->compositor() == "scroll" && change == "trailmark") {
+	} else if (this->ipc->compositor() == "scroll" && change == "trailmark") {
 		if (container["id"].toInt() == this->bId) {
 			this->bTrailmark = container["trailmark"].toBool();
 		}
