@@ -15,6 +15,7 @@ class ScreenSaverAdaptor;
 
 class SessionLockManager: public QObject {
 	Q_OBJECT;
+
 public:
 	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
 
@@ -58,6 +59,7 @@ private:
 
 class LockWindowExtension: public QObject {
 	Q_OBJECT;
+
 public:
 	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
 	~LockWindowExtension() override;

@@ -1,8 +1,10 @@
 #include "session_lock.hpp"
+
 #include <private/qwaylanddisplay_p.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qwindow.h>
+
 #include "../../dbus/screensaver_dbus.hpp"
 #include "lock.hpp"
 #include "manager.hpp"
@@ -22,16 +24,16 @@ bool SessionLockManager::lock() {
 	if (this->isLocked() || SessionLockManager::sessionLocked()) return false;
 	this->mLock = manager()->acquireLock();
 	this->mLock->setParent(this);
-	
+
 	// Initialize DBus adaptor if not already created
 	if (this->mDbusAdaptor == nullptr) {
 		this->mDbusAdaptor = new qs::dbus::ScreenSaverAdaptor(this);
 	}
-	
+
 	// Notify DBus that we're attempting to lock (not yet secure)
 	this->mDbusAdaptor->setActive(true);
 	this->mDbusAdaptor->setSecure(false);
-	
+
 	// clang-format off
 	QObject::connect(this->mLock, &QSWaylandSessionLock::compositorLocked, this, [this]() {
 		this->mDbusAdaptor->setSecure(true);

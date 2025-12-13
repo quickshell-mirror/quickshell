@@ -1,4 +1,5 @@
 #include "screensaver_dbus.hpp"
+
 #include <qdbusconnection.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -9,27 +10,22 @@ QS_LOGGING_CATEGORY(logDbusScreenSaver, "quickshell.dbus.screensaver", QtWarning
 
 namespace qs::dbus {
 
-ScreenSaverAdaptor::ScreenSaverAdaptor(QObject* parent)
-    : QDBusAbstractAdaptor(parent) {
+ScreenSaverAdaptor::ScreenSaverAdaptor(QObject* parent): QDBusAbstractAdaptor(parent) {
 	// Register on session bus
 	auto connection = QDBusConnection::sessionBus();
-	
+
 	if (!connection.registerService("org.freedesktop.ScreenSaver")) {
-		qCWarning(logDbusScreenSaver)
-		    << "Failed to register DBus service org.freedesktop.ScreenSaver:"
-		    << connection.lastError().message();
+		qCWarning(logDbusScreenSaver) << "Failed to register DBus service org.freedesktop.ScreenSaver:"
+		                              << connection.lastError().message();
 	} else {
 		qCInfo(logDbusScreenSaver) << "Registered DBus service org.freedesktop.ScreenSaver";
 	}
 
-	if (!connection.registerObject(
-	        "/org/freedesktop/ScreenSaver",
-	        parent,
-	        QDBusConnection::ExportAdaptors
-	    )) {
-		qCWarning(logDbusScreenSaver)
-		    << "Failed to register DBus object /org/freedesktop/ScreenSaver:"
-		    << connection.lastError().message();
+	if (!connection
+	         .registerObject("/org/freedesktop/ScreenSaver", parent, QDBusConnection::ExportAdaptors))
+	{
+		qCWarning(logDbusScreenSaver) << "Failed to register DBus object /org/freedesktop/ScreenSaver:"
+		                              << connection.lastError().message();
 	} else {
 		qCInfo(logDbusScreenSaver) << "Registered DBus object /org/freedesktop/ScreenSaver";
 	}
