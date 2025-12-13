@@ -23,6 +23,8 @@
 #include "connection.hpp"
 #include "monitor.hpp"
 #include "workspace.hpp"
+#include "scroller.hpp"
+#include "window.hpp"
 
 namespace qs::i3::ipc {
 
@@ -31,7 +33,7 @@ QS_LOGGING_CATEGORY(logI3Ipc, "quickshell.I3.ipc", QtWarningMsg);
 QS_LOGGING_CATEGORY(logI3IpcEvents, "quickshell.I3.ipc.events", QtWarningMsg);
 } // namespace
 
-I3IpcController::I3IpcController(): I3Ipc({"workspace", "output"}) {
+I3IpcController::I3IpcController(): I3Ipc({"workspace", "output", "mode", "window"}) {
 	// bind focused workspace to focused monitor's active workspace
 	this->bFocusedWorkspace.setBinding([this]() -> I3Workspace* {
 		if (!this->bFocusedMonitor) return nullptr;
@@ -49,6 +51,13 @@ void I3IpcController::onConnected() {
 	// detected on launch.
 	this->refreshWorkspaces();
 	this->refreshMonitors();
+	this->refreshBindingModes();
+	this->bFocusedWindow = new I3Window(this);
+	if (this->compositor() == "scroll") {
+		this->bFocusedScroller = new I3Scroller(this);
+		this->refreshScroller();
+		this->refreshTrails();
+	}
 }
 
 void I3IpcController::setFocusedMonitor(I3Monitor* monitor) {
@@ -198,6 +207,70 @@ void I3IpcController::handleGetOutputsEvent(I3IpcEvent* event) {
 	}
 }
 
+void I3IpcController::refreshBindingModes() {
+	this->makeRequest(I3Ipc::buildRequestMessage(EventCode::GetBindingState));
+	this->makeRequest(I3Ipc::buildRequestMessage(EventCode::GetBindingModes));
+}
+
+void I3IpcController::handleGetBindingModesEvent(I3IpcEvent* event) {
+	auto data = event->mData;
+	auto modes = data.array();
+	for (auto mode: modes) {
+		auto name = mode.toString();
+		this->mBindingModes.push_back(name);
+	}
+}
+
+void I3IpcController::handleGetBindingStateEvent(I3IpcEvent* event) {
+	auto data = event->mData;
+	this->bActiveBindingMode = data["name"].toString();
+}
+
+void I3IpcController::handleModeEvent(I3IpcEvent* event) {
+	auto data = event->mData;
+	this->bActiveBindingMode = data["change"].toString();
+}
+
+void I3IpcController::refreshScroller() {
+	if (this->compositor() == "scroll") {
+		this->makeRequest(I3Ipc::buildRequestMessage(EventCode::GetScroller));
+	}
+}
+
+void I3IpcController::handleGetScrollerEvent(I3IpcEvent* event) {
+	if (this->compositor() == "scroll") {
+		auto scroller = event->mData["scroller"].toObject();
+		this->bFocusedScroller->updateFromObject(scroller.toVariantMap());
+	}
+}
+
+void I3IpcController::handleScrollerEvent(I3IpcEvent* event) {
+	this->handleGetScrollerEvent(event);
+}
+
+void I3IpcController::handleWindowEvent(I3IpcEvent* event) {
+	this->bFocusedWindow->updateFromObject(event->mData.object().toVariantMap());
+}
+
+void I3IpcController::refreshTrails() {
+	if (this->compositor() == "scroll") {
+		this->makeRequest(I3Ipc::buildRequestMessage(EventCode::GetTrails));
+	}
+}
+
+void I3IpcController::handleGetTrailsEvent(I3IpcEvent* event) {
+	if (this->compositor() == "scroll") {
+		auto trails = event->mData["trails"];
+		this->bNumberOfTrails = trails["length"].toInt();
+		this->bActiveTrail = trails["active"].toInt();
+		this->bActiveTrailLength = trails["trail_length"].toInt();
+	}
+}
+
+void I3IpcController::handleTrailsEvent(I3IpcEvent* event) {
+	this->handleGetTrailsEvent(event);
+}
+
 void I3IpcController::onEvent(I3IpcEvent* event) {
 	switch (event->mCode) {
 	case EventCode::Workspace: this->handleWorkspaceEvent(event); return;
@@ -209,7 +282,15 @@ void I3IpcController::onEvent(I3IpcEvent* event) {
 	case EventCode::Subscribe: qCInfo(logI3Ipc) << "Connected to IPC"; return;
 	case EventCode::GetOutputs: this->handleGetOutputsEvent(event); return;
 	case EventCode::GetWorkspaces: this->handleGetWorkspacesEvent(event); return;
+	case EventCode::GetBindingModes: this->handleGetBindingModesEvent(event); return;
+	case EventCode::GetBindingState: this->handleGetBindingStateEvent(event); return;
+	case EventCode::GetScroller: this->handleGetScrollerEvent(event); return;
+	case EventCode::GetTrails: this->handleGetTrailsEvent(event); return;
 	case EventCode::RunCommand: I3IpcController::handleRunCommand(event); return;
+	case EventCode::Mode: this->handleModeEvent(event); return;
+	case EventCode::Window: this->handleWindowEvent(event); return;
+	case EventCode::Scroller: this->handleScrollerEvent(event); return;
+	case EventCode::Trails: this->handleTrailsEvent(event); return;
 	case EventCode::Unknown:
 		qCWarning(logI3Ipc) << "Unknown event:" << event->type() << event->data();
 		return;
@@ -359,6 +440,7 @@ I3Monitor* I3IpcController::findMonitorByName(const QString& name, bool createIf
 
 ObjectModel<I3Monitor>* I3IpcController::monitors() { return &this->mMonitors; }
 ObjectModel<I3Workspace>* I3IpcController::workspaces() { return &this->mWorkspaces; }
+QVector<QString>* I3IpcController::bindingModes() { return &this->mBindingModes; }
 
 bool I3IpcController::compareWorkspaces(I3Workspace* a, I3Workspace* b) {
 	return a->bindableNumber().value() > b->bindableNumber().value();
