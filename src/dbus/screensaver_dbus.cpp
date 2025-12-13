@@ -1,8 +1,8 @@
 #include "screensaver_dbus.hpp"
 
-#include <qdbusconnection.h>
-#include <qlogging.h>
-#include <qloggingcategory.h>
+#include <QDBusConnection>
+#include <QDBusError>
+#include <QLoggingCategory>
 
 #include "../core/logcat.hpp"
 
