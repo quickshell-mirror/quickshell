@@ -1,17 +1,17 @@
 <node>
 	<interface name="org.freedesktop.ScreenSaver">
 		<!-- Get the current lock state -->
-		<method name="GetActive">
+		<method name="getActive">
 			<arg name="active" direction="out" type="b"/>
 		</method>
 		
 		<!-- Signal emitted when lock state changes -->
-		<signal name="ActiveChanged">
+		<signal name="activeChanged">
 			<arg name="active" type="b"/>
 		</signal>
 		
 		<!-- Get whether the compositor has confirmed the lock (secure state) -->
-		<method name="GetSecure">
+		<method name="getSecure">
 			<arg name="secure" direction="out" type="b"/>
 		</method>
 	</interface>
