@@ -9,9 +9,12 @@ class QSWaylandSessionLock;
 class QSWaylandSessionLockSurface;
 class QSWaylandSessionLockIntegration;
 
+namespace qs::dbus {
+class ScreenSaverAdaptor;
+}
+
 class SessionLockManager: public QObject {
 	Q_OBJECT;
-
 public:
 	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
 
@@ -46,18 +49,15 @@ signals:
 	// After receiving this event the caller should destroy all of its lock surfaces.
 	void unlocked();
 
-private slots:
-	//void onUnlocked();
-
 private:
 	QSWaylandSessionLock* mLock = nullptr;
+	qs::dbus::ScreenSaverAdaptor* mDbusAdaptor = nullptr;
 
 	friend class LockWindowExtension;
 };
 
 class LockWindowExtension: public QObject {
 	Q_OBJECT;
-
 public:
 	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
 	~LockWindowExtension() override;
