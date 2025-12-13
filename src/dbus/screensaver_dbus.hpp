@@ -1,13 +1,13 @@
 #pragma once
 
-#include <QDBusAbstractAdaptor>
-#include <QObject>
-#include <QtGlobal> // QtWarningMsg
+#include <qdbusabstractadaptor.h>
+#include <qobject.h>
+#include <qtmetamacros.h>
 
 namespace qs::dbus {
 
 class ScreenSaverAdaptor: public QDBusAbstractAdaptor {
-	Q_OBJECT
+	Q_OBJECT;
 	Q_CLASSINFO("D-Bus Interface", "org.freedesktop.ScreenSaver")
 
 public:
@@ -19,11 +19,11 @@ public:
 	void setSecure(bool secure);
 
 public slots:
-	[[nodiscard]] bool getActive() const;
-	[[nodiscard]] bool getSecure() const;
+	[[nodiscard]] bool GetActive() const; // NOLINT(readability-identifier-naming)
+	[[nodiscard]] bool GetSecure() const; // NOLINT(readability-identifier-naming)
 
 signals:
-	void activeChanged(bool active);
+	void ActiveChanged(bool active); // NOLINT(readability-identifier-naming)
 
 private:
 	bool mActive = false;

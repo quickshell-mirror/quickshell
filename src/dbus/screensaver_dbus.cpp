@@ -1,15 +1,19 @@
 #include "screensaver_dbus.hpp"
 
-#include <QDBusConnection>
-#include <QDBusError>
-#include <QLoggingCategory>
-#include <QObject>  // emit
-#include <QtGlobal> // QtWarningMsg
+#include <qdbusabstractadaptor.h>
+#include <qdbusconnection.h>
+#include <qdbuserror.h>
+#include <qlogging.h>
+#include <qloggingcategory.h>
+#include <qobject.h>
+#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
 
 namespace {
+
 QS_LOGGING_CATEGORY(logDbusScreenSaver, "quickshell.dbus.screensaver", QtWarningMsg);
+
 }
 
 namespace qs::dbus {
@@ -39,7 +43,7 @@ void ScreenSaverAdaptor::setActive(bool active) {
 	if (this->mActive != active) {
 		this->mActive = active;
 		qCDebug(logDbusScreenSaver) << "Lock state changed to:" << active;
-		emit activeChanged(active); // method name fixed
+		emit this->ActiveChanged(active);
 	}
 }
 
@@ -50,13 +54,13 @@ void ScreenSaverAdaptor::setSecure(bool secure) {
 	}
 }
 
-bool ScreenSaverAdaptor::getActive() const { // method name fixed
-	qCDebug(logDbusScreenSaver) << "getActive called, returning:" << this->mActive;
+bool ScreenSaverAdaptor::GetActive() const {
+	qCDebug(logDbusScreenSaver) << "GetActive called, returning:" << this->mActive;
 	return this->mActive;
 }
 
-bool ScreenSaverAdaptor::getSecure() const { // method name fixed
-	qCDebug(logDbusScreenSaver) << "getSecure called, returning:" << this->mSecure;
+bool ScreenSaverAdaptor::GetSecure() const {
+	qCDebug(logDbusScreenSaver) << "GetSecure called, returning:" << this->mSecure;
 	return this->mSecure;
 }
 
