@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <utility>
 
-#include <qlogging.h>
 #include <qobject.h>
 #include <qpointer.h>
 #include <qqmlinfo.h>
@@ -30,7 +29,7 @@ void InputMethod::commitString(const QString& text) {
 void InputMethod::setPreeditString() {
 	if (!this->isActive()) return;
 
-	if (mCursorEnd == -1) {
+	if (this->mCursorEnd == -1) {
 		this->handle->setPreeditString(this->mPreeditString, this->mCursorBegin, this->mCursorBegin);
 	} else {
 		this->handle->setPreeditString(this->mPreeditString, this->mCursorBegin, this->mCursorEnd);

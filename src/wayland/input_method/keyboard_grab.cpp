@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
