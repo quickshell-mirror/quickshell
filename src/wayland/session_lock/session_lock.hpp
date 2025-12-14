@@ -9,8 +9,12 @@ class QSWaylandSessionLock;
 class QSWaylandSessionLockSurface;
 class QSWaylandSessionLockIntegration;
 
+namespace qs::dbus {
+class ScreenSaverAdaptor;
+}
+
 class SessionLockManager: public QObject {
-	Q_OBJECT;
+	Q_OBJECT
 
 public:
 	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
@@ -26,11 +30,10 @@ public:
 	bool unlock();
 
 	[[nodiscard]] bool isLocked() const;
-
 	static bool sessionLocked();
 	static bool isSecure();
 
-signals:
+Q_SIGNALS:
 	// This signal is sent once the compositor considers the session to be fully locked.
 	// This corrosponds to the ext_session_lock_v1::locked event.
 	void locked();
@@ -46,17 +49,15 @@ signals:
 	// After receiving this event the caller should destroy all of its lock surfaces.
 	void unlocked();
 
-private slots:
-	//void onUnlocked();
-
 private:
 	QSWaylandSessionLock* mLock = nullptr;
+	qs::dbus::ScreenSaverAdaptor* mDbusAdaptor = nullptr;
 
 	friend class LockWindowExtension;
 };
 
 class LockWindowExtension: public QObject {
-	Q_OBJECT;
+	Q_OBJECT
 
 public:
 	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
@@ -76,7 +77,7 @@ public:
 
 	static LockWindowExtension* get(QWindow* window);
 
-signals:
+Q_SIGNALS:
 	// This signal is sent once the compositor considers the session to be fully locked.
 	// See SessionLockManager::locked for details.
 	void locked();
