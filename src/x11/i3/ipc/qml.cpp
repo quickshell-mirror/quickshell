@@ -4,7 +4,7 @@
 #include <qproperty.h>
 #include <qstring.h>
 #include <qtypes.h>
-#include <qvector.h>
+#include <qcontainerfwd.h>
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
