@@ -54,7 +54,7 @@ bool QmlToolingSupport::lockTooling() {
 		return false;
 	}
 
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_WRLCK,
 	    .l_whence = SEEK_SET, // NOLINT (fcntl.h??)
 	    .l_start = 0,

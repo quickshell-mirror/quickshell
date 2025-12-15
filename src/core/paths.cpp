@@ -361,7 +361,7 @@ void QsPaths::createLock() {
 			return;
 		}
 
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -389,7 +389,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 	auto file = QFile(QDir(path).filePath("instance.lock"));
 	if (!file.open(QFile::ReadOnly)) return false;
 
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_WRLCK,
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,
