@@ -27,12 +27,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <sys/mman.h>
-#ifdef __FreeBSD__
-#include <sys/types.h>
 #include <unistd.h>
-#else
-#include <sys/sendfile.h>
-#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -419,11 +414,7 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->file;
 		if (oldFile) {
 			oldFile->seek(0);
-#ifdef __FreeBSD__
 			copy_file_range(oldFile->handle(), nullptr, file->handle(), nullptr, oldFile->size(), 0);
-#else
-			sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
-#endif
 		}
 
 		this->file = file;
@@ -435,7 +426,6 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->detailedFile;
 		if (oldFile) {
 			oldFile->seek(0);
-#ifdef __FreeBSD__
 			copy_file_range(
 			    oldFile->handle(),
 			    nullptr,
@@ -444,9 +434,6 @@ void ThreadLogging::initFs() {
 			    oldFile->size(),
 			    0
 			);
-#else
-			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
-#endif
 		}
 
 		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
