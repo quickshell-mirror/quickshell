@@ -21,6 +21,7 @@ set shell id.
 
 ## Other Changes
 
+- FreeBSD is now partially supported.
 - IPC operations filter available instances to the current display connection by default.
 
 ## Bug Fixes

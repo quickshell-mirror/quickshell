@@ -61,3 +61,43 @@ jobs:
         run: |
           cmake -GNinja -B build -DCRASH_REPORTER=OFF
           cmake --build build
+
+  freebsd:
+    name: FreeBSD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15.0"
+          usesh: true
+
+          prepare: |
+            pkg update -f && pkg install -y \
+              cmake \
+              pkgconf \
+              cli11 \
+              spirv-tools \
+              qt6-base \
+              qt6-declarative \
+              qt6-shadertools \
+              qt6-wayland \
+              wayland \
+              wayland-protocols \
+              vulkan-headers \
+              libdrm \
+              libxcb \
+              pipewire \
+              polkit \
+              glib \
+              mesa-libs \
+              git \
+              bash \
+              ninja \
+              gitup
+
+          run: |
+            cmake -GNinja -B build -DCMAKE_C_FLAGS="-I/usr/local/include -L/usr/local/lib" -DCMAKE_CXX_FLAGS="-I/usr/local/include -L/usr/local/lib"
+            cmake --build build
