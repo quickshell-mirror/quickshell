@@ -20,7 +20,7 @@ namespace qs::network {
 WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings) {
 	const QVariantMap& security = settings.value("802-11-wireless-security");
 	if (security.isEmpty()) {
-		return WifiSecurityType::Unknown;
+		return WifiSecurityType::Open;
 	};
 
 	const QString keyMgmt = security["key-mgmt"].toString();
@@ -84,7 +84,7 @@ bool deviceSupportsApCiphers(
 	{
 		haveGroup = true;
 	}
-	if (type == WifiSecurityType::StaticWep) {
+	if (type != WifiSecurityType::StaticWep) {
 		if (caps & NMWirelessCapabilities::CipherTkip && apFlags & NM80211ApSecurityFlags::GroupTkip) {
 			haveGroup = true;
 		}

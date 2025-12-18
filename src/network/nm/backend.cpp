@@ -107,6 +107,7 @@ void NetworkManager::registerDevice(const QString& path) {
 		} else {
 			auto type = static_cast<qs::network::NMDeviceType::Enum>(value);
 			NMDevice* dev = nullptr;
+			this->mDevices.insert(path, nullptr);
 
 			switch (type) {
 			case NMDeviceType::Wifi: dev = new NMWirelessDevice(path); break;
@@ -118,6 +119,7 @@ void NetworkManager::registerDevice(const QString& path) {
 					qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
 					delete dev;
 				} else {
+					this->mDevices[path] = dev;
 					// Only register a frontend device while it's managed by NM.
 					auto onManagedChanged = [this, dev, type](bool managed) {
 						managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
@@ -128,7 +130,6 @@ void NetworkManager::registerDevice(const QString& path) {
 					QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
 					// clang-format on
 
-					this->mDevices.insert(path, dev);
 					if (dev->managed()) this->registerFrontendDevice(type, dev);
 				}
 			}
@@ -210,9 +211,11 @@ void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
 		                             << "which is not registered.";
 	} else {
 		auto* dev = iter.value();
-		this->removeFrontendDevice(dev);
 		this->mDevices.erase(iter);
-		delete dev;
+		if (dev) {
+			this->removeFrontendDevice(dev);
+			delete dev;
+		}
 	}
 }
 

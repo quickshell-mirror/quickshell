@@ -46,7 +46,10 @@ void NMWirelessNetwork::updateReferenceConnection() {
 	if (this->mConnections.isEmpty()) {
 		this->mReferenceConn = nullptr;
 		this->bSecurity = WifiSecurityType::Unknown;
-		this->updateReferenceAp(); // Set security back to reference AP.
+		// Set security back to reference AP.
+		if (this->mReferenceAp) {
+			this->bSecurity.setBinding([this]() { return this->mReferenceAp->security(); });
+		}
 		return;
 	};
 
