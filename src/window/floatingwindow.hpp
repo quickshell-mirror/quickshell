@@ -19,7 +19,7 @@ public:
 	explicit ProxyFloatingWindow(QObject* parent = nullptr): ProxyWindowBase(parent) {}
 
 	void connectWindow() override;
-	void postCompleteWindow() override;
+	void setVisible(bool visible) override;
 
 	[[nodiscard]] QObject* parentWindow() const;
 	void setParentWindow(QObject* window);
@@ -41,6 +41,7 @@ private:
 
 	QObject* mParentWindow = nullptr;
 	ProxyWindowBase* mParentProxyWindow = nullptr;
+	QMetaObject::Connection mParentVisibleConn;
 
 public:
 	Q_OBJECT_BINDABLE_PROPERTY(

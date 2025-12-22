@@ -19,11 +19,39 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setMaximumSize(this->bMaximumSize);
 }
 
-void ProxyFloatingWindow::postCompleteWindow() {
-	auto* parentBacking =
-	    this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+void ProxyFloatingWindow::setVisible(bool visible) {
+	if (!visible) {
+		QObject::disconnect(this->mParentVisibleConn);
+		this->ProxyWindowBase::setVisible(false);
+		return;
+	}
 
-	this->window->setTransientParent(parentBacking);
+	// If there's a parent, set transient before showing
+	if (this->mParentProxyWindow) {
+		auto* pw = this->mParentProxyWindow->backingWindow();
+		if (pw && pw->isVisible()) {
+			if (this->window) this->window->setTransientParent(pw);
+		} else {
+			// Parent not visible yet - wait for it.
+			QObject::disconnect(this->mParentVisibleConn);
+			this->mParentVisibleConn = QObject::connect(
+			    this->mParentProxyWindow,
+			    &ProxyWindowBase::backerVisibilityChanged,
+			    this,
+			    [this]() {
+				    auto* pw =
+				        this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+				    if (!pw || !pw->isVisible() || !this->window) return;
+				    this->window->setTransientParent(pw);
+				    QObject::disconnect(this->mParentVisibleConn);
+				    this->ProxyWindowBase::setVisible(true);
+			    }
+			);
+			return;
+		}
+	}
+
+	this->ProxyWindowBase::setVisible(true);
 }
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
@@ -58,20 +86,25 @@ QObject* ProxyFloatingWindow::parentWindow() const { return this->mParentWindow;
 void ProxyFloatingWindow::setParentWindow(QObject* window) {
 	if (window == this->mParentWindow) return;
 
+	if (this->window && this->window->isVisible()) {
+		qmlWarning(this) << "parentWindow cannot be changed after the window is visible.";
+		return;
+	}
+
+	QObject::disconnect(this->mParentVisibleConn);
+	this->mParentWindow = nullptr;
+	this->mParentProxyWindow = nullptr;
+
 	if (window) {
 		if (auto* proxy = qobject_cast<ProxyWindowBase*>(window)) {
 			this->mParentProxyWindow = proxy;
-		} else if (auto* interface = qobject_cast<WindowInterface*>(window)) {
-			this->mParentProxyWindow = interface->proxyWindow();
+		} else if (auto* iface = qobject_cast<WindowInterface*>(window)) {
+			this->mParentProxyWindow = iface->proxyWindow();
 		} else {
 			qmlWarning(this) << "parentWindow must be a quickshell window.";
 			return;
 		}
-
 		this->mParentWindow = window;
-	} else {
-		this->mParentWindow = nullptr;
-		this->mParentProxyWindow = nullptr;
 	}
 }
 
