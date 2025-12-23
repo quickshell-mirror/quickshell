@@ -86,6 +86,12 @@ add_compile_options(-Wall -Wextra -Wno-vla-cxx-extension)
 # pipewire defines this, breaking PCH
 add_compile_definitions(_REENTRANT)
 
+# FreeBSD specific include/link dirs
+if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	include_directories(/usr/local/include)
+	link_directories(/usr/local/lib)
+endif()
+
 if (FRAME_POINTERS)
 	add_compile_options(-fno-omit-frame-pointer)
 endif()
