@@ -39,6 +39,8 @@ class PamContext
 	///
 	/// The configuration directory is resolved relative to the current file if not an absolute path.
 	///
+	/// On FreeBSD this property is ignored as the pam configuration directory cannot be changed.
+	///
 	/// This property may not be set while @@active is true.
 	Q_PROPERTY(QString configDirectory READ configDirectory WRITE setConfigDirectory NOTIFY configDirectoryChanged);
 	/// The user to authenticate as. If unset the current user will be used.
