@@ -34,6 +34,10 @@ signals:
 	void maximumSizeChanged();
 	void titleChanged();
 
+private slots:
+	void onParentDestroyed();
+	void onParentVisible();
+
 private:
 	void onMinimumSizeChanged();
 	void onMaximumSizeChanged();
@@ -41,7 +45,6 @@ private:
 
 	QObject* mParentWindow = nullptr;
 	ProxyWindowBase* mParentProxyWindow = nullptr;
-	QMetaObject::Connection mParentVisibleConn;
 
 public:
 	Q_OBJECT_BINDABLE_PROPERTY(

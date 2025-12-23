@@ -19,9 +19,35 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setMaximumSize(this->bMaximumSize);
 }
 
+void ProxyFloatingWindow::onParentDestroyed() {
+	this->mParentWindow = nullptr;
+	this->mParentProxyWindow = nullptr;
+}
+
+void ProxyFloatingWindow::onParentVisible() {
+	auto* pw = this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+	if (!pw || !pw->isVisible() || !this->window) return;
+
+	this->window->setTransientParent(pw);
+	QObject::disconnect(
+	    this->mParentProxyWindow,
+	    &ProxyWindowBase::backerVisibilityChanged,
+	    this,
+	    &ProxyFloatingWindow::onParentVisible
+	);
+	this->ProxyWindowBase::setVisible(true);
+}
+
 void ProxyFloatingWindow::setVisible(bool visible) {
 	if (!visible) {
-		QObject::disconnect(this->mParentVisibleConn);
+		if (this->mParentProxyWindow) {
+			QObject::disconnect(
+			    this->mParentProxyWindow,
+			    &ProxyWindowBase::backerVisibilityChanged,
+			    this,
+			    &ProxyFloatingWindow::onParentVisible
+			);
+		}
 		this->ProxyWindowBase::setVisible(false);
 		return;
 	}
@@ -32,20 +58,11 @@ void ProxyFloatingWindow::setVisible(bool visible) {
 		if (pw && pw->isVisible()) {
 			if (this->window) this->window->setTransientParent(pw);
 		} else {
-			// Parent not visible yet - wait for it.
-			QObject::disconnect(this->mParentVisibleConn);
-			this->mParentVisibleConn = QObject::connect(
+			QObject::connect(
 			    this->mParentProxyWindow,
 			    &ProxyWindowBase::backerVisibilityChanged,
 			    this,
-			    [this]() {
-				    auto* pw =
-				        this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
-				    if (!pw || !pw->isVisible() || !this->window) return;
-				    this->window->setTransientParent(pw);
-				    QObject::disconnect(this->mParentVisibleConn);
-				    this->ProxyWindowBase::setVisible(true);
-			    }
+			    &ProxyFloatingWindow::onParentVisible
 			);
 			return;
 		}
@@ -91,7 +108,14 @@ void ProxyFloatingWindow::setParentWindow(QObject* window) {
 		return;
 	}
 
-	QObject::disconnect(this->mParentVisibleConn);
+	if (this->mParentProxyWindow) {
+		QObject::disconnect(this->mParentProxyWindow, nullptr, this, nullptr);
+	}
+
+	if (this->mParentWindow) {
+		QObject::disconnect(this->mParentWindow, nullptr, this, nullptr);
+	}
+
 	this->mParentWindow = nullptr;
 	this->mParentProxyWindow = nullptr;
 
@@ -104,7 +128,14 @@ void ProxyFloatingWindow::setParentWindow(QObject* window) {
 			qmlWarning(this) << "parentWindow must be a quickshell window.";
 			return;
 		}
+
 		this->mParentWindow = window;
+		QObject::connect(
+		    this->mParentWindow,
+		    &QObject::destroyed,
+		    this,
+		    &ProxyFloatingWindow::onParentDestroyed
+		);
 	}
 }
 
