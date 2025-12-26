@@ -222,8 +222,11 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 				self->routeDevice = id;
 				if (self->boundData) self->boundData->onDeviceChanged();
 			} else {
-				qCCritical(logNode) << self << "has attached device" << self->device
-				                    << "but no card.profile.device property.";
+				qCDebug(
+				    logNode
+				) << self
+				  << "has attached device" << self->device
+				  << "but no card.profile.device property. Node volume control will be used.";
 			}
 		}
 
