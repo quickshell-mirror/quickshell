@@ -1,5 +1,4 @@
 #pragma once
-
 #include <qobject.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
@@ -9,11 +8,15 @@ class QSWaylandSessionLock;
 class QSWaylandSessionLockSurface;
 class QSWaylandSessionLockIntegration;
 
+namespace qs::dbus {
+class SessionLockAdaptor;
+}
+
 class SessionLockManager: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
+	explicit SessionLockManager(QObject* parent = nullptr); // Declare only, implement in .cpp
 
 	[[nodiscard]] static bool lockAvailable();
 
@@ -46,11 +49,9 @@ signals:
 	// After receiving this event the caller should destroy all of its lock surfaces.
 	void unlocked();
 
-private slots:
-	//void onUnlocked();
-
 private:
 	QSWaylandSessionLock* mLock = nullptr;
+	qs::dbus::SessionLockAdaptor* mDbusAdaptor = nullptr;
 
 	friend class LockWindowExtension;
 };
