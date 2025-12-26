@@ -6,7 +6,11 @@
 #include <qtclasshelpermacros.h>
 #include <qthread.h>
 #include <qtmetamacros.h>
+#ifdef __FreeBSD__
+#include <security/pam_types.h>
+#else
 #include <security/_pam_types.h>
+#endif
 #include <security/pam_appl.h>
 
 #include "conversation.hpp"
@@ -34,6 +38,8 @@ class PamContext
 	/// The pam configuration directory to use. Defaults to "/etc/pam.d".
 	///
 	/// The configuration directory is resolved relative to the current file if not an absolute path.
+	///
+	/// On FreeBSD this property is ignored as the pam configuration directory cannot be changed.
 	///
 	/// This property may not be set while @@active is true.
 	Q_PROPERTY(QString configDirectory READ configDirectory WRITE setConfigDirectory NOTIFY configDirectoryChanged);
