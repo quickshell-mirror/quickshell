@@ -24,6 +24,7 @@
 #include "../core/plugin.hpp"
 #include "../core/rootwrapper.hpp"
 #include "../ipc/ipc.hpp"
+#include "../webengine/webengine.hpp"
 #include "build.hpp"
 #include "launch_p.hpp"
 
@@ -74,6 +75,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool nativeTextRendering = false;
 		bool desktopSettingsAware = true;
 		bool useSystemStyle = false;
+		bool useQtWebEngineQuick = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
 		QString dataDir;
@@ -91,6 +93,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
 			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
+			else if (pragma == "EnableQtWebEngineQuick") pragmas.useQtWebEngineQuick = true;
 			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
 			else if (pragma.startsWith("Env ")) {
 				auto envPragma = pragma.sliced(4);
@@ -222,7 +225,11 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	delete coreApplication;
 
 	QGuiApplication* app = nullptr;
-	auto qArgC = 0;
+	auto qArgC = 1;
+
+	if (pragmas.useQtWebEngineQuick) {
+		web_engine::init();
+	}
 
 	if (pragmas.useQApplication) {
 		app = new QApplication(qArgC, argv);
