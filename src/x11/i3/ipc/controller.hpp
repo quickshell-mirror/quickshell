@@ -18,10 +18,14 @@ namespace qs::i3::ipc {
 
 class I3Workspace;
 class I3Monitor;
+class I3Scroller;
+class I3Window;
 } // namespace qs::i3::ipc
 
 Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Workspace*);
 Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Monitor*);
+Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Scroller*);
+Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Window*);
 
 namespace qs::i3::ipc {
 
@@ -40,6 +44,9 @@ public:
 
 	void refreshWorkspaces();
 	void refreshMonitors();
+	void refreshBindingModes();
+	void refreshScroller();
+	void refreshTrails();
 
 	I3Monitor* monitorFor(QuickshellScreenInfo* screen);
 
@@ -51,12 +58,43 @@ public:
 		return &this->bFocusedWorkspace;
 	};
 
+	[[nodiscard]] QBindable<QString> bindableActiveBindingMode() const {
+		return &this->bActiveBindingMode;
+	};
+
+	[[nodiscard]] QBindable<I3Scroller*> bindableFocusedScroller() const {
+		return &this->bFocusedScroller;
+	};
+
+	[[nodiscard]] QBindable<I3Window*> bindableFocusedWindow() const {
+		return &this->bFocusedWindow;
+	};
+
+	[[nodiscard]] QBindable<qint32> bindableNumberOfTrails() const {
+		return &this->bNumberOfTrails;
+	};
+
+	[[nodiscard]] QBindable<qint32> bindableActiveTrail() const {
+		return &this->bActiveTrail;
+	};
+
+	[[nodiscard]] QBindable<qint32> bindableActiveTrailLength() const {
+		return &this->bActiveTrailLength;
+	};
+
 	[[nodiscard]] ObjectModel<I3Monitor>* monitors();
 	[[nodiscard]] ObjectModel<I3Workspace>* workspaces();
+	[[nodiscard]] QVector<QString>* bindingModes();
 
 signals:
 	void focusedWorkspaceChanged();
 	void focusedMonitorChanged();
+	void activeBindingModeChanged();
+	void focusedScrollerChanged();
+	void focusedWindowChanged();
+	void numberOfTrailsChanged();
+	void activeTrailChanged();
+	void activeTrailLengthChanged();
 
 private slots:
 	void onFocusedMonitorDestroyed();
@@ -70,11 +108,21 @@ private:
 	void handleWorkspaceEvent(I3IpcEvent* event);
 	void handleGetWorkspacesEvent(I3IpcEvent* event);
 	void handleGetOutputsEvent(I3IpcEvent* event);
+	void handleGetBindingModesEvent(I3IpcEvent* event);
+	void handleGetBindingStateEvent(I3IpcEvent* event);
+	void handleModeEvent(I3IpcEvent* event);
+	void handleGetScrollerEvent(I3IpcEvent* event);
+	void handleScrollerEvent(I3IpcEvent* event);
+	void handleGetTrailsEvent(I3IpcEvent* event);
+	void handleTrailsEvent(I3IpcEvent* event);
+	void handleWindowEvent(I3IpcEvent* event);
 	static void handleRunCommand(I3IpcEvent* event);
 	static bool compareWorkspaces(I3Workspace* a, I3Workspace* b);
 
 	ObjectModel<I3Monitor> mMonitors {this};
 	ObjectModel<I3Workspace> mWorkspaces {this};
+
+	QVector<QString> mBindingModes;
 
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    I3IpcController,
@@ -88,6 +136,48 @@ private:
 	    I3Workspace*,
 	    bFocusedWorkspace,
 	    &I3IpcController::focusedWorkspaceChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    QString,
+	    bActiveBindingMode,
+	    &I3IpcController::activeBindingModeChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    I3Scroller*,
+	    bFocusedScroller,
+	    &I3IpcController::focusedScrollerChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    I3Window*,
+	    bFocusedWindow,
+	    &I3IpcController::focusedWindowChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    qint32,
+	    bNumberOfTrails,
+	    &I3IpcController::numberOfTrailsChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    qint32,
+	    bActiveTrail,
+	    &I3IpcController::activeTrailChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    qint32,
+	    bActiveTrailLength,
+	    &I3IpcController::activeTrailLengthChanged
 	);
 };
 
