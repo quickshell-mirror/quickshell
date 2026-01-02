@@ -128,6 +128,11 @@ if (DBUS)
 	list(APPEND QT_FPDEPS DBus)
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	include_directories(SYSTEM /usr/local/include)
+	link_directories(/usr/local/lib)
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
 
 # In Qt 6.10, private dependencies are required to be explicit,
