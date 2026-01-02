@@ -27,7 +27,14 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <sys/mman.h>
+
+#ifdef __FreeBSD__
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#else
 #include <sys/sendfile.h>
+#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -392,13 +399,12 @@ void ThreadLogging::initFs() {
 		delete detailedFile;
 		detailedFile = nullptr;
 	} else {
-		auto lock = flock {
-		    .l_type = F_WRLCK,
-		    .l_whence = SEEK_SET,
-		    .l_start = 0,
-		    .l_len = 0,
-		    .l_pid = 0,
-		};
+		struct flock lock = {};
+		lock.l_type = F_WRLCK;
+		lock.l_whence = SEEK_SET;
+		lock.l_start = 0;
+		lock.l_len = 0;
+		lock.l_pid = 0;
 
 		if (fcntl(detailedFile->handle(), F_SETLK, &lock) != 0) { // NOLINT
 			qCWarning(logLogging) << "Unable to set lock marker on detailed log file. --follow from "
@@ -414,7 +420,14 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->file;
 		if (oldFile) {
 			oldFile->seek(0);
+			// clang-format off
+			#ifdef __FreeBSD__
+			off_t sent = 0;
+			sendfile(oldFile->handle(), file->handle(), 0, oldFile->size(), nullptr, &sent, 0);
+			#else
 			sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
+			#endif
+			// clang-format on
 		}
 
 		this->file = file;
@@ -426,7 +439,14 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->detailedFile;
 		if (oldFile) {
 			oldFile->seek(0);
+			// clang-format off
+			#ifdef __FreeBSD__
+			off_t sent = 0;
+			sendfile(oldFile->handle(), detailedFile->handle(), 0, oldFile->size(), nullptr, &sent, 0);
+			#else
 			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
+			#endif
+			// clang-format on
 		}
 
 		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
@@ -889,13 +909,12 @@ bool LogReader::continueReading() {
 }
 
 void LogFollower::FcntlWaitThread::run() {
-	auto lock = flock {
-	    .l_type = F_RDLCK, // won't block other read locks when we take it
-	    .l_whence = SEEK_SET,
-	    .l_start = 0,
-	    .l_len = 0,
-	    .l_pid = 0,
-	};
+	struct flock lock = {};
+	lock.l_type = F_RDLCK; // won't block other read locks when we take it
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+	lock.l_pid = 0;
 
 	auto r = fcntl(this->follower->reader->file->handle(), F_SETLKW, &lock); // NOLINT
 
