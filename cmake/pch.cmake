@@ -53,13 +53,20 @@ set(COMMON_PCH_SET
 	<qabstractitemmodel.h>
 )
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 qs_add_pchset(common
-	DEPENDENCIES Qt::Quick
+	DEPENDENCIES 
+		Qt::Quick
+		Threads::Threads
 	HEADERS ${COMMON_PCH_SET}
 )
 
 qs_add_pchset(large
-	DEPENDENCIES Qt::Quick
+	DEPENDENCIES 
+		Qt::Quick
+		Threads::Threads
 	HEADERS
 		${COMMON_PCH_SET}
 		<qiodevice.h>
@@ -77,7 +84,9 @@ qs_add_pchset(large
 
 # including qplugin.h directly will cause required symbols to disappear
 qs_add_pchset(plugin
-	DEPENDENCIES Qt::Qml
+	DEPENDENCIES 
+		Qt::Qml
+		Threads::Threads
 	HEADERS
 		<qobject.h>
 		<qjsonobject.h>
