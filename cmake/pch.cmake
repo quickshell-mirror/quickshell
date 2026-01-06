@@ -44,6 +44,7 @@ set(COMMON_PCH_SET
 	<chrono>
 	<memory>
 	<vector>
+	<pthread.h>
 	<qdebug.h>
 	<qobject.h>
 	<qmetatype.h>
