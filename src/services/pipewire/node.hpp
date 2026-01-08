@@ -244,7 +244,9 @@ public:
 	qint32 routeDevice = -1;
 	bool proAudio = false;
 
-	[[nodiscard]] bool shouldUseDevice() const { return this->device && !this->proAudio; }
+	[[nodiscard]] bool shouldUseDevice() const {
+		return this->device && !this->proAudio && this->routeDevice != -1;
+	}
 
 signals:
 	void propertiesChanged();

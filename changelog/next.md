@@ -16,14 +16,18 @@ set shell id.
 - Added support for wayland idle timeouts.
 - Added support for inhibiting wayland compositor shortcuts for focused windows.
 - Added the ability to override Quickshell.cacheDir with a custom path.
+- Added minimized, maximized, and fullscreen properties to FloatingWindow.
+- Added the ability to handle move and resize events to FloatingWindow.
 
 ## Other Changes
 
+- FreeBSD is now partially supported.
 - IPC operations filter available instances to the current display connection by default.
 
 ## Bug Fixes
 
 - Fixed volume control breaking with pipewire pro audio mode.
+- Fixed volume control breaking with bluez streams and potentially others.
 - Fixed escape sequence handling in desktop entries.
 - Fixed volumes not initializing if a pipewire device was already loaded before its node.
 - Fixed hyprland active toplevel not resetting after window closes.
