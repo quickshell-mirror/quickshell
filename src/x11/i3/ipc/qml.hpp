@@ -26,6 +26,7 @@ class I3IpcQml: public QObject {
 	Q_PROPERTY(qint32 numberOfTrails READ default NOTIFY numberOfTrailsChanged BINDABLE bindableNumberOfTrails);
 	Q_PROPERTY(qint32 activeTrail READ default NOTIFY activeTrailChanged BINDABLE bindableActiveTrail);
 	Q_PROPERTY(qint32 activeTrailLength READ default NOTIFY activeTrailLengthChanged BINDABLE bindableActiveTrailLength);
+	Q_PROPERTY(QByteArray luaData READ default NOTIFY luaDataChanged BINDABLE bindableLuaData);
 	/// All I3 monitors.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::i3::ipc::I3Monitor>*);
 	Q_PROPERTY(UntypedObjectModel* monitors READ monitors CONSTANT);
@@ -107,6 +108,9 @@ public:
 	/// The length of the current active trail
 	[[nodiscard]] static QBindable<qint32> bindableActiveTrailLength();
 
+	/// The current JSON document received from Lua scripts
+	[[nodiscard]] static QBindable<QByteArray> bindableLuaData();
+
 signals:
 	void rawEvent(I3IpcEvent* event);
 	void connected();
@@ -118,6 +122,7 @@ signals:
 	void numberOfTrailsChanged();
 	void activeTrailChanged();
 	void activeTrailLengthChanged();
+	void luaDataChanged();
 };
 
 } // namespace qs::i3::ipc

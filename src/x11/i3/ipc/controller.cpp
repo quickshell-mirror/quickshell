@@ -271,6 +271,12 @@ void I3IpcController::handleTrailsEvent(I3IpcEvent* event) {
 	this->handleGetTrailsEvent(event);
 }
 
+void I3IpcController::handleLuaEvent(I3IpcEvent* event) {
+	if (this->compositor() == "scroll") {
+ 		this->bLuaData = event->mData.toJson(QJsonDocument::Compact);
+	}
+}
+
 void I3IpcController::onEvent(I3IpcEvent* event) {
 	switch (event->mCode) {
 	case EventCode::Workspace: this->handleWorkspaceEvent(event); return;
@@ -289,6 +295,7 @@ void I3IpcController::onEvent(I3IpcEvent* event) {
 	case EventCode::RunCommand: I3IpcController::handleRunCommand(event); return;
 	case EventCode::Mode: this->handleModeEvent(event); return;
 	case EventCode::Window: this->handleWindowEvent(event); return;
+	case EventCode::Lua: this->handleLuaEvent(event); return;
 	case EventCode::Scroller: this->handleScrollerEvent(event); return;
 	case EventCode::Trails: this->handleTrailsEvent(event); return;
 	case EventCode::Unknown:

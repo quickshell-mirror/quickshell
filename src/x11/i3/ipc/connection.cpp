@@ -70,6 +70,7 @@ QString I3IpcEvent::eventToString(EventCode event) {
 	case EventCode::Tick: return "tick"; break;
 	case EventCode::BarStateUpdate: return "bar_state_update"; break;
 	case EventCode::Input: return "input"; break;
+	case EventCode::Lua: return "lua"; break;
 	case EventCode::Scroller: return "scroller"; break;
 	case EventCode::Trails: return "trails"; break;
 
@@ -103,6 +104,7 @@ I3Ipc::I3Ipc(const QList<QString>& events): mEvents(events) {
 		this->mCompositor = "scroll";
 		this->mEvents.append("scroller");
 		this->mEvents.append("trails");
+		this->mEvents.append("lua");
 	}
 
 	this->mSocketPath = sock;

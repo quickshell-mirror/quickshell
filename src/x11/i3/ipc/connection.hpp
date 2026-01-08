@@ -38,6 +38,7 @@ enum EventCode {
 	Tick = 0x80000007,
 	BarStateUpdate = 0x80000014,
 	Input = 0x80000015,
+	Lua = 0x8000001d,
 	Scroller = 0x8000001e,
 	Trails = 0x8000001f,
 	Unknown = 999,

@@ -28,6 +28,7 @@ I3IpcQml::I3IpcQml() {
 	QObject::connect(instance, &I3IpcController::numberOfTrailsChanged, this, &I3IpcQml::numberOfTrailsChanged);
 	QObject::connect(instance, &I3IpcController::activeTrailChanged, this, &I3IpcQml::activeTrailChanged);
 	QObject::connect(instance, &I3IpcController::activeTrailLengthChanged, this, &I3IpcQml::activeTrailLengthChanged);
+	QObject::connect(instance, &I3IpcController::luaDataChanged, this, &I3IpcQml::luaDataChanged);
 	// clang-format on
 }
 
@@ -77,6 +78,10 @@ QBindable<qint32> I3IpcQml::bindableActiveTrail() {
 
 QBindable<qint32> I3IpcQml::bindableActiveTrailLength() {
 	return I3IpcController::instance()->bindableActiveTrailLength();
+}
+
+QBindable<QByteArray> I3IpcQml::bindableLuaData() {
+	return I3IpcController::instance()->bindableLuaData();
 }
 
 I3Workspace* I3IpcQml::findWorkspaceByName(const QString& name) {

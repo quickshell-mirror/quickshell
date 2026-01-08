@@ -82,6 +82,10 @@ public:
 		return &this->bActiveTrailLength;
 	};
 
+	[[nodiscard]] QBindable<QByteArray> bindableLuaData() const {
+		return &this->bLuaData;
+	};
+
 	[[nodiscard]] ObjectModel<I3Monitor>* monitors();
 	[[nodiscard]] ObjectModel<I3Workspace>* workspaces();
 	[[nodiscard]] QVector<QString>* bindingModes();
@@ -95,6 +99,7 @@ signals:
 	void numberOfTrailsChanged();
 	void activeTrailChanged();
 	void activeTrailLengthChanged();
+	void luaDataChanged();
 
 private slots:
 	void onFocusedMonitorDestroyed();
@@ -116,6 +121,7 @@ private:
 	void handleGetTrailsEvent(I3IpcEvent* event);
 	void handleTrailsEvent(I3IpcEvent* event);
 	void handleWindowEvent(I3IpcEvent* event);
+	void handleLuaEvent(I3IpcEvent* event);
 	static void handleRunCommand(I3IpcEvent* event);
 	static bool compareWorkspaces(I3Workspace* a, I3Workspace* b);
 
@@ -178,6 +184,13 @@ private:
 	    qint32,
 	    bActiveTrailLength,
 	    &I3IpcController::activeTrailLengthChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    I3IpcController,
+	    QByteArray,
+	    bLuaData,
+	    &I3IpcController::luaDataChanged
 	);
 };
 
