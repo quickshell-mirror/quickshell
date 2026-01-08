@@ -31,6 +31,22 @@ PwDefaultTracker::PwDefaultTracker(PwRegistry* registry): registry(registry) {
 	QObject::connect(registry, &PwRegistry::nodeAdded, this, &PwDefaultTracker::onNodeAdded);
 }
 
+void PwDefaultTracker::reset() {
+	if (auto* meta = this->defaultsMetadata.object()) {
+		QObject::disconnect(meta, nullptr, this, nullptr);
+	}
+
+	this->defaultsMetadata.setObject(nullptr);
+	this->setDefaultSink(nullptr);
+	this->setDefaultSinkName(QString());
+	this->setDefaultSource(nullptr);
+	this->setDefaultSourceName(QString());
+	this->setDefaultConfiguredSink(nullptr);
+	this->setDefaultConfiguredSinkName(QString());
+	this->setDefaultConfiguredSource(nullptr);
+	this->setDefaultConfiguredSourceName(QString());
+}
+
 void PwDefaultTracker::onMetadataAdded(PwMetadata* metadata) {
 	if (metadata->name() == "default") {
 		qCDebug(logDefaults) << "Got new defaults metadata object" << metadata;

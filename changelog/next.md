@@ -18,6 +18,7 @@ set shell id.
 - Added the ability to override Quickshell.cacheDir with a custom path.
 - Added minimized, maximized, and fullscreen properties to FloatingWindow.
 - Added the ability to handle move and resize events to FloatingWindow.
+- Pipewire service now reconnects if pipewire dies or a protocol error occurs.
 
 ## Other Changes
 
