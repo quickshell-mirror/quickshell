@@ -236,6 +236,7 @@ public:
 	QString nick;
 	QMap<QString, QString> properties;
 	quint64 objectSerial = 0;
+	bool isMonitor = false;
 
 	PwNodeType::Flags type = PwNodeType::Untracked;
 

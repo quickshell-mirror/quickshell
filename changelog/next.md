@@ -25,6 +25,7 @@ set shell id.
 
 - FreeBSD is now partially supported.
 - IPC operations filter available instances to the current display connection by default.
+- PwNodeLinkTracker ignores sound level monitoring programs.
 
 ## Bug Fixes
 

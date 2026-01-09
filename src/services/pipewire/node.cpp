@@ -164,6 +164,12 @@ void PwNode::initProps(const spa_dict* props) {
 		this->nick = nodeNick;
 	}
 
+	if (const auto* nodeCategory = spa_dict_lookup(props, PW_KEY_MEDIA_CATEGORY)) {
+		if (strcmp(nodeCategory, "Monitor") == 0 || strcmp(nodeCategory, "Manager") == 0) {
+			this->isMonitor = true;
+		}
+	}
+
 	if (const auto* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL)) {
 		auto ok = false;
 		auto value = QString::fromUtf8(serial).toULongLong(&ok);
