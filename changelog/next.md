@@ -19,6 +19,7 @@ set shell id.
 - Added minimized, maximized, and fullscreen properties to FloatingWindow.
 - Added the ability to handle move and resize events to FloatingWindow.
 - Pipewire service now reconnects if pipewire dies or a protocol error occurs.
+- Added pipewire audio peak detection.
 
 ## Other Changes
 

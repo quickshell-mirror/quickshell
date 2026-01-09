@@ -11,7 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
@@ -90,6 +90,8 @@ QString PwAudioChannel::toString(Enum value) {
 
 QString PwNodeType::toString(PwNodeType::Flags type) {
 	switch (type) {
+	// qstringliteral apparently not imported...
+	// NOLINTBEGIN
 	case PwNodeType::VideoSource: return QStringLiteral("VideoSource");
 	case PwNodeType::VideoSink: return QStringLiteral("VideoSink");
 	case PwNodeType::AudioSource: return QStringLiteral("AudioSource");
@@ -99,6 +101,7 @@ QString PwNodeType::toString(PwNodeType::Flags type) {
 	case PwNodeType::AudioInStream: return QStringLiteral("AudioInStream");
 	case PwNodeType::Untracked: return QStringLiteral("Untracked");
 	default: return QStringLiteral("Invalid");
+	// NOLINTEND
 	}
 }
 
@@ -159,6 +162,18 @@ void PwNode::initProps(const spa_dict* props) {
 
 	if (const auto* nodeNick = spa_dict_lookup(props, PW_KEY_NODE_NICK)) {
 		this->nick = nodeNick;
+	}
+
+	if (const auto* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL)) {
+		auto ok = false;
+		auto value = QString::fromUtf8(serial).toULongLong(&ok);
+		if (!ok) {
+			qCWarning(logNode) << this
+			                   << "has an object.serial property but the value is not valid. Value:"
+			                   << serial;
+		} else {
+			this->objectSerial = value;
+		}
 	}
 
 	if (const auto* deviceId = spa_dict_lookup(props, PW_KEY_DEVICE_ID)) {
