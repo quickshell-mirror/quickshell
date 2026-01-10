@@ -65,7 +65,7 @@ public:
 	QFileSystemWatcher* watcher = nullptr;
 	QVector<QString> deletedWatchedFiles;
 	QVector<QString> extraWatchedFiles;
-	DelayedQmlIncubationController delayedIncubationController;
+	QsIncubationController incubationController;
 	bool reloadComplete = false;
 	QuickshellGlobal* qsgInstance = nullptr;
 
@@ -89,7 +89,7 @@ private slots:
 
 private:
 	void postReload();
-	void assignIncubationController();
+	void updateIncubationMode();
 	QVector<QQuickWindow*> trackedWindows;
 	bool incubationControllersLocked = false;
 	QHash<const void*, EngineGenerationExt*> extensions;
