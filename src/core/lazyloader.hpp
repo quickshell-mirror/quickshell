@@ -82,9 +82,6 @@
 /// > Notably, @@Variants does not corrently support asynchronous
 /// > loading, meaning using it inside a LazyLoader will block similarly to not
 /// > having a loader to start with.
-///
-/// > [!WARNING] LazyLoaders do not start loading before the first window is created,
-/// > meaning if you create all windows inside of lazy loaders, none of them will ever load.
 class LazyLoader: public Reloadable {
 	Q_OBJECT;
 	/// The fully loaded item if the loader is @@loading or @@active, or `null`

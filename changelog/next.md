@@ -36,6 +36,8 @@ set shell id.
 - Fixed hyprland active toplevel not resetting after window closes.
 - Fixed hyprland ipc window names and titles being reversed.
 - Fixed missing signals for system tray item title and description updates.
+- Fixed asynchronous loaders not working after reload.
+- Fixed asynchronous loaders not working before window creation.
 
 ## Packaging Changes
 

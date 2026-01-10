@@ -51,7 +51,7 @@ qt_add_qml_module(quickshell-core
 
 install_qml_module(quickshell-core)
 
-target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::Widgets)
+target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::QuickPrivate Qt::Widgets)
 
 qs_module_pch(quickshell-core SET large)
 
