@@ -3,14 +3,17 @@
 #include <private/qwaylanddisplay_p.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qtmetamacros.h>
 #include <qwindow.h>
 
+#include "../../dbus/session_lock_dbus.hpp"
 #include "lock.hpp"
 #include "manager.hpp"
 #include "shell_integration.hpp"
 #include "surface.hpp"
 
 namespace {
+
 QSWaylandSessionLockManager* manager() {
 	static QSWaylandSessionLockManager* manager = nullptr; // NOLINT
 
@@ -20,33 +23,59 @@ QSWaylandSessionLockManager* manager() {
 
 	return manager;
 }
+
 } // namespace
+
+SessionLockManager::SessionLockManager(QObject* parent)
+    : QObject(parent)
+    , mDbusAdaptor(new qs::dbus::SessionLockAdaptor(this)) {
+	// DBus adaptor initialized in member initializer list so the service is always available
+}
 
 bool SessionLockManager::lockAvailable() { return manager()->isActive(); }
 
 bool SessionLockManager::lock() {
 	if (this->isLocked() || SessionLockManager::sessionLocked()) return false;
+
 	this->mLock = manager()->acquireLock();
 	this->mLock->setParent(this);
 
+	// Notify DBus that we're attempting to lock (not yet secure)
+	this->mDbusAdaptor->setLocked(true);
+	this->mDbusAdaptor->setSecure(false);
+
 	// clang-format off
-	QObject::connect(this->mLock, &QSWaylandSessionLock::compositorLocked, this, &SessionLockManager::locked);
-	QObject::connect(this->mLock, &QSWaylandSessionLock::unlocked, this, &SessionLockManager::unlocked);
+	QObject::connect(this->mLock, &QSWaylandSessionLock::compositorLocked, this, [this]() {
+		this->mDbusAdaptor->setSecure(true);
+		emit this->locked();
+	});
+	
+	QObject::connect(this->mLock, &QSWaylandSessionLock::unlocked, this, [this]() {
+		this->mDbusAdaptor->setLocked(false);
+		this->mDbusAdaptor->setSecure(false);
+		emit this->unlocked();
+	});
 	// clang-format on
+
 	return true;
 }
 
 bool SessionLockManager::unlock() {
 	if (!this->isLocked()) return false;
+
 	this->mLock->unlock();
+
 	auto* lock = this->mLock;
 	this->mLock = nullptr;
 	delete lock;
+
 	return true;
 }
 
 bool SessionLockManager::isLocked() const { return this->mLock != nullptr; }
+
 bool SessionLockManager::sessionLocked() { return manager()->isLocked(); }
+
 bool SessionLockManager::isSecure() { return manager()->isSecure(); }
 
 LockWindowExtension::~LockWindowExtension() {
@@ -83,14 +112,17 @@ bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 		window->setScreen(screen);
 
 		waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow*>(window->handle());
+
 		if (waylandWindow == nullptr) {
 			qWarning() << window << "is not a wayland window. Cannot create lock surface.";
 			return false;
 		}
 
 		static QSWaylandSessionLockIntegration* lockIntegration = nullptr; // NOLINT
+
 		if (lockIntegration == nullptr) {
 			lockIntegration = new QSWaylandSessionLockIntegration();
+
 			if (!lockIntegration->initialize(waylandWindow->display())) {
 				delete lockIntegration;
 				lockIntegration = nullptr;
@@ -103,6 +135,7 @@ bool LockWindowExtension::attach(QWindow* window, SessionLockManager* manager) {
 
 	this->setParent(window);
 	window->setProperty("sessionlock_ext", QVariant::fromValue(this));
+
 	this->lock = manager->mLock;
 
 	if (waylandWindow != nullptr) {
