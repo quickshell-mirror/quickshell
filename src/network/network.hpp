@@ -11,6 +11,23 @@
 
 namespace qs::network {
 
+class NetworkState: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		Unknown = 0,
+		Connecting = 1,
+		Connected = 2,
+		Disconnecting = 3,
+		Disconnected = 4,
+	};
+	Q_ENUM(Enum);
+	Q_INVOKABLE static QString toString(NetworkState::Enum state);
+};
+
 ///! The backend supplying the Network service.
 class NetworkBackendType: public QObject {
 	Q_OBJECT;
@@ -89,23 +106,36 @@ class BaseNetwork: public QObject {
 	QML_ELEMENT;
 	QML_UNCREATABLE("BaseNetwork can only be aqcuired through network devices");
 
+	// clang-format off
 	/// The name of the network.
 	Q_PROPERTY(QString name READ name CONSTANT);
 	/// True if the network is connected.
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
+	/// The connectivity state of the network.
+	Q_PROPERTY(NetworkState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	/// If the network is currently connecting or disconnecting. Shorthand for checking @@state.
+	Q_PROPERTY(bool stateChanging READ default NOTIFY stateChangingChanged BINDABLE bindableStateChanging);
+	// clang-format on
 
 public:
 	explicit BaseNetwork(QString name, QObject* parent = nullptr);
 
 	[[nodiscard]] QString name() const { return this->mName; };
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
+	QBindable<NetworkState::Enum> bindableState() { return &this->bState; }
+	QBindable<bool> bindableStateChanging() { return &this->bStateChanging; }
 
 signals:
 	void connectedChanged();
+	void stateChanged();
+	void stateChangingChanged();
 
 protected:
 	QString mName;
+
 	Q_OBJECT_BINDABLE_PROPERTY(BaseNetwork, bool, bConnected, &BaseNetwork::connectedChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(BaseNetwork, NetworkState::Enum, bState, &BaseNetwork::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(BaseNetwork, bool, bStateChanging, &BaseNetwork::stateChangingChanged);
 };
 
 } // namespace qs::network

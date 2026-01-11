@@ -402,6 +402,9 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
 	frontendNet->bindableNmReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
+	frontendNet->bindableState().setBinding([net]() {
+		return static_cast<NetworkState::Enum>(net->state());
+	});
 	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, tryConnect);
 	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
 
