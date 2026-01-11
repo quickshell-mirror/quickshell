@@ -46,6 +46,7 @@
   withHyprland ? true,
   withI3 ? true,
   withPolkit ? true,
+  withNetworkManager ? true,
 }: let
   unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
@@ -64,8 +65,7 @@
     ++ lib.optionals withWayland [
       qt6.qtwayland # qtwaylandscanner required at build time
       wayland-scanner
-    ]
-    ++ lib.optional withNetworkManager networkmanager;
+    ];
 
     buildInputs = [
       qt6.qtbase
