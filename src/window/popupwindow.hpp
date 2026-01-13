@@ -76,6 +76,15 @@ class ProxyPopupWindow: public ProxyWindowBase {
 	///
 	/// The popup will not be shown until @@anchor is valid, regardless of this property.
 	QSDOC_PROPERTY_OVERRIDE(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged);
+	/// If true, the popup window will be dismissed and @@visible will change to false
+	/// if the user clicks outside of the popup or it is otherwise closed.
+	///
+	/// > [!WARNING] Changes to this property while the window is open will only take
+	/// > effect after the window is hidden and shown again.
+	///
+	/// > [!NOTE] Under Hyprland, @@Quickshell.Hyprland.HyprlandFocusGrab provides more advanced
+	/// > functionality such as detecting clicks outside without closing the popup.
+	Q_PROPERTY(bool grabFocus READ default WRITE default NOTIFY grabFocusChanged BINDABLE bindableGrabFocus);
 	/// The screen that the window currently occupies.
 	///
 	/// This may be modified to move the window to the given screen.
@@ -103,12 +112,15 @@ public:
 	[[nodiscard]] qint32 relativeY() const;
 	void setRelativeY(qint32 y);
 
+	[[nodiscard]] QBindable<bool> bindableGrabFocus() { return &this->bWantsGrab; }
+
 	[[nodiscard]] PopupAnchor* anchor();
 
 signals:
 	void parentWindowChanged();
 	void relativeXChanged();
 	void relativeYChanged();
+	void grabFocusChanged();
 
 private slots:
 	void onParentWindowChanged();
@@ -131,4 +143,6 @@ private:
 	    bTargetVisible,
 	    &ProxyPopupWindow::targetVisibleChanged
 	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(ProxyPopupWindow, bool, bWantsGrab);
 };

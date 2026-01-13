@@ -21,6 +21,7 @@ set shell id.
 - Pipewire service now reconnects if pipewire dies or a protocol error occurs.
 - Added pipewire audio peak detection.
 - Added initial support for network management.
+- Added support for grabbing focus from popup windows.
 
 ## Other Changes
 

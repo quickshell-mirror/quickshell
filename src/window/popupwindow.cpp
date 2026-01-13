@@ -59,7 +59,7 @@ void ProxyPopupWindow::completeWindow() {
 	}
 
 	this->window->setTransientParent(bw);
-	this->window->setFlag(Qt::ToolTip);
+	this->window->setFlag(this->bWantsGrab ? Qt::Popup : Qt::ToolTip);
 
 	this->mAnchor.markDirty();
 	PopupPositioner::instance()->reposition(&this->mAnchor, this->window);
