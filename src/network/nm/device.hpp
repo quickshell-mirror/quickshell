@@ -44,11 +44,11 @@ public:
 	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; };
 
 signals:
-	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
-	void addAndActivateConnection(
+	void requestActivateConnection(const QString& connPath, const QString& devPath);
+	void requestAddAndActivateConnection(
 	    const ConnectionSettingsMap& settings,
-	    const QDBusObjectPath& devPath,
-	    const QDBusObjectPath& apPath
+	    const QString& devPath,
+	    const QString& apPath
 	);
 	void connectionLoaded(NMConnectionSettings* connection);
 	void connectionRemoved(NMConnectionSettings* connection);

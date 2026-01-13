@@ -382,40 +382,48 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	// Bind WifiNetwork to NMWirelessNetwork
 	auto translateSignal = [net]() { return net->signalStrength() / 100.0; };
 	auto translateState = [net]() { return net->state() == NMConnectionState::Activated; };
+	auto passwordIsStatic = [net]() {
+		switch (net->security()) {
+		case WifiSecurityType::StaticWep:
+		case WifiSecurityType::WpaPsk:
+		case WifiSecurityType::Wpa2Psk:
+		case WifiSecurityType::Sae: return true;
+		default: return false;
+		}
+	};
+	auto connect = [this, net](const QString& /*password*/) {
+		if (net->referenceConnection()) {
+			emit this->requestActivateConnection(net->referenceConnection()->path(), this->path());
+			return;
+		}
+		if (net->referenceAp()) {
+			emit this->requestAddAndActivateConnection(
+			    ConnectionSettingsMap(),
+			    this->path(),
+			    net->referenceAp()->path()
+			);
+			return;
+		}
+	};
+
 	frontendNet->bindableSignalStrength().setBinding(translateSignal);
 	frontendNet->bindableConnected().setBinding(translateState);
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
 	frontendNet->bindableNmReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
+	frontendNet->bindablePasswordIsStatic().setBinding(passwordIsStatic);
 	frontendNet->bindableState().setBinding([net]() {
 		return static_cast<NetworkState::Enum>(net->state());
 	});
 
-	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, [this, net]() {
-		if (net->referenceConnection()) {
-			emit this->activateConnection(
-			    QDBusObjectPath(net->referenceConnection()->path()),
-			    QDBusObjectPath(this->path())
-			);
-			return;
-		}
-		if (net->referenceAp()) {
-			emit this->addAndActivateConnection(
-			    ConnectionSettingsMap(),
-			    QDBusObjectPath(this->path()),
-			    QDBusObjectPath(net->referenceAp()->path())
-			);
-		}
-	});
-
+	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, connect);
+	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
 	QObject::connect(
 	    frontendNet,
 	    &WifiNetwork::requestDisconnect,
 	    this,
 	    &NMWirelessDevice::disconnect
 	);
-
-	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
 
 	this->mFrontendNetworks.insert(ssid, frontendNet);
 	emit this->networkAdded(frontendNet);

@@ -80,13 +80,32 @@ QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) 
 
 WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {};
 
-void WifiNetwork::connect() {
+void WifiNetwork::connect(const QString& password) {
 	if (this->bConnected) {
 		qCCritical(logWifi) << this << "is already connected.";
 		return;
 	}
 
-	this->requestConnect();
+	if (!password.isEmpty()) {
+		if (this->bKnown) {
+			qCWarning(
+			    logWifi
+			) << this
+			  << "has known connection settings. Attempting connection without the provided password.";
+			this->requestConnect(QString());
+			return;
+		}
+		if (!this->bPasswordIsStatic) {
+			qCWarning(
+			    logWifi
+			) << this
+			  << "doesn't have a static password. Attempting connection without the provided password.";
+			this->requestConnect(QString());
+			return;
+		}
+	}
+
+	this->requestConnect(password);
 }
 
 void WifiNetwork::disconnect() {

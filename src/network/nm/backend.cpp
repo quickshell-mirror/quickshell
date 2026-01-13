@@ -127,8 +127,8 @@ void NetworkManager::registerDevice(const QString& path) {
 						managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
 					};
 					// clang-format off
-					QObject::connect(dev, &NMDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
-					QObject::connect(dev, &NMDevice::activateConnection, this, &NetworkManager::activateConnection);
+					QObject::connect(dev, &NMDevice::requestAddAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
+					QObject::connect(dev, &NMDevice::requestActivateConnection, this, &NetworkManager::activateConnection);
 					QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
 					// clang-format on
 
@@ -221,11 +221,12 @@ void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
 	}
 }
 
-void NetworkManager::activateConnection(
-    const QDBusObjectPath& connPath,
-    const QDBusObjectPath& devPath
-) {
-	auto pending = this->proxy->ActivateConnection(connPath, devPath, QDBusObjectPath("/"));
+void NetworkManager::activateConnection(const QString& connPath, const QString& devPath) {
+	auto pending = this->proxy->ActivateConnection(
+	    QDBusObjectPath(connPath),
+	    QDBusObjectPath(devPath),
+	    QDBusObjectPath("/")
+	);
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {
@@ -241,10 +242,14 @@ void NetworkManager::activateConnection(
 
 void NetworkManager::addAndActivateConnection(
     const ConnectionSettingsMap& settings,
-    const QDBusObjectPath& devPath,
-    const QDBusObjectPath& specificObjectPath
+    const QString& devPath,
+    const QString& specificObjectPath
 ) {
-	auto pending = this->proxy->AddAndActivateConnection(settings, devPath, specificObjectPath);
+	auto pending = this->proxy->AddAndActivateConnection(
+	    settings,
+	    QDBusObjectPath(devPath),
+	    QDBusObjectPath(specificObjectPath)
+	);
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {

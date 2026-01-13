@@ -36,11 +36,11 @@ public slots:
 private slots:
 	void onDevicePathAdded(const QDBusObjectPath& path);
 	void onDevicePathRemoved(const QDBusObjectPath& path);
-	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
+	void activateConnection(const QString& connPath, const QString& devPath);
 	void addAndActivateConnection(
 	    const ConnectionSettingsMap& settings,
-	    const QDBusObjectPath& devPath,
-	    const QDBusObjectPath& specificObjectPath
+	    const QString& devPath,
+	    const QString& specificObjectPath
 	);
 
 private:

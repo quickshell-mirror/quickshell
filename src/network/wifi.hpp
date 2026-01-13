@@ -103,6 +103,8 @@ class WifiNetwork: public Network {
 	Q_PROPERTY(WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
 	/// A specific reason for the connection state when the backend is NetworkManager.
 	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ default NOTIFY nmReasonChanged BINDABLE bindableNmReason);
+	/// True if the wifi password is static. This implies that you can supply a password to connect().
+	Q_PROPERTY(bool passwordIsStatic READ default NOTIFY passwordIsStaticChanged BINDABLE bindablePasswordIsStatic);
 	// clang-format on
 
 public:
@@ -112,7 +114,7 @@ public:
 	///
 	/// > [!WARNING] Quickshell does not yet provide a NetworkManager authentication agent,
 	/// > meaning another agent will need to be active to enter passwords for unsaved networks.
-	Q_INVOKABLE void connect();
+	Q_INVOKABLE void connect(const QString& password = QString());
 	/// Disconnect from the wifi network.
 	Q_INVOKABLE void disconnect();
 	/// Forget all connection settings for this wifi network.
@@ -122,15 +124,17 @@ public:
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
 	QBindable<NMConnectionStateReason::Enum> bindableNmReason() { return &this->bNmReason; }
 	QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
+	QBindable<bool> bindablePasswordIsStatic() { return &this->bPasswordIsStatic; }
 
 signals:
-	void requestConnect();
+	void requestConnect(QString password);
 	void requestDisconnect();
 	void requestForget();
 	void signalStrengthChanged();
 	void knownChanged();
 	void securityChanged();
 	void nmReasonChanged();
+	void passwordIsStaticChanged();
 
 private:
 	// clang-format off
@@ -138,6 +142,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bKnown, &WifiNetwork::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, NMConnectionStateReason::Enum, bNmReason, &WifiNetwork::nmReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, WifiSecurityType::Enum, bSecurity, &WifiNetwork::securityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bPasswordIsStatic, &WifiNetwork::passwordIsStaticChanged);
 	// clang-format on
 };
 
