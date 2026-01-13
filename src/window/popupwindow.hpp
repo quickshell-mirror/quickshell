@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qquickwindow.h>
 #include <qtmetamacros.h>
@@ -88,6 +89,7 @@ public:
 	void completeWindow() override;
 	void postCompleteWindow() override;
 	void onPolished() override;
+	bool deleteOnInvisible() const override;
 
 	void setScreen(QuickshellScreenInfo* screen) override;
 	void setVisible(bool visible) override;
@@ -109,16 +111,24 @@ signals:
 	void relativeYChanged();
 
 private slots:
-	void onVisibleChanged();
-	void onParentUpdated();
+	void onParentWindowChanged();
+	void onClosed();
 	void reposition();
 
 private:
+	void targetVisibleChanged();
+
 	QQuickWindow* parentBackingWindow();
-	void updateTransientParent();
-	void updateVisible();
 
 	PopupAnchor mAnchor {this};
-	bool wantsVisible = false;
 	bool pendingReposition = false;
+
+	Q_OBJECT_BINDABLE_PROPERTY(ProxyPopupWindow, bool, bWantsVisible);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    ProxyPopupWindow,
+	    bool,
+	    bTargetVisible,
+	    &ProxyPopupWindow::targetVisibleChanged
+	);
 };

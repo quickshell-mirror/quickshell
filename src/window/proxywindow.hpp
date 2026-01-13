@@ -101,6 +101,10 @@ public:
 	virtual void setVisible(bool visible);
 	virtual void setVisibleDirect(bool visible);
 
+	[[nodiscard]] QBindable<bool> bindableBackerVisibility() const {
+		return &this->bBackerVisibility;
+	}
+
 	void schedulePolish();
 
 	[[nodiscard]] virtual qint32 x() const;
@@ -204,6 +208,13 @@ protected:
 	    bImplicitHeight,
 	    100,
 	    &ProxyWindowBase::implicitHeightChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    ProxyWindowBase,
+	    bool,
+	    bBackerVisibility,
+	    &ProxyWindowBase::backerVisibilityChanged
 	);
 
 private:
