@@ -1,7 +1,6 @@
 #include "dmabuf.hpp"
 #include <algorithm>
 #include <array>
-#include <csignal>
 #include <cstdint>
 #include <memory>
 #include <string>

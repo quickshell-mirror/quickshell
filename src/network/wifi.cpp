@@ -6,7 +6,6 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 
 #include "../core/logcat.hpp"
 #include "device.hpp"

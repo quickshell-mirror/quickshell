@@ -4,7 +4,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"

@@ -1,5 +1,4 @@
 #include "conversation.hpp"
-#include <csignal>
 
 #include <qlogging.h>
 #include <qloggingcategory.h>

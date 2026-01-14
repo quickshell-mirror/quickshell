@@ -90,8 +90,6 @@ QString PwAudioChannel::toString(Enum value) {
 
 QString PwNodeType::toString(PwNodeType::Flags type) {
 	switch (type) {
-	// qstringliteral apparently not imported...
-	// NOLINTBEGIN
 	case PwNodeType::VideoSource: return QStringLiteral("VideoSource");
 	case PwNodeType::VideoSink: return QStringLiteral("VideoSink");
 	case PwNodeType::AudioSource: return QStringLiteral("AudioSource");
@@ -101,7 +99,6 @@ QString PwNodeType::toString(PwNodeType::Flags type) {
 	case PwNodeType::AudioInStream: return QStringLiteral("AudioInStream");
 	case PwNodeType::Untracked: return QStringLiteral("Untracked");
 	default: return QStringLiteral("Invalid");
-	// NOLINTEND
 	}
 }
 

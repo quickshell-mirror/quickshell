@@ -3,6 +3,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlinfo.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
 
