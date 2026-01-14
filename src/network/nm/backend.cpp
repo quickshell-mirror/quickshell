@@ -127,8 +127,8 @@ void NetworkManager::registerDevice(const QString& path) {
 						managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
 					};
 					// clang-format off
-					QObject::connect(dev, &NMDevice::requestAddAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
-					QObject::connect(dev, &NMDevice::requestActivateConnection, this, &NetworkManager::activateConnection);
+					QObject::connect(dev, &NMDevice::sendAddAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
+					QObject::connect(dev, &NMDevice::sendActivateConnection, this, &NetworkManager::activateConnection);
 					QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
 					// clang-format on
 

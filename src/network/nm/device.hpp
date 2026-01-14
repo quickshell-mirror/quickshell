@@ -44,8 +44,8 @@ public:
 	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; };
 
 signals:
-	void requestActivateConnection(const QString& connPath, const QString& devPath);
-	void requestAddAndActivateConnection(
+	void sendActivateConnection(const QString& connPath, const QString& devPath);
+	void sendAddAndActivateConnection(
 	    const ConnectionSettingsMap& settings,
 	    const QString& devPath,
 	    const QString& apPath

@@ -129,9 +129,21 @@ FloatingWindow {
 								}
 								RowLayout {
 									Layout.alignment: Qt.AlignRight
+									TextField {
+										id: passwordField
+										placeholderText: "Password"
+										echoMode: TextInput.PasswordEchoOnEdit
+										visible: !modelData.known && modelData.passwordIsStatic && !modelData.connected
+									}
 									Button {
 										text: "Connect"
-										onClicked: modelData.connect()
+										onClicked: {
+											if (passwordField.text) {
+												modelData.connectWithPassword(passwordField.text)
+											} else {
+												modelData.connect()
+											}
+										}
 										visible: !modelData.connected
 									}
 									Button {

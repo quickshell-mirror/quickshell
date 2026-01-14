@@ -103,7 +103,7 @@ class WifiNetwork: public Network {
 	Q_PROPERTY(WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
 	/// A specific reason for the connection state when the backend is NetworkManager.
 	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ default NOTIFY nmReasonChanged BINDABLE bindableNmReason);
-	/// True if the wifi password is static. This implies that you can supply a password to connect().
+	/// True if the wifi password is static.
 	Q_PROPERTY(bool passwordIsStatic READ default NOTIFY passwordIsStaticChanged BINDABLE bindablePasswordIsStatic);
 	// clang-format on
 
@@ -113,8 +113,12 @@ public:
 	/// Attempt to connect to the wifi network.
 	///
 	/// > [!WARNING] Quickshell does not yet provide a NetworkManager authentication agent,
-	/// > meaning another agent will need to be active to enter passwords for unsaved networks.
-	Q_INVOKABLE void connect(const QString& password = QString());
+	/// > meaning when passwordIsStatic is false another agent will need to be active to enter a password.
+	Q_INVOKABLE void connect();
+	/// Attempt to connect to the wifi network with a password.
+	/// This should only be invoked by unknown networks with static passwords.
+	Q_INVOKABLE void connectWithPassword(const QString& password);
+
 	/// Disconnect from the wifi network.
 	Q_INVOKABLE void disconnect();
 	/// Forget all connection settings for this wifi network.
@@ -127,7 +131,8 @@ public:
 	QBindable<bool> bindablePasswordIsStatic() { return &this->bPasswordIsStatic; }
 
 signals:
-	void requestConnect(QString password);
+	void requestConnect();
+	void requestConnectWithPassword(const QString& password);
 	void requestDisconnect();
 	void requestForget();
 	void signalStrengthChanged();

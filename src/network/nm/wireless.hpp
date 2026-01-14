@@ -129,6 +129,7 @@ private slots:
 	void onScanningChanged(bool scanning);
 
 private:
+	void addAndActivateConnection(NMAccessPoint* ap, const QString& password);
 	void registerAccessPoint(const QString& path);
 	void registerFrontendNetwork(NMWirelessNetwork* net);
 	void removeFrontendNetwork(NMWirelessNetwork* net);

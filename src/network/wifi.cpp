@@ -78,34 +78,48 @@ QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) 
 	};
 };
 
-WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {};
+WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {
+	this->bindablePasswordIsStatic().setBinding([this]() {
+		switch (this->bSecurity) {
+		case WifiSecurityType::StaticWep:
+		case WifiSecurityType::WpaPsk:
+		case WifiSecurityType::Wpa2Psk:
+		case WifiSecurityType::Sae: return true;
+		default: return false;
+		}
+	});
+};
 
-void WifiNetwork::connect(const QString& password) {
+void WifiNetwork::connect() {
 	if (this->bConnected) {
 		qCCritical(logWifi) << this << "is already connected.";
 		return;
 	}
 
-	if (!password.isEmpty()) {
-		if (this->bKnown) {
-			qCWarning(
-			    logWifi
-			) << this
-			  << "has known connection settings. Attempting connection without the provided password.";
-			this->requestConnect(QString());
-			return;
-		}
-		if (!this->bPasswordIsStatic) {
-			qCWarning(
-			    logWifi
-			) << this
-			  << "doesn't have a static password. Attempting connection without the provided password.";
-			this->requestConnect(QString());
-			return;
-		}
+	this->requestConnect();
+}
+
+void WifiNetwork::connectWithPassword(const QString& password) {
+	if (this->bConnected) {
+		qCCritical(logWifi) << this << "is already connected.";
+		return;
+	}
+	if (this->bKnown) {
+		qCCritical(logWifi) << this
+		                    << "is already known, attempting connection with the saved password.";
+		this->requestConnect();
+		return;
+	}
+	if (!this->bPasswordIsStatic) {
+		qCCritical(
+		    logWifi
+		) << this
+		  << "doesn't have a static password, attempting connection without a password.";
+		this->requestConnect();
+		return;
 	}
 
-	this->requestConnect(password);
+	this->requestConnectWithPassword(password);
 }
 
 void WifiNetwork::disconnect() {

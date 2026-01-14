@@ -382,26 +382,13 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	// Bind WifiNetwork to NMWirelessNetwork
 	auto translateSignal = [net]() { return net->signalStrength() / 100.0; };
 	auto translateState = [net]() { return net->state() == NMConnectionState::Activated; };
-	auto passwordIsStatic = [net]() {
-		switch (net->security()) {
-		case WifiSecurityType::StaticWep:
-		case WifiSecurityType::WpaPsk:
-		case WifiSecurityType::Wpa2Psk:
-		case WifiSecurityType::Sae: return true;
-		default: return false;
-		}
-	};
-	auto connect = [this, net](const QString& /*password*/) {
+	auto handleConnect = [this, net](const QString& password = QString()) {
 		if (net->referenceConnection()) {
-			emit this->requestActivateConnection(net->referenceConnection()->path(), this->path());
+			emit this->sendActivateConnection(net->referenceConnection()->path(), this->path());
 			return;
 		}
 		if (net->referenceAp()) {
-			emit this->requestAddAndActivateConnection(
-			    ConnectionSettingsMap(),
-			    this->path(),
-			    net->referenceAp()->path()
-			);
+			this->addAndActivateConnection(net->referenceAp(), password);
 			return;
 		}
 	};
@@ -411,12 +398,12 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
 	frontendNet->bindableNmReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
-	frontendNet->bindablePasswordIsStatic().setBinding(passwordIsStatic);
 	frontendNet->bindableState().setBinding([net]() {
 		return static_cast<NetworkState::Enum>(net->state());
 	});
 
-	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, connect);
+	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, handleConnect);
+	QObject::connect(frontendNet, &WifiNetwork::requestConnectWithPassword, this, handleConnect);
 	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
 	QObject::connect(
 	    frontendNet,
@@ -443,6 +430,55 @@ void NMWirelessDevice::removeNetwork() {
 		this->removeFrontendNetwork(net);
 		delete net;
 	};
+}
+
+void NMWirelessDevice::addAndActivateConnection(NMAccessPoint* ap, const QString& password) {
+	auto settings = ConnectionSettingsMap();
+	auto passProvided = !password.isEmpty();
+
+	QVariantMap connection;
+	connection["autoconnect"] = true;
+	settings["connection"] = connection;
+
+	QVariantMap wifiSettings;
+	wifiSettings["ssid"] = ap->ssid();
+	settings["802-11-wireless"] = wifiSettings;
+
+	auto sec = ap->security();
+	if (sec != WifiSecurityType::Open) {
+		QVariantMap wifiSecurity;
+		if (sec == WifiSecurityType::Leap             //
+		    || sec == WifiSecurityType::Wpa3SuiteB192 //
+		    || sec == WifiSecurityType::Wpa2Eap       //
+		    || sec == WifiSecurityType::WpaEap)
+		{
+			if (sec == WifiSecurityType::DynamicWep || sec == WifiSecurityType::Leap) {
+				wifiSecurity["key-mgmt"] = "ieee8021x";
+				if (sec == WifiSecurityType::Leap) wifiSecurity["auth-alg"] = "leap";
+			} else if (sec == WifiSecurityType::Wpa3SuiteB192) {
+				wifiSecurity["key-mgmt"] = "wpa-eap-suite-b-192";
+			} else {
+				wifiSecurity["key-mgmt"] = "wpa-eap";
+			}
+		} else {
+			if (sec == WifiSecurityType::StaticWep) {
+				wifiSecurity["key-mgmt"] = "wep";
+				if (passProvided) wifiSecurity["wep-key0"] = password;
+			} else if (sec == WifiSecurityType::Owe) {
+				wifiSecurity["key-mgmt"] = "owe";
+			} else {
+				if (sec == WifiSecurityType::Sae) {
+					wifiSecurity["key-mgmt"] = "sae";
+				} else {
+					wifiSecurity["key-mgmt"] = "wpa-psk";
+				}
+				if (passProvided) wifiSecurity["psk"] = password;
+			}
+		}
+		settings["802-11-wireless-security"] = wifiSecurity;
+	}
+
+	emit this->sendAddAndActivateConnection(settings, this->path(), ap->path());
 }
 
 bool NMWirelessDevice::isValid() const {
