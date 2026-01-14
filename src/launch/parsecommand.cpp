@@ -227,6 +227,22 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		}
 
 		{
+			auto* callJson = sub->add_subcommand(
+			    "callJson",
+			    "Call an IpcHandler function with a single JSON argument."
+			);
+			state.ipc.callJson = callJson;
+
+			callJson->add_option("target", state.ipc.target, "The target to message.");
+
+			callJson->add_option("function", state.ipc.name)
+			    ->description("The function to call in the target.");
+
+			callJson->add_option("json", state.ipc.jsonArgument)
+			    ->description("JSON string sent the called function.");
+		}
+
+		{
 			auto* prop =
 			    sub->add_subcommand("prop", "Manipulate IpcHandler properties.")->require_subcommand();
 
