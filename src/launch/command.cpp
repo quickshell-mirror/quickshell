@@ -411,6 +411,10 @@ int ipcCommand(CommandState& cmd) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else if (*cmd.ipc.getprop) {
 			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.wait) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, true);
+		} else if (*cmd.ipc.listen) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, false);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {

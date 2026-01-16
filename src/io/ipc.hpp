@@ -146,14 +146,31 @@ struct WirePropertyDefinition {
 
 DEFINE_SIMPLE_DATASTREAM_OPS(WirePropertyDefinition, data.name, data.type);
 
-struct WireTargetDefinition {
+struct WireSignalDefinition {
 	QString name;
-	QVector<WireFunctionDefinition> functions;
-	QVector<WirePropertyDefinition> properties;
+	QString retname;
+	QString rettype;
 
 	[[nodiscard]] QString toString() const;
 };
 
-DEFINE_SIMPLE_DATASTREAM_OPS(WireTargetDefinition, data.name, data.functions, data.properties);
+DEFINE_SIMPLE_DATASTREAM_OPS(WireSignalDefinition, data.name, data.retname, data.rettype);
+
+struct WireTargetDefinition {
+	QString name;
+	QVector<WireFunctionDefinition> functions;
+	QVector<WirePropertyDefinition> properties;
+	QVector<WireSignalDefinition> signalFunctions;
+
+	[[nodiscard]] QString toString() const;
+};
+
+DEFINE_SIMPLE_DATASTREAM_OPS(
+    WireTargetDefinition,
+    data.name,
+    data.functions,
+    data.properties,
+    data.signalFunctions
+);
 
 } // namespace qs::io::ipc

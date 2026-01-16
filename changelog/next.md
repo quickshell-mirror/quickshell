@@ -22,6 +22,7 @@ set shell id.
 - Added pipewire audio peak detection.
 - Added initial support for network management.
 - Added support for grabbing focus from popup windows.
+- Added support for IPC signal listeners.
 
 ## Other Changes
 
@@ -40,6 +41,7 @@ set shell id.
 - Fixed missing signals for system tray item title and description updates.
 - Fixed asynchronous loaders not working after reload.
 - Fixed asynchronous loaders not working before window creation.
+- Fixed memory leak in IPC handlers.
 
 ## Packaging Changes
 
