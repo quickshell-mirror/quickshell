@@ -118,7 +118,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 	auto stream = QTextStream(&file);
 	auto imports = QVector<QString>();
 
-	bool inHeader = false;
+	bool inHeader = true;
 	auto ifScopes = QVector<bool>();
 	bool sourceMasked = false;
 	int lineNum = 0;
@@ -177,7 +177,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			} else if (!internal && line == "//@ pragma Internal") {
 				internal = true;
 			} else if (line.contains('{')) {
-				inHeader = true;
+				inHeader = false;
 			}
 		}
 
