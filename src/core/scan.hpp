@@ -23,6 +23,14 @@ public:
 	QVector<QString> scannedFiles;
 	QHash<QString, QString> fileIntercepts;
 
+	struct ScanError {
+		QString file;
+		QString message;
+		int line;
+	};
+
+	QVector<ScanError> scanErrors;
+
 private:
 	QDir rootPath;
 

@@ -23,6 +23,7 @@ set shell id.
 - Added initial support for network management.
 - Added support for grabbing focus from popup windows.
 - Added support for IPC signal listeners.
+- Added Quickshell version checking and version gated preprocessing.
 
 ## Other Changes
 

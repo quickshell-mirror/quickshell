@@ -29,6 +29,7 @@
 #include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
+#include "scanenv.hpp"
 
 QuickshellSettings::QuickshellSettings() {
 	QObject::connect(
@@ -311,6 +312,14 @@ QString QuickshellGlobal::iconPath(const QString& icon, bool check) {
 
 QString QuickshellGlobal::iconPath(const QString& icon, const QString& fallback) {
 	return IconImageProvider::requestString(icon, "", fallback);
+}
+
+bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor, const QStringList& features) {
+	return qs::scan::env::PreprocEnv::hasVersion(major, minor, features);
+}
+
+bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor) {
+	return QuickshellGlobal::hasVersion(major, minor, QStringList());
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {
