@@ -27,7 +27,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <sys/mman.h>
+#ifdef __linux__
 #include <sys/sendfile.h>
+#include <sys/types.h>
+#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -42,6 +45,57 @@ namespace qs::log {
 using namespace qt_logging_registry;
 
 QS_LOGGING_CATEGORY(logLogging, "quickshell.logging", QtWarningMsg);
+
+namespace {
+bool copyFileData(int sourceFd, int destFd, qint64 size) {
+	auto usize = static_cast<size_t>(size);
+
+#ifdef __linux__
+	off_t offset = 0;
+	auto remaining = usize;
+
+	while (remaining > 0) {
+		auto r = sendfile(destFd, sourceFd, &offset, remaining);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+		remaining -= static_cast<size_t>(r);
+	}
+
+	return true;
+#else
+	std::array<char, 64 * 1024> buffer = {};
+	auto remaining = totalTarget;
+
+	while (remaining > 0) {
+		auto chunk = std::min(remaining, buffer.size());
+		auto r = ::read(sourceFd, buffer.data(), chunk);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+
+		auto readBytes = static_cast<size_t>(r);
+		size_t written = 0;
+		while (written < readBytes) {
+			auto w = ::write(destFd, buffer.data() + written, readBytes - written);
+			if (w == -1) {
+				if (errno == EINTR) continue;
+				return false;
+			}
+			written += static_cast<size_t>(w);
+		}
+
+		remaining -= readBytes;
+	}
+
+	return true;
+#endif
+}
+} // namespace
 
 bool LogMessage::operator==(const LogMessage& other) const {
 	// note: not including time
@@ -392,7 +446,7 @@ void ThreadLogging::initFs() {
 		delete detailedFile;
 		detailedFile = nullptr;
 	} else {
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -414,7 +468,11 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->file;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
+
+			if (!copyFileData(oldFile->handle(), file->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		this->file = file;
@@ -426,7 +484,10 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->detailedFile;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
+			if (!copyFileData(oldFile->handle(), detailedFile->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy detailed log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
@@ -889,7 +950,7 @@ bool LogReader::continueReading() {
 }
 
 void LogFollower::FcntlWaitThread::run() {
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_RDLCK, // won't block other read locks when we take it
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,

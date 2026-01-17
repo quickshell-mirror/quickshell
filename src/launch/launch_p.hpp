@@ -74,6 +74,8 @@ struct CommandState {
 		CLI::App* show = nullptr;
 		CLI::App* call = nullptr;
 		CLI::App* getprop = nullptr;
+		CLI::App* wait = nullptr;
+		CLI::App* listen = nullptr;
 		bool showOld = false;
 		QStringOption target;
 		QStringOption name;

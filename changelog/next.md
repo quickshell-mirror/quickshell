@@ -16,16 +16,32 @@ set shell id.
 - Added support for wayland idle timeouts.
 - Added support for inhibiting wayland compositor shortcuts for focused windows.
 - Added the ability to override Quickshell.cacheDir with a custom path.
+- Added minimized, maximized, and fullscreen properties to FloatingWindow.
+- Added the ability to handle move and resize events to FloatingWindow.
+- Pipewire service now reconnects if pipewire dies or a protocol error occurs.
+- Added pipewire audio peak detection.
+- Added initial support for network management.
+- Added support for grabbing focus from popup windows.
+- Added support for IPC signal listeners.
 
 ## Other Changes
 
+- FreeBSD is now partially supported.
 - IPC operations filter available instances to the current display connection by default.
+- PwNodeLinkTracker ignores sound level monitoring programs.
 
 ## Bug Fixes
 
 - Fixed volume control breaking with pipewire pro audio mode.
+- Fixed volume control breaking with bluez streams and potentially others.
 - Fixed escape sequence handling in desktop entries.
 - Fixed volumes not initializing if a pipewire device was already loaded before its node.
+- Fixed hyprland active toplevel not resetting after window closes.
+- Fixed hyprland ipc window names and titles being reversed.
+- Fixed missing signals for system tray item title and description updates.
+- Fixed asynchronous loaders not working after reload.
+- Fixed asynchronous loaders not working before window creation.
+- Fixed memory leak in IPC handlers.
 
 ## Packaging Changes
 

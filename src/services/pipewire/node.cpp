@@ -11,7 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
@@ -161,6 +161,24 @@ void PwNode::initProps(const spa_dict* props) {
 		this->nick = nodeNick;
 	}
 
+	if (const auto* nodeCategory = spa_dict_lookup(props, PW_KEY_MEDIA_CATEGORY)) {
+		if (strcmp(nodeCategory, "Monitor") == 0 || strcmp(nodeCategory, "Manager") == 0) {
+			this->isMonitor = true;
+		}
+	}
+
+	if (const auto* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL)) {
+		auto ok = false;
+		auto value = QString::fromUtf8(serial).toULongLong(&ok);
+		if (!ok) {
+			qCWarning(logNode) << this
+			                   << "has an object.serial property but the value is not valid. Value:"
+			                   << serial;
+		} else {
+			this->objectSerial = value;
+		}
+	}
+
 	if (const auto* deviceId = spa_dict_lookup(props, PW_KEY_DEVICE_ID)) {
 		auto ok = false;
 		auto id = QString::fromUtf8(deviceId).toInt(&ok);
@@ -222,8 +240,11 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 				self->routeDevice = id;
 				if (self->boundData) self->boundData->onDeviceChanged();
 			} else {
-				qCCritical(logNode) << self << "has attached device" << self->device
-				                    << "but no card.profile.device property.";
+				qCDebug(
+				    logNode
+				) << self
+				  << "has attached device" << self->device
+				  << "but no card.profile.device property. Node volume control will be used.";
 			}
 		}
 

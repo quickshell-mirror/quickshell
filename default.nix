@@ -46,10 +46,11 @@
   withHyprland ? true,
   withI3 ? true,
   withPolkit ? true,
+  withNetworkManager ? true,
 }: let
   unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
-    version = "0.2.0";
+    version = "0.2.1";
     src = nix-gitignore.gitignoreSource "/default.nix\n" ./.;
 
     dontWrapQtApps = true; # see wrappers
@@ -95,6 +96,7 @@
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
       (lib.cmakeBool "SERVICE_PAM" withPam)
+      (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
       (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
       (lib.cmakeBool "HYPRLAND" withHyprland)
       (lib.cmakeBool "I3" withI3)

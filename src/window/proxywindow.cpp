@@ -57,9 +57,10 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
 ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(true); }
 
 void ProxyWindowBase::onReload(QObject* oldInstance) {
-	this->window = this->retrieveWindow(oldInstance);
+	if (this->mVisible) this->window = this->retrieveWindow(oldInstance);
 	auto wasVisible = this->window != nullptr && this->window->isVisible();
-	this->ensureQWindow();
+
+	if (this->mVisible) this->ensureQWindow();
 
 	// The qml engine will leave the WindowInterface as owner of everything
 	// nested in an item, so we have to make sure the interface's children
@@ -76,17 +77,21 @@ void ProxyWindowBase::onReload(QObject* oldInstance) {
 
 	Reloadable::reloadChildrenRecursive(this, oldInstance);
 
-	this->connectWindow();
-	this->completeWindow();
+	if (this->mVisible) {
+		this->connectWindow();
+		this->completeWindow();
+	}
 
 	this->reloadComplete = true;
 
-	emit this->windowConnected();
-	this->postCompleteWindow();
+	if (this->mVisible) {
+		emit this->windowConnected();
+		this->postCompleteWindow();
 
-	if (wasVisible && this->isVisibleDirect()) {
-		emit this->backerVisibilityChanged();
-		this->onExposed();
+		if (wasVisible && this->isVisibleDirect()) {
+			this->bBackerVisibility = true;
+			this->onExposed();
+		}
 	}
 }
 
@@ -272,24 +277,21 @@ void ProxyWindowBase::setVisible(bool visible) {
 
 void ProxyWindowBase::setVisibleDirect(bool visible) {
 	if (this->deleteOnInvisible()) {
-		if (visible == this->isVisibleDirect()) return;
-
 		if (visible) {
+			if (visible == this->isVisibleDirect()) return;
 			this->createWindow();
 			this->polishItems();
 			this->window->setVisible(true);
-			emit this->backerVisibilityChanged();
+			this->bBackerVisibility = true;
 		} else {
-			if (this->window != nullptr) {
-				this->window->setVisible(false);
-				emit this->backerVisibilityChanged();
-				this->deleteWindow();
-			}
+			if (this->window != nullptr) this->window->setVisible(false);
+			this->bBackerVisibility = false;
+			this->deleteWindow();
 		}
 	} else if (this->window != nullptr) {
 		if (visible) this->polishItems();
 		this->window->setVisible(visible);
-		emit this->backerVisibilityChanged();
+		this->bBackerVisibility = visible;
 	}
 }
 

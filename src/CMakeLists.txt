@@ -34,4 +34,8 @@ if (BLUETOOTH)
 	add_subdirectory(bluetooth)
 endif()
 
+if (NETWORK)
+	add_subdirectory(network)
+endif()
+
 add_subdirectory(webengine)

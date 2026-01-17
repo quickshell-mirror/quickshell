@@ -10,7 +10,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/bus.hpp"

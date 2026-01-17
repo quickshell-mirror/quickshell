@@ -13,7 +13,7 @@ void TestPopupWindow::initiallyVisible() { // NOLINT
 	auto parent = ProxyWindowBase();
 	auto popup = ProxyPopupWindow();
 
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	popup.setVisible(true);
 
 	parent.reload();
@@ -33,7 +33,7 @@ void TestPopupWindow::reloadReparent() { // NOLINT
 	win2->setVisible(true);
 
 	parent.setVisible(true);
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	popup.setVisible(true);
 
 	parent.reload();
@@ -43,7 +43,7 @@ void TestPopupWindow::reloadReparent() { // NOLINT
 	auto newParent = ProxyWindowBase();
 	auto newPopup = ProxyPopupWindow();
 
-	newPopup.setParentWindow(&newParent);
+	newPopup.anchor()->setWindow(&newParent);
 	newPopup.setVisible(true);
 
 	auto* oldWindow = popup.backingWindow();
@@ -66,7 +66,7 @@ void TestPopupWindow::reloadUnparent() { // NOLINT
 	auto parent = ProxyWindowBase();
 	auto popup = ProxyPopupWindow();
 
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	popup.setVisible(true);
 
 	parent.reload();
@@ -80,8 +80,7 @@ void TestPopupWindow::reloadUnparent() { // NOLINT
 	newPopup.reload(&popup);
 
 	QVERIFY(!newPopup.isVisible());
-	QVERIFY(!newPopup.backingWindow()->isVisible());
-	QCOMPARE(newPopup.backingWindow()->transientParent(), nullptr);
+	QVERIFY(!newPopup.backingWindow() || !newPopup.backingWindow()->isVisible());
 }
 
 void TestPopupWindow::invisibleWithoutParent() { // NOLINT
@@ -97,9 +96,11 @@ void TestPopupWindow::moveWithParent() { // NOLINT
 	auto parent = ProxyWindowBase();
 	auto popup = ProxyPopupWindow();
 
-	popup.setParentWindow(&parent);
-	popup.setRelativeX(10);
-	popup.setRelativeY(10);
+	popup.anchor()->setWindow(&parent);
+	auto rect = popup.anchor()->rect();
+	rect.x = 10;
+	rect.y = 10;
+	popup.anchor()->setRect(rect);
 	popup.setVisible(true);
 
 	parent.reload();
@@ -126,7 +127,7 @@ void TestPopupWindow::attachParentLate() { // NOLINT
 
 	QVERIFY(!popup.isVisible());
 
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	QVERIFY(popup.isVisible());
 	QVERIFY(popup.backingWindow()->isVisible());
 	QCOMPARE(popup.backingWindow()->transientParent(), parent.backingWindow());
@@ -136,7 +137,7 @@ void TestPopupWindow::reparentLate() { // NOLINT
 	auto parent = ProxyWindowBase();
 	auto popup = ProxyPopupWindow();
 
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	popup.setVisible(true);
 
 	parent.reload();
@@ -151,7 +152,7 @@ void TestPopupWindow::reparentLate() { // NOLINT
 	parent2.backingWindow()->setX(10);
 	parent2.backingWindow()->setY(10);
 
-	popup.setParentWindow(&parent2);
+	popup.anchor()->setWindow(&parent2);
 	QVERIFY(popup.isVisible());
 	QVERIFY(popup.backingWindow()->isVisible());
 	QCOMPARE(popup.backingWindow()->transientParent(), parent2.backingWindow());
@@ -163,7 +164,7 @@ void TestPopupWindow::xMigrationFix() { // NOLINT
 	auto parent = ProxyWindowBase();
 	auto popup = ProxyPopupWindow();
 
-	popup.setParentWindow(&parent);
+	popup.anchor()->setWindow(&parent);
 	popup.setVisible(true);
 
 	parent.reload();

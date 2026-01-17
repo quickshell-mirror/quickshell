@@ -442,8 +442,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		if (!ok) return;
 
 		auto workspaceName = QString::fromUtf8(args.at(1));
-		auto windowTitle = QString::fromUtf8(args.at(2));
-		auto windowClass = QString::fromUtf8(args.at(3));
+		auto windowClass = QString::fromUtf8(args.at(2));
+		auto windowTitle = QString::fromUtf8(args.at(3));
 
 		auto* workspace = this->findWorkspaceByName(workspaceName, false);
 		if (!workspace) {
@@ -484,6 +484,7 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		}
 
 		auto* toplevel = *toplevelIter;
+		if (toplevel == this->bActiveToplevel.value()) this->bActiveToplevel = nullptr;
 		auto index = toplevelIter - mList.begin();
 		this->mToplevels.removeAt(index);
 

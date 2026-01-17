@@ -199,6 +199,8 @@ public:
 	[[nodiscard]] QVector<float> volumes() const;
 	void setVolumes(const QVector<float>& volumes);
 
+	[[nodiscard]] QVector<float> server() const;
+
 signals:
 	void volumesChanged();
 	void channelsChanged();
@@ -233,6 +235,8 @@ public:
 	QString description;
 	QString nick;
 	QMap<QString, QString> properties;
+	quint64 objectSerial = 0;
+	bool isMonitor = false;
 
 	PwNodeType::Flags type = PwNodeType::Untracked;
 
@@ -244,7 +248,9 @@ public:
 	qint32 routeDevice = -1;
 	bool proAudio = false;
 
-	[[nodiscard]] bool shouldUseDevice() const { return this->device && !this->proAudio; }
+	[[nodiscard]] bool shouldUseDevice() const {
+		return this->device && !this->proAudio && this->routeDevice != -1;
+	}
 
 signals:
 	void propertiesChanged();

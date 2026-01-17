@@ -2,6 +2,8 @@
 
 #include <qcontainerfwd.h>
 #include <qflags.h>
+#include <qobject.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "../ipc/ipc.hpp"
@@ -47,5 +49,53 @@ struct StringPropReadCommand {
 DEFINE_SIMPLE_DATASTREAM_OPS(StringPropReadCommand, data.target, data.property);
 
 int getProperty(qs::ipc::IpcClient* client, const QString& target, const QString& property);
+
+struct SignalListenCommand {
+	QString target;
+	QString signal;
+
+	void exec(qs::ipc::IpcServerConnection* conn);
+};
+
+DEFINE_SIMPLE_DATASTREAM_OPS(SignalListenCommand, data.target, data.signal);
+
+int listenToSignal(
+    qs::ipc::IpcClient* client,
+    const QString& target,
+    const QString& signal,
+    bool once
+);
+
+struct NoCurrentGeneration: std::monostate {};
+struct TargetNotFound: std::monostate {};
+struct EntryNotFound: std::monostate {};
+
+struct SignalResponse {
+	QString response;
+};
+
+DEFINE_SIMPLE_DATASTREAM_OPS(SignalResponse, data.response);
+
+using SignalListenResponse = std::
+    variant<std::monostate, NoCurrentGeneration, TargetNotFound, EntryNotFound, SignalResponse>;
+
+class RemoteSignalListener: public QObject {
+	Q_OBJECT;
+
+public:
+	explicit RemoteSignalListener(qs::ipc::IpcServerConnection* conn, SignalListenCommand command);
+
+	~RemoteSignalListener() override;
+
+	Q_DISABLE_COPY_MOVE(RemoteSignalListener);
+
+private slots:
+	void onSignal(const QString& target, const QString& signal, const QString& value);
+	void onConnDestroyed();
+
+private:
+	qs::ipc::IpcServerConnection* conn;
+	SignalListenCommand command;
+};
 
 } // namespace qs::io::ipc::comm

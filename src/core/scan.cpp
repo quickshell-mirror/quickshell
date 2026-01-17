@@ -12,7 +12,6 @@
 #include <qloggingcategory.h>
 #include <qpair.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 #include <qtextstream.h>
 
 #include "logcat.hpp"

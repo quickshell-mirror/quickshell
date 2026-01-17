@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
 #include <utility>
 
@@ -412,6 +411,10 @@ int ipcCommand(CommandState& cmd) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else if (*cmd.ipc.getprop) {
 			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.wait) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, true);
+		} else if (*cmd.ipc.listen) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, false);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {
@@ -461,7 +464,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
 			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
 			                    << " without rebuilding the package. This is likely to cause crashes, so "
-			                       "you must rebuild the quickshell package.\n";
+			                       "you must rebuild the quickshell package.\n\033[0m";
 			return 1;
 		}
 

@@ -12,6 +12,7 @@ class PwDefaultTracker: public QObject {
 
 public:
 	explicit PwDefaultTracker(PwRegistry* registry);
+	void reset();
 
 	[[nodiscard]] PwNode* defaultSink() const;
 	[[nodiscard]] PwNode* defaultSource() const;
