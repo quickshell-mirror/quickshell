@@ -1,9 +1,11 @@
 #include "scan.hpp"
 #include <cmath>
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qjsengine.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -15,6 +17,7 @@
 #include <qtextstream.h>
 
 #include "logcat.hpp"
+#include "scanenv.hpp"
 
 QS_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
 
@@ -115,50 +118,112 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 	auto stream = QTextStream(&file);
 	auto imports = QVector<QString>();
 
-	while (!stream.atEnd()) {
-		auto line = stream.readLine().trimmed();
-		if (!singleton && line == "pragma Singleton") {
-			singleton = true;
-		} else if (!internal && line == "//@ pragma Internal") {
-			internal = true;
-		} else if (line.startsWith("import")) {
-			// we dont care about "import qs" as we always load the root folder
-			if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
-				importCursor += 4;
-				QString path;
+	bool inHeader = false;
+	auto ifScopes = QVector<bool>();
+	bool sourceMasked = false;
+	int lineNum = 0;
+	QString overrideText;
+	bool isOverridden = false;
 
-				while (importCursor != line.length()) {
-					auto c = line.at(importCursor);
-					if (c == '.') c = '/';
-					else if (c == ' ') break;
-					else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-					         || c == '_')
-					{
-					} else {
-						qCWarning(logQmlScanner) << "Import line contains invalid characters: " << line;
-						goto next;
+	auto pragmaEngine = QJSEngine();
+	pragmaEngine.globalObject().setPrototype(
+	    pragmaEngine.newQObject(new qs::scan::env::PreprocEnv())
+	);
+
+	auto postError = [&, this](QString error) {
+		this->scanErrors.append({.file = path, .message = std::move(error), .line = lineNum});
+	};
+
+	while (!stream.atEnd()) {
+		++lineNum;
+		bool hideMask = false;
+		auto rawLine = stream.readLine();
+		auto line = rawLine.trimmed();
+		if (!sourceMasked && inHeader) {
+			if (!singleton && line == "pragma Singleton") {
+				singleton = true;
+			} else if (line.startsWith("import")) {
+				// we dont care about "import qs" as we always load the root folder
+				if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
+					importCursor += 4;
+					QString path;
+
+					while (importCursor != line.length()) {
+						auto c = line.at(importCursor);
+						if (c == '.') c = '/';
+						else if (c == ' ') break;
+						else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+						         || c == '_')
+						{
+						} else {
+							qCWarning(logQmlScanner) << "Import line contains invalid characters: " << line;
+							goto next;
+						}
+
+						path.append(c);
+						importCursor += 1;
 					}
 
-					path.append(c);
-					importCursor += 1;
+					imports.append(this->rootPath.filePath(path));
+				} else if (auto startQuot = line.indexOf('"');
+				           startQuot != -1 && line.length() >= startQuot + 3)
+				{
+					auto endQuot = line.indexOf('"', startQuot + 1);
+					if (endQuot == -1) continue;
+
+					auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
+					imports.push_back(name);
 				}
-
-				imports.append(this->rootPath.filePath(path));
-			} else if (auto startQuot = line.indexOf('"');
-			           startQuot != -1 && line.length() >= startQuot + 3)
-			{
-				auto endQuot = line.indexOf('"', startQuot + 1);
-				if (endQuot == -1) continue;
-
-				auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
-				imports.push_back(name);
+			} else if (!internal && line == "//@ pragma Internal") {
+				internal = true;
+			} else if (line.contains('{')) {
+				inHeader = true;
 			}
-		} else if (line.contains('{')) break;
+		}
+
+		if (line.startsWith("//@ if ")) {
+			auto code = line.sliced(7);
+			auto value = pragmaEngine.evaluate(code, path, 1234);
+			bool mask = true;
+
+			if (value.isError()) {
+				postError(QString("Evaluating if: %0").arg(value.toString()));
+			} else if (!value.isBool()) {
+				postError(QString("If expression \"%0\" is not a boolean").arg(value.toString()));
+			} else if (value.toBool()) {
+				mask = false;
+			}
+			if (!sourceMasked && mask) hideMask = true;
+			mask = sourceMasked || mask; // cant unmask if a nested if passes
+			ifScopes.append(mask);
+			if (mask) isOverridden = true;
+			sourceMasked = mask;
+		} else if (line.startsWith("//@ endif")) {
+			if (ifScopes.isEmpty()) {
+				postError("endif without matching if");
+			} else {
+				ifScopes.pop_back();
+
+				if (ifScopes.isEmpty()) sourceMasked = false;
+				else sourceMasked = ifScopes.last();
+			}
+		}
+
+		if (!hideMask && sourceMasked) overrideText.append("// MASKED: " % rawLine % '\n');
+		else overrideText.append(rawLine % '\n');
 
 	next:;
 	}
 
+	if (!ifScopes.isEmpty()) {
+		postError("unclosed preprocessor if block");
+	}
+
 	file.close();
+
+	if (isOverridden) {
+		this->fileIntercepts.insert(path, overrideText);
+	}
 
 	if (logQmlScanner().isDebugEnabled() && !imports.isEmpty()) {
 		qCDebug(logQmlScanner) << "Found imports" << imports;

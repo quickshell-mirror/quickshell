@@ -63,9 +63,6 @@ void RootWrapper::reloadGraph(bool hard) {
 	qs::core::QmlToolingSupport::updateTooling(rootPath, scanner);
 	this->configDirWatcher.addPath(rootPath.path());
 
-	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
-	generation->wrapper = this;
-
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {
 		qInfo() << "Reloading configuration...";
@@ -73,6 +70,33 @@ void RootWrapper::reloadGraph(bool hard) {
 	}
 
 	QDir::setCurrent(this->originalWorkingDirectory);
+
+	if (!scanner.scanErrors.isEmpty()) {
+		qCritical() << "Failed to load configuration";
+		QString errorString = "Failed to load configuration";
+		for (auto& error: scanner.scanErrors) {
+			const auto& file = error.file;
+			QString rel;
+			if (file.startsWith(rootPath.path() % '/')) {
+				rel = '@' % file.sliced(rootPath.path().length() + 1);
+			} else {
+				rel = file;
+			}
+
+			auto msg = "  error in " % rel % '[' % QString::number(error.line) % ":0]: " % error.message;
+			errorString += '\n' % msg;
+			qCritical().noquote() << msg;
+		}
+
+		if (this->generation != nullptr && this->generation->qsgInstance != nullptr) {
+			emit this->generation->qsgInstance->reloadFailed(errorString);
+		}
+
+		return;
+	}
+
+	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
+	generation->wrapper = this;
 
 	QUrl url;
 	url.setScheme("qs");

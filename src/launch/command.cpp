@@ -519,8 +519,8 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote().nospace()
-		    << "quickshell 0.2.1, revision " << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
+		qCInfo(logBare).noquote().nospace() << "quickshell " << QS_VERSION << ", revision "
+		                                    << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
 
 		if (state.log.verbosity > 1) {
 			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
