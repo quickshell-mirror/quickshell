@@ -61,7 +61,7 @@ IpcServerConnection::IpcServerConnection(QLocalSocket* socket, IpcServer* server
 
 void IpcServerConnection::onDisconnected() {
 	qCInfo(logIpc) << "IPC connection disconnected" << this;
-	delete this;
+	this->deleteLater();
 }
 
 void IpcServerConnection::onReadyRead() {
@@ -88,7 +88,7 @@ void IpcServerConnection::onReadyRead() {
 
 	// async connections reparent
 	if (dynamic_cast<IpcServer*>(this->parent()) != nullptr) {
-		delete this;
+		this->deleteLater();
 	}
 }
 
