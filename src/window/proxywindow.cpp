@@ -288,10 +288,16 @@ void ProxyWindowBase::setVisibleDirect(bool visible) {
 			this->bBackerVisibility = false;
 			this->deleteWindow();
 		}
-	} else if (this->window != nullptr) {
-		if (visible) this->polishItems();
-		this->window->setVisible(visible);
-		this->bBackerVisibility = visible;
+	} else {
+		if (visible && this->window == nullptr) {
+			this->createWindow();
+		}
+
+		if (this->window != nullptr) {
+			if (visible) this->polishItems();
+			this->window->setVisible(visible);
+			this->bBackerVisibility = visible;
+		}
 	}
 }
 
