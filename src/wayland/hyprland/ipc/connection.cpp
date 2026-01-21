@@ -359,8 +359,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		qCDebug(logHyprlandIpc) << "Workspace removed with id" << id << "name" << name;
 		this->mWorkspaces.removeAt(index);
 
-		// workspaces have not been observed to be referenced after deletion
-		delete workspace;
+		// Use deleteLater to ensure QML bindings don't access dangling pointers
+		workspace->deleteLater();
 
 		for (auto* monitor: this->mMonitors.valueList()) {
 			if (monitor->bindableActiveWorkspace().value() == nullptr) {
@@ -494,7 +494,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 			workspace->toplevels()->removeObject(toplevel);
 		}
 
-		delete toplevel;
+		// Use deleteLater to ensure QML bindings don't access dangling pointers
+		toplevel->deleteLater();
 	} else if (event->name == "movewindowv2") {
 		auto args = event->parseView(3);
 		auto ok = false;
@@ -662,7 +663,8 @@ void HyprlandIpc::refreshWorkspaces(bool canCreate) {
 
 			for (auto* workspace: removedWorkspaces) {
 				this->mWorkspaces.removeObject(workspace);
-				delete workspace;
+				// Use deleteLater to ensure QML bindings don't access dangling pointers
+				workspace->deleteLater();
 			}
 		}
 	});
