@@ -8,6 +8,9 @@
 #include <qtmetamacros.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#ifdef __FreeBSD__
+#include <signal.h>
+#endif
 
 #include "../../core/logcat.hpp"
 #include "ipc.hpp"
