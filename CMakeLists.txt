@@ -45,6 +45,7 @@ boption(ASAN "ASAN (dev)" OFF) # note: better output with gcc than clang
 boption(FRAME_POINTERS "Keep Frame Pointers (dev)" ${ASAN})
 
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	boption(SERVICE_OSS "Open Sound System" ON)
 	boption(CRASH_REPORTER "Crash Handling" OFF)
 	boption(USE_JEMALLOC "Use jemalloc" OFF)
 else()
@@ -78,6 +79,7 @@ boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 boption(BLUETOOTH "Bluetooth" ON)
 boption(NETWORK "Network" ON)
+boption(SERVICE_OSS "Open Sound System" OFF)
 
 include(cmake/install-qml-module.cmake)
 include(cmake/util.cmake)
