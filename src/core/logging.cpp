@@ -31,6 +31,9 @@
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #endif
+#ifdef __FreeBSD__
+#include <unistd.h>
+#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -67,7 +70,7 @@ bool copyFileData(int sourceFd, int destFd, qint64 size) {
 	return true;
 #else
 	std::array<char, 64 * 1024> buffer = {};
-	auto remaining = totalTarget;
+	auto remaining = usize;
 
 	while (remaining > 0) {
 		auto chunk = std::min(remaining, buffer.size());
