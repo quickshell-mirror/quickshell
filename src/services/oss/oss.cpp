@@ -11,7 +11,6 @@
 #include <QHash>
 #include <QList>
 #include <QLoggingCategory>
-#include <QMetaObject>
 #include <QObject>
 #include <QProcess>
 #include <QRegularExpression>
@@ -20,6 +19,7 @@
 #include <QTimer>
 #include <Qt>
 #include <QtAlgorithms>
+#include <QtCore/qtmetamacros.h>
 #include <QtGlobal>
 #include <QtLogging>
 #include <QtTypes>
