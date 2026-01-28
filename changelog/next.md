@@ -43,6 +43,7 @@ set shell id.
 - Fixed asynchronous loaders not working after reload.
 - Fixed asynchronous loaders not working before window creation.
 - Fixed memory leak in IPC handlers.
+- Fixed ClippingRectangle related crashes.
 
 ## Packaging Changes
 
