@@ -39,6 +39,7 @@ public:
 	enum Enum : quint8 {
 		None = 0,
 		NetworkManager = 1,
+		FreeBSD = 2,
 	};
 	Q_ENUM(Enum);
 };
@@ -54,7 +55,7 @@ protected:
 };
 
 ///! The Network service.
-/// An interface to a network backend (currently only NetworkManager),
+/// An interface to a network backend (NetworkManager or FreeBSD),
 /// which can be used to view, configure, and connect to various networks.
 class Networking: public QObject {
 	Q_OBJECT;
