@@ -9,7 +9,12 @@
 
 #include "../core/logcat.hpp"
 #include "device.hpp"
+
+#ifdef __FreeBSD__
+#include "freebsd/backend.hpp"
+#else
 #include "nm/backend.hpp"
+#endif
 
 namespace qs::network {
 
@@ -28,6 +33,38 @@ QString NetworkState::toString(NetworkState::Enum state) {
 }
 
 Networking::Networking(QObject* parent): QObject(parent) {
+	// clang-format off
+	#ifdef __FreeBSD__
+	// clang-format on
+
+	// Try to create the FreeBSD network backend and bind to it.
+	auto* freebsd = new FreeBSDBackend(this);
+	if (freebsd->isAvailable()) {
+		QObject::connect(freebsd, &FreeBSDBackend::deviceAdded, this, &Networking::deviceAdded);
+		QObject::connect(freebsd, &FreeBSDBackend::deviceRemoved, this, &Networking::deviceRemoved);
+		QObject::connect(
+		    this,
+		    &Networking::requestSetWifiEnabled,
+		    freebsd,
+		    &FreeBSDBackend::setWifiEnabled
+		);
+
+		this->bindableWifiEnabled().setBinding([freebsd]() { return freebsd->wifiEnabled(); });
+		this->bindableWifiHardwareEnabled().setBinding([freebsd]() {
+			return freebsd->wifiHardwareEnabled();
+		});
+
+		this->mBackend = freebsd;
+		this->mBackendType = NetworkBackendType::FreeBSD;
+		qCInfo(logNetwork) << "Using FreeBSD network backend";
+		return;
+	} else {
+		delete freebsd;
+	}
+	// clang-format off
+	#else
+	// clang-format on
+
 	// Try to create the NetworkManager backend and bind to it.
 	auto* nm = new NetworkManager(this);
 	if (nm->isAvailable()) {
@@ -36,13 +73,16 @@ Networking::Networking(QObject* parent): QObject(parent) {
 		QObject::connect(this, &Networking::requestSetWifiEnabled, nm, &NetworkManager::setWifiEnabled);
 		this->bindableWifiEnabled().setBinding([nm]() { return nm->wifiEnabled(); });
 		this->bindableWifiHardwareEnabled().setBinding([nm]() { return nm->wifiHardwareEnabled(); });
-
 		this->mBackend = nm;
 		this->mBackendType = NetworkBackendType::NetworkManager;
+		qCInfo(logNetwork) << "Using NetworkManager backend";
 		return;
 	} else {
 		delete nm;
 	}
+	// clang-format off
+	#endif
+	// clang-format on
 
 	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
