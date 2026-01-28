@@ -1,0 +1,23 @@
+<node>
+	<interface name="org.quickshell.SessionLock">
+		<!-- Get the current lock state -->
+		<method name="GetLocked">
+			<arg name="locked" direction="out" type="b"/>
+		</method>
+		
+		<!-- Signal emitted when lock state changes -->
+		<signal name="LockedChanged">
+			<arg name="locked" type="b"/>
+		</signal>
+		
+		<!-- Get whether the compositor has confirmed the lock (secure state) -->
+		<method name="GetSecure">
+			<arg name="secure" direction="out" type="b"/>
+		</method>
+		
+		<!-- Signal emitted when secure state changes -->
+		<signal name="SecureChanged">
+			<arg name="secure" type="b"/>
+		</signal>
+	</interface>
+</node>
