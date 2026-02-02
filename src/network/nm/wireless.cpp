@@ -17,14 +17,15 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../connection.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
 #include "connection.hpp"
 #include "dbus_nm_wireless.h"
-#include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 
 namespace qs::network {
@@ -39,30 +40,16 @@ NMWirelessNetwork::NMWirelessNetwork(QString ssid, QObject* parent)
     , mSsid(std::move(ssid))
     , bKnown(false)
     , bSecurity(WifiSecurityType::Unknown)
-    , bReason(NMConnectionStateReason::None)
+    , bReason(NMNetworkStateReason::None)
     , bState(NMConnectionState::Deactivated) {}
 
-void NMWirelessNetwork::updateReferenceConnection() {
-	// If the network has no connections, the reference is nullptr.
+void NMWirelessNetwork::updateDefaultConnection() {
+	// If the network has no connections, the default is nullptr.
 	if (this->mConnections.isEmpty()) {
-		this->mReferenceConn = nullptr;
-		this->bSecurity = WifiSecurityType::Unknown;
-		// Set security back to reference AP.
-		if (this->mReferenceAp) {
-			this->bSecurity.setBinding([this]() { return this->mReferenceAp->security(); });
-		}
+		this->mDefaultConnection = nullptr;
+		this->bDefaultFrontendConnection = nullptr;
 		return;
 	};
-
-	// If the network has an active connection, use it as the reference.
-	if (this->mActiveConnection) {
-		auto* conn = this->mConnections.value(this->mActiveConnection->connection().path());
-		if (conn && conn != this->mReferenceConn) {
-			this->mReferenceConn = conn;
-			this->bSecurity.setBinding([conn]() { return conn->security(); });
-		}
-		return;
-	}
 
 	// Otherwise, choose the connection with the strongest security settings.
 	NMConnectionSettings* selectedConn = nullptr;
@@ -71,9 +58,19 @@ void NMWirelessNetwork::updateReferenceConnection() {
 			selectedConn = conn;
 		}
 	}
-	if (this->mReferenceConn != selectedConn) {
-		this->mReferenceConn = selectedConn;
-		this->bSecurity.setBinding([selectedConn]() { return selectedConn->security(); });
+	if (this->mDefaultConnection != selectedConn) {
+		this->mDefaultConnection = selectedConn;
+		this->bDefaultFrontendConnection = this->mFrontendConnections.value(selectedConn->path());
+	}
+}
+
+void NMWirelessNetwork::setDefaultConnection(NMConnection* frontendConn) {
+	for (auto it = this->mFrontendConnections.begin(); it != this->mFrontendConnections.end(); ++it) {
+		if (it.value() == frontendConn) {
+			this->mDefaultConnection = this->mConnections.value(it.key());
+			this->bDefaultFrontendConnection = frontendConn;
+			return;
+		}
 	}
 }
 
@@ -100,10 +97,7 @@ void NMWirelessNetwork::updateReferenceAp() {
 	if (this->mReferenceAp != selectedAp) {
 		this->mReferenceAp = selectedAp;
 		this->bSignalStrength.setBinding([selectedAp]() { return selectedAp->signalStrength(); });
-		// Reference AP is used for security when there's no connection settings.
-		if (!this->mReferenceConn) {
-			this->bSecurity.setBinding([selectedAp]() { return selectedAp->security(); });
-		}
+		this->bSecurity.setBinding([selectedAp]() { return selectedAp->security(); });
 	}
 }
 
@@ -126,36 +120,64 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 void NMWirelessNetwork::addConnection(NMConnectionSettings* conn) {
 	if (this->mConnections.contains(conn->path())) return;
 	this->mConnections.insert(conn->path(), conn);
+	this->registerFrontendConnection(conn);
+	if (!this->mDefaultConnection) {
+		this->mDefaultConnection = conn;
+		this->bDefaultFrontendConnection = this->mFrontendConnections.value(conn->path());
+	}
+
 	auto onDestroyed = [this, conn]() {
 		if (this->mConnections.take(conn->path())) {
-			this->updateReferenceConnection();
+			this->removeFrontendConnection(conn);
+			this->updateDefaultConnection();
 			if (this->mConnections.isEmpty()) this->bKnown = false;
 			if (this->mAccessPoints.isEmpty() && this->mConnections.isEmpty()) emit this->disappeared();
 		}
 	};
 	// clang-format off
-	QObject::connect(conn, &NMConnectionSettings::securityChanged, this, &NMWirelessNetwork::updateReferenceConnection);
 	QObject::connect(conn, &NMConnectionSettings::destroyed, this, onDestroyed);
 	// clang-format on
 	this->bKnown = true;
-	this->updateReferenceConnection();
 };
+
+void NMWirelessNetwork::registerFrontendConnection(NMConnectionSettings* conn) {
+	auto* frontendConn = new NMConnection(conn);
+
+	frontendConn->bindableSettings().setBinding([conn]() { return conn->settings(); });
+	frontendConn->bindableId().setBinding([conn]() { return conn->id(); });
+
+	// clang-format off
+	QObject::connect(frontendConn, &NMConnection::requestUpdateSettings, conn, &NMConnectionSettings::updateSettings);
+	QObject::connect(frontendConn, &NMConnection::requestClearSecrets, conn, &NMConnectionSettings::clearSecrets);
+	QObject::connect(frontendConn, &NMConnection::requestForget, conn, &NMConnectionSettings::forget);
+	// clang-format on
+
+	this->mFrontendConnections.insert(conn->path(), frontendConn);
+	emit this->connectionAdded(frontendConn);
+}
+
+void NMWirelessNetwork::removeFrontendConnection(NMConnectionSettings* conn) {
+	auto* frontendConn = this->mFrontendConnections.take(conn->path());
+	if (frontendConn) {
+		emit this->connectionRemoved(frontendConn);
+		frontendConn->deleteLater();
+	}
+}
 
 void NMWirelessNetwork::addActiveConnection(NMActiveConnection* active) {
 	if (this->mActiveConnection) return;
 	this->mActiveConnection = active;
+
 	this->bState.setBinding([active]() { return active->state(); });
 	this->bReason.setBinding([active]() { return active->stateReason(); });
 	auto onDestroyed = [this, active]() {
 		if (this->mActiveConnection && this->mActiveConnection == active) {
 			this->mActiveConnection = nullptr;
-			this->updateReferenceConnection();
 			this->bState = NMConnectionState::Deactivated;
-			this->bReason = NMConnectionStateReason::None;
+			this->bReason = NMNetworkStateReason::None;
 		}
 	};
 	QObject::connect(active, &NMActiveConnection::destroyed, this, onDestroyed);
-	this->updateReferenceConnection();
 };
 
 void NMWirelessNetwork::forget() {
@@ -385,16 +407,19 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	frontendNet->bindableSignalStrength().setBinding(translateSignal);
 	frontendNet->bindableConnected().setBinding(translateState);
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
-	frontendNet->bindableNmReason().setBinding([net]() { return net->reason(); });
+	frontendNet->bindableStateReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
 	frontendNet->bindableState().setBinding([net]() {
 		return static_cast<NetworkState::Enum>(net->state());
 	});
+	frontendNet->bindableNmDefaultConnection().setBinding([net]() {
+		return net->defaultFrontendConn();
+	});
 
 	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, [this, net]() {
-		if (net->referenceConnection()) {
+		if (net->defaultConn()) {
 			emit this->activateConnection(
-			    QDBusObjectPath(net->referenceConnection()->path()),
+			    QDBusObjectPath(net->defaultConn()->path()),
 			    QDBusObjectPath(this->path())
 			);
 			return;
@@ -408,14 +433,17 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 		}
 	});
 
-	QObject::connect(
-	    frontendNet,
-	    &WifiNetwork::requestDisconnect,
-	    this,
-	    &NMWirelessDevice::disconnect
-	);
-
+	// clang-format off
+	QObject::connect(frontendNet, &WifiNetwork::requestDisconnect, this, &NMWirelessDevice::disconnect);
+	QObject::connect(frontendNet, &WifiNetwork::requestSetNmDefaultConnection, net, &NMWirelessNetwork::setDefaultConnection);
 	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
+	QObject::connect(net, &NMWirelessNetwork::connectionAdded, frontendNet, &WifiNetwork::connectionAdded);
+	QObject::connect(net, &NMWirelessNetwork::connectionRemoved, frontendNet, &WifiNetwork::connectionRemoved);
+	// clang-format on
+
+	for (NMConnection* frontendConn: net->frontendConnections()) {
+		emit frontendNet->connectionAdded(frontendConn);
+	};
 
 	this->mFrontendNetworks.insert(ssid, frontendNet);
 	emit this->networkAdded(frontendNet);

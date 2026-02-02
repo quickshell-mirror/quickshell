@@ -66,6 +66,11 @@ void NetworkDevice::setAutoconnect(bool autoconnect) {
 	emit this->requestSetAutoconnect(autoconnect);
 }
 
+void NetworkDevice::setNmManaged(bool managed) {
+	if (this->bNmManaged == managed) return;
+	emit this->requestSetNmManaged(managed);
+}
+
 void NetworkDevice::disconnect() {
 	if (this->bState == DeviceConnectionState::Disconnected) {
 		qCCritical(logNetworkDevice) << "Device" << this << "is already disconnected";

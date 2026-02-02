@@ -85,9 +85,15 @@ class NetworkDevice: public QObject {
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 	/// Connection state of the device.
 	Q_PROPERTY(qs::network::DeviceConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
-	/// A more specific device state when the backend is NetworkManager.
+	/// A more specific device state.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend. 
 	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
-	/// True if the device is allowed to autoconnect.
+	/// True if the device is managed by NetworkManager.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_PROPERTY(bool nmManaged READ nmManaged WRITE setNmManaged NOTIFY nmManagedChanged)
+	/// True if the device is allowed to autoconnect to a network.
 	Q_PROPERTY(bool autoconnect READ autoconnect WRITE setAutoconnect NOTIFY autoconnectChanged);
 	// clang-format on
 
@@ -104,18 +110,23 @@ public:
 	QBindable<bool> bindableConnected() { return &this->bConnected; };
 	QBindable<DeviceConnectionState::Enum> bindableState() { return &this->bState; };
 	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
-	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
+	QBindable<bool> bindableNmManaged() { return &this->bNmManaged; };
+	[[nodiscard]] bool nmManaged() { return this->bNmManaged; };
+	void setNmManaged(bool managed);
 	QBindable<bool> bindableAutoconnect() { return &this->bAutoconnect; };
+	[[nodiscard]] bool autoconnect() { return this->bAutoconnect; };
 	void setAutoconnect(bool autoconnect);
 
 signals:
 	void requestDisconnect();
 	void requestSetAutoconnect(bool autoconnect);
+	void requestSetNmManaged(bool managed);
 	void nameChanged();
 	void addressChanged();
 	void connectedChanged();
 	void stateChanged();
 	void nmStateChanged();
+	void nmManagedChanged();
 	void autoconnectChanged();
 
 private:
@@ -126,6 +137,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bConnected, &NetworkDevice::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, DeviceConnectionState::Enum, bState, &NetworkDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceState::Enum, bNmState, &NetworkDevice::nmStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bNmManaged, &NetworkDevice::nmManagedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bAutoconnect, &NetworkDevice::autoconnectChanged);
 	// clang-format on
 };

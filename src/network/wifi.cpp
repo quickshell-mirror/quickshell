@@ -2,20 +2,13 @@
 #include <utility>
 
 #include <qdebug.h>
-#include <qlogging.h>
-#include <qloggingcategory.h>
 #include <qobject.h>
 #include <qstring.h>
 
-#include "../core/logcat.hpp"
 #include "device.hpp"
 #include "network.hpp"
 
 namespace qs::network {
-
-namespace {
-QS_LOGGING_CATEGORY(logWifi, "quickshell.network.wifi", QtWarningMsg);
-} // namespace
 
 QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
 	switch (type) {
@@ -46,58 +39,7 @@ QString WifiDeviceMode::toString(WifiDeviceMode::Enum mode) {
 	};
 }
 
-QString NMConnectionStateReason::toString(NMConnectionStateReason::Enum reason) {
-	switch (reason) {
-	case Unknown: return QStringLiteral("Unknown");
-	case None: return QStringLiteral("No reason");
-	case UserDisconnected: return QStringLiteral("User disconnection");
-	case DeviceDisconnected:
-		return QStringLiteral("The device the connection was using was disconnected.");
-	case ServiceStopped:
-		return QStringLiteral("The service providing the VPN connection was stopped.");
-	case IpConfigInvalid:
-		return QStringLiteral("The IP config of the active connection was invalid.");
-	case ConnectTimeout:
-		return QStringLiteral("The connection attempt to the VPN service timed out.");
-	case ServiceStartTimeout:
-		return QStringLiteral(
-		    "A timeout occurred while starting the service providing the VPN connection."
-		);
-	case ServiceStartFailed:
-		return QStringLiteral("Starting the service providing the VPN connection failed.");
-	case NoSecrets: return QStringLiteral("Necessary secrets for the connection were not provided.");
-	case LoginFailed: return QStringLiteral("Authentication to the server failed.");
-	case ConnectionRemoved:
-		return QStringLiteral("Necessary secrets for the connection were not provided.");
-	case DependencyFailed:
-		return QStringLiteral("Master connection of this connection failed to activate.");
-	case DeviceRealizeFailed: return QStringLiteral("Could not create the software device link.");
-	case DeviceRemoved: return QStringLiteral("The device this connection depended on disappeared.");
-	default: return QStringLiteral("Unknown");
-	};
-};
-
 WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {};
-
-void WifiNetwork::connect() {
-	if (this->bConnected) {
-		qCCritical(logWifi) << this << "is already connected.";
-		return;
-	}
-
-	this->requestConnect();
-}
-
-void WifiNetwork::disconnect() {
-	if (!this->bConnected) {
-		qCCritical(logWifi) << this << "is not currently connected";
-		return;
-	}
-
-	this->requestDisconnect();
-}
-
-void WifiNetwork::forget() { this->requestForget(); }
 
 WifiDevice::WifiDevice(QObject* parent): NetworkDevice(DeviceType::Wifi, parent) {};
 

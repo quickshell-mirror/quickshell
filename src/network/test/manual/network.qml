@@ -58,7 +58,7 @@ FloatingWindow {
 							color: modelData.connected ? palette.link : palette.placeholderText
 						}
 						Label {
-							visible: Networking.backend == NetworkBackendType.NetworkManager && (modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting)
+							visible: (modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting)
 							text: `(${NMDeviceState.toString(modelData.nmState)})`
 						}
 						Button {
@@ -122,13 +122,34 @@ FloatingWindow {
 											color: palette.placeholderText
 										}
 									}
-									Label {
-										visible: Networking.backend == NetworkBackendType.NetworkManager && (modelData.nmReason != NMConnectionStateReason.Unknown && modelData.nmReason != NMConnectionStateReason.None)
-										text: `Connection change reason: ${NMConnectionStateReason.toString(modelData.nmReason)}`
+									RowLayout {
+										Text {
+											text: `Default settings: ` 
+										}
+										ComboBox {
+											model: modelData.nmConnections.values.map(conn => conn.id)
+											currentIndex: modelData.nmConnections.indexOf(modelData.nmDefaultConnection)
+											onActivated: (index) => {
+												modelData.nmDefaultConnection = modelData.nmConnections.values[index]
+											}
+										}
+										Button {
+											text: `Delete`
+											onClicked: modelData.nmDefaultConnection.forget()
+											visible: modelData.nmDefaultConnection
+										}
+										visible: modelData.known
 									}
 								}
 								RowLayout {
 									Layout.alignment: Qt.AlignRight
+									Label {
+										text: NetworkState.toString(modelData.state)
+									}
+									Label {
+										visible: modelData.stateReason != NMNetworkStateReason.None && modelData.stateReason != NMNetworkStateReason.Unknown
+										text: `(${NMNetworkStateReason.toString(modelData.stateReason)})`
+									}
 									Button {
 										text: "Connect"
 										onClicked: modelData.connect()

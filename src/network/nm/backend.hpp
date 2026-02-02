@@ -11,6 +11,8 @@
 #include "../network.hpp"
 #include "dbus_nm_backend.h"
 #include "device.hpp"
+#include "enums.hpp"
+#include "types.hpp"
 
 namespace qs::network {
 

@@ -9,7 +9,6 @@
 
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
-#include "connection.hpp"
 #include "dbus_nm_wireless.h"
 #include "device.hpp"
 #include "enums.hpp"
@@ -41,7 +40,10 @@ public:
 
 	void addAccessPoint(NMAccessPoint* ap);
 	void addConnection(NMConnectionSettings* conn);
+	void registerFrontendConnection(NMConnectionSettings* conn);
+	void removeFrontendConnection(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
+	void setDefaultConnection(NMConnection* frontendConn);
 	void forget();
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
@@ -49,12 +51,18 @@ public:
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
 	[[nodiscard]] bool known() const { return this->bKnown; };
-	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->bReason; };
+	[[nodiscard]] NMNetworkStateReason::Enum reason() const { return this->bReason; };
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
-	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
+	[[nodiscard]] NMConnectionSettings* defaultConn() const { return this->mDefaultConnection; };
+	[[nodiscard]] NMConnection* defaultFrontendConn() const {
+		return this->bDefaultFrontendConnection;
+	};
 	[[nodiscard]] QList<NMConnectionSettings*> connections() const {
 		return this->mConnections.values();
+	}
+	[[nodiscard]] QList<NMConnection*> frontendConnections() const {
+		return this->mFrontendConnections.values();
 	}
 	[[nodiscard]] QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
 	[[nodiscard]] QBindable<bool> bindableVisible() { return &this->bVisible; };
@@ -62,31 +70,36 @@ public:
 
 signals:
 	void disappeared();
+	void connectionAdded(NMConnection* conn);
+	void connectionRemoved(NMConnection* conn);
+	void defaultFrontendConnectionChanged(NMConnection* conn);
 	void visibilityChanged(bool visible);
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
 	void securityChanged(WifiSecurityType::Enum security);
-	void reasonChanged(NMConnectionStateReason::Enum reason);
+	void reasonChanged(NMNetworkStateReason::Enum reason);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeApPathChanged(QString path);
 
 private:
 	void updateReferenceAp();
-	void updateReferenceConnection();
+	void updateDefaultConnection();
 
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
+	QHash<QString, NMConnection*> mFrontendConnections;
 	NMAccessPoint* mReferenceAp = nullptr;
-	NMConnectionSettings* mReferenceConn = nullptr;
 	NMActiveConnection* mActiveConnection = nullptr;
+	NMConnectionSettings* mDefaultConnection = nullptr;
 
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnection*, bDefaultFrontendConnection, &NMWirelessNetwork::defaultFrontendConnectionChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bVisible, &NMWirelessNetwork::visibilityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bKnown, &NMWirelessNetwork::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMNetworkStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);

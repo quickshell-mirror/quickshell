@@ -4,6 +4,7 @@ qt_add_library(quickshell-network STATIC
 	network.cpp
 	device.cpp
 	wifi.cpp
+	connection.cpp
 )
 
 target_include_directories(quickshell-network PRIVATE 

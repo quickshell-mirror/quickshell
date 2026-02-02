@@ -14,11 +14,11 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "../wifi.hpp"
+#include "../network.hpp"
 #include "dbus_nm_active_connection.h"
 #include "dbus_nm_connection_settings.h"
-#include "dbus_types.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 
 namespace qs::network {
@@ -43,21 +43,24 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 		return;
 	}
 
-	QObject::connect(
-	    this->proxy,
-	    &DBusNMConnectionSettingsProxy::Updated,
-	    this,
-	    &NMConnectionSettings::updateSettings
-	);
+	// clang-format off
+	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSettings);
+	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSecrets);
+	// clang-format on
+
 	this->bSecurity.setBinding([this]() { return securityFromConnectionSettings(this->bSettings); });
+	this->bId.setBinding([this]() {
+		return this->bSettings.value().value("connection").value("id").toString();
+	});
 
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
 
-	this->updateSettings();
+	this->getSettings();
+	this->getSecrets();
 }
 
-void NMConnectionSettings::updateSettings() {
+void NMConnectionSettings::getSettings() {
 	auto pending = this->proxy->GetSettings();
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
@@ -66,7 +69,7 @@ void NMConnectionSettings::updateSettings() {
 
 		if (reply.isError()) {
 			qCWarning(logNetworkManager)
-			    << "Failed to get" << this->path() << "settings:" << reply.error().message();
+			    << "Failed to get settings for" << this->path() << ":" << reply.error().message();
 		} else {
 			this->bSettings = reply.value();
 		}
@@ -74,6 +77,57 @@ void NMConnectionSettings::updateSettings() {
 		if (!this->mLoaded) {
 			emit this->loaded();
 			this->mLoaded = true;
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void NMConnectionSettings::getSecrets() {
+	auto pending = this->proxy->GetSecrets("");
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<ConnectionSettingsMap> reply = *call;
+		// We fail silently because this will error if there's no secrets to get
+		if (!reply.isError()) {
+			this->bSecretSettings = reply.value();
+		}
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void NMConnectionSettings::updateSettings(const ConnectionSettingsMap& settings) {
+	auto pending = this->proxy->Update(settings);
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logNetworkManager)
+			    << "Failed to update settings for" << this->path() << ":" << reply.error().message();
+		}
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void NMConnectionSettings::clearSecrets() {
+	auto pending = this->proxy->ClearSecrets();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logNetworkManager)
+			    << "Failed to clear secrets for" << this->path() << ":" << reply.error().message();
 		}
 		delete call;
 	};
@@ -127,7 +181,7 @@ NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QO
 }
 
 void NMActiveConnection::onStateChanged(quint32 /*state*/, quint32 reason) {
-	auto enumReason = static_cast<NMConnectionStateReason::Enum>(reason);
+	auto enumReason = static_cast<NMNetworkStateReason::Enum>(reason);
 	if (this->mStateReason == enumReason) return;
 	this->mStateReason = enumReason;
 	emit this->stateReasonChanged(enumReason);

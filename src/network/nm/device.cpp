@@ -125,6 +125,12 @@ void NMDevice::setAutoconnect(bool autoconnect) {
 	this->pAutoconnect.write();
 }
 
+void NMDevice::setManaged(bool managed) {
+	if (managed == this->bManaged) return;
+	this->bManaged = managed;
+	this->pManaged.write();
+}
+
 bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }
 QString NMDevice::address() const {
 	return this->deviceProxy ? this->deviceProxy->service() : QString();

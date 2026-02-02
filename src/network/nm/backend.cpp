@@ -19,9 +19,9 @@
 #include "../wifi.hpp"
 #include "dbus_nm_backend.h"
 #include "dbus_nm_device.h"
-#include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 #include "wireless.hpp"
 
 namespace qs::network {
@@ -122,17 +122,12 @@ void NetworkManager::registerDevice(const QString& path) {
 					delete dev;
 				} else {
 					this->mDevices[path] = dev;
-					// Only register a frontend device while it's managed by NM.
-					auto onManagedChanged = [this, dev, type](bool managed) {
-						managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
-					};
 					// clang-format off
 					QObject::connect(dev, &NMDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
 					QObject::connect(dev, &NMDevice::activateConnection, this, &NetworkManager::activateConnection);
-					QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
 					// clang-format on
 
-					if (dev->managed()) this->registerFrontendDevice(type, dev);
+					this->registerFrontendDevice(type, dev);
 				}
 			}
 			temp->deleteLater();
@@ -186,8 +181,10 @@ void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* d
 	frontendDev->bindableNmState().setBinding([dev]() { return dev->state(); });
 	frontendDev->bindableState().setBinding(translateState);
 	frontendDev->bindableAutoconnect().setBinding([dev]() { return dev->autoconnect(); });
+	frontendDev->bindableNmManaged().setBinding([dev]() { return dev->managed(); });
 	QObject::connect(frontendDev, &WifiDevice::requestDisconnect, dev, &NMDevice::disconnect);
 	QObject::connect(frontendDev, &NetworkDevice::requestSetAutoconnect, dev, &NMDevice::setAutoconnect);
+	QObject::connect(frontendDev, &NetworkDevice::requestSetNmManaged, dev, &NMDevice::setManaged);
 	// clang-format on
 
 	this->mFrontendDevices.insert(dev->path(), frontendDev);

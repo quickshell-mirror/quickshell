@@ -10,6 +10,7 @@
 #include "../../dbus/properties.hpp"
 #include "connection.hpp"
 #include "dbus_nm_device.h"
+#include "types.hpp"
 
 namespace qs::dbus {
 
@@ -64,6 +65,7 @@ signals:
 public slots:
 	void disconnect();
 	void setAutoconnect(bool autoconnect);
+	void setManaged(bool managed);
 
 private slots:
 	void onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths);
@@ -73,6 +75,7 @@ private:
 	void registerConnection(const QString& path);
 
 	QHash<QString, NMConnectionSettings*> mConnections;
+	QHash<QString, NMConnection*> mFrontendConnections;
 	NMActiveConnection* mActiveConnection = nullptr;
 
 	// clang-format off

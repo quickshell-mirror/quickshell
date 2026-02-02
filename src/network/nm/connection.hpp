@@ -9,11 +9,12 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
+#include "../network.hpp"
 #include "../wifi.hpp"
 #include "dbus_nm_active_connection.h"
 #include "dbus_nm_connection_settings.h"
-#include "dbus_types.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 
 namespace qs::dbus {
 
@@ -36,26 +37,34 @@ public:
 	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
 
 	void forget();
+	void updateSettings(const ConnectionSettingsMap& settings);
+	void clearSecrets();
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
+	[[nodiscard]] ConnectionSettingsMap secretSettings() const { return this->bSecretSettings; };
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
-	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; };
+	[[nodiscard]] QString id() const { return this->bId; };
 
 signals:
 	void loaded();
 	void settingsChanged(ConnectionSettingsMap settings);
+	void secretSettingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
-	void ssidChanged(QString ssid);
+	void idChanged(QString id);
 
 private:
 	bool mLoaded = false;
-	void updateSettings();
+	void getSettings();
+	void getSecrets();
+
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSecretSettings, &NMConnectionSettings::secretSettingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bId, &NMConnectionSettings::idChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
 	// clang-format on
 
@@ -74,20 +83,20 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QDBusObjectPath connection() const { return this->bConnection; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
-	[[nodiscard]] NMConnectionStateReason::Enum stateReason() const { return this->mStateReason; };
+	[[nodiscard]] NMNetworkStateReason::Enum stateReason() const { return this->mStateReason; };
 
 signals:
 	void loaded();
 	void connectionChanged(QDBusObjectPath path);
 	void stateChanged(NMConnectionState::Enum state);
-	void stateReasonChanged(NMConnectionStateReason::Enum reason);
+	void stateReasonChanged(NMNetworkStateReason::Enum reason);
 	void uuidChanged(const QString& uuid);
 
 private slots:
 	void onStateChanged(quint32 state, quint32 reason);
 
 private:
-	NMConnectionStateReason::Enum mStateReason = NMConnectionStateReason::Unknown;
+	NMNetworkStateReason::Enum mStateReason = NMNetworkStateReason::Unknown;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, QDBusObjectPath, bConnection, &NMActiveConnection::connectionChanged);

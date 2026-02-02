@@ -12,8 +12,8 @@
 #include <qtypes.h>
 
 #include "../wifi.hpp"
-#include "dbus_types.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 
 namespace qs::network {
 
@@ -222,6 +222,15 @@ WifiSecurityType::Enum findBestWirelessSecurity(
 		}
 	}
 	return WifiSecurityType::Unknown;
+}
+
+ConnectionSettingsMap
+mergeSettingsMaps(const ConnectionSettingsMap& target, const ConnectionSettingsMap& source) {
+	ConnectionSettingsMap result = target;
+	for (auto iter = source.constBegin(); iter != source.constEnd(); ++iter) {
+		result[iter.key()].insert(iter.value());
+	}
+	return result;
 }
 
 // NOLINTBEGIN

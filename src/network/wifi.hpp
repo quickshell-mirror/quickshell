@@ -60,35 +60,6 @@ public:
 	Q_INVOKABLE static QString toString(WifiDeviceMode::Enum mode);
 };
 
-///! NetworkManager-specific reason for a WifiNetworks connection state.
-/// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
-class NMConnectionStateReason: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		None = 1,
-		UserDisconnected = 2,
-		DeviceDisconnected = 3,
-		ServiceStopped = 4,
-		IpConfigInvalid = 5,
-		ConnectTimeout = 6,
-		ServiceStartTimeout = 7,
-		ServiceStartFailed = 8,
-		NoSecrets = 9,
-		LoginFailed = 10,
-		ConnectionRemoved = 11,
-		DependencyFailed = 12,
-		DeviceRealizeFailed = 13,
-		DeviceRemoved = 14
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NMConnectionStateReason::Enum reason);
-};
-
 ///! An available wifi network.
 class WifiNetwork: public Network {
 	Q_OBJECT;
@@ -97,46 +68,23 @@ class WifiNetwork: public Network {
 	// clang-format off
 	/// The current signal strength of the network, from 0.0 to 1.0.
 	Q_PROPERTY(qreal signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
-	/// True if the wifi network has known connection settings saved.
-	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	/// The security type of the wifi network.
 	Q_PROPERTY(WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
-	/// A specific reason for the connection state when the backend is NetworkManager.
-	Q_PROPERTY(NMConnectionStateReason::Enum nmReason READ default NOTIFY nmReasonChanged BINDABLE bindableNmReason);
 	// clang-format on
 
 public:
 	explicit WifiNetwork(QString ssid, QObject* parent = nullptr);
 
-	/// Attempt to connect to the wifi network.
-	///
-	/// > [!WARNING] Quickshell does not yet provide a NetworkManager authentication agent,
-	/// > meaning another agent will need to be active to enter passwords for unsaved networks.
-	Q_INVOKABLE void connect();
-	/// Disconnect from the wifi network.
-	Q_INVOKABLE void disconnect();
-	/// Forget all connection settings for this wifi network.
-	Q_INVOKABLE void forget();
-
 	QBindable<qreal> bindableSignalStrength() { return &this->bSignalStrength; }
-	QBindable<bool> bindableKnown() { return &this->bKnown; }
-	QBindable<NMConnectionStateReason::Enum> bindableNmReason() { return &this->bNmReason; }
 	QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
 
 signals:
-	void requestConnect();
-	void requestDisconnect();
-	void requestForget();
 	void signalStrengthChanged();
-	void knownChanged();
 	void securityChanged();
-	void nmReasonChanged();
 
 private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, qreal, bSignalStrength, &WifiNetwork::signalStrengthChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, bool, bKnown, &WifiNetwork::knownChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, NMConnectionStateReason::Enum, bNmReason, &WifiNetwork::nmReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, WifiSecurityType::Enum, bSecurity, &WifiNetwork::securityChanged);
 	// clang-format on
 };
