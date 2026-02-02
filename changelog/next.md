@@ -20,7 +20,7 @@ set shell id.
 - Added the ability to handle move and resize events to FloatingWindow.
 - Pipewire service now reconnects if pipewire dies or a protocol error occurs.
 - Added pipewire audio peak detection.
-- Added initial support for network management.
+- Added network management support.
 - Added support for grabbing focus from popup windows.
 - Added support for IPC signal listeners.
 - Added Quickshell version checking and version gated preprocessing.

@@ -1,5 +1,10 @@
 <node>
   <interface name="org.freedesktop.NetworkManager.Device">
     <method name="Disconnect"/>
+		<signal name="StateChanged">
+			<arg name="new_state" type="u"/>
+			<arg name="old_state" type="u"/>
+			<arg name="reason" type="u"/>
+		</signal>
   </interface>
 </node>

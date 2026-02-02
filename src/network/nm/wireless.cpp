@@ -1,6 +1,7 @@
 #include "wireless.hpp"
 #include <utility>
 
+#include <qcontainerfwd.h>
 #include <qdatetime.h>
 #include <qdbusconnection.h>
 #include <qdbusextratypes.h>
@@ -11,20 +12,23 @@
 #include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "../network.hpp"
+#include "../enums.hpp"
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
-#include "connection.hpp"
+#include "active_connection.hpp"
 #include "dbus_nm_wireless.h"
 #include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+#include "settings.hpp"
 #include "utils.hpp"
 
 namespace qs::network {
@@ -42,38 +46,43 @@ NMWirelessNetwork::NMWirelessNetwork(QString ssid, QObject* parent)
     , bReason(NMConnectionStateReason::None)
     , bState(NMConnectionState::Deactivated) {}
 
-void NMWirelessNetwork::updateReferenceConnection() {
+void NMWirelessNetwork::updateReferenceSettings() {
 	// If the network has no connections, the reference is nullptr.
-	if (this->mConnections.isEmpty()) {
-		this->mReferenceConn = nullptr;
+	if (this->mSettings.isEmpty()) {
+		this->mReferenceSettings = nullptr;
 		this->bSecurity = WifiSecurityType::Unknown;
-		// Set security back to reference AP.
 		if (this->mReferenceAp) {
 			this->bSecurity.setBinding([this]() { return this->mReferenceAp->security(); });
 		}
 		return;
 	};
 
-	// If the network has an active connection, use it as the reference.
+	// If the network has an active connection, use its settings as the reference.
 	if (this->mActiveConnection) {
-		auto* conn = this->mConnections.value(this->mActiveConnection->connection().path());
-		if (conn && conn != this->mReferenceConn) {
-			this->mReferenceConn = conn;
-			this->bSecurity.setBinding([conn]() { return conn->security(); });
+		auto* settings = this->mSettings.value(this->mActiveConnection->connection().path());
+		if (settings && settings != this->mReferenceSettings) {
+			this->mReferenceSettings = settings;
+			this->bSecurity.setBinding([settings]() { return securityFromSettingsMap(settings->map()); });
 		}
 		return;
 	}
 
-	// Otherwise, choose the connection with the strongest security settings.
-	NMConnectionSettings* selectedConn = nullptr;
-	for (auto* conn: this->mConnections.values()) {
-		if (!selectedConn || conn->security() > selectedConn->security()) {
-			selectedConn = conn;
+	// Otherwise, choose the settings responsible for the last successful connection.
+	NMSettings* selectedSettings = nullptr;
+	quint64 selectedTimestamp = 0;
+	for (auto* settings: this->mSettings.values()) {
+		const quint64 timestamp = settings->map()["connection"]["timestamp"].toULongLong();
+		if (!selectedSettings || timestamp > selectedTimestamp) {
+			selectedSettings = settings;
+			selectedTimestamp = timestamp;
 		}
 	}
-	if (this->mReferenceConn != selectedConn) {
-		this->mReferenceConn = selectedConn;
-		this->bSecurity.setBinding([selectedConn]() { return selectedConn->security(); });
+
+	if (this->mReferenceSettings != selectedSettings) {
+		this->mReferenceSettings = selectedSettings;
+		this->bSecurity.setBinding([selectedSettings]() {
+			return securityFromSettingsMap(selectedSettings->map());
+		});
 	}
 }
 
@@ -101,7 +110,7 @@ void NMWirelessNetwork::updateReferenceAp() {
 		this->mReferenceAp = selectedAp;
 		this->bSignalStrength.setBinding([selectedAp]() { return selectedAp->signalStrength(); });
 		// Reference AP is used for security when there's no connection settings.
-		if (!this->mReferenceConn) {
+		if (!this->mReferenceSettings) {
 			this->bSecurity.setBinding([selectedAp]() { return selectedAp->security(); });
 		}
 	}
@@ -113,7 +122,7 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 	auto onDestroyed = [this, ap]() {
 		if (this->mAccessPoints.take(ap->path())) {
 			this->updateReferenceAp();
-			if (this->mAccessPoints.isEmpty() && this->mConnections.isEmpty()) emit this->disappeared();
+			if (this->mAccessPoints.isEmpty() && this->mSettings.isEmpty()) emit this->disappeared();
 		}
 	};
 	// clang-format off
@@ -123,44 +132,45 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 	this->updateReferenceAp();
 };
 
-void NMWirelessNetwork::addConnection(NMConnectionSettings* conn) {
-	if (this->mConnections.contains(conn->path())) return;
-	this->mConnections.insert(conn->path(), conn);
-	auto onDestroyed = [this, conn]() {
-		if (this->mConnections.take(conn->path())) {
-			this->updateReferenceConnection();
-			if (this->mConnections.isEmpty()) this->bKnown = false;
-			if (this->mAccessPoints.isEmpty() && this->mConnections.isEmpty()) emit this->disappeared();
+void NMWirelessNetwork::addSettings(NMSettings* settings) {
+	if (this->mSettings.contains(settings->path())) return;
+	this->mSettings.insert(settings->path(), settings);
+
+	auto onDestroyed = [this, settings]() {
+		if (this->mSettings.take(settings->path())) {
+			emit this->settingsRemoved(settings);
+			this->updateReferenceSettings();
+			if (this->mSettings.isEmpty()) this->bKnown = false;
+			if (this->mAccessPoints.isEmpty() && this->mSettings.isEmpty()) emit this->disappeared();
 		}
 	};
-	// clang-format off
-	QObject::connect(conn, &NMConnectionSettings::securityChanged, this, &NMWirelessNetwork::updateReferenceConnection);
-	QObject::connect(conn, &NMConnectionSettings::destroyed, this, onDestroyed);
-	// clang-format on
+	QObject::connect(settings, &NMSettings::destroyed, this, onDestroyed);
 	this->bKnown = true;
-	this->updateReferenceConnection();
+	this->updateReferenceSettings();
+	emit this->settingsAdded(settings);
 };
 
 void NMWirelessNetwork::addActiveConnection(NMActiveConnection* active) {
 	if (this->mActiveConnection) return;
 	this->mActiveConnection = active;
+
 	this->bState.setBinding([active]() { return active->state(); });
 	this->bReason.setBinding([active]() { return active->stateReason(); });
 	auto onDestroyed = [this, active]() {
 		if (this->mActiveConnection && this->mActiveConnection == active) {
 			this->mActiveConnection = nullptr;
-			this->updateReferenceConnection();
+			this->updateReferenceSettings();
 			this->bState = NMConnectionState::Deactivated;
 			this->bReason = NMConnectionStateReason::None;
 		}
 	};
 	QObject::connect(active, &NMActiveConnection::destroyed, this, onDestroyed);
-	this->updateReferenceConnection();
+	this->updateReferenceSettings();
 };
 
 void NMWirelessNetwork::forget() {
-	if (this->mConnections.isEmpty()) return;
-	for (auto* conn: this->mConnections.values()) {
+	if (this->mSettings.isEmpty()) return;
+	for (auto* conn: this->mSettings.values()) {
 		conn->forget();
 	}
 }
@@ -200,7 +210,7 @@ void NMWirelessDevice::initWireless() {
 	QObject::connect(this->wirelessProxy, &DBusNMWirelessProxy::AccessPointAdded, this, &NMWirelessDevice::onAccessPointAdded);
 	QObject::connect(this->wirelessProxy, &DBusNMWirelessProxy::AccessPointRemoved, this, &NMWirelessDevice::onAccessPointRemoved);
 	QObject::connect(this, &NMWirelessDevice::accessPointLoaded, this, &NMWirelessDevice::onAccessPointLoaded);
-	QObject::connect(this, &NMWirelessDevice::connectionLoaded, this, &NMWirelessDevice::onConnectionLoaded);
+	QObject::connect(this, &NMWirelessDevice::settingsLoaded, this, &NMWirelessDevice::onSettingsLoaded);
 	QObject::connect(this, &NMWirelessDevice::activeConnectionLoaded, this, &NMWirelessDevice::onActiveConnectionLoaded);
 	QObject::connect(this, &NMWirelessDevice::scanningChanged, this, &NMWirelessDevice::onScanningChanged);
 	// clang-format on
@@ -218,6 +228,7 @@ void NMWirelessDevice::onAccessPointRemoved(const QDBusObjectPath& path) {
 		                           << "which is not registered.";
 		return;
 	}
+	qCDebug(logNetworkManager) << "Access point removed:" << path.path();
 	delete ap;
 }
 
@@ -233,28 +244,26 @@ void NMWirelessDevice::onAccessPointLoaded(NMAccessPoint* ap) {
 	}
 }
 
-void NMWirelessDevice::onConnectionLoaded(NMConnectionSettings* conn) {
-	const ConnectionSettingsMap& settings = conn->settings();
+void NMWirelessDevice::onSettingsLoaded(NMSettings* settings) {
+	const NMSettingsMap& map = settings->map();
 	// Filter connections that aren't wireless or have missing settings
-	if (settings["connection"]["id"].toString().isEmpty()
-	    || settings["connection"]["uuid"].toString().isEmpty()
-	    || !settings.contains("802-11-wireless")
-	    || settings["802-11-wireless"]["ssid"].toString().isEmpty())
+	if (map["connection"]["id"].toString().isEmpty() || map["connection"]["uuid"].toString().isEmpty()
+	    || !map.contains("802-11-wireless") || map["802-11-wireless"]["ssid"].toString().isEmpty())
 	{
 		return;
 	}
 
-	const auto ssid = settings["802-11-wireless"]["ssid"].toString();
-	const auto mode = settings["802-11-wireless"]["mode"].toString();
+	const auto ssid = map["802-11-wireless"]["ssid"].toString();
+	const auto mode = map["802-11-wireless"]["mode"].toString();
 
 	if (mode == "infrastructure") {
 		auto* net = this->mNetworks.value(ssid);
 		if (!net) net = this->registerNetwork(ssid);
-		net->addConnection(conn);
+		net->addSettings(settings);
 
 		// Check for active connections that loaded before their respective connection settings
 		auto* active = this->activeConnection();
-		if (active && conn->path() == active->connection().path()) {
+		if (active && settings->path() == active->connection().path()) {
 			net->addActiveConnection(active);
 		}
 	}
@@ -265,8 +274,8 @@ void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
 	// Find an exisiting network with connection settings that matches the active
 	const QString activeConnPath = active->connection().path();
 	for (const auto& net: this->mNetworks.values()) {
-		for (auto* conn: net->connections()) {
-			if (activeConnPath == conn->path()) {
+		for (auto* settings: net->settings()) {
+			if (activeConnPath == settings->path()) {
 				net->addActiveConnection(active);
 				return;
 			}
@@ -334,6 +343,7 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 		return;
 	}
 
+	qCDebug(logNetworkManager) << "Access point added:" << path;
 	this->mAccessPoints.insert(path, ap);
 	QObject::connect(
 	    ap,
@@ -356,22 +366,18 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
 	auto* net = new NMWirelessNetwork(ssid, this);
 
-	// To avoid exposing outdated state to the frontend, filter the backend networks to only show
-	// the known or currently connected networks when the scanner is off.
 	auto visible = [this, net]() {
 		return this->bScanning || net->state() == NMConnectionState::Activated || net->known();
-	};
-	auto onVisibilityChanged = [this, net](bool visible) {
-		visible ? this->registerFrontendNetwork(net) : this->removeFrontendNetwork(net);
 	};
 
 	net->bindableVisible().setBinding(visible);
 	net->bindableActiveApPath().setBinding([this]() { return this->activeApPath().path(); });
+	net->bindableDeviceFailReason().setBinding([this]() { return this->lastFailReason(); });
 	QObject::connect(net, &NMWirelessNetwork::disappeared, this, &NMWirelessDevice::removeNetwork);
-	QObject::connect(net, &NMWirelessNetwork::visibilityChanged, this, onVisibilityChanged);
 
+	qCDebug(logNetworkManager) << "Registered network for SSID" << ssid;
 	this->mNetworks.insert(ssid, net);
-	if (net->visible()) this->registerFrontendNetwork(net);
+	this->registerFrontendNetwork(net);
 	return net;
 }
 
@@ -385,46 +391,137 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	frontendNet->bindableSignalStrength().setBinding(translateSignal);
 	frontendNet->bindableConnected().setBinding(translateState);
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
-	frontendNet->bindableNmReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
 	frontendNet->bindableState().setBinding([net]() {
-		return static_cast<NetworkState::Enum>(net->state());
+		return static_cast<ConnectionState::Enum>(net->state());
+	});
+
+	QObject::connect(net, &NMWirelessNetwork::reasonChanged, this, [net, frontendNet]() {
+		if (net->reason() == NMConnectionStateReason::DeviceDisconnected) {
+			auto deviceReason = net->deviceFailReason();
+			if (deviceReason == NMDeviceStateReason::NoSecrets)
+				emit frontendNet->connectionFailed(ConnectionFailReason::NoSecrets);
+			if (deviceReason == NMDeviceStateReason::SupplicantDisconnect)
+				emit frontendNet->connectionFailed(ConnectionFailReason::WifiClientDisconnected);
+			if (deviceReason == NMDeviceStateReason::SupplicantFailed)
+				emit frontendNet->connectionFailed(ConnectionFailReason::WifiClientFailed);
+			if (deviceReason == NMDeviceStateReason::SupplicantTimeout)
+				emit frontendNet->connectionFailed(ConnectionFailReason::WifiAuthTimeout);
+			if (deviceReason == NMDeviceStateReason::SsidNotFound)
+				emit frontendNet->connectionFailed(ConnectionFailReason::WifiNetworkLost);
+		}
 	});
 
 	QObject::connect(frontendNet, &WifiNetwork::requestConnect, this, [this, net]() {
-		if (net->referenceConnection()) {
+		if (net->referenceSettings()) {
 			emit this->activateConnection(
-			    QDBusObjectPath(net->referenceConnection()->path()),
+			    QDBusObjectPath(net->referenceSettings()->path()),
 			    QDBusObjectPath(this->path())
 			);
 			return;
 		}
 		if (net->referenceAp()) {
 			emit this->addAndActivateConnection(
-			    ConnectionSettingsMap(),
+			    NMSettingsMap(),
 			    QDBusObjectPath(this->path()),
 			    QDBusObjectPath(net->referenceAp()->path())
 			);
+			return;
 		}
+		qCInfo(logNetworkManager) << "Failed to connect to"
+		                          << this->path() + ": The network disappeared.";
 	});
 
 	QObject::connect(
 	    frontendNet,
-	    &WifiNetwork::requestDisconnect,
+	    &WifiNetwork::requestConnectWithPsk,
 	    this,
-	    &NMWirelessDevice::disconnect
+	    [this, net](const QString& psk) {
+		    NMSettingsMap settings;
+		    settings["802-11-wireless-security"]["psk"] = psk;
+		    if (const QPointer<NMSettings> ref = net->referenceSettings()) {
+			    auto* call = ref->updateSettings(settings);
+			    QObject::connect(
+			        call,
+			        &QDBusPendingCallWatcher::finished,
+			        this,
+			        [this, ref](QDBusPendingCallWatcher* call) {
+				        const QDBusPendingReply<> reply = *call;
+
+				        if (reply.isError()) {
+					        qCInfo(logNetworkManager)
+					            << "Failed to write PSK for" << this->path() + ":" << reply.error().message();
+				        } else {
+					        if (!ref) {
+						        qCInfo(logNetworkManager) << "Failed to connectWithPsk to"
+						                                  << this->path() + ": The settings disappeared.";
+					        } else {
+						        emit this->activateConnection(
+						            QDBusObjectPath(ref->path()),
+						            QDBusObjectPath(this->path())
+						        );
+					        }
+				        }
+				        delete call;
+			        }
+			    );
+			    return;
+		    }
+		    if (net->referenceAp()) {
+			    emit this->addAndActivateConnection(
+			        settings,
+			        QDBusObjectPath(this->path()),
+			        QDBusObjectPath(net->referenceAp()->path())
+			    );
+			    return;
+		    }
+		    qCInfo(logNetworkManager) << "Failed to connectWithPsk to"
+		                              << this->path() + ": The network disappeared.";
+	    }
 	);
 
+	QObject::connect(
+	    frontendNet,
+	    &WifiNetwork::requestConnectWithSettings,
+	    this,
+	    [this](NMSettings* settings) {
+		    if (settings) {
+			    emit this->activateConnection(
+			        QDBusObjectPath(settings->path()),
+			        QDBusObjectPath(this->path())
+			    );
+			    return;
+		    }
+		    qCInfo(logNetworkManager) << "Failed to connectWithSettings to"
+		                              << this->path() + ": The provided settings no longer exist.";
+	    }
+	);
+
+	QObject::connect(
+	    net,
+	    &NMWirelessNetwork::visibilityChanged,
+	    this,
+	    [this, frontendNet](bool visible) {
+		    if (visible) this->networkAdded(frontendNet);
+		    else this->networkRemoved(frontendNet);
+	    }
+	);
+
+	// clang-format off
+	QObject::connect(frontendNet, &WifiNetwork::requestDisconnect, this, &NMWirelessDevice::disconnect);
 	QObject::connect(frontendNet, &WifiNetwork::requestForget, net, &NMWirelessNetwork::forget);
+	QObject::connect(net, &NMWirelessNetwork::settingsAdded, frontendNet, &WifiNetwork::settingsAdded);
+	QObject::connect(net, &NMWirelessNetwork::settingsRemoved, frontendNet, &WifiNetwork::settingsRemoved);
+	// clang-format on
 
 	this->mFrontendNetworks.insert(ssid, frontendNet);
-	emit this->networkAdded(frontendNet);
+	if (net->visible()) emit this->networkAdded(frontendNet);
 }
 
 void NMWirelessDevice::removeFrontendNetwork(NMWirelessNetwork* net) {
 	auto* frontendNet = this->mFrontendNetworks.take(net->ssid());
 	if (frontendNet) {
-		emit this->networkRemoved(frontendNet);
+		if (net->visible()) emit this->networkRemoved(frontendNet);
 		frontendNet->deleteLater();
 	}
 }
