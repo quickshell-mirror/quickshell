@@ -123,4 +123,21 @@ void Network::forget() { this->requestForget(); }
 void Network::connectionAdded(NMConnection* conn) { this->mNmConnections.insertObject(conn); }
 void Network::connectionRemoved(NMConnection* conn) { this->mNmConnections.removeObject(conn); }
 
+NMConnectionContext::NMConnectionContext(QObject* parent): QObject(parent) {}
+
+void NMConnectionContext::setNetwork(Network* network) {
+	if (this->bNetwork == network) return;
+	if (this->bNetwork) disconnect(this->bNetwork, nullptr, this, nullptr);
+	this->bNetwork = network;
+
+	connect(network, &Network::stateChanged, this, [network, this]() {
+		if (network->state() == NetworkState::Connected) emit this->success();
+	});
+	connect(network, &Network::stateReasonChanged, this, [network, this]() {
+		if (network->stateReason() == NMNetworkStateReason::NoSecrets) emit this->noSecrets();
+		if (network->stateReason() == NMNetworkStateReason::LoginFailed) emit this->loginFailed();
+	});
+	connect(network, &Network::destroyed, this, [this]() { this->bNetwork = nullptr; });
+}
+
 } // namespace qs::network

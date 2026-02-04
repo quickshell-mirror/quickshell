@@ -54,4 +54,5 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnection, QString, bId, &NMConnection::idChanged);
 	// clang-format on
 };
+
 } // namespace qs::network

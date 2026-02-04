@@ -51,6 +51,11 @@ FloatingWindow {
 						Label { text: modelData.name; font.bold: true }
 						Label { text: modelData.address }
 						Label { text: `(Type: ${DeviceType.toString(modelData.type)})` }
+						CheckBox { 
+							text: `Managed`
+							checked: modelData.nmManaged
+							onClicked: modelData.nmManaged = !modelData.nmManaged
+						}
 					}
 					RowLayout {
 						Label {

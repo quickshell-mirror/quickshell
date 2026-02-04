@@ -175,14 +175,16 @@ public:
 	void connectionAdded(NMConnection* conn);
 	void connectionRemoved(NMConnection* conn);
 
-	[[nodiscard]] QString name() const { return this->mName; };
-	[[nodiscard]] ObjectModel<NMConnection>* nmConnections() { return &this->mNmConnections; };
-	[[nodiscard]] NMConnection* nmDefaultConnection() { return this->bNmDefaultConnection; };
-	QBindable<NMConnection*> bindableNmDefaultConnection() { return &this->bNmDefaultConnection; };
+	[[nodiscard]] QString name() const { return this->mName; }
+	[[nodiscard]] ObjectModel<NMConnection>* nmConnections() { return &this->mNmConnections; }
+	[[nodiscard]] NMConnection* nmDefaultConnection() { return this->bNmDefaultConnection; }
+	QBindable<NMConnection*> bindableNmDefaultConnection() { return &this->bNmDefaultConnection; }
 	void setNmDefaultConnection(NMConnection* conn);
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
+	[[nodiscard]] NetworkState::Enum state() const { return this->bState; }
 	QBindable<NetworkState::Enum> bindableState() { return &this->bState; }
+	[[nodiscard]] NMNetworkStateReason::Enum stateReason() const { return this->bStateReason; }
 	QBindable<NMNetworkStateReason::Enum> bindableStateReason() { return &this->bStateReason; }
 	QBindable<bool> bindableStateChanging() { return &this->bStateChanging; }
 
@@ -209,6 +211,40 @@ protected:
 	Q_OBJECT_BINDABLE_PROPERTY(Network, NetworkState::Enum, bState, &Network::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, NMNetworkStateReason::Enum, bStateReason, &Network::stateReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bStateChanging, &Network::stateChangingChanged);
+	// clang-format on
+};
+
+///! NetworkManager connection context.
+/// This is a creatable object and it should be provided a network.
+/// It emits helpful signals about the current attempt to connect
+/// using the network's nmDefaultConnection.
+class NMConnectionContext: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+
+	// clang-format off
+	Q_PROPERTY(Network* network READ network WRITE setNetwork NOTIFY networkChanged)
+	// clang-format on
+
+public:
+	explicit NMConnectionContext(QObject* parent = nullptr);
+
+	[[nodiscard]] Network* network() const { return this->bNetwork; };
+	void setNetwork(Network* network);
+
+signals:
+	void networkChanged();
+	void connectionChanged();
+	/// Authentication to the server failed.
+	void loginFailed();
+	/// Necessary secrets for the connection were not provided.
+	void noSecrets();
+	/// The connection attempt was successful.
+	void success();
+
+private:
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionContext, Network*, bNetwork, &NMConnectionContext::networkChanged);
 	// clang-format on
 };
 
