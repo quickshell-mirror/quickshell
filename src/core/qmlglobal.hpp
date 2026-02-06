@@ -202,6 +202,8 @@ public:
 	/// Setting the `fallback` parameter of `iconPath` will attempt to load the fallback
 	/// icon if the requested one could not be loaded.
 	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
+	/// Check if specified icon has an available icon in your icon theme
+	Q_INVOKABLE static bool hasThemeIcon(const QString& icon);
 	/// Equivalent to `${Quickshell.configDir}/${path}`
 	Q_INVOKABLE [[nodiscard]] QString shellPath(const QString& path) const;
 	/// > [!WARNING] Deprecated: Renamed to @@shellPath() for clarity.
