@@ -6,38 +6,10 @@
 #include <qstring.h>
 
 #include "device.hpp"
+#include "enums.hpp"
 #include "network.hpp"
 
 namespace qs::network {
-
-QString WifiSecurityType::toString(WifiSecurityType::Enum type) {
-	switch (type) {
-	case Unknown: return QStringLiteral("Unknown");
-	case Wpa3SuiteB192: return QStringLiteral("WPA3 Suite B 192-bit");
-	case Sae: return QStringLiteral("WPA3");
-	case Wpa2Eap: return QStringLiteral("WPA2 Enterprise");
-	case Wpa2Psk: return QStringLiteral("WPA2");
-	case WpaEap: return QStringLiteral("WPA Enterprise");
-	case WpaPsk: return QStringLiteral("WPA");
-	case StaticWep: return QStringLiteral("WEP");
-	case DynamicWep: return QStringLiteral("Dynamic WEP");
-	case Leap: return QStringLiteral("LEAP");
-	case Owe: return QStringLiteral("OWE");
-	case Open: return QStringLiteral("Open");
-	default: return QStringLiteral("Unknown");
-	}
-}
-
-QString WifiDeviceMode::toString(WifiDeviceMode::Enum mode) {
-	switch (mode) {
-	case Unknown: return QStringLiteral("Unknown");
-	case AdHoc: return QStringLiteral("Ad-Hoc");
-	case Station: return QStringLiteral("Station");
-	case AccessPoint: return QStringLiteral("Access Point");
-	case Mesh: return QStringLiteral("Mesh");
-	default: return QStringLiteral("Unknown");
-	};
-}
 
 WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {};
 

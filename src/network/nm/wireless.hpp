@@ -43,7 +43,9 @@ public:
 	void registerFrontendConnection(NMConnectionSettings* conn);
 	void removeFrontendConnection(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
-	void setDefaultConnection(NMConnection* frontendConn);
+	void findDefaultConnection();
+	void setDefaultConnection(NMConnectionSettings* conn);
+	void grantDefaultConnection(NMConnection* frontendConn);
 	void forget();
 
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
@@ -84,7 +86,7 @@ signals:
 
 private:
 	void updateReferenceAp();
-	void updateDefaultConnection();
+	void updateDefaultConnection(NMConnectionSettings* conn);
 
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;

@@ -8,57 +8,10 @@
 
 #include "../core/model.hpp"
 #include "device.hpp"
+#include "enums.hpp"
 #include "network.hpp"
 
 namespace qs::network {
-
-///! The security type of a wifi network.
-class WifiSecurityType: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Wpa3SuiteB192 = 0,
-		Sae = 1,
-		Wpa2Eap = 2,
-		Wpa2Psk = 3,
-		WpaEap = 4,
-		WpaPsk = 5,
-		StaticWep = 6,
-		DynamicWep = 7,
-		Leap = 8,
-		Owe = 9,
-		Open = 10,
-		Unknown = 11,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
-};
-
-///! The 802.11 mode of a wifi device.
-class WifiDeviceMode: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		/// The device is part of an Ad-Hoc network without a central access point.
-		AdHoc = 0,
-		/// The device is a station that can connect to networks.
-		Station = 1,
-		/// The device is a local hotspot/access point.
-		AccessPoint = 2,
-		/// The device is an 802.11s mesh point.
-		Mesh = 3,
-		/// The device mode is unknown.
-		Unknown = 4,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(WifiDeviceMode::Enum mode);
-};
 
 ///! An available wifi network.
 class WifiNetwork: public Network {

@@ -1,5 +1,6 @@
 #include "connection.hpp"
 
+#include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qdbusmetatype.h>
 #include <qdbuspendingcall.h>
@@ -14,7 +15,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "../network.hpp"
+#include "../enums.hpp"
 #include "dbus_nm_active_connection.h"
 #include "dbus_nm_connection_settings.h"
 #include "enums.hpp"
@@ -51,6 +52,9 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 	this->bSecurity.setBinding([this]() { return securityFromConnectionSettings(this->bSettings); });
 	this->bId.setBinding([this]() {
 		return this->bSettings.value().value("connection").value("id").toString();
+	});
+	this->bCombinedSettings.setBinding([this]() {
+		return mergeSettingsMaps(this->bSettings, this->bSecretSettings);
 	});
 
 	this->connectionSettingsProperties.setInterface(this->proxy);
@@ -101,8 +105,18 @@ void NMConnectionSettings::getSecrets() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void NMConnectionSettings::updateSettings(const ConnectionSettingsMap& settings) {
-	auto pending = this->proxy->Update(settings);
+void NMConnectionSettings::setWifiPsk(const QString& psk) {
+	QVariantMap wifiSecurity;
+	wifiSecurity["psk"] = psk;
+	this->updateSettings("802-11-wireless-security", wifiSecurity);
+}
+
+void NMConnectionSettings::updateSettings(const QString& mapName, const QVariantMap& map) {
+	ConnectionSettingsMap newSettings;
+	newSettings.insert(mapName, map);
+
+	auto merged = mergeSettingsMaps(this->bSettings, newSettings);
+	auto pending = this->proxy->Update(merged);
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [this](QDBusPendingCallWatcher* call) {

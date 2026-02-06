@@ -1,6 +1,7 @@
 #include "network.hpp"
 #include <utility>
 
+#include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
@@ -8,56 +9,16 @@
 #include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
-#include "connection.hpp"
 #include "device.hpp"
+#include "enums.hpp"
 #include "nm/backend.hpp"
+#include "nm_connection.hpp"
 
 namespace qs::network {
 
 namespace {
 QS_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
-
-QString NetworkState::toString(NetworkState::Enum state) {
-	switch (state) {
-	case NetworkState::Connecting: return QStringLiteral("Connecting");
-	case NetworkState::Connected: return QStringLiteral("Connected");
-	case NetworkState::Disconnecting: return QStringLiteral("Disconnecting");
-	case NetworkState::Disconnected: return QStringLiteral("Disconnected");
-	default: return QStringLiteral("Unknown");
-	}
-}
-
-QString NMNetworkStateReason::toString(NMNetworkStateReason::Enum reason) {
-	switch (reason) {
-	case Unknown: return QStringLiteral("Unknown");
-	case None: return QStringLiteral("No reason");
-	case UserDisconnected: return QStringLiteral("User disconnection");
-	case DeviceDisconnected:
-		return QStringLiteral("The device the connection was using was disconnected.");
-	case ServiceStopped:
-		return QStringLiteral("The service providing the VPN connection was stopped.");
-	case IpConfigInvalid:
-		return QStringLiteral("The IP config of the active connection was invalid.");
-	case ConnectTimeout:
-		return QStringLiteral("The connection attempt to the VPN service timed out.");
-	case ServiceStartTimeout:
-		return QStringLiteral(
-		    "A timeout occurred while starting the service providing the VPN connection."
-		);
-	case ServiceStartFailed:
-		return QStringLiteral("Starting the service providing the VPN connection failed.");
-	case NoSecrets: return QStringLiteral("Necessary secrets for the connection were not provided.");
-	case LoginFailed: return QStringLiteral("Authentication to the server failed.");
-	case ConnectionRemoved:
-		return QStringLiteral("Necessary secrets for the connection were not provided.");
-	case DependencyFailed:
-		return QStringLiteral("Master connection of this connection failed to activate.");
-	case DeviceRealizeFailed: return QStringLiteral("Could not create the software device link.");
-	case DeviceRemoved: return QStringLiteral("The device this connection depended on disappeared.");
-	default: return QStringLiteral("Unknown");
-	};
-};
 
 Networking::Networking(QObject* parent): QObject(parent) {
 	// Try to create the NetworkManager backend and bind to it.
@@ -95,6 +56,7 @@ Network::Network(QString name, QObject* parent): QObject(parent), mName(std::mov
 };
 
 void Network::setNmDefaultConnection(NMConnection* conn) {
+	if (this->bState != NetworkState::Disconnected) return;
 	if (this->bNmDefaultConnection == conn) return;
 	if (!this->mNmConnections.valueList().contains(conn)) return;
 	emit this->requestSetNmDefaultConnection(conn);

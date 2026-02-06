@@ -4,6 +4,7 @@ headers = [
 	"network.hpp",
 	"device.hpp",
 	"wifi.hpp",
+	"enums.hpp",
 ]
 -----
 This module exposes Network management APIs provided by a supported network backend.

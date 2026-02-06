@@ -7,57 +7,11 @@
 #include <qtypes.h>
 
 #include "../core/model.hpp"
-#include "connection.hpp"
 #include "device.hpp"
+#include "enums.hpp"
+#include "nm_connection.hpp"
 
 namespace qs::network {
-
-///! The connection state of a Network.
-class NetworkState: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Connecting = 1,
-		Connected = 2,
-		Disconnecting = 3,
-		Disconnected = 4,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkState::Enum state);
-};
-
-///! The reason for the NMConnectionState of an NMConnection.
-/// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
-class NMNetworkStateReason: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		None = 1,
-		UserDisconnected = 2,
-		DeviceDisconnected = 3,
-		ServiceStopped = 4,
-		IpConfigInvalid = 5,
-		ConnectTimeout = 6,
-		ServiceStartTimeout = 7,
-		ServiceStartFailed = 8,
-		NoSecrets = 9,
-		LoginFailed = 10,
-		ConnectionRemoved = 11,
-		DependencyFailed = 12,
-		DeviceRealizeFailed = 13,
-		DeviceRemoved = 14
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NMNetworkStateReason::Enum reason);
-};
 
 ///! The backend supplying the Network service.
 class NetworkBackendType: public QObject {
@@ -148,6 +102,7 @@ class Network: public QObject {
 	/// The default connection settings profile for this network. This is the connection settings used when connect() is invoked.
 	/// Only available when the connection is known.
 	///
+	/// > [!NOTE] The default connection can only be set while the Network is disconnected.
 	/// > [!WARNING] Only valid for the NetworkManager backend.
 	Q_PROPERTY(NMConnection* nmDefaultConnection READ nmDefaultConnection WRITE setNmDefaultConnection NOTIFY nmDefaultConnectionChanged BINDABLE bindableNmDefaultConnection);
 	/// True if the network is connected.
@@ -217,7 +172,7 @@ protected:
 ///! NetworkManager connection context.
 /// This is a creatable object and it should be provided a network.
 /// It emits helpful signals about the current attempt to connect
-/// using the network's nmDefaultConnection.
+/// using the network's @@Quickshell.Networking.Network.nmDefaultConnection.
 class NMConnectionContext: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

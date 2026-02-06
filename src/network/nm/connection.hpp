@@ -9,8 +9,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../network.hpp"
-#include "../wifi.hpp"
+#include "../enums.hpp"
 #include "dbus_nm_active_connection.h"
 #include "dbus_nm_connection_settings.h"
 #include "enums.hpp"
@@ -37,14 +36,15 @@ public:
 	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
 
 	void forget();
-	void updateSettings(const ConnectionSettingsMap& settings);
+	void updateSettings(const QString& mapName, const QVariantMap& map);
 	void clearSecrets();
+	void setWifiPsk(const QString& psk);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
-	[[nodiscard]] ConnectionSettingsMap secretSettings() const { return this->bSecretSettings; };
+	[[nodiscard]] ConnectionSettingsMap combinedSettings() const { return this->bCombinedSettings; };
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] QString id() const { return this->bId; };
 
@@ -52,6 +52,7 @@ signals:
 	void loaded();
 	void settingsChanged(ConnectionSettingsMap settings);
 	void secretSettingsChanged(ConnectionSettingsMap settings);
+	void combinedSettingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
 	void idChanged(QString id);
 
@@ -63,6 +64,7 @@ private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSecretSettings, &NMConnectionSettings::secretSettingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bCombinedSettings, &NMConnectionSettings::combinedSettingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bId, &NMConnectionSettings::idChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);

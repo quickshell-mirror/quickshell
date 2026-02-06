@@ -101,6 +101,14 @@ FloatingWindow {
 						}
 
 						WrapperRectangle {
+							property var connectionContext: NMConnectionContext {
+								network: modelData
+
+								onConnectionChanged: console.log(`Connection changed for network`)
+								onLoginFailed: console.log(`Login failed for network`)
+								onNoSecrets: console.log(`No secrets provided for network`)
+								onSuccess: console.log(`Successfully connected to network`)
+							}
 							Layout.fillWidth: true
 							color: modelData.connected ? palette.highlight : palette.button
 							border.color: palette.mid
@@ -127,33 +135,33 @@ FloatingWindow {
 											color: palette.placeholderText
 										}
 									}
-									RowLayout {
-										Text {
-											text: `Default settings: ` 
-										}
-										ComboBox {
-											model: modelData.nmConnections.values.map(conn => conn.id)
-											currentIndex: modelData.nmConnections.indexOf(modelData.nmDefaultConnection)
-											onActivated: (index) => {
-												modelData.nmDefaultConnection = modelData.nmConnections.values[index]
-											}
-										}
-										Button {
-											text: `Delete`
-											onClicked: modelData.nmDefaultConnection.forget()
-											visible: modelData.nmDefaultConnection
-										}
-										visible: modelData.known
-									}
 								}
 								RowLayout {
 									Layout.alignment: Qt.AlignRight
+									BusyIndicator {
+										implicitHeight: 30
+										implicitWidth: 30
+										running: modelData.stateChanging
+										visible: modelData.stateChanging
+									}
+									Label {
+										text: modelData.nmDefaultConnection ? `Connected with ${modelData.nmDefaultConnection.id}` : "Connected"
+										color: palette.link
+										visible: modelData.connected
+									}
 									Label {
 										text: NetworkState.toString(modelData.state)
+										visible: !modelData.connected
 									}
 									Label {
 										visible: modelData.stateReason != NMNetworkStateReason.None && modelData.stateReason != NMNetworkStateReason.Unknown
 										text: `(${NMNetworkStateReason.toString(modelData.stateReason)})`
+									}
+									ComboBox {
+										model: modelData.nmConnections.values.map(conn => conn.id)
+										currentIndex: modelData.nmConnections.indexOf(modelData.nmDefaultConnection)
+										onActivated: (index) => { modelData.nmDefaultConnection = modelData.nmConnections.values[index] }
+										visible: !modelData.connected && modelData.known
 									}
 									Button {
 										text: "Connect"
