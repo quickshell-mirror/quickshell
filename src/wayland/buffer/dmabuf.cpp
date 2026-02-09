@@ -35,6 +35,14 @@
 #include <wayland-util.h>
 #include <xf86drm.h>
 
+#ifdef QS_DMABUF_VULKAN
+#include <private/qquickwindow_p.h>
+#include <qsgrendererinterface.h>
+#include <qvulkanfunctions.h>
+#include <qvulkaninstance.h>
+#include <vulkan/vulkan.h>
+#endif
+
 #include "../../core/logcat.hpp"
 #include "../../core/stacklist.hpp"
 #include "manager.hpp"
@@ -47,6 +55,25 @@ namespace {
 QS_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg);
 
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
+
+#ifdef QS_DMABUF_VULKAN
+VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
+	switch (drmFormat) {
+	case DRM_FORMAT_ARGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
+	case DRM_FORMAT_XRGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
+	case DRM_FORMAT_ABGR8888: return VK_FORMAT_R8G8B8A8_UNORM;
+	case DRM_FORMAT_XBGR8888: return VK_FORMAT_R8G8B8A8_UNORM;
+	case DRM_FORMAT_ARGB2101010: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+	case DRM_FORMAT_XRGB2101010: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+	case DRM_FORMAT_ABGR2101010: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+	case DRM_FORMAT_XBGR2101010: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+	case DRM_FORMAT_ABGR16161616F: return VK_FORMAT_R16G16B16A16_SFLOAT;
+	case DRM_FORMAT_RGB565: return VK_FORMAT_R5G6B5_UNORM_PACK16;
+	case DRM_FORMAT_BGR565: return VK_FORMAT_B5G6R5_UNORM_PACK16;
+	default: return VK_FORMAT_UNDEFINED;
+	}
+}
+#endif
 
 } // namespace
 
@@ -532,6 +559,13 @@ bool WlDmaBuffer::isCompatible(const WlBufferRequest& request) const {
 }
 
 WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
+#ifdef QS_DMABUF_VULKAN
+	auto* ri = window->rendererInterface();
+	if (ri && ri->graphicsApi() == QSGRendererInterface::Vulkan) {
+		return this->createQsgTextureVulkan(window);
+	}
+#endif
+
 	static auto* glEGLImageTargetTexture2DOES = []() {
 		auto* fn = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
 		    eglGetProcAddress("glEGLImageTargetTexture2DOES")
@@ -661,6 +695,320 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
 	qCDebug(logDmabuf) << "Created WlDmaBufferQSGTexture" << tex << "from" << this;
 	return tex;
 }
+
+#ifdef QS_DMABUF_VULKAN
+
+WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) const {
+	auto* ri = window->rendererInterface();
+	auto* vkInst = window->vulkanInstance();
+
+	if (!vkInst) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: no QVulkanInstance.";
+		return nullptr;
+	}
+
+	auto* vkDevicePtr =
+	    static_cast<VkDevice*>(ri->getResource(window, QSGRendererInterface::DeviceResource));
+	auto* vkPhysDevicePtr = static_cast<VkPhysicalDevice*>(
+	    ri->getResource(window, QSGRendererInterface::PhysicalDeviceResource)
+	);
+
+	if (!vkDevicePtr || !vkPhysDevicePtr) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: could not get Vulkan device.";
+		return nullptr;
+	}
+
+	VkDevice device = *vkDevicePtr;
+	VkPhysicalDevice physDevice = *vkPhysDevicePtr;
+
+	auto* devFuncs = vkInst->deviceFunctions(device);
+	auto* instFuncs = vkInst->functions();
+
+	if (!devFuncs || !instFuncs) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: "
+		                        "could not get Vulkan functions.";
+		return nullptr;
+	}
+
+	auto vkGetMemoryFdPropertiesKHR_ = reinterpret_cast<PFN_vkGetMemoryFdPropertiesKHR>(
+	    instFuncs->vkGetDeviceProcAddr(device, "vkGetMemoryFdPropertiesKHR")
+	);
+
+	if (!vkGetMemoryFdPropertiesKHR_) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: "
+		                        "vkGetMemoryFdPropertiesKHR not available. "
+		                        "Missing VK_KHR_external_memory_fd extension.";
+		return nullptr;
+	}
+
+	VkFormat vkFormat = drmFormatToVkFormat(this->format);
+	if (vkFormat == VK_FORMAT_UNDEFINED) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: unsupported DRM format"
+		                     << FourCCStr(this->format);
+		return nullptr;
+	}
+
+	if (this->planeCount > 4) {
+		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: too many planes"
+		                     << this->planeCount;
+		return nullptr;
+	}
+
+	VkSubresourceLayout planeLayouts[4] = {};
+	for (int i = 0; i < this->planeCount; ++i) {
+		planeLayouts[i].offset = this->planes[i].offset;   // NOLINT
+		planeLayouts[i].rowPitch = this->planes[i].stride; // NOLINT
+		planeLayouts[i].size = 0;
+		planeLayouts[i].arrayPitch = 0;
+		planeLayouts[i].depthPitch = 0;
+	}
+
+	bool useModifier = this->modifier != DRM_FORMAT_MOD_INVALID;
+	bool disjoint = useModifier && this->planeCount > 1;
+
+	VkExternalMemoryImageCreateInfo externalInfo = {};
+	externalInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+	externalInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+
+	VkImageDrmFormatModifierExplicitCreateInfoEXT modifierInfo = {};
+	modifierInfo.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT;
+	modifierInfo.drmFormatModifier = this->modifier;
+	modifierInfo.drmFormatModifierPlaneCount = static_cast<uint32_t>(this->planeCount);
+	modifierInfo.pPlaneLayouts = planeLayouts;
+
+	if (useModifier) {
+		externalInfo.pNext = &modifierInfo;
+	}
+
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.pNext = &externalInfo;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.format = vkFormat;
+	imageInfo.extent = {this->width, this->height, 1};
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.tiling =
+	    useModifier ? VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT : VK_IMAGE_TILING_LINEAR;
+	imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	if (disjoint) {
+		imageInfo.flags |= VK_IMAGE_CREATE_DISJOINT_BIT;
+	}
+
+	VkImage image = VK_NULL_HANDLE;
+	VkResult result = devFuncs->vkCreateImage(device, &imageInfo, nullptr, &image);
+	if (result != VK_SUCCESS) {
+		qCWarning(logDmabuf) << "Failed to create VkImage for DMA-BUF import, result:" << result;
+		return nullptr;
+	}
+
+	VkDeviceMemory memories[4] = {};
+	int allocatedCount = 0;
+	int memoryBindCount = disjoint ? this->planeCount : 1;
+
+	for (int i = 0; i < memoryBindCount; ++i) {
+		int dupFd = dup(this->planes[i].fd); // NOLINT
+		if (dupFd < 0) {
+			qCWarning(logDmabuf) << "Failed to dup() fd for plane" << i;
+			goto cleanup_fail; // NOLINT
+		}
+
+		VkMemoryRequirements memReqs = {};
+		if (disjoint) {
+			VkImagePlaneMemoryRequirementsInfo planeReqInfo = {};
+			planeReqInfo.sType = VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO;
+			planeReqInfo.planeAspect = static_cast<VkImageAspectFlagBits>(
+			    VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i // NOLINT
+			);
+
+			VkImageMemoryRequirementsInfo2 memReqInfo2 = {};
+			memReqInfo2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+			memReqInfo2.pNext = &planeReqInfo;
+			memReqInfo2.image = image;
+
+			VkMemoryRequirements2 memReqs2 = {};
+			memReqs2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+			devFuncs->vkGetImageMemoryRequirements2(device, &memReqInfo2, &memReqs2);
+			memReqs = memReqs2.memoryRequirements;
+		} else {
+			devFuncs->vkGetImageMemoryRequirements(device, image, &memReqs);
+		}
+
+		VkMemoryFdPropertiesKHR fdProps = {};
+		fdProps.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
+
+		result = vkGetMemoryFdPropertiesKHR_(
+		    device,
+		    VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+		    dupFd,
+		    &fdProps
+		);
+
+		if (result != VK_SUCCESS) {
+			close(dupFd);
+			qCWarning(logDmabuf) << "vkGetMemoryFdPropertiesKHR failed for plane" << i
+			                     << "result:" << result;
+			goto cleanup_fail; // NOLINT
+		}
+
+		uint32_t memTypeBits = memReqs.memoryTypeBits & fdProps.memoryTypeBits;
+
+		VkPhysicalDeviceMemoryProperties memProps = {};
+		instFuncs->vkGetPhysicalDeviceMemoryProperties(physDevice, &memProps);
+
+		uint32_t memTypeIndex = UINT32_MAX;
+		for (uint32_t j = 0; j < memProps.memoryTypeCount; ++j) {
+			if (memTypeBits & (1u << j)) {
+				memTypeIndex = j;
+				break;
+			}
+		}
+
+		if (memTypeIndex == UINT32_MAX) {
+			close(dupFd);
+			qCWarning(logDmabuf) << "No compatible memory type for DMA-BUF plane" << i;
+			goto cleanup_fail; // NOLINT
+		}
+
+		VkImportMemoryFdInfoKHR importInfo = {};
+		importInfo.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR;
+		importInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+		importInfo.fd = dupFd;
+
+		VkMemoryDedicatedAllocateInfo dedicatedInfo = {};
+		dedicatedInfo.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+		dedicatedInfo.image = image;
+		dedicatedInfo.pNext = &importInfo;
+
+		VkMemoryAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = &dedicatedInfo;
+		allocInfo.allocationSize = memReqs.size;
+		allocInfo.memoryTypeIndex = memTypeIndex;
+
+		result = devFuncs->vkAllocateMemory(device, &allocInfo, nullptr, &memories[i]); // NOLINT
+		if (result != VK_SUCCESS) {
+			close(dupFd);
+			qCWarning(logDmabuf) << "vkAllocateMemory failed for plane" << i
+			                     << "result:" << result;
+			goto cleanup_fail; // NOLINT
+		}
+
+		allocatedCount = i + 1;
+
+		if (disjoint) {
+			VkBindImagePlaneMemoryInfo planeBindInfo = {};
+			planeBindInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
+			planeBindInfo.planeAspect = static_cast<VkImageAspectFlagBits>(
+			    VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i // NOLINT
+			);
+
+			VkBindImageMemoryInfo bindInfo = {};
+			bindInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+			bindInfo.pNext = &planeBindInfo;
+			bindInfo.image = image;
+			bindInfo.memory = memories[i]; // NOLINT
+			bindInfo.memoryOffset = 0;
+
+			result = devFuncs->vkBindImageMemory2(device, 1, &bindInfo);
+		} else {
+			result = devFuncs->vkBindImageMemory(device, image, memories[i], 0); // NOLINT
+		}
+
+		if (result != VK_SUCCESS) {
+			qCWarning(logDmabuf) << "vkBindImageMemory failed for plane" << i
+			                     << "result:" << result;
+			goto cleanup_fail; // NOLINT
+		}
+	}
+
+	{
+		// transition layout so it's useable as a sampled texture
+		window->beginExternalCommands();
+
+		auto* cmdBufPtr = static_cast<VkCommandBuffer*>(
+		    ri->getResource(window, QSGRendererInterface::CommandListResource)
+		);
+
+		if (cmdBufPtr && *cmdBufPtr) {
+			VkCommandBuffer cmdBuf = *cmdBufPtr;
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = image;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			devFuncs->vkCmdPipelineBarrier(
+			    cmdBuf,
+			    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			    0,
+			    0,
+			    nullptr,
+			    0,
+			    nullptr,
+			    1,
+			    &barrier
+			);
+		}
+
+		window->endExternalCommands();
+
+		auto* qsgTexture = QQuickWindowPrivate::get(window)->createTextureFromNativeTexture(
+		    quint64(image),
+		    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		    static_cast<uint>(vkFormat),
+		    QSize(static_cast<int>(this->width), static_cast<int>(this->height)),
+		    {}
+		);
+
+		auto* tex = new WlDmaBufferVulkanQSGTexture(devFuncs, device, image, memories, allocatedCount, qsgTexture);
+		qCDebug(logDmabuf) << "Created WlDmaBufferVulkanQSGTexture" << tex << "from" << this;
+		return tex;
+	}
+
+cleanup_fail:
+	for (int i = 0; i < allocatedCount; ++i) {
+		if (memories[i] != VK_NULL_HANDLE) { // NOLINT
+			devFuncs->vkFreeMemory(device, memories[i], nullptr); // NOLINT
+		}
+	}
+	if (image != VK_NULL_HANDLE) {
+		devFuncs->vkDestroyImage(device, image, nullptr);
+	}
+	return nullptr;
+}
+
+WlDmaBufferVulkanQSGTexture::~WlDmaBufferVulkanQSGTexture() {
+	delete this->qsgTexture;
+
+	if (this->image != VK_NULL_HANDLE) {
+		this->devFuncs->vkDestroyImage(this->device, this->image, nullptr);
+	}
+
+	for (int i = 0; i < this->memoryCount; ++i) {
+		if (this->memories[i] != VK_NULL_HANDLE) { // NOLINT
+			this->devFuncs->vkFreeMemory(this->device, this->memories[i], nullptr); // NOLINT
+		}
+	}
+
+	qCDebug(logDmabuf) << "WlDmaBufferVulkanQSGTexture" << this << "destroyed.";
+}
+
+#endif // QS_DMABUF_VULKAN
 
 WlDmaBufferQSGTexture::~WlDmaBufferQSGTexture() {
 	auto* context = QOpenGLContext::currentContext();

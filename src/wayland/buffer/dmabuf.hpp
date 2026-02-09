@@ -19,6 +19,11 @@
 #include <wayland-util.h>
 #include <xf86drm.h>
 
+#ifdef QS_DMABUF_VULKAN
+#include <qvulkanfunctions.h>
+#include <vulkan/vulkan.h>
+#endif
+
 #include "manager.hpp"
 #include "qsg.hpp"
 
@@ -114,6 +119,44 @@ private:
 	friend class WlDmaBuffer;
 };
 
+#ifdef QS_DMABUF_VULKAN
+class WlDmaBufferVulkanQSGTexture: public WlBufferQSGTexture {
+public:
+	~WlDmaBufferVulkanQSGTexture() override;
+	Q_DISABLE_COPY_MOVE(WlDmaBufferVulkanQSGTexture);
+
+	[[nodiscard]] QSGTexture* texture() const override { return this->qsgTexture; }
+
+private:
+	WlDmaBufferVulkanQSGTexture(
+	    QVulkanDeviceFunctions* devFuncs,
+	    VkDevice device,
+	    VkImage image,
+	    VkDeviceMemory* memories,
+	    int memoryCount,
+	    QSGTexture* qsgTexture
+	)
+	    : devFuncs(devFuncs)
+	    , device(device)
+	    , image(image)
+	    , memoryCount(memoryCount)
+	    , qsgTexture(qsgTexture) {
+		for (int i = 0; i < memoryCount; ++i) {
+			this->memories[i] = memories[i]; // NOLINT
+		}
+	}
+
+	QVulkanDeviceFunctions* devFuncs = nullptr;
+	VkDevice device = VK_NULL_HANDLE;
+	VkImage image = VK_NULL_HANDLE;
+	VkDeviceMemory memories[4] = {};
+	int memoryCount = 0;
+	QSGTexture* qsgTexture = nullptr;
+
+	friend class WlDmaBuffer;
+};
+#endif
+
 class WlDmaBuffer: public WlBuffer {
 public:
 	~WlDmaBuffer() override;
@@ -151,6 +194,10 @@ private:
 
 	friend class LinuxDmabufManager;
 	friend QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
+
+#ifdef QS_DMABUF_VULKAN
+	[[nodiscard]] WlBufferQSGTexture* createQsgTextureVulkan(QQuickWindow* window) const;
+#endif
 };
 
 QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
