@@ -66,20 +66,22 @@ Item {
 	Item {
 		id: contentItemContainer
 		anchors.fill: root
+		layer.enabled: true
+		visible: false
 
 		Item {
 			id: contentItem
 			anchors.fill: parent
 			anchors.margins: root.contentInsideBorder ? root.border.width : 0
 		}
+	}
 
-		layer.enabled: true
-		layer.samplerName: "content"
-		layer.effect: ShaderEffect {
-			fragmentShader: `qrc:/Quickshell/Widgets/shaders/cliprect${root.contentUnderBorder ? "-ub" : ""}.frag.qsb`
-			property Rectangle rect: rectangle
-			property color backgroundColor: root.color
-			property color borderColor: root.border.color
-		}
+	ShaderEffect {
+		anchors.fill: contentItemContainer
+		fragmentShader: `qrc:/Quickshell/Widgets/shaders/cliprect${root.contentUnderBorder ? "-ub" : ""}.frag.qsb`
+		property Item content: contentItemContainer
+		property Rectangle rect: rectangle
+		property color backgroundColor: root.color
+		property color borderColor: root.border.color
 	}
 }
