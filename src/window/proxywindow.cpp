@@ -13,8 +13,8 @@
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
 #include <qqmllist.h>
-#include <qquickitem.h>
 #include <qquickgraphicsconfiguration.h>
+#include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qregion.h>
 #include <qsurfaceformat.h>

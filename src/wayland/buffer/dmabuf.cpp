@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <gbm.h>
 #include <libdrm/drm_fourcc.h>
+#include <private/qquickwindow_p.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qlist.h>
@@ -24,22 +25,20 @@
 #include <qpair.h>
 #include <qquickwindow.h>
 #include <qscopedpointer.h>
+#include <qsgrendererinterface.h>
 #include <qsgtexture_platform.h>
+#include <qvulkanfunctions.h>
+#include <qvulkaninstance.h>
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vulkan/vulkan.h>
 #include <wayland-client-protocol.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
 #include <xf86drm.h>
-
-#include <private/qquickwindow_p.h>
-#include <qsgrendererinterface.h>
-#include <qvulkanfunctions.h>
-#include <qvulkaninstance.h>
-#include <vulkan/vulkan.h>
 
 #include "../../core/logcat.hpp"
 #include "../../core/stacklist.hpp"
@@ -781,8 +780,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.tiling =
-	    useModifier ? VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT : VK_IMAGE_TILING_LINEAR;
+	imageInfo.tiling = useModifier ? VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT : VK_IMAGE_TILING_LINEAR;
 	imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -885,8 +883,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		result = devFuncs->vkAllocateMemory(device, &allocInfo, nullptr, &memories[i]); // NOLINT
 		if (result != VK_SUCCESS) {
 			close(dupFd);
-			qCWarning(logDmabuf) << "vkAllocateMemory failed for plane" << i
-			                     << "result:" << result;
+			qCWarning(logDmabuf) << "vkAllocateMemory failed for plane" << i << "result:" << result;
 			goto cleanup_fail; // NOLINT
 		}
 
@@ -912,8 +909,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		}
 
 		if (result != VK_SUCCESS) {
-			qCWarning(logDmabuf) << "vkBindImageMemory failed for plane" << i
-			                     << "result:" << result;
+			qCWarning(logDmabuf) << "vkBindImageMemory failed for plane" << i << "result:" << result;
 			goto cleanup_fail; // NOLINT
 		}
 	}
@@ -967,14 +963,21 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		    {}
 		);
 
-		auto* tex = new WlDmaBufferVulkanQSGTexture(devFuncs, device, image, memories, allocatedCount, qsgTexture);
+		auto* tex = new WlDmaBufferVulkanQSGTexture(
+		    devFuncs,
+		    device,
+		    image,
+		    memories,
+		    allocatedCount,
+		    qsgTexture
+		);
 		qCDebug(logDmabuf) << "Created WlDmaBufferVulkanQSGTexture" << tex << "from" << this;
 		return tex;
 	}
 
 cleanup_fail:
 	for (int i = 0; i < allocatedCount; ++i) {
-		if (memories[i] != VK_NULL_HANDLE) { // NOLINT
+		if (memories[i] != VK_NULL_HANDLE) {                    // NOLINT
 			devFuncs->vkFreeMemory(device, memories[i], nullptr); // NOLINT
 		}
 	}
@@ -992,7 +995,7 @@ WlDmaBufferVulkanQSGTexture::~WlDmaBufferVulkanQSGTexture() {
 	}
 
 	for (int i = 0; i < this->memoryCount; ++i) {
-		if (this->memories[i] != VK_NULL_HANDLE) { // NOLINT
+		if (this->memories[i] != VK_NULL_HANDLE) {                                // NOLINT
 			this->devFuncs->vkFreeMemory(this->device, this->memories[i], nullptr); // NOLINT
 		}
 	}

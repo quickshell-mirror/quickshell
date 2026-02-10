@@ -12,15 +12,14 @@
 #include <qsize.h>
 #include <qtclasshelpermacros.h>
 #include <qtypes.h>
+#include <qvulkanfunctions.h>
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/types.h>
+#include <vulkan/vulkan.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
 #include <xf86drm.h>
-
-#include <qvulkanfunctions.h>
-#include <vulkan/vulkan.h>
 
 #include "manager.hpp"
 #include "qsg.hpp"
