@@ -762,7 +762,6 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	}
 
 	const bool useModifier = this->modifier != DRM_FORMAT_MOD_INVALID;
-	const bool disjoint = useModifier && this->planeCount > 1;
 
 	VkExternalMemoryImageCreateInfo externalInfo = {};
 	externalInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
@@ -792,10 +791,6 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	if (disjoint) {
-		imageInfo.flags |= VK_IMAGE_CREATE_DISJOINT_BIT;
-	}
-
 	VkImage image = VK_NULL_HANDLE;
 	VkResult result = devFuncs->vkCreateImage(device, &imageInfo, nullptr, &image);
 	if (result != VK_SUCCESS) {
@@ -803,37 +798,19 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		return nullptr;
 	}
 
-	std::array<VkDeviceMemory, 4> memories = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
-	int allocatedCount = 0;
-	const int memoryBindCount = disjoint ? this->planeCount : 1;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
 
-	for (int i = 0; i < memoryBindCount; ++i) {
-		int dupFd = dup(this->planes[i].fd); // NOLINT
-		if (dupFd < 0) {
-			qCWarning(logDmabuf) << "Failed to dup() fd for plane" << i;
-			goto cleanup_fail; // NOLINT
-		}
+	// dup() is required because vkAllocateMemory with VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
+	// takes ownership of the fd on succcess. Without dup, WlDmaBuffer would double-close.
+	int dupFd = dup(this->planes[0].fd);
+	if (dupFd < 0) {
+		qCWarning(logDmabuf) << "Failed to dup() fd for DMA-BUF import";
+		goto cleanup_fail; // NOLINT
+	}
 
+	{
 		VkMemoryRequirements memReqs = {};
-		if (disjoint) {
-			VkImagePlaneMemoryRequirementsInfo planeReqInfo = {};
-			planeReqInfo.sType = VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO;
-			planeReqInfo.planeAspect = static_cast<VkImageAspectFlagBits>(
-			    VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i // NOLINT
-			);
-
-			VkImageMemoryRequirementsInfo2 memReqInfo2 = {};
-			memReqInfo2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
-			memReqInfo2.pNext = &planeReqInfo;
-			memReqInfo2.image = image;
-
-			VkMemoryRequirements2 memReqs2 = {};
-			memReqs2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
-			devFuncs->vkGetImageMemoryRequirements2(device, &memReqInfo2, &memReqs2);
-			memReqs = memReqs2.memoryRequirements;
-		} else {
-			devFuncs->vkGetImageMemoryRequirements(device, image, &memReqs);
-		}
+		devFuncs->vkGetImageMemoryRequirements(device, image, &memReqs);
 
 		VkMemoryFdPropertiesKHR fdProps = {};
 		fdProps.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
@@ -847,8 +824,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 
 		if (result != VK_SUCCESS) {
 			close(dupFd);
-			qCWarning(logDmabuf) << "vkGetMemoryFdPropertiesKHR failed for plane" << i
-			                     << "result:" << result;
+			qCWarning(logDmabuf) << "vkGetMemoryFdPropertiesKHR failed, result:" << result;
 			goto cleanup_fail; // NOLINT
 		}
 
@@ -867,7 +843,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 
 		if (memTypeIndex == UINT32_MAX) {
 			close(dupFd);
-			qCWarning(logDmabuf) << "No compatible memory type for DMA-BUF plane" << i;
+			qCWarning(logDmabuf) << "No compatible memory type for DMA-BUF import";
 			goto cleanup_fail; // NOLINT
 		}
 
@@ -887,36 +863,16 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		allocInfo.allocationSize = memReqs.size;
 		allocInfo.memoryTypeIndex = memTypeIndex;
 
-		result = devFuncs->vkAllocateMemory(device, &allocInfo, nullptr, &memories[i]); // NOLINT
+		result = devFuncs->vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 		if (result != VK_SUCCESS) {
 			close(dupFd);
-			qCWarning(logDmabuf) << "vkAllocateMemory failed for plane" << i << "result:" << result;
+			qCWarning(logDmabuf) << "vkAllocateMemory failed, result:" << result;
 			goto cleanup_fail; // NOLINT
 		}
 
-		allocatedCount = i + 1;
-
-		if (disjoint) {
-			VkBindImagePlaneMemoryInfo planeBindInfo = {};
-			planeBindInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
-			planeBindInfo.planeAspect = static_cast<VkImageAspectFlagBits>(
-			    VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i // NOLINT
-			);
-
-			VkBindImageMemoryInfo bindInfo = {};
-			bindInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
-			bindInfo.pNext = &planeBindInfo;
-			bindInfo.image = image;
-			bindInfo.memory = memories[i]; // NOLINT
-			bindInfo.memoryOffset = 0;
-
-			result = devFuncs->vkBindImageMemory2(device, 1, &bindInfo);
-		} else {
-			result = devFuncs->vkBindImageMemory(device, image, memories[i], 0); // NOLINT
-		}
-
+		result = devFuncs->vkBindImageMemory(device, image, memory, 0);
 		if (result != VK_SUCCESS) {
-			qCWarning(logDmabuf) << "vkBindImageMemory failed for plane" << i << "result:" << result;
+			qCWarning(logDmabuf) << "vkBindImageMemory failed, result:" << result;
 			goto cleanup_fail; // NOLINT
 		}
 	}
@@ -974,8 +930,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		    devFuncs,
 		    device,
 		    image,
-		    memories.data(),
-		    allocatedCount,
+		    memory,
 		    qsgTexture
 		);
 		qCDebug(logDmabuf) << "Created WlDmaBufferVulkanQSGTexture" << tex << "from" << this;
@@ -986,10 +941,8 @@ cleanup_fail:
 	if (image != VK_NULL_HANDLE) {
 		devFuncs->vkDestroyImage(device, image, nullptr);
 	}
-	for (int i = 0; i < allocatedCount; ++i) {
-		if (memories[i] != VK_NULL_HANDLE) {                    // NOLINT
-			devFuncs->vkFreeMemory(device, memories[i], nullptr); // NOLINT
-		}
+	if (memory != VK_NULL_HANDLE) {
+		devFuncs->vkFreeMemory(device, memory, nullptr);
 	}
 	return nullptr;
 }
@@ -1001,10 +954,8 @@ WlDmaBufferVulkanQSGTexture::~WlDmaBufferVulkanQSGTexture() {
 		this->devFuncs->vkDestroyImage(this->device, this->image, nullptr);
 	}
 
-	for (int i = 0; i < this->memoryCount; ++i) {
-		if (this->memories[i] != VK_NULL_HANDLE) {                                // NOLINT
-			this->devFuncs->vkFreeMemory(this->device, this->memories[i], nullptr); // NOLINT
-		}
+	if (this->memory != VK_NULL_HANDLE) {
+		this->devFuncs->vkFreeMemory(this->device, this->memory, nullptr);
 	}
 
 	qCDebug(logDmabuf) << "WlDmaBufferVulkanQSGTexture" << this << "destroyed.";

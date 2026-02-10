@@ -129,25 +129,19 @@ private:
 	    QVulkanDeviceFunctions* devFuncs,
 	    VkDevice device,
 	    VkImage image,
-	    VkDeviceMemory* memories,
-	    int memoryCount,
+	    VkDeviceMemory memory,
 	    QSGTexture* qsgTexture
 	)
 	    : devFuncs(devFuncs)
 	    , device(device)
 	    , image(image)
-	    , memoryCount(memoryCount)
-	    , qsgTexture(qsgTexture) {
-		for (int i = 0; i < memoryCount; ++i) {
-			this->memories[i] = memories[i]; // NOLINT
-		}
-	}
+	    , memory(memory)
+	    , qsgTexture(qsgTexture) {}
 
 	QVulkanDeviceFunctions* devFuncs = nullptr;
 	VkDevice device = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
-	std::array<VkDeviceMemory, 4> memories = {};
-	int memoryCount = 0;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
 	QSGTexture* qsgTexture = nullptr;
 
 	friend class WlDmaBuffer;
