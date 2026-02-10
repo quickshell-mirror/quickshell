@@ -1,7 +1,7 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(dmabuf-deps REQUIRED IMPORTED_TARGET libdrm gbm egl)
 
-find_package(Vulkan QUIET)
+find_package(Vulkan REQUIRED)
 
 qt_add_library(quickshell-wayland-buffer STATIC
 	manager.cpp
@@ -15,11 +15,7 @@ target_link_libraries(quickshell-wayland-buffer PRIVATE
 	Qt::Quick Qt::QuickPrivate Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
 	PkgConfig::dmabuf-deps
 	wlp-linux-dmabuf
+	Vulkan::Vulkan
 )
-
-if (Vulkan_FOUND)
-	target_link_libraries(quickshell-wayland-buffer PRIVATE Vulkan::Vulkan)
-	target_compile_definitions(quickshell-wayland-buffer PRIVATE QS_DMABUF_VULKAN)
-endif()
 
 qs_pch(quickshell-wayland-buffer SET large)

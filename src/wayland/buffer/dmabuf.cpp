@@ -35,13 +35,11 @@
 #include <wayland-util.h>
 #include <xf86drm.h>
 
-#ifdef QS_DMABUF_VULKAN
 #include <private/qquickwindow_p.h>
 #include <qsgrendererinterface.h>
 #include <qvulkanfunctions.h>
 #include <qvulkaninstance.h>
 #include <vulkan/vulkan.h>
-#endif
 
 #include "../../core/logcat.hpp"
 #include "../../core/stacklist.hpp"
@@ -56,7 +54,6 @@ QS_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg)
 
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
 
-#ifdef QS_DMABUF_VULKAN
 VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
 	switch (drmFormat) {
 	case DRM_FORMAT_ARGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
@@ -73,7 +70,6 @@ VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
 	default: return VK_FORMAT_UNDEFINED;
 	}
 }
-#endif
 
 } // namespace
 
@@ -559,12 +555,10 @@ bool WlDmaBuffer::isCompatible(const WlBufferRequest& request) const {
 }
 
 WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
-#ifdef QS_DMABUF_VULKAN
 	auto* ri = window->rendererInterface();
 	if (ri && ri->graphicsApi() == QSGRendererInterface::Vulkan) {
 		return this->createQsgTextureVulkan(window);
 	}
-#endif
 
 	static auto* glEGLImageTargetTexture2DOES = []() {
 		auto* fn = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
@@ -695,8 +689,6 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
 	qCDebug(logDmabuf) << "Created WlDmaBufferQSGTexture" << tex << "from" << this;
 	return tex;
 }
-
-#ifdef QS_DMABUF_VULKAN
 
 WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) const {
 	auto* ri = window->rendererInterface();
@@ -1007,8 +999,6 @@ WlDmaBufferVulkanQSGTexture::~WlDmaBufferVulkanQSGTexture() {
 
 	qCDebug(logDmabuf) << "WlDmaBufferVulkanQSGTexture" << this << "destroyed.";
 }
-
-#endif // QS_DMABUF_VULKAN
 
 WlDmaBufferQSGTexture::~WlDmaBufferQSGTexture() {
 	auto* context = QOpenGLContext::currentContext();

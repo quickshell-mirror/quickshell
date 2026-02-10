@@ -19,10 +19,8 @@
 #include <wayland-util.h>
 #include <xf86drm.h>
 
-#ifdef QS_DMABUF_VULKAN
 #include <qvulkanfunctions.h>
 #include <vulkan/vulkan.h>
-#endif
 
 #include "manager.hpp"
 #include "qsg.hpp"
@@ -119,7 +117,6 @@ private:
 	friend class WlDmaBuffer;
 };
 
-#ifdef QS_DMABUF_VULKAN
 class WlDmaBufferVulkanQSGTexture: public WlBufferQSGTexture {
 public:
 	~WlDmaBufferVulkanQSGTexture() override;
@@ -155,7 +152,6 @@ private:
 
 	friend class WlDmaBuffer;
 };
-#endif
 
 class WlDmaBuffer: public WlBuffer {
 public:
@@ -195,9 +191,7 @@ private:
 	friend class LinuxDmabufManager;
 	friend QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
 
-#ifdef QS_DMABUF_VULKAN
 	[[nodiscard]] WlBufferQSGTexture* createQsgTextureVulkan(QQuickWindow* window) const;
-#endif
 };
 
 QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
