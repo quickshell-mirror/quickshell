@@ -1,7 +1,10 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(dmabuf-deps REQUIRED IMPORTED_TARGET libdrm gbm egl)
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan)
+if (NOT Vulkan_INCLUDE_DIR)
+	message(FATAL_ERROR "Vulkan headers are required but were not found.")
+endif()
 
 qt_add_library(quickshell-wayland-buffer STATIC
 	manager.cpp
