@@ -1,8 +1,8 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(dmabuf-deps REQUIRED IMPORTED_TARGET libdrm gbm egl)
 
-find_package(Vulkan)
-if (NOT Vulkan_INCLUDE_DIR)
+find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h)
+if (NOT VULKAN_INCLUDE_DIR)
 	message(FATAL_ERROR "Vulkan headers are required but were not found.")
 endif()
 
@@ -18,7 +18,8 @@ target_link_libraries(quickshell-wayland-buffer PRIVATE
 	Qt::Quick Qt::QuickPrivate Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
 	PkgConfig::dmabuf-deps
 	wlp-linux-dmabuf
-	Vulkan::Headers
 )
+
+target_include_directories(quickshell-wayland-buffer PRIVATE ${VULKAN_INCLUDE_DIR})
 
 qs_pch(quickshell-wayland-buffer SET large)
