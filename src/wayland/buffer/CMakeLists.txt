@@ -15,7 +15,7 @@ target_link_libraries(quickshell-wayland-buffer PRIVATE
 	Qt::Quick Qt::QuickPrivate Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
 	PkgConfig::dmabuf-deps
 	wlp-linux-dmabuf
-	Vulkan::Vulkan
+	Vulkan::Headers
 )
 
 qs_pch(quickshell-wayland-buffer SET large)
