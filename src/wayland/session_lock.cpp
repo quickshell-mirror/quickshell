@@ -20,15 +20,35 @@
 #include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
 
+bool WlSessionLock::exposeDbus() const { return this->mExposeDbus; }
+
+void WlSessionLock::setExposeDbus(bool exposeDbus) {
+	if (this->mExposeDbus == exposeDbus) return;
+	if (this->manager != nullptr) {
+		qWarning() << "WlSessionLock.exposeDbus cannot be changed after initialization.";
+		return;
+	}
+	this->mExposeDbus = exposeDbus;
+	emit this->exposeDbusChanged();
+}
+
 void WlSessionLock::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<WlSessionLock*>(oldInstance);
 
-	if (old != nullptr) {
+	auto* app = QCoreApplication::instance();
+	auto* guiApp = qobject_cast<QGuiApplication*>(app);
+
+	if (old != nullptr && guiApp != nullptr) {
+		// Ensure we don't leave stale connections to the old instance behind.
+		QObject::disconnect(guiApp, nullptr, old, nullptr);
+	}
+
+	if (old != nullptr && old->manager != nullptr) {
 		QObject::disconnect(old->manager, nullptr, old, nullptr);
 		this->manager = old->manager;
 		this->manager->setParent(this);
 	} else {
-		this->manager = new SessionLockManager(this);
+		this->manager = new SessionLockManager(this->mExposeDbus, this);
 	}
 
 	// clang-format off
@@ -36,9 +56,6 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 	QObject::connect(this->manager, &SessionLockManager::unlocked, this, &WlSessionLock::secureStateChanged);
 
 	QObject::connect(this->manager, &SessionLockManager::unlocked, this, &WlSessionLock::unlock);
-
-	auto* app = QCoreApplication::instance();
-	auto* guiApp = qobject_cast<QGuiApplication*>(app);
 
 	if (guiApp != nullptr) {
 		QObject::connect(guiApp, &QGuiApplication::primaryScreenChanged, this, &WlSessionLock::onScreensChanged);
@@ -97,7 +114,7 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 	}
 
 	if (show) {
-		if (!this->manager->isLocked()) {
+		if (this->manager == nullptr || !this->manager->isLocked()) {
 			qFatal() << "Tried to show lockscreen surfaces without active lock";
 		}
 
@@ -124,9 +141,13 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 
 		// preload initial surfaces to make the chance of the compositor displaying a blank
 		// frame before the lock surfaces are shown as low as possible.
-		this->updateSurfaces(false);
+		this->updateSurfaces(false, old);
 
-		if (!this->manager->lock()) this->lockTarget = false;
+		if (this->manager == nullptr || !this->manager->lock()) {
+			this->lockTarget = false;
+			this->unlock();
+			return;
+		}
 
 		this->updateSurfaces(true, old);
 	} else {
@@ -135,18 +156,22 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 }
 
 void WlSessionLock::unlock() {
-	if (this->isLocked()) {
-		this->lockTarget = false;
+	if (!this->isLocked()) return;
+
+	this->lockTarget = false;
+
+	// Manager may legitimately be null during early reload/init paths.
+	if (this->manager != nullptr) {
 		this->manager->unlock();
-
-		for (auto* surface: this->surfaces) {
-			surface->deleteLater();
-		}
-
-		this->surfaces.clear();
-
-		emit this->lockStateChanged();
 	}
+
+	for (auto* surface: this->surfaces) {
+		surface->deleteLater();
+	}
+
+	this->surfaces.clear();
+
+	emit this->lockStateChanged();
 }
 
 void WlSessionLock::onScreensChanged() {

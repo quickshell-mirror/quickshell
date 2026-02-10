@@ -67,6 +67,7 @@ class WlSessionLock: public Reloadable {
 	Q_PROPERTY(bool secure READ isSecure NOTIFY secureStateChanged);
 	/// The surface that will be created for each screen. Must create a @@WlSessionLockSurface$.
 	Q_PROPERTY(QQmlComponent* surface READ surfaceComponent WRITE setSurfaceComponent NOTIFY surfaceComponentChanged);
+	Q_PROPERTY(bool exposeDbus READ exposeDbus WRITE setExposeDbus NOTIFY exposeDbusChanged);
 	// clang-format on
 	QML_ELEMENT;
 	Q_CLASSINFO("DefaultProperty", "surface");
@@ -84,10 +85,14 @@ public:
 	[[nodiscard]] QQmlComponent* surfaceComponent() const;
 	void setSurfaceComponent(QQmlComponent* surfaceComponent);
 
+	[[nodiscard]] bool exposeDbus() const;
+	void setExposeDbus(bool exposeDbus);
+
 signals:
 	void lockStateChanged();
 	void secureStateChanged();
 	void surfaceComponentChanged();
+	void exposeDbusChanged();
 
 private slots:
 	void unlock();
@@ -101,6 +106,7 @@ private:
 	QQmlComponent* mSurfaceComponent = nullptr;
 	QMap<QScreen*, WlSessionLockSurface*> surfaces;
 	bool lockTarget = false;
+	bool mExposeDbus = false;
 
 	friend class WlSessionLockSurface;
 };
@@ -132,7 +138,6 @@ class WlSessionLockSurface: public Reloadable {
 	/// >     // your content here
 	/// >   }
 	/// > }
-	/// > ```
 	/// > ... but you probably shouldn't make a transparent lock,
 	/// > and most compositors will ignore an attempt to do so.
 	Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged);

@@ -26,10 +26,11 @@ QSWaylandSessionLockManager* manager() {
 
 } // namespace
 
-SessionLockManager::SessionLockManager(QObject* parent)
-    : QObject(parent)
-    , mDbusAdaptor(new qs::dbus::SessionLockAdaptor(this)) {
-	// DBus adaptor initialized in member initializer list so the service is always available
+SessionLockManager::SessionLockManager(bool exposeDbus, QObject* parent)
+    : QObject(parent) {
+	if (exposeDbus) {
+		this->mDbusAdaptor = new qs::dbus::SessionLockAdaptor(this);
+	}
 }
 
 bool SessionLockManager::lockAvailable() { return manager()->isActive(); }
@@ -40,19 +41,23 @@ bool SessionLockManager::lock() {
 	this->mLock = manager()->acquireLock();
 	this->mLock->setParent(this);
 
-	// Notify DBus that we're attempting to lock (not yet secure)
-	this->mDbusAdaptor->setLocked(true);
-	this->mDbusAdaptor->setSecure(false);
+	// Notify DBus that we're attempting to lock
+	if (this->mDbusAdaptor) {
+		this->mDbusAdaptor->setLocked(true);
+		this->mDbusAdaptor->setSecure(false);
+	}
 
-	// clang-format off
+	// clang-format off	
 	QObject::connect(this->mLock, &QSWaylandSessionLock::compositorLocked, this, [this]() {
-		this->mDbusAdaptor->setSecure(true);
+		if (this->mDbusAdaptor) this->mDbusAdaptor->setSecure(true);
 		emit this->locked();
 	});
-	
+
 	QObject::connect(this->mLock, &QSWaylandSessionLock::unlocked, this, [this]() {
-		this->mDbusAdaptor->setLocked(false);
-		this->mDbusAdaptor->setSecure(false);
+		if (this->mDbusAdaptor) {
+			this->mDbusAdaptor->setLocked(false);
+			this->mDbusAdaptor->setSecure(false);
+		}
 		emit this->unlocked();
 	});
 	// clang-format on

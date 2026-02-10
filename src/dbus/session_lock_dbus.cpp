@@ -20,12 +20,14 @@ SessionLockAdaptor::SessionLockAdaptor(QObject* parent): QDBusAbstractAdaptor(pa
 	// Register on session bus
 	auto connection = QDBusConnection::sessionBus();
 
-	if (!connection.registerService("org.quickshell.SessionLock")) {
+	const bool serviceOk = connection.registerService("org.quickshell.SessionLock");
+	if (!serviceOk) {
 		qCWarning(logDbusSessionLock) << "Failed to register DBus service org.quickshell.SessionLock:"
 		                              << connection.lastError().message();
-	} else {
-		qCInfo(logDbusSessionLock) << "Registered DBus service org.quickshell.SessionLock";
+		return;
 	}
+
+	qCInfo(logDbusSessionLock) << "Registered DBus service org.quickshell.SessionLock";
 
 	if (!connection
 	         .registerObject("/org/quickshell/SessionLock", parent, QDBusConnection::ExportAdaptors))
@@ -38,19 +40,23 @@ SessionLockAdaptor::SessionLockAdaptor(QObject* parent): QDBusAbstractAdaptor(pa
 }
 
 void SessionLockAdaptor::setLocked(bool locked) {
-	if (this->mLocked != locked) {
-		this->mLocked = locked;
-		qCDebug(logDbusSessionLock) << "Lock state changed to:" << locked;
-		emit this->LockedChanged(locked);
-	}
+	if (this->mLocked == locked) return;
+
+	this->mLocked = locked;
+	qCDebug(logDbusSessionLock) << "Lock state changed to:" << locked;
+
+	emit this->LockedChanged(locked);
+	emit this->lockedChanged(locked);
 }
 
 void SessionLockAdaptor::setSecure(bool secure) {
-	if (this->mSecure != secure) {
-		this->mSecure = secure;
-		qCDebug(logDbusSessionLock) << "Secure state changed to:" << secure;
-		emit this->SecureChanged(secure);
-	}
+	if (this->mSecure == secure) return;
+
+	this->mSecure = secure;
+	qCDebug(logDbusSessionLock) << "Secure state changed to:" << secure;
+
+	emit this->SecureChanged(secure);
+	emit this->secureChanged(secure);
 }
 
 bool SessionLockAdaptor::GetLocked() const {
