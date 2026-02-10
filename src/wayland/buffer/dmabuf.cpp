@@ -878,7 +878,9 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	}
 
 	{
-		// transition layout so it's useable as a sampled texture
+		// acquire the DMA-BUF from the foreign (compositor) queue and transition
+		// to shader-read layout. oldLayout must be GENERAL (not UNDEFINED) to
+		// preserve the DMA-BUF contents written by the external producer. Hopefully.
 		window->beginExternalCommands();
 
 		auto* cmdBufPtr = static_cast<VkCommandBuffer*>(
@@ -887,12 +889,30 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 
 		if (cmdBufPtr && *cmdBufPtr) {
 			VkCommandBuffer cmdBuf = *cmdBufPtr;
+
+			// find the graphics queue family index for the ownrship transfer.
+			uint32_t graphicsQueueFamily = 0;
+			uint32_t queueFamilyCount = 0;
+			instFuncs->vkGetPhysicalDeviceQueueFamilyProperties(
+			    physDevice, &queueFamilyCount, nullptr
+			);
+			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+			instFuncs->vkGetPhysicalDeviceQueueFamilyProperties(
+			    physDevice, &queueFamilyCount, queueFamilies.data()
+			);
+			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+				if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+					graphicsQueueFamily = i;
+					break;
+				}
+			}
+
 			VkImageMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
 			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
+			barrier.dstQueueFamilyIndex = graphicsQueueFamily;
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
