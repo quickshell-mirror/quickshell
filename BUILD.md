@@ -146,6 +146,7 @@ To disable: `-DSCREENCOPY=OFF`
 Dependencies:
 - `libdrm`
 - `libgbm`
+- `vulkan-headers` (build-time)
 
 Specific protocols can also be disabled:
 - `DSCREENCOPY_ICC=OFF` - Disable screencopy via [ext-image-copy-capture-v1]

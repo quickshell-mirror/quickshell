@@ -49,3 +49,4 @@ set shell id.
 ## Packaging Changes
 
 `glib` and `polkit` have been added as dependencies when compiling with polkit agent support.
+`vulkan-headers` has been added as a build-time dependency for screencopy (Vulkan backend support).

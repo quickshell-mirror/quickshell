@@ -34,7 +34,8 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <vulkan/vulkan.h>
+#include <qtypes.h>
+#include <vulkan/vulkan_core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
@@ -54,6 +55,7 @@ QS_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg)
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
 
 VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
+	// NOLINTBEGIN(bugprone-branch-clone): XRGB/ARGB intentionally map to the same VK format
 	switch (drmFormat) {
 	case DRM_FORMAT_ARGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
 	case DRM_FORMAT_XRGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
@@ -68,6 +70,7 @@ VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
 	case DRM_FORMAT_BGR565: return VK_FORMAT_B5G6R5_UNORM_PACK16;
 	default: return VK_FORMAT_UNDEFINED;
 	}
+	// NOLINTEND(bugprone-branch-clone)
 }
 
 } // namespace
@@ -559,6 +562,10 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTexture(QQuickWindow* window) const {
 		return this->createQsgTextureVulkan(window);
 	}
 
+	return this->createQsgTextureGl(window);
+}
+
+WlBufferQSGTexture* WlDmaBuffer::createQsgTextureGl(QQuickWindow* window) const {
 	static auto* glEGLImageTargetTexture2DOES = []() {
 		auto* fn = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
 		    eglGetProcAddress("glEGLImageTargetTexture2DOES")
@@ -721,18 +728,18 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		return nullptr;
 	}
 
-	auto vkGetMemoryFdPropertiesKHR_ = reinterpret_cast<PFN_vkGetMemoryFdPropertiesKHR>(
+	auto getMemoryFdPropertiesKHR = reinterpret_cast<PFN_vkGetMemoryFdPropertiesKHR>(
 	    instFuncs->vkGetDeviceProcAddr(device, "vkGetMemoryFdPropertiesKHR")
 	);
 
-	if (!vkGetMemoryFdPropertiesKHR_) {
+	if (!getMemoryFdPropertiesKHR) {
 		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: "
 		                        "vkGetMemoryFdPropertiesKHR not available. "
 		                        "Missing VK_KHR_external_memory_fd extension.";
 		return nullptr;
 	}
 
-	VkFormat vkFormat = drmFormatToVkFormat(this->format);
+	const VkFormat vkFormat = drmFormatToVkFormat(this->format);
 	if (vkFormat == VK_FORMAT_UNDEFINED) {
 		qCWarning(logDmabuf) << "Failed to create Vulkan QSG texture: unsupported DRM format"
 		                     << FourCCStr(this->format);
@@ -745,7 +752,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		return nullptr;
 	}
 
-	VkSubresourceLayout planeLayouts[4] = {};
+	std::array<VkSubresourceLayout, 4> planeLayouts = {};
 	for (int i = 0; i < this->planeCount; ++i) {
 		planeLayouts[i].offset = this->planes[i].offset;   // NOLINT
 		planeLayouts[i].rowPitch = this->planes[i].stride; // NOLINT
@@ -754,8 +761,8 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		planeLayouts[i].depthPitch = 0;
 	}
 
-	bool useModifier = this->modifier != DRM_FORMAT_MOD_INVALID;
-	bool disjoint = useModifier && this->planeCount > 1;
+	const bool useModifier = this->modifier != DRM_FORMAT_MOD_INVALID;
+	const bool disjoint = useModifier && this->planeCount > 1;
 
 	VkExternalMemoryImageCreateInfo externalInfo = {};
 	externalInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
@@ -765,7 +772,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	modifierInfo.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT;
 	modifierInfo.drmFormatModifier = this->modifier;
 	modifierInfo.drmFormatModifierPlaneCount = static_cast<uint32_t>(this->planeCount);
-	modifierInfo.pPlaneLayouts = planeLayouts;
+	modifierInfo.pPlaneLayouts = planeLayouts.data();
 
 	if (useModifier) {
 		externalInfo.pNext = &modifierInfo;
@@ -776,7 +783,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	imageInfo.pNext = &externalInfo;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
 	imageInfo.format = vkFormat;
-	imageInfo.extent = {this->width, this->height, 1};
+	imageInfo.extent = {.width = this->width, .height = this->height, .depth = 1};
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -796,9 +803,9 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		return nullptr;
 	}
 
-	VkDeviceMemory memories[4] = {};
+	std::array<VkDeviceMemory, 4> memories = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
 	int allocatedCount = 0;
-	int memoryBindCount = disjoint ? this->planeCount : 1;
+	const int memoryBindCount = disjoint ? this->planeCount : 1;
 
 	for (int i = 0; i < memoryBindCount; ++i) {
 		int dupFd = dup(this->planes[i].fd); // NOLINT
@@ -831,7 +838,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		VkMemoryFdPropertiesKHR fdProps = {};
 		fdProps.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
 
-		result = vkGetMemoryFdPropertiesKHR_(
+		result = getMemoryFdPropertiesKHR(
 		    device,
 		    VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
 		    dupFd,
@@ -845,7 +852,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 			goto cleanup_fail; // NOLINT
 		}
 
-		uint32_t memTypeBits = memReqs.memoryTypeBits & fdProps.memoryTypeBits;
+		const uint32_t memTypeBits = memReqs.memoryTypeBits & fdProps.memoryTypeBits;
 
 		VkPhysicalDeviceMemoryProperties memProps = {};
 		instFuncs->vkGetPhysicalDeviceMemoryProperties(physDevice, &memProps);
@@ -956,7 +963,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		window->endExternalCommands();
 
 		auto* qsgTexture = QQuickWindowPrivate::get(window)->createTextureFromNativeTexture(
-		    quint64(image),
+		    reinterpret_cast<quint64>(image),
 		    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		    static_cast<uint>(vkFormat),
 		    QSize(static_cast<int>(this->width), static_cast<int>(this->height)),
@@ -967,7 +974,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 		    devFuncs,
 		    device,
 		    image,
-		    memories,
+		    memories.data(),
 		    allocatedCount,
 		    qsgTexture
 		);
@@ -976,13 +983,13 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	}
 
 cleanup_fail:
+	if (image != VK_NULL_HANDLE) {
+		devFuncs->vkDestroyImage(device, image, nullptr);
+	}
 	for (int i = 0; i < allocatedCount; ++i) {
 		if (memories[i] != VK_NULL_HANDLE) {                    // NOLINT
 			devFuncs->vkFreeMemory(device, memories[i], nullptr); // NOLINT
 		}
-	}
-	if (image != VK_NULL_HANDLE) {
-		devFuncs->vkDestroyImage(device, image, nullptr);
 	}
 	return nullptr;
 }

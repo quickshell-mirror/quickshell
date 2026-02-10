@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 #include <EGL/egl.h>
@@ -16,7 +17,7 @@
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/types.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
 #include <xf86drm.h>
@@ -145,7 +146,7 @@ private:
 	QVulkanDeviceFunctions* devFuncs = nullptr;
 	VkDevice device = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
-	VkDeviceMemory memories[4] = {};
+	std::array<VkDeviceMemory, 4> memories = {};
 	int memoryCount = 0;
 	QSGTexture* qsgTexture = nullptr;
 
@@ -190,6 +191,7 @@ private:
 	friend class LinuxDmabufManager;
 	friend QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
 
+	[[nodiscard]] WlBufferQSGTexture* createQsgTextureGl(QQuickWindow* window) const;
 	[[nodiscard]] WlBufferQSGTexture* createQsgTextureVulkan(QQuickWindow* window) const;
 };
 
