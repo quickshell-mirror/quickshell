@@ -802,7 +802,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 
 	// dup() is required because vkAllocateMemory with VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
 	// takes ownership of the fd on succcess. Without dup, WlDmaBuffer would double-close.
-	int dupFd = dup(this->planes[0].fd);
+	const int dupFd = dup(this->planes[0].fd); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 	if (dupFd < 0) {
 		qCWarning(logDmabuf) << "Failed to dup() fd for DMA-BUF import";
 		goto cleanup_fail; // NOLINT
