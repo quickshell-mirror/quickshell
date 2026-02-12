@@ -9,7 +9,7 @@
 #include "../core/model.hpp"
 #include "device.hpp"
 #include "enums.hpp"
-#include "nm_connection.hpp"
+#include "nm_settings.hpp"
 
 namespace qs::network {
 
@@ -97,14 +97,8 @@ class Network: public QObject {
 	/// A list of connnection settings profiles for this network.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend. 
-	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::NMConnection>*);
-	Q_PROPERTY(UntypedObjectModel* nmConnections READ nmConnections CONSTANT);
-	/// The default connection settings profile for this network. This is the connection settings used when connect() is invoked.
-	/// Only available when the connection is known.
-	///
-	/// > [!NOTE] The default connection can only be set while the Network is disconnected.
-	/// > [!WARNING] Only valid for the NetworkManager backend.
-	Q_PROPERTY(NMConnection* nmDefaultConnection READ nmDefaultConnection WRITE setNmDefaultConnection NOTIFY nmDefaultConnectionChanged BINDABLE bindableNmDefaultConnection);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::NMSettings>*);
+	Q_PROPERTY(UntypedObjectModel* nmSettings READ nmSettings CONSTANT);
 	/// True if the network is connected.
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 	/// True if the wifi network has known connection settings saved.
@@ -121,66 +115,76 @@ class Network: public QObject {
 
 public:
 	explicit Network(QString name, QObject* parent = nullptr);
-
 	/// Attempt to connect to the network.
 	Q_INVOKABLE void connect();
+	/// Attempt to connect to the network with a specific @@nmSettings.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_INVOKABLE void connectWithSettings(NMSettings* settings);
 	/// Disconnect from the network.
 	Q_INVOKABLE void disconnect();
 	/// Forget all connection settings for this network.
 	Q_INVOKABLE void forget();
 
-	void connectionAdded(NMConnection* conn);
-	void connectionRemoved(NMConnection* conn);
+	void settingsAdded(NMSettings* settings);
+	void settingsRemoved(NMSettings* settings);
 
+	// clang-format off
 	[[nodiscard]] QString name() const { return this->mName; }
-	[[nodiscard]] ObjectModel<NMConnection>* nmConnections() { return &this->mNmConnections; }
-	[[nodiscard]] NMConnection* nmDefaultConnection() { return this->bNmDefaultConnection; }
-	QBindable<NMConnection*> bindableNmDefaultConnection() { return &this->bNmDefaultConnection; }
-	void setNmDefaultConnection(NMConnection* conn);
+	[[nodiscard]] ObjectModel<NMSettings>* nmSettings() { return &this->mNmSettings; }
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
 	[[nodiscard]] NetworkState::Enum state() const { return this->bState; }
 	QBindable<NetworkState::Enum> bindableState() { return &this->bState; }
 	[[nodiscard]] NMNetworkStateReason::Enum nmStateReason() const { return this->bNmStateReason; }
 	QBindable<NMNetworkStateReason::Enum> bindableNmStateReason() { return &this->bNmStateReason; }
+	[[nodiscard]] NMDeviceStateReason::Enum nmDeviceFailReason() const { return this->bNmDeviceFailReason; }
+	QBindable<NMDeviceStateReason::Enum> bindableNmDeviceFailReason() { return &this->bNmDeviceFailReason; }
+	[[nodiscard]] NMSettings* activeSettings() const { return this->bActiveSettings; }
+	QBindable<NMSettings*> bindableActiveSettings() { return &this->bActiveSettings; }
 	QBindable<bool> bindableStateChanging() { return &this->bStateChanging; }
+	// clang-format on
 
 signals:
-	void requestSetNmDefaultConnection(NMConnection* conn);
 	void requestConnect();
+	void requestConnectWithSettings(NMSettings* settings);
 	void requestDisconnect();
 	void requestForget();
-	void nmDefaultConnectionChanged();
 	void connectedChanged();
 	void knownChanged();
 	void stateChanged();
 	void nmStateReasonChanged();
+	void nmDeviceFailReasonChanged();
+	void activeSettingsChanged();
 	void stateChangingChanged();
 
 protected:
 	QString mName;
-	ObjectModel<NMConnection> mNmConnections {this};
+	ObjectModel<NMSettings> mNmSettings {this};
 
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(Network, NMConnection*, bNmDefaultConnection, &Network::nmDefaultConnectionChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bConnected, &Network::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bKnown, &Network::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, NetworkState::Enum, bState, &Network::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, NMNetworkStateReason::Enum, bNmStateReason, &Network::nmStateReasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, NMDeviceStateReason::Enum, bNmDeviceFailReason, &Network::nmDeviceFailReasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, NMSettings*, bActiveSettings, &Network::activeSettingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bStateChanging, &Network::stateChangingChanged);
 	// clang-format on
 };
 
 ///! NetworkManager connection context.
 /// This is a creatable object and it should be provided a network.
-/// It emits helpful signals about the current attempt to connect
-/// using the network's @@Quickshell.Networking.Network.nmDefaultConnection.
+/// It emits useful signals about attempts to connect to the network.
 class NMConnectionContext: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
 
 	// clang-format off
+	/// A network to provide connection context for or `null`.
 	Q_PROPERTY(Network* network READ network WRITE setNetwork NOTIFY networkChanged)
+	/// The last connection settings that context signals were emitted for or `null`.
+	Q_PROPERTY(NMSettings* settings READ default NOTIFY settingsChanged BINDABLE bindableSettings)
 	// clang-format on
 
 public:
@@ -188,20 +192,28 @@ public:
 
 	[[nodiscard]] Network* network() const { return this->bNetwork; };
 	void setNetwork(Network* network);
+	QBindable<NMSettings*> bindableSettings() { return &this->bSettings; };
 
 signals:
 	void networkChanged();
-	void connectionChanged();
-	/// Authentication to the server failed.
-	void loginFailed();
-	/// Necessary secrets for the connection were not provided.
+	void settingsChanged();
+	/// The connection was successfully activated.
+	void activated();
+	/// The connection is activating.
+	void activating();
+	/// Secrets were required, but not provided.
 	void noSecrets();
-	/// The connection attempt was successful.
-	void success();
+	/// 802.1x supplicant disconnected.
+	void supplicantDisconnect();
+	/// 802.1x supplicant failed.
+	void supplicantFailed();
+	/// 802.1x suuplicant took too long to authenticate.
+	void supplicantTimeout();
 
 private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionContext, Network*, bNetwork, &NMConnectionContext::networkChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionContext, NMSettings*, bSettings, &NMConnectionContext::settingsChanged);
 	// clang-format on
 };
 

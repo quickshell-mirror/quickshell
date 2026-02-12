@@ -42,7 +42,7 @@ private:
 	// clang-format on
 };
 
-///! Wireless variant of a NetworkDevice.
+///! Wireless variant of a @@NetworkDevice.
 class WifiDevice: public NetworkDevice {
 	Q_OBJECT;
 	QML_ELEMENT;

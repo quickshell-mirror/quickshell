@@ -48,8 +48,10 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	this->deviceProperties.updateAllViaGetAll();
 }
 
-void NMDevice::onStateChanged(quint32 /*oldState*/, quint32 /*newState*/, quint32 reason) {
+void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 reason) {
 	auto enumReason = static_cast<NMDeviceStateReason::Enum>(reason);
+	auto enumNewState = static_cast<NMDeviceState::Enum>(newState);
+	if (enumNewState == NMDeviceState::Failed) this->bLastFailReason = enumReason;
 	if (this->bStateReason == enumReason) return;
 	this->bStateReason = enumReason;
 }

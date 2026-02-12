@@ -36,37 +36,52 @@ public:
 	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
 
 	void forget();
-	void updateSettings(const QString& mapName, const QVariantMap& map);
+	void queueUpdate();
+	void updateSettings();
 	void clearSecrets();
+	void setId(const QString& id);
+	void setAutoconnect(bool autoconnect);
+	void setAutoconnectPriority(qint32 autoconnectPriority);
+	void setDnsOverTls(qint32 dnsOverTls);
+	void setDnssec(qint32 dnssec);
 	void setWifiPsk(const QString& psk);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
-	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
-	[[nodiscard]] ConnectionSettingsMap combinedSettings() const { return this->bCombinedSettings; };
-	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] QString id() const { return this->bId; };
+	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
+	[[nodiscard]] qint32 autoconnectPriority() const { return this->bAutoconnectPriority; };
+	[[nodiscard]] qint32 dnsOverTls() const { return this->bDnsOverTls; };
+	[[nodiscard]] qint32 dnssec() const { return this->bDnssec; };
 
 signals:
 	void loaded();
 	void settingsChanged(ConnectionSettingsMap settings);
 	void secretSettingsChanged(ConnectionSettingsMap settings);
-	void combinedSettingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
 	void idChanged(QString id);
+	void autoconnectChanged(bool autoconnect);
+	void autoconnectPriorityChanged(qint32 autoconnectPriority);
+	void dnsOverTlsChanged(qint32 dnsOverTls);
+	void dnssecChanged(qint32 dnssec);
+	void pskChanged(QString psk);
 
 private:
 	bool mLoaded = false;
+	bool mUpdatePending = false;
+	ConnectionSettingsMap mFullSettings;
 	void getSettings();
 	void getSecrets();
 
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSecretSettings, &NMConnectionSettings::secretSettingsChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bCombinedSettings, &NMConnectionSettings::combinedSettingsChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bId, &NMConnectionSettings::idChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, bool, bAutoconnect, &NMConnectionSettings::autoconnectChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, qint32, bAutoconnectPriority, &NMConnectionSettings::autoconnectPriorityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, qint32, bDnsOverTls, &NMConnectionSettings::dnsOverTlsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, qint32, bDnssec, &NMConnectionSettings::dnssecChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bPsk, &NMConnectionSettings::pskChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
 	// clang-format on
 

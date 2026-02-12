@@ -6,7 +6,7 @@
 
 namespace qs::network {
 
-///! Connection state of a NetworkDevice.
+///! Connection state of a @@NetworkDevice.
 class DeviceConnectionState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -24,7 +24,7 @@ public:
 	Q_INVOKABLE static QString toString(DeviceConnectionState::Enum state);
 };
 
-///! Type of network device.
+///! Type of a @@NetworkDevice.
 class DeviceType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -159,7 +159,7 @@ public:
 	Q_INVOKABLE static QString toString(NMDeviceStateReason::Enum reason);
 };
 
-///! The connection state of a Network.
+///! The connection state of a @@Network.
 class NetworkState: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -177,7 +177,7 @@ public:
 	Q_INVOKABLE static QString toString(NetworkState::Enum state);
 };
 
-///! The reason for the NMConnectionState of an NMConnection.
+///! The reason for the @@NMConnectionState of a @@Network.
 /// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMActiveConnectionStateReason.
 class NMNetworkStateReason: public QObject {
 	Q_OBJECT;
@@ -206,7 +206,7 @@ public:
 	Q_INVOKABLE static QString toString(NMNetworkStateReason::Enum reason);
 };
 
-///! The security type of a wifi network.
+///! The security type of a @@WifiNetwork.
 class WifiSecurityType: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -231,7 +231,7 @@ public:
 	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
 };
 
-///! The 802.11 mode of a wifi device.
+///! The 802.11 mode of a @@WifiDevice.
 class WifiDeviceMode: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;

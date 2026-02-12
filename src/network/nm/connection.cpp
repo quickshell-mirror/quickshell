@@ -46,22 +46,12 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 
 	// clang-format off
 	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSettings);
-	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSecrets);
 	// clang-format on
-
-	this->bSecurity.setBinding([this]() { return securityFromConnectionSettings(this->bSettings); });
-	this->bId.setBinding([this]() {
-		return this->bSettings.value().value("connection").value("id").toString();
-	});
-	this->bCombinedSettings.setBinding([this]() {
-		return mergeSettingsMaps(this->bSettings, this->bSecretSettings);
-	});
 
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
 
 	this->getSettings();
-	this->getSecrets();
 }
 
 void NMConnectionSettings::getSettings() {
@@ -75,7 +65,13 @@ void NMConnectionSettings::getSettings() {
 			qCWarning(logNetworkManager)
 			    << "Failed to get settings for" << this->path() << ":" << reply.error().message();
 		} else {
-			this->bSettings = reply.value();
+			auto settings = reply.value();
+			this->bId = settings["connection"]["id"].toString();
+			this->bAutoconnect = settings["connection"]["autoconnect"].toBool();
+			this->bAutoconnectPriority = settings["connection"]["autoconnect-priority"].toInt();
+			this->bDnsOverTls = settings["connection"]["dns-over-tls"].toInt();
+			this->bDnssec = settings["connection"]["dnssec"].toInt();
+			this->bPsk = settings["802-11-wireless-security"]["psk"].toString();
 		}
 
 		if (!this->mLoaded) {
@@ -89,34 +85,57 @@ void NMConnectionSettings::getSettings() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-void NMConnectionSettings::getSecrets() {
-	auto pending = this->proxy->GetSecrets("");
-	auto* call = new QDBusPendingCallWatcher(pending, this);
+void NMConnectionSettings::queueUpdate() {
+	if (this->mUpdatePending) return;
+	this->mUpdatePending = true;
+	QMetaObject::invokeMethod(this, &NMConnectionSettings::updateSettings, Qt::QueuedConnection);
+}
 
-	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
-		const QDBusPendingReply<ConnectionSettingsMap> reply = *call;
-		// We fail silently because this will error if there's no secrets to get
-		if (!reply.isError()) {
-			this->bSecretSettings = reply.value();
-		}
-		delete call;
-	};
+void NMConnectionSettings::setId(const QString& id) {
+	if (this->bId == id) return;
+	this->bId = id;
+	this->queueUpdate();
+}
 
-	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+void NMConnectionSettings::setAutoconnect(bool autoconnect) {
+	if (this->bAutoconnect == autoconnect) return;
+	this->bAutoconnect = autoconnect;
+	this->queueUpdate();
+}
+
+void NMConnectionSettings::setAutoconnectPriority(qint32 autoconnectPriority) {
+	if (this->bAutoconnectPriority == autoconnectPriority) return;
+	this->bAutoconnectPriority = autoconnectPriority;
+	this->queueUpdate();
+}
+
+void NMConnectionSettings::setDnsOverTls(qint32 dnsOverTls) {
+	if (this->bDnsOverTls == dnsOverTls) return;
+	this->bDnsOverTls = dnsOverTls;
+	this->queueUpdate();
+}
+
+void NMConnectionSettings::setDnssec(qint32 dnssec) {
+	if (this->bDnssec == dnssec) return;
+	this->bDnssec = dnssec;
+	this->queueUpdate();
 }
 
 void NMConnectionSettings::setWifiPsk(const QString& psk) {
-	QVariantMap wifiSecurity;
-	wifiSecurity["psk"] = psk;
-	this->updateSettings("802-11-wireless-security", wifiSecurity);
+	if (this->bPsk == psk) return;
+	this->bPsk = psk;
+	this->queueUpdate();
 }
 
-void NMConnectionSettings::updateSettings(const QString& mapName, const QVariantMap& map) {
-	ConnectionSettingsMap newSettings;
-	newSettings.insert(mapName, map);
-
-	auto merged = mergeSettingsMaps(this->bSettings, newSettings);
-	auto pending = this->proxy->Update(merged);
+void NMConnectionSettings::updateSettings() {
+	this->mUpdatePending = false;
+	this->mFullSettings["connection"]["id"] = this->bId.value();
+	this->mFullSettings["connection"]["autoconnect"] = this->bAutoconnect.value();
+	this->mFullSettings["connection"]["autoconnect-priority"] = this->bAutoconnectPriority.value();
+	this->mFullSettings["connection"]["dns-over-tls"] = this->bDnsOverTls.value();
+	this->mFullSettings["connection"]["dnssec"] = this->bDnssec.value();
+	this->mFullSettings["802-11-wireless-security"]["psk"] = this->bPsk.value();
+	auto pending = this->proxy->Update(this->mFullSettings);
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
