@@ -12,6 +12,7 @@ qt_add_library(quickshell-core STATIC
 	singleton.cpp
 	generation.cpp
 	scan.cpp
+	scanenv.cpp
 	qsintercept.cpp
 	incubator.cpp
 	lazyloader.cpp
@@ -51,7 +52,7 @@ qt_add_qml_module(quickshell-core
 
 install_qml_module(quickshell-core)
 
-target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::Widgets)
+target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::QuickPrivate Qt::Widgets quickshell-build)
 
 qs_module_pch(quickshell-core SET large)
 

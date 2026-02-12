@@ -28,7 +28,7 @@ void PopupAnchor::markClean() { this->lastState = this->state; }
 void PopupAnchor::markDirty() { this->lastState.reset(); }
 
 QWindow* PopupAnchor::backingWindow() const {
-	return this->mProxyWindow ? this->mProxyWindow->backingWindow() : nullptr;
+	return this->bProxyWindow ? this->bProxyWindow->backingWindow() : nullptr;
 }
 
 void PopupAnchor::setWindowInternal(QObject* window) {
@@ -36,14 +36,14 @@ void PopupAnchor::setWindowInternal(QObject* window) {
 
 	if (this->mWindow) {
 		QObject::disconnect(this->mWindow, nullptr, this, nullptr);
-		QObject::disconnect(this->mProxyWindow, nullptr, this, nullptr);
+		QObject::disconnect(this->bProxyWindow, nullptr, this, nullptr);
 	}
 
 	if (window) {
 		if (auto* proxy = qobject_cast<ProxyWindowBase*>(window)) {
-			this->mProxyWindow = proxy;
+			this->bProxyWindow = proxy;
 		} else if (auto* interface = qobject_cast<WindowInterface*>(window)) {
-			this->mProxyWindow = interface->proxyWindow();
+			this->bProxyWindow = interface->proxyWindow();
 		} else {
 			qWarning() << "Tried to set popup anchor window to" << window
 			           << "which is not a quickshell window.";
@@ -55,7 +55,7 @@ void PopupAnchor::setWindowInternal(QObject* window) {
 		QObject::connect(this->mWindow, &QObject::destroyed, this, &PopupAnchor::onWindowDestroyed);
 
 		QObject::connect(
-		    this->mProxyWindow,
+		    this->bProxyWindow,
 		    &ProxyWindowBase::backerVisibilityChanged,
 		    this,
 		    &PopupAnchor::backingWindowVisibilityChanged
@@ -70,7 +70,7 @@ void PopupAnchor::setWindowInternal(QObject* window) {
 setnull:
 	if (this->mWindow) {
 		this->mWindow = nullptr;
-		this->mProxyWindow = nullptr;
+		this->bProxyWindow = nullptr;
 
 		emit this->windowChanged();
 		emit this->backingWindowVisibilityChanged();
@@ -100,7 +100,7 @@ void PopupAnchor::setItem(QQuickItem* item) {
 
 void PopupAnchor::onWindowDestroyed() {
 	this->mWindow = nullptr;
-	this->mProxyWindow = nullptr;
+	this->bProxyWindow = nullptr;
 	emit this->windowChanged();
 	emit this->backingWindowVisibilityChanged();
 }
@@ -186,11 +186,11 @@ void PopupAnchor::updatePlacement(const QPoint& anchorpoint, const QSize& size) 
 }
 
 void PopupAnchor::updateAnchor() {
-	if (this->mItem && this->mProxyWindow) {
+	if (this->mItem && this->bProxyWindow) {
 		auto baseRect =
 		    this->mUserRect.isEmpty() ? this->mItem->boundingRect() : this->mUserRect.qrect();
 
-		auto rect = this->mProxyWindow->contentItem()->mapFromItem(
+		auto rect = this->bProxyWindow->contentItem()->mapFromItem(
 		    this->mItem,
 		    baseRect.marginsRemoved(this->mMargins.qmargins())
 		);

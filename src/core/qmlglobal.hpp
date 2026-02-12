@@ -202,6 +202,8 @@ public:
 	/// Setting the `fallback` parameter of `iconPath` will attempt to load the fallback
 	/// icon if the requested one could not be loaded.
 	Q_INVOKABLE static QString iconPath(const QString& icon, const QString& fallback);
+	/// Check if specified icon has an available icon in your icon theme
+	Q_INVOKABLE static bool hasThemeIcon(const QString& icon);
 	/// Equivalent to `${Quickshell.configDir}/${path}`
 	Q_INVOKABLE [[nodiscard]] QString shellPath(const QString& path) const;
 	/// > [!WARNING] Deprecated: Renamed to @@shellPath() for clarity.
@@ -217,6 +219,21 @@ public:
 	///
 	/// The popup can also be blocked by setting `QS_NO_RELOAD_POPUP=1`.
 	Q_INVOKABLE void inhibitReloadPopup() { this->mInhibitReloadPopup = true; }
+	/// Check if Quickshell's version is at least `major.minor` and the listed
+	/// unreleased features are available. If Quickshell is newer than the given version
+	/// it is assumed that all unreleased features are present. The unreleased feature list
+	/// may be omitted.
+	///
+	/// > [!NOTE] You can feature gate code blocks using Quickshell's preprocessor which
+	/// > has the same function available.
+	/// >
+	/// > ```qml
+	/// > //@ if hasVersion(0, 3, ["feature"])
+	/// > ...
+	/// > //@ endif
+	/// > ```
+	Q_INVOKABLE static bool hasVersion(qint32 major, qint32 minor, const QStringList& features);
+	Q_INVOKABLE static bool hasVersion(qint32 major, qint32 minor);
 
 	void clearReloadPopupInhibit() { this->mInhibitReloadPopup = false; }
 	[[nodiscard]] bool isReloadPopupInhibited() const { return this->mInhibitReloadPopup; }

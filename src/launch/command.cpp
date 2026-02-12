@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
 #include <utility>
 
@@ -412,6 +411,10 @@ int ipcCommand(CommandState& cmd) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else if (*cmd.ipc.getprop) {
 			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.wait) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, true);
+		} else if (*cmd.ipc.listen) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, false);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {
@@ -516,8 +519,8 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote().nospace()
-		    << "quickshell 0.2.1, revision " << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
+		qCInfo(logBare).noquote().nospace() << "quickshell " << QS_VERSION << ", revision "
+		                                    << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
 
 		if (state.log.verbosity > 1) {
 			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;

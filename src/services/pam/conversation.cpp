@@ -6,7 +6,6 @@
 #include <qsocketnotifier.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
-#include <csignal>
 #include <sys/signal.h>
 #include <sys/wait.h>
 

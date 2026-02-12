@@ -27,7 +27,7 @@ const pw_core_events PwCore::EVENTS = {
     .info = nullptr,
     .done = &PwCore::onSync,
     .ping = nullptr,
-    .error = nullptr,
+    .error = &PwCore::onError,
     .remove_id = nullptr,
     .bound_id = nullptr,
     .add_mem = nullptr,
@@ -36,26 +36,46 @@ const pw_core_events PwCore::EVENTS = {
 };
 
 PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read) {
-	qCInfo(logLoop) << "Creating pipewire event loop.";
 	pw_init(nullptr, nullptr);
+}
+
+bool PwCore::start(bool retry) {
+	if (this->core != nullptr) return true;
+
+	qCInfo(logLoop) << "Creating pipewire event loop.";
 
 	this->loop = pw_loop_new(nullptr);
 	if (this->loop == nullptr) {
-		qCCritical(logLoop) << "Failed to create pipewire event loop.";
-		return;
+		if (retry) {
+			qCInfo(logLoop) << "Failed to create pipewire event loop.";
+		} else {
+			qCCritical(logLoop) << "Failed to create pipewire event loop.";
+		}
+		this->shutdown();
+		return false;
 	}
 
 	this->context = pw_context_new(this->loop, nullptr, 0);
 	if (this->context == nullptr) {
-		qCCritical(logLoop) << "Failed to create pipewire context.";
-		return;
+		if (retry) {
+			qCInfo(logLoop) << "Failed to create pipewire context.";
+		} else {
+			qCCritical(logLoop) << "Failed to create pipewire context.";
+		}
+		this->shutdown();
+		return false;
 	}
 
 	qCInfo(logLoop) << "Connecting to pipewire server.";
 	this->core = pw_context_connect(this->context, nullptr, 0);
 	if (this->core == nullptr) {
-		qCCritical(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
-		return;
+		if (retry) {
+			qCInfo(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
+		} else {
+			qCCritical(logLoop) << "Failed to connect pipewire context. Errno:" << errno;
+		}
+		this->shutdown();
+		return false;
 	}
 
 	pw_core_add_listener(this->core, &this->listener.hook, &PwCore::EVENTS, this);
@@ -66,22 +86,34 @@ PwCore::PwCore(QObject* parent): QObject(parent), notifier(QSocketNotifier::Read
 	this->notifier.setSocket(fd);
 	QObject::connect(&this->notifier, &QSocketNotifier::activated, this, &PwCore::poll);
 	this->notifier.setEnabled(true);
+
+	return true;
+}
+
+void PwCore::shutdown() {
+	if (this->core != nullptr) {
+		this->listener.remove();
+		pw_core_disconnect(this->core);
+		this->core = nullptr;
+	}
+
+	if (this->context != nullptr) {
+		pw_context_destroy(this->context);
+		this->context = nullptr;
+	}
+
+	if (this->loop != nullptr) {
+		pw_loop_destroy(this->loop);
+		this->loop = nullptr;
+	}
+
+	this->notifier.setEnabled(false);
+	QObject::disconnect(&this->notifier, nullptr, this, nullptr);
 }
 
 PwCore::~PwCore() {
 	qCInfo(logLoop) << "Destroying PwCore.";
-
-	if (this->loop != nullptr) {
-		if (this->context != nullptr) {
-			if (this->core != nullptr) {
-				pw_core_disconnect(this->core);
-			}
-
-			pw_context_destroy(this->context);
-		}
-
-		pw_loop_destroy(this->loop);
-	}
+	this->shutdown();
 }
 
 bool PwCore::isValid() const {
@@ -90,6 +122,7 @@ bool PwCore::isValid() const {
 }
 
 void PwCore::poll() {
+	if (this->loop == nullptr) return;
 	qCDebug(logLoop) << "Pipewire event loop received new events, iterating.";
 	// Spin pw event loop.
 	pw_loop_iterate(this->loop, 0);
@@ -105,6 +138,18 @@ qint32 PwCore::sync(quint32 id) const {
 void PwCore::onSync(void* data, quint32 id, qint32 seq) {
 	auto* self = static_cast<PwCore*>(data);
 	emit self->synced(id, seq);
+}
+
+void PwCore::onError(void* data, quint32 id, qint32 /*seq*/, qint32 res, const char* message) {
+	auto* self = static_cast<PwCore*>(data);
+
+	if (message != nullptr) {
+		qCWarning(logLoop) << "Fatal pipewire error on object" << id << "with code" << res << message;
+	} else {
+		qCWarning(logLoop) << "Fatal pipewire error on object" << id << "with code" << res;
+	}
+
+	emit self->fatalError();
 }
 
 SpaHook::SpaHook() { // NOLINT

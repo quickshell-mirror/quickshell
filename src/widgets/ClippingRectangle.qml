@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 
 ///! Rectangle capable of clipping content inside its border.
@@ -72,6 +74,12 @@ Item {
 		}
 	}
 
+	ShaderEffectSource {
+		id: shaderSource
+		hideSource: true
+		sourceItem: contentItemContainer
+	}
+
 	ShaderEffect {
 		id: shader
 		anchors.fill: root
@@ -79,10 +87,6 @@ Item {
 		property Rectangle rect: rectangle
 		property color backgroundColor: "white"
 		property color borderColor: root.border.color
-
-		property ShaderEffectSource content: ShaderEffectSource {
-			hideSource: true
-			sourceItem: contentItemContainer
-		}
+		property ShaderEffectSource content: shaderSource
 	}
 }

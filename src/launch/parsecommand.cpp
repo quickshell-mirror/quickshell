@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
@@ -225,6 +226,16 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 			    ->description("Arguments to the called function.")
 			    ->allow_extra_args();
 		}
+
+		auto signalCmd = [&](std::string cmd, std::string desc) {
+			auto* scmd = sub->add_subcommand(std::move(cmd), std::move(desc));
+			scmd->add_option("target", state.ipc.target, "The target to listen on.");
+			scmd->add_option("signal", state.ipc.name, "The signal to listen for.");
+			return scmd;
+		};
+
+		state.ipc.wait = signalCmd("wait", "Wait for one IpcHandler signal.");
+		state.ipc.listen = signalCmd("listen", "Listen for IpcHandler signals.");
 
 		{
 			auto* prop =
