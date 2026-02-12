@@ -5,7 +5,7 @@ qt_add_library(quickshell-network STATIC
 	device.cpp
 	wifi.cpp
 	enums.cpp
-	nm_connection.cpp
+	nm_settings.cpp
 )
 
 target_include_directories(quickshell-network PRIVATE 

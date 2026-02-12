@@ -44,7 +44,6 @@ public:
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
-	[[nodiscard]] ConnectionSettingsMap combinedSettings() const { return this->bCombinedSettings; };
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] QString id() const { return this->bId; };
 
@@ -52,7 +51,6 @@ signals:
 	void loaded();
 	void settingsChanged(ConnectionSettingsMap settings);
 	void secretSettingsChanged(ConnectionSettingsMap settings);
-	void combinedSettingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
 	void idChanged(QString id);
 
@@ -64,7 +62,6 @@ private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSecretSettings, &NMConnectionSettings::secretSettingsChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bCombinedSettings, &NMConnectionSettings::combinedSettingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bId, &NMConnectionSettings::idChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);

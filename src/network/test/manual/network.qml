@@ -14,7 +14,7 @@ FloatingWindow {
 
 		Column {
 			Layout.fillWidth: true
-			RowLayout { 
+			RowLayout {
 				Label {
 					text: "WiFi"
 					font.bold: true
@@ -48,10 +48,17 @@ FloatingWindow {
 
 				ColumnLayout {
 					RowLayout {
-						Label { text: modelData.name; font.bold: true }
-						Label { text: modelData.address }
-						Label { text: `(Type: ${DeviceType.toString(modelData.type)})` }
-						CheckBox { 
+						Label {
+							text: modelData.name
+							font.bold: true
+						}
+						Label {
+							text: modelData.address
+						}
+						Label {
+							text: `(Type: ${DeviceType.toString(modelData.type)})`
+						}
+						CheckBox {
 							text: `Managed`
 							checked: modelData.nmManaged
 							onClicked: modelData.nmManaged = !modelData.nmManaged
@@ -69,14 +76,14 @@ FloatingWindow {
 							visible: modelData.state == DeviceConnectionState.Connected
 							text: "Disconnect"
 							onClicked: modelData.disconnect()
-						}						
+						}
 						CheckBox {
 							text: "Autoconnect"
 							checked: modelData.autoconnect
 							onClicked: modelData.autoconnect = !modelData.autoconnect
 						}
-						Label { 
-							text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}` 
+						Label {
+							text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}`
 							visible: modelData.type == DeviceType.Wifi
 						}
 						CheckBox {
@@ -89,25 +96,57 @@ FloatingWindow {
 
 					Repeater {
 						Layout.fillWidth: true
-						model: {
-							if (modelData.type !== DeviceType.Wifi) return []
-							return [...modelData.networks.values].sort((a, b) => {
+						model: ScriptModel {
+							values: [...modelData.networks.values].sort((a, b) => {
 								if (a.connected !== b.connected) {
-									return b.connected - a.connected
+									return b.connected - a.connected;
 								}
-								return b.signalStrength - a.signalStrength
+								return b.signalStrength - a.signalStrength;
 							})
 						}
 
 						WrapperRectangle {
-							property var connectionContext: NMConnectionContext {
+							property var context: NMConnectionContext {
 								network: modelData
+								onActivating: contextLoader.sourceComponent = null
+								onSettingsChanged: contextLoader.sourceComponent = null
 
-								onConnectionChanged: console.log(`Connection changed for network`)
-								onLoginFailed: console.log(`Login failed for network`)
-								onNoSecrets: console.log(`No secrets provided for network`)
-								onSuccess: console.log(`Successfully connected to network`)
+								onNoSecrets: {
+									contextLoader.sourceComponent = passwordComponent;
+								}
 							}
+
+							Component {
+								id: passwordComponent
+								RowLayout {
+									property var security: context.settings?.wifiSecurity
+									Label {
+										text: "Password incorrect or not provided!"
+									}
+									RowLayout {
+										Label {
+											text: "Enter PSK:"
+										}
+										TextField {
+											id: pskField
+											placeholderText: "Password"
+										}
+										Button {
+											text: "Set PSK"
+											onClicked: {
+												context.settings.setWifiPsk(pskField.text);
+												contextLoader.sourceComponent = null;
+											}
+										}
+										Button {
+											text: "Cancel"
+											onClicked: contextLoader.sourceComponent = null
+										}
+										visible: security === WifiSecurityType.WpaPsk || security === WifiSecurityType.Wpa2Psk || security === WifiSecurityType.Sae
+									}
+								}
+							}
+
 							Layout.fillWidth: true
 							color: modelData.connected ? palette.highlight : palette.button
 							border.color: palette.mid
@@ -118,64 +157,85 @@ FloatingWindow {
 								ColumnLayout {
 									Layout.fillWidth: true
 									RowLayout {
-										Label { text: modelData.name; font.bold: true }
+										Label {
+											text: modelData.name
+											font.bold: true
+										}
 										Label {
 											text: modelData.known ? "Known" : ""
 											color: palette.placeholderText
 										}
 									}
 									RowLayout {
-										Label { 
+										Label {
 											text: `Security: ${WifiSecurityType.toString(modelData.security)}`
 											color: palette.placeholderText
 										}
 										Label {
-											text: `| Signal strength: ${Math.round(modelData.signalStrength*100)}%`
+											text: `| Signal strength: ${Math.round(modelData.signalStrength * 100)}%`
 											color: palette.placeholderText
 										}
 									}
 								}
-								RowLayout {
+								ColumnLayout {
 									Layout.alignment: Qt.AlignRight
-									BusyIndicator {
-										implicitHeight: 30
-										implicitWidth: 30
-										running: modelData.stateChanging
-										visible: modelData.stateChanging
+									RowLayout {
+										Layout.alignment: Qt.AlignRight
+										BusyIndicator {
+											implicitHeight: 30
+											implicitWidth: 30
+											running: modelData.stateChanging
+											visible: modelData.stateChanging
+										}
+										Label {
+											text: NetworkState.toString(modelData.state)
+											color: modelData.connected ? palette.link : palette.placeholderText
+										}
+										Label {
+											visible: modelData.nmStateReason != NMNetworkStateReason.None && modelData.nmStateReason != NMNetworkStateReason.Unknown
+											text: `(${NMNetworkStateReason.toString(modelData.stateReason)})`
+											color: palette.placeholderText
+										}
+										RowLayout {
+											id: settingsConnectionRow
+											property var selectedSettings: modelData.nmSettings.values[0]
+											Label {
+												text: "Choose settings:"
+											}
+											ComboBox {
+												id: settingsComboBox
+												model: modelData.nmSettings.values.map(conn => conn.id)
+												currentIndex: 0
+												onActivated: function (index) {
+													selectedSettings = modelData.nmSettings.values[index];
+												}
+											}
+											Button {
+												text: "Connect"
+												onClicked: modelData.connectWithSettings(settingsConnectionRow.selectedSettings)
+											}
+											visible: !modelData.connected && modelData.nmSettings.values.length > 1
+										}
+										Button {
+											text: "Connect"
+											onClicked: modelData.connect()
+											visible: !modelData.connected && modelData.nmSettings.values.length <= 1
+										}
+										Button {
+											text: "Disconnect"
+											onClicked: modelData.disconnect()
+											visible: modelData.connected
+										}
+										Button {
+											text: "Forget"
+											onClicked: modelData.forget()
+											visible: modelData.known
+										}
 									}
-									Label {
-										text: modelData.nmDefaultConnection ? `Connected with ${modelData.nmDefaultConnection.id}` : "Connected"
-										color: palette.link
-										visible: modelData.connected
-									}
-									Label {
-										text: NetworkState.toString(modelData.state)
-										visible: !modelData.connected
-									}
-									Label {
-										visible: modelData.nmStateReason != NMNetworkStateReason.None && modelData.nmStateReason != NMNetworkStateReason.Unknown
-										text: `(${NMNetworkStateReason.toString(modelData.stateReason)})`
-									}
-									ComboBox {
-										model: modelData.nmConnections.values.map(conn => conn.id)
-										currentIndex: modelData.nmConnections.indexOf(modelData.nmDefaultConnection)
-										onActivated: (index) => { modelData.nmDefaultConnection = modelData.nmConnections.values[index] }
-										visible: !modelData.connected && modelData.known
-									}
-									Button {
-										text: "Connect"
-										onClicked: modelData.connect()
-										visible: !modelData.connected
-									}
-									Button {
-										text: "Disconnect"
-										onClicked: modelData.disconnect()
-										visible: modelData.connected
-									}
-									Button {
-										text: "Forget"
-										onClicked: modelData.forget()
-										visible: modelData.known
+									Loader {
+										id: contextLoader
+										Layout.alignment: Qt.AlignRight
+										visible: sourceComponent !== null
 									}
 								}
 							}

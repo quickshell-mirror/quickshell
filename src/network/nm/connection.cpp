@@ -46,22 +46,17 @@ NMConnectionSettings::NMConnectionSettings(const QString& path, QObject* parent)
 
 	// clang-format off
 	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSettings);
-	QObject::connect(this->proxy, &DBusNMConnectionSettingsProxy::Updated, this, &NMConnectionSettings::getSecrets);
 	// clang-format on
 
 	this->bSecurity.setBinding([this]() { return securityFromConnectionSettings(this->bSettings); });
 	this->bId.setBinding([this]() {
 		return this->bSettings.value().value("connection").value("id").toString();
 	});
-	this->bCombinedSettings.setBinding([this]() {
-		return mergeSettingsMaps(this->bSettings, this->bSecretSettings);
-	});
 
 	this->connectionSettingsProperties.setInterface(this->proxy);
 	this->connectionSettingsProperties.updateAllViaGetAll();
 
 	this->getSettings();
-	this->getSecrets();
 }
 
 void NMConnectionSettings::getSettings() {
@@ -83,22 +78,6 @@ void NMConnectionSettings::getSettings() {
 			this->mLoaded = true;
 		}
 
-		delete call;
-	};
-
-	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
-}
-
-void NMConnectionSettings::getSecrets() {
-	auto pending = this->proxy->GetSecrets("");
-	auto* call = new QDBusPendingCallWatcher(pending, this);
-
-	auto responseCallback = [this](QDBusPendingCallWatcher* call) {
-		const QDBusPendingReply<ConnectionSettingsMap> reply = *call;
-		// We fail silently because this will error if there's no secrets to get
-		if (!reply.isError()) {
-			this->bSecretSettings = reply.value();
-		}
 		delete call;
 	};
 

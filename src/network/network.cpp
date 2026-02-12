@@ -12,7 +12,7 @@
 #include "device.hpp"
 #include "enums.hpp"
 #include "nm/backend.hpp"
-#include "nm_connection.hpp"
+#include "nm_settings.hpp"
 
 namespace qs::network {
 
@@ -55,13 +55,6 @@ Network::Network(QString name, QObject* parent): QObject(parent), mName(std::mov
 	});
 };
 
-void Network::setNmDefaultConnection(NMConnection* conn) {
-	if (this->bState != NetworkState::Disconnected) return;
-	if (this->bNmDefaultConnection == conn) return;
-	if (!this->mNmConnections.valueList().contains(conn)) return;
-	emit this->requestSetNmDefaultConnection(conn);
-}
-
 void Network::connect() {
 	if (this->bConnected) {
 		qCCritical(logNetwork) << this << "is already connected.";
@@ -69,6 +62,16 @@ void Network::connect() {
 	}
 
 	this->requestConnect();
+}
+
+void Network::connectWithSettings(NMSettings* settings) {
+	if (this->bConnected) {
+		qCCritical(logNetwork) << this << "is already connected.";
+		return;
+	}
+
+	if (this->mNmSettings.indexOf(settings) == -1) return;
+	this->requestConnectWithSettings(settings);
 }
 
 void Network::disconnect() {
@@ -82,8 +85,8 @@ void Network::disconnect() {
 
 void Network::forget() { this->requestForget(); }
 
-void Network::connectionAdded(NMConnection* conn) { this->mNmConnections.insertObject(conn); }
-void Network::connectionRemoved(NMConnection* conn) { this->mNmConnections.removeObject(conn); }
+void Network::settingsAdded(NMSettings* settings) { this->mNmSettings.insertObject(settings); }
+void Network::settingsRemoved(NMSettings* settings) { this->mNmSettings.removeObject(settings); }
 
 NMConnectionContext::NMConnectionContext(QObject* parent): QObject(parent) {}
 
@@ -91,14 +94,33 @@ void NMConnectionContext::setNetwork(Network* network) {
 	if (this->bNetwork == network) return;
 	if (this->bNetwork) disconnect(this->bNetwork, nullptr, this, nullptr);
 	this->bNetwork = network;
+	if (!network) return;
 
-	connect(network, &Network::stateChanged, this, [network, this]() {
-		if (network->state() == NetworkState::Connected) emit this->success();
+	QObject::connect(network, &Network::activeSettingsChanged, this, [network, this]() {
+		if (network->activeSettings()) {
+			if (this->bSettings) disconnect(this->bSettings, nullptr, this, nullptr);
+			this->bSettings = network->activeSettings();
+			QObject::connect(this->bSettings, &NMSettings::destroyed, this, [this]() {
+				this->bSettings = nullptr;
+			});
+		};
 	});
-	connect(network, &Network::nmStateReasonChanged, this, [network, this]() {
-		if (network->nmStateReason() == NMNetworkStateReason::NoSecrets) emit this->noSecrets();
-		if (network->nmStateReason() == NMNetworkStateReason::LoginFailed) emit this->loginFailed();
+	QObject::connect(network, &Network::stateChanged, this, [network, this]() {
+		if (network->state() == NetworkState::Connected) emit this->activated();
+		if (network->state() == NetworkState::Connecting) emit this->activating();
 	});
+	QObject::connect(network, &Network::nmStateReasonChanged, this, [network, this]() {
+		// "Device disconnected" isn't useful, so we defer to the last device fail reason.
+		if (network->nmStateReason() == NMNetworkStateReason::DeviceDisconnected) {
+			auto failReason = network->nmDeviceFailReason();
+			if (failReason == NMDeviceStateReason::NoSecrets) emit this->noSecrets();
+			if (failReason == NMDeviceStateReason::SupplicantDisconnect)
+				emit this->supplicantDisconnect();
+			if (failReason == NMDeviceStateReason::SupplicantFailed) emit this->supplicantFailed();
+			if (failReason == NMDeviceStateReason::SupplicantTimeout) emit this->supplicantTimeout();
+		};
+	});
+
 	connect(network, &Network::destroyed, this, [this]() { this->bNetwork = nullptr; });
 }
 
