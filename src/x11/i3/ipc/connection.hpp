@@ -27,6 +27,7 @@ enum EventCode {
 	GetScroller = 120,
 	GetTrails = 121,
 	GetSpaces = 122,
+	GetBindings = 123,
 
 	Workspace = 0x80000000,
 	Output = 0x80000001,

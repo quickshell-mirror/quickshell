@@ -36,7 +36,7 @@ QString I3IpcEvent::data() const { return QString::fromUtf8(this->mData.toJson()
 
 EventCode I3IpcEvent::intToEvent(quint32 raw) {
 	if ((EventCode::Workspace <= raw && raw <= EventCode::Trails)
-	    || (EventCode::RunCommand <= raw && raw <= EventCode::GetSpaces))
+	    || (EventCode::RunCommand <= raw && raw <= EventCode::GetBindings))
 	{
 		return static_cast<EventCode>(raw);
 	} else {
@@ -59,6 +59,7 @@ QString I3IpcEvent::eventToString(EventCode event) {
 	case EventCode::GetScroller: return "get_scroller"; break;
 	case EventCode::GetTrails: return "get_trails"; break;
 	case EventCode::GetSpaces: return "get_spaces"; break;
+	case EventCode::GetBindings: return "get_bindings"; break;
 
 	case EventCode::Output: return "output"; break;
 	case EventCode::Workspace: return "workspace"; break;
