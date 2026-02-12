@@ -23,6 +23,7 @@
   pam,
   polkit,
   glib,
+  libsysprof-capture,
 
   gitRev ? (let
     headExists = builtins.pathExists ./.git/HEAD;
@@ -81,7 +82,7 @@
     ++ lib.optional withX11 xorg.libxcb
     ++ lib.optional withPam pam
     ++ lib.optional withPipewire pipewire
-    ++ lib.optionals withPolkit [ polkit glib ];
+    ++ lib.optionals withPolkit [ polkit glib libsysprof-capture ];
 
     cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
