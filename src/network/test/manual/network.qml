@@ -63,8 +63,7 @@ FloatingWindow {
 							color: modelData.connected ? palette.link : palette.placeholderText
 						}
 						Label {
-							visible: (modelData.state == DeviceConnectionState.Connecting || modelData.state == DeviceConnectionState.Disconnecting)
-							text: `(${NMDeviceState.toString(modelData.nmState)})`
+							text: `(${NMDeviceState.toString(modelData.nmState)}: ${NMDeviceStateReason.toString(modelData.nmStateReason)})`
 						}
 						Button {
 							visible: modelData.state == DeviceConnectionState.Connected
@@ -154,7 +153,7 @@ FloatingWindow {
 										visible: !modelData.connected
 									}
 									Label {
-										visible: modelData.stateReason != NMNetworkStateReason.None && modelData.stateReason != NMNetworkStateReason.Unknown
+										visible: modelData.nmStateReason != NMNetworkStateReason.None && modelData.nmStateReason != NMNetworkStateReason.Unknown
 										text: `(${NMNetworkStateReason.toString(modelData.stateReason)})`
 									}
 									ComboBox {

@@ -15,6 +15,7 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../enums.hpp"
+#include "connection.hpp"
 #include "dbus_nm_device.h"
 
 namespace qs::network {
@@ -40,10 +41,17 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	// clang-format off
 	QObject::connect(this, &NMDevice::availableConnectionPathsChanged, this, &NMDevice::onAvailableConnectionPathsChanged);
 	QObject::connect(this, &NMDevice::activeConnectionPathChanged, this, &NMDevice::onActiveConnectionPathChanged);
+	QObject::connect(this->deviceProxy, &DBusNMDeviceProxy::StateChanged, this, &NMDevice::onStateChanged);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->deviceProxy);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDevice::onStateChanged(quint32 /*oldState*/, quint32 /*newState*/, quint32 reason) {
+	auto enumReason = static_cast<NMDeviceStateReason::Enum>(reason);
+	if (this->bStateReason == enumReason) return;
+	this->bStateReason = enumReason;
 }
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {

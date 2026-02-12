@@ -111,8 +111,10 @@ class Network: public QObject {
 	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	/// The connectivity state of the network.
 	Q_PROPERTY(NetworkState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
-	/// A specific reason for the connection state. Only available for the NetworkManager backend.
-	Q_PROPERTY(NMNetworkStateReason::Enum stateReason READ default NOTIFY stateReasonChanged BINDABLE bindableStateReason);
+	/// A reason for @@state of the network.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_PROPERTY(NMNetworkStateReason::Enum nmStateReason READ default NOTIFY nmStateReasonChanged BINDABLE bindableNmStateReason);
 	/// If the network is currently connecting or disconnecting. Shorthand for checking @@state.
 	Q_PROPERTY(bool stateChanging READ default NOTIFY stateChangingChanged BINDABLE bindableStateChanging);
 	// clang-format on
@@ -139,8 +141,8 @@ public:
 	QBindable<bool> bindableKnown() { return &this->bKnown; }
 	[[nodiscard]] NetworkState::Enum state() const { return this->bState; }
 	QBindable<NetworkState::Enum> bindableState() { return &this->bState; }
-	[[nodiscard]] NMNetworkStateReason::Enum stateReason() const { return this->bStateReason; }
-	QBindable<NMNetworkStateReason::Enum> bindableStateReason() { return &this->bStateReason; }
+	[[nodiscard]] NMNetworkStateReason::Enum nmStateReason() const { return this->bNmStateReason; }
+	QBindable<NMNetworkStateReason::Enum> bindableNmStateReason() { return &this->bNmStateReason; }
 	QBindable<bool> bindableStateChanging() { return &this->bStateChanging; }
 
 signals:
@@ -152,7 +154,7 @@ signals:
 	void connectedChanged();
 	void knownChanged();
 	void stateChanged();
-	void stateReasonChanged();
+	void nmStateReasonChanged();
 	void stateChangingChanged();
 
 protected:
@@ -164,7 +166,7 @@ protected:
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bConnected, &Network::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bKnown, &Network::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, NetworkState::Enum, bState, &Network::stateChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(Network, NMNetworkStateReason::Enum, bStateReason, &Network::stateReasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, NMNetworkStateReason::Enum, bNmStateReason, &Network::nmStateReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bStateChanging, &Network::stateChangingChanged);
 	// clang-format on
 };

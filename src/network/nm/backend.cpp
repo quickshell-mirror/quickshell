@@ -15,6 +15,7 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../device.hpp"
+#include "../enums.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
 #include "dbus_nm_backend.h"
@@ -179,6 +180,7 @@ void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* d
 	frontendDev->bindableName().setBinding([dev]() { return dev->interface(); });
 	frontendDev->bindableAddress().setBinding([dev]() { return dev->hwAddress(); });
 	frontendDev->bindableNmState().setBinding([dev]() { return dev->state(); });
+	frontendDev->bindableNmStateReason().setBinding([dev]() { return dev->stateReason(); });
 	frontendDev->bindableState().setBinding(translateState);
 	frontendDev->bindableAutoconnect().setBinding([dev]() { return dev->autoconnect(); });
 	frontendDev->bindableNmManaged().setBinding([dev]() { return dev->managed(); });

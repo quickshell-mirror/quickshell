@@ -30,7 +30,11 @@ class NetworkDevice: public QObject {
 	/// A more specific device state.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend. 
-	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
+	Q_PROPERTY(NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
+	/// A reason for the @@nmState of the device.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_PROPERTY(NMDeviceStateReason::Enum nmStateReason READ default NOTIFY nmStateReasonChanged BINDABLE bindableNmStateReason);
 	/// True if the device is managed by NetworkManager.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend.
@@ -52,6 +56,7 @@ public:
 	QBindable<bool> bindableConnected() { return &this->bConnected; };
 	QBindable<DeviceConnectionState::Enum> bindableState() { return &this->bState; };
 	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
+	QBindable<NMDeviceStateReason::Enum> bindableNmStateReason() { return &this->bNmStateReason; };
 	QBindable<bool> bindableNmManaged() { return &this->bNmManaged; };
 	[[nodiscard]] bool nmManaged() { return this->bNmManaged; };
 	void setNmManaged(bool managed);
@@ -68,6 +73,7 @@ signals:
 	void connectedChanged();
 	void stateChanged();
 	void nmStateChanged();
+	void nmStateReasonChanged();
 	void nmManagedChanged();
 	void autoconnectChanged();
 
@@ -79,6 +85,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bConnected, &NetworkDevice::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, DeviceConnectionState::Enum, bState, &NetworkDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceState::Enum, bNmState, &NetworkDevice::nmStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceStateReason::Enum, bNmStateReason, &NetworkDevice::nmStateReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bNmManaged, &NetworkDevice::nmManagedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bAutoconnect, &NetworkDevice::autoconnectChanged);
 	// clang-format on

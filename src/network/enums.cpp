@@ -44,6 +44,112 @@ QString NMDeviceState::toString(NMDeviceState::Enum state) {
 	};
 }
 
+QString NMDeviceStateReason::toString(NMDeviceStateReason::Enum reason) {
+	switch (reason) {
+	case None: return QStringLiteral("No reason");
+	case Unknown: return QStringLiteral("Unknown error");
+	case NowManaged: return QStringLiteral("Device is now managed");
+	case NowUnmanaged: return QStringLiteral("Device is now unmanaged");
+	case ConfigFailed: return QStringLiteral("The device could not be readied for configuration");
+	case IpConfigUnavailable:
+		return QStringLiteral(
+		    "IP configuration could not be reserved (no available address, timeout, etc)"
+		);
+	case IpConfigExpired: return QStringLiteral("The IP config is no longer valid");
+	case NoSecrets: return QStringLiteral("Secrets were required, but not provided");
+	case SupplicantDisconnect: return QStringLiteral("802.1x supplicant disconnected");
+	case SupplicantConfigFailed: return QStringLiteral("802.1x supplicant configuration failed");
+	case SupplicantFailed: return QStringLiteral("802.1x supplicant failed");
+	case SupplicantTimeout: return QStringLiteral("802.1x supplicant took too long to authenticate");
+	case PppStartFailed: return QStringLiteral("PPP service failed to start");
+	case PppDisconnect: return QStringLiteral("PPP service disconnected");
+	case PppFailed: return QStringLiteral("PPP failed");
+	case DhcpStartFailed: return QStringLiteral("DHCP client failed to start");
+	case DhcpError: return QStringLiteral("DHCP client error");
+	case DhcpFailed: return QStringLiteral("DHCP client failed");
+	case SharedStartFailed: return QStringLiteral("Shared connection service failed to start");
+	case SharedFailed: return QStringLiteral("Shared connection service failed");
+	case AutoIpStartFailed: return QStringLiteral("AutoIP service failed to start");
+	case AutoIpError: return QStringLiteral("AutoIP service error");
+	case AutoIpFailed: return QStringLiteral("AutoIP service failed");
+	case ModemBusy: return QStringLiteral("The line is busy");
+	case ModemNoDialTone: return QStringLiteral("No dial tone");
+	case ModemNoCarrier: return QStringLiteral("No carrier could be established");
+	case ModemDialTimeout: return QStringLiteral("The dialing request timed out");
+	case ModemDialFailed: return QStringLiteral("The dialing attempt failed");
+	case ModemInitFailed: return QStringLiteral("Modem initialization failed");
+	case GsmApnFailed: return QStringLiteral("Failed to select the specified APN");
+	case GsmRegistrationNotSearching: return QStringLiteral("Not searching for networks");
+	case GsmRegistrationDenied: return QStringLiteral("Network registration denied");
+	case GsmRegistrationTimeout: return QStringLiteral("Network registration timed out");
+	case GsmRegistrationFailed:
+		return QStringLiteral("Failed to register with the requested network");
+	case GsmPinCheckFailed: return QStringLiteral("PIN check failed");
+	case FirmwareMissing: return QStringLiteral("Necessary firmware for the device may be missing");
+	case Removed: return QStringLiteral("The device was removed");
+	case Sleeping: return QStringLiteral("NetworkManager went to sleep");
+	case ConnectionRemoved: return QStringLiteral("The device's active connection disappeared");
+	case UserRequested: return QStringLiteral("Device disconnected by user or client");
+	case Carrier: return QStringLiteral("Carrier/link changed");
+	case ConnectionAssumed: return QStringLiteral("The device's existing connection was assumed");
+	case SupplicantAvailable: return QStringLiteral("The supplicant is now available");
+	case ModemNotFound: return QStringLiteral("The modem could not be found");
+	case BtFailed: return QStringLiteral("The Bluetooth connection failed or timed out");
+	case GsmSimNotInserted: return QStringLiteral("GSM Modem's SIM Card not inserted");
+	case GsmSimPinRequired: return QStringLiteral("GSM Modem's SIM Pin required");
+	case GsmSimPukRequired: return QStringLiteral("GSM Modem's SIM Puk required");
+	case GsmSimWrong: return QStringLiteral("GSM Modem's SIM wrong");
+	case InfinibandMode: return QStringLiteral("InfiniBand device does not support connected mode");
+	case DependencyFailed: return QStringLiteral("A dependency of the connection failed");
+	case Br2684Failed: return QStringLiteral("Problem with the RFC 2684 Ethernet over ADSL bridge");
+	case ModemManagerUnavailable: return QStringLiteral("ModemManager not running");
+	case SsidNotFound: return QStringLiteral("The Wi-Fi network could not be found");
+	case SecondaryConnectionFailed:
+		return QStringLiteral("A secondary connection of the base connection failed");
+	case DcbFcoeFailed: return QStringLiteral("DCB or FCoE setup failed");
+	case TeamdControlFailed: return QStringLiteral("teamd control failed");
+	case ModemFailed: return QStringLiteral("Modem failed or no longer available");
+	case ModemAvailable: return QStringLiteral("Modem now ready and available");
+	case SimPinIncorrect: return QStringLiteral("SIM PIN was incorrect");
+	case NewActivation: return QStringLiteral("New connection activation was enqueued");
+	case ParentChanged: return QStringLiteral("The device's parent changed");
+	case ParentManagedChanged: return QStringLiteral("The device parent's management changed");
+	case OvsdbFailed: return QStringLiteral("Problem communicating with Open vSwitch database");
+	case IpAddressDuplicate: return QStringLiteral("A duplicate IP address was detected");
+	case IpMethodUnsupported: return QStringLiteral("The selected IP method is not supported");
+	case SriovConfigurationFailed: return QStringLiteral("Configuration of SR-IOV parameters failed");
+	case PeerNotFound: return QStringLiteral("The Wi-Fi P2P peer could not be found");
+	case DeviceHandlerFailed:
+		return QStringLiteral("The device handler dispatcher returned an error");
+	case UnmanagedByDefault:
+		return QStringLiteral(
+		    "The device is unmanaged because the device type is unmanaged by default"
+		);
+	case UnmanagedExternalDown:
+		return QStringLiteral(
+		    "The device is unmanaged because it is an external device and is unconfigured (down or "
+		    "without addresses)"
+		);
+	case UnmanagedLinkNotInit:
+		return QStringLiteral("The device is unmanaged because the link is not initialized by udev");
+	case UnmanagedQuitting:
+		return QStringLiteral("The device is unmanaged because NetworkManager is quitting");
+	case UnmanagedManagerDisabled:
+		return QStringLiteral(
+		    "The device is unmanaged because networking is disabled or the system is suspended"
+		);
+	case UnmanagedUserConf:
+		return QStringLiteral("The device is unmanaged by user decision in NetworkManager.conf");
+	case UnmanagedUserExplicit:
+		return QStringLiteral("The device is unmanaged by explicit user decision");
+	case UnmanagedUserSettings:
+		return QStringLiteral("The device is unmanaged by user decision via settings plugin");
+	case UnmanagedUserUdev: return QStringLiteral("The device is unmanaged via udev rule");
+	case NetworkingOff: return QStringLiteral("NetworkManager was disabled (networking off)");
+	default: return QStringLiteral("Unknown");
+	};
+}
+
 QString NetworkState::toString(NetworkState::Enum state) {
 	switch (state) {
 	case NetworkState::Connecting: return QStringLiteral("Connecting");

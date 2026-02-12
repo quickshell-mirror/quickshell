@@ -431,7 +431,7 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	frontendNet->bindableSignalStrength().setBinding(translateSignal);
 	frontendNet->bindableConnected().setBinding(translateState);
 	frontendNet->bindableKnown().setBinding([net]() { return net->known(); });
-	frontendNet->bindableStateReason().setBinding([net]() { return net->reason(); });
+	frontendNet->bindableNmStateReason().setBinding([net]() { return net->reason(); });
 	frontendNet->bindableSecurity().setBinding([net]() { return net->security(); });
 	frontendNet->bindableState().setBinding([net]() {
 		return static_cast<NetworkState::Enum>(net->state());

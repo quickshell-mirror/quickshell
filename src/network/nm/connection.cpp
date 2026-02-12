@@ -196,9 +196,8 @@ NMActiveConnection::NMActiveConnection(const QString& path, QObject* parent): QO
 
 void NMActiveConnection::onStateChanged(quint32 /*state*/, quint32 reason) {
 	auto enumReason = static_cast<NMNetworkStateReason::Enum>(reason);
-	if (this->mStateReason == enumReason) return;
-	this->mStateReason = enumReason;
-	emit this->stateReasonChanged(enumReason);
+	if (this->bStateReason == enumReason) return;
+	this->bStateReason = enumReason;
 }
 
 bool NMActiveConnection::isValid() const { return this->proxy && this->proxy->isValid(); }
