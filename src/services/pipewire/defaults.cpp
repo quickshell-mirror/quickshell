@@ -37,14 +37,42 @@ void PwDefaultTracker::reset() {
 	}
 
 	this->defaultsMetadata.setObject(nullptr);
-	this->setDefaultSink(nullptr);
-	this->setDefaultSinkName(QString());
-	this->setDefaultSource(nullptr);
-	this->setDefaultSourceName(QString());
-	this->setDefaultConfiguredSink(nullptr);
-	this->setDefaultConfiguredSinkName(QString());
-	this->setDefaultConfiguredSource(nullptr);
-	this->setDefaultConfiguredSourceName(QString());
+
+	if (this->mDefaultSink) {
+		this->mDefaultSink = nullptr;
+		emit this->defaultSinkChanged();
+	}
+	if (!this->mDefaultSinkName.isEmpty()) {
+		this->mDefaultSinkName.clear();
+		emit this->defaultSinkNameChanged();
+	}
+
+	if (this->mDefaultSource) {
+		this->mDefaultSource = nullptr;
+		emit this->defaultSourceChanged();
+	}
+	if (!this->mDefaultSourceName.isEmpty()) {
+		this->mDefaultSourceName.clear();
+		emit this->defaultSourceNameChanged();
+	}
+
+	if (this->mDefaultConfiguredSink) {
+		this->mDefaultConfiguredSink = nullptr;
+		emit this->defaultConfiguredSinkChanged();
+	}
+	if (!this->mDefaultConfiguredSinkName.isEmpty()) {
+		this->mDefaultConfiguredSinkName.clear();
+		emit this->defaultConfiguredSinkNameChanged();
+	}
+
+	if (this->mDefaultConfiguredSource) {
+		this->mDefaultConfiguredSource = nullptr;
+		emit this->defaultConfiguredSourceChanged();
+	}
+	if (!this->mDefaultConfiguredSourceName.isEmpty()) {
+		this->mDefaultConfiguredSourceName.clear();
+		emit this->defaultConfiguredSourceNameChanged();
+	}
 }
 
 void PwDefaultTracker::onMetadataAdded(PwMetadata* metadata) {
