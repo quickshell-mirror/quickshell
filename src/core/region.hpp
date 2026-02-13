@@ -66,6 +66,8 @@ class PendingRegion: public QObject {
 	Q_PROPERTY(qint32 width MEMBER mWidth NOTIFY widthChanged);
 	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 height MEMBER mHeight NOTIFY heightChanged);
+	/// Corner radius for rounded rectangles. Only applies when @@shape is `Rect`. Defaults to 0.
+	Q_PROPERTY(qint32 radius MEMBER mRadius NOTIFY radiusChanged);
 
 	/// Regions to apply on top of this region.
 	///
@@ -109,6 +111,7 @@ signals:
 	void yChanged();
 	void widthChanged();
 	void heightChanged();
+	void radiusChanged();
 	void childrenChanged();
 
 	/// Triggered when the region's geometry changes.
@@ -136,6 +139,7 @@ private:
 	qint32 mY = 0;
 	qint32 mWidth = 0;
 	qint32 mHeight = 0;
+	qint32 mRadius = 0;
 
 	QList<PendingRegion*> mRegions;
 };
