@@ -96,6 +96,9 @@ void BackgroundEffect::onWindowPolished() {
 	if (this->mBlurRegion) {
 		region =
 		    this->mBlurRegion->applyTo(QRect(0, 0, this->mWindow->width(), this->mWindow->height()));
+
+		auto margins = this->mWaylandWindow->clientSideMargins();
+		region.translate(margins.left(), margins.top());
 	}
 
 	this->surface->setBlurRegion(region);
