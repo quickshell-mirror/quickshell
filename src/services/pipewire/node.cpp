@@ -429,6 +429,10 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 }
 
 float PwNodeBoundAudio::averageVolume() const {
+	if (this->mVolumes.isEmpty()) {
+		return 0.0f;
+	}
+
 	float total = 0;
 
 	for (auto volume: this->mVolumes) {
@@ -572,22 +576,28 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 	const auto* muteProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
 	const auto* volumeStepProp = spa_pod_find_prop(param, nullptr, SPA_PROP_volumeStep);
 
-	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
-	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
-
-	spa_pod* iter = nullptr;
-	SPA_POD_ARRAY_FOREACH(volumes, iter) {
-		// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
-		auto linear = *reinterpret_cast<float*>(iter);
-		auto visual = std::cbrt(linear);
-		props.volumes.push_back(visual);
+	if (volumesProp) {
+		const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(volumes, iter) {
+			// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
+			auto linear = *reinterpret_cast<float*>(iter);
+			auto visual = std::cbrt(linear);
+			props.volumes.push_back(visual);
+		}
 	}
 
-	SPA_POD_ARRAY_FOREACH(channels, iter) {
-		props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+	if (channelsProp) {
+		const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(channels, iter) {
+			props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+		}
 	}
 
-	spa_pod_get_bool(&muteProp->value, &props.mute);
+	if (muteProp) {
+		spa_pod_get_bool(&muteProp->value, &props.mute);
+	}
 
 	if (volumeStepProp) {
 		spa_pod_get_float(&volumeStepProp->value, &props.volumeStep);

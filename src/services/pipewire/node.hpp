@@ -15,6 +15,7 @@
 #include <spa/pod/pod.h>
 
 #include "core.hpp"
+#include "device.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
@@ -249,7 +250,9 @@ public:
 	bool proAudio = false;
 
 	[[nodiscard]] bool shouldUseDevice() const {
-		return this->device && !this->proAudio && this->routeDevice != -1;
+		if (!this->device || this->proAudio || this->routeDevice == -1) return false;
+		// Only use device control if the device actually has route indexes for this routeDevice
+		return this->device->hasRouteDevice(this->routeDevice);
 	}
 
 signals:

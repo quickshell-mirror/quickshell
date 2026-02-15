@@ -36,6 +36,7 @@ set shell id.
 
 - Fixed volume control breaking with pipewire pro audio mode.
 - Fixed volume control breaking with bluez streams and potentially others.
+- Fixed volume control breaking for devices without route definitions.
 - Fixed escape sequence handling in desktop entries.
 - Fixed volumes not initializing if a pipewire device was already loaded before its node.
 - Fixed hyprland active toplevel not resetting after window closes.

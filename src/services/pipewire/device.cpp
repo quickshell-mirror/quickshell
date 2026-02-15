@@ -141,6 +141,10 @@ bool PwDevice::tryLoadVolumeProps(qint32 routeDevice, PwVolumeProps& volumeProps
 	return true;
 }
 
+bool PwDevice::hasRouteDevice(qint32 routeDevice) const {
+	return this->routeDeviceIndexes.contains(routeDevice);
+}
+
 void PwDevice::polled() {
 	// It is far more likely that the list content has not come in yet than it having no entries,
 	// and there isn't a way to check in the case that there *aren't* actually any entries.
