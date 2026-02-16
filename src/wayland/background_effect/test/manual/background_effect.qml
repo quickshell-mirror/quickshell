@@ -20,11 +20,7 @@ FloatingWindow {
         palette.windowText: "white"
     }
 
-    BackgroundEffect {
-        window: root
-        enabled: enableCb.checked
-        blurRegion: Region {
-            item: root.contentItem
-        }
+    BackgroundEffect.blurRegion: Region {
+        item: enableCb.checked ? root.contentItem : null
     }
 }
