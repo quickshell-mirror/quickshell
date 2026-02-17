@@ -44,7 +44,6 @@ private slots:
 	void onMetadataAdded(PwMetadata* metadata);
 	void onMetadataProperty(const char* key, const char* type, const char* value);
 	void onNodeAdded(PwNode* node);
-	void onNodeDestroyed(QObject* node);
 
 private:
 	void setDefaultSink(PwNode* node);
@@ -65,15 +64,19 @@ private:
 	PwBindableRef<PwMetadata> defaultsMetadata;
 
 	PwNode* mDefaultSink = nullptr;
+	QMetaObject::Connection mDefaultSinkDestroyConn;
 	QString mDefaultSinkName;
 
 	PwNode* mDefaultSource = nullptr;
+	QMetaObject::Connection mDefaultSourceDestroyConn;
 	QString mDefaultSourceName;
 
 	PwNode* mDefaultConfiguredSink = nullptr;
+	QMetaObject::Connection mDefaultConfiguredSinkDestroyConn;
 	QString mDefaultConfiguredSinkName;
 
 	PwNode* mDefaultConfiguredSource = nullptr;
+	QMetaObject::Connection mDefaultConfiguredSourceDestroyConn;
 	QString mDefaultConfiguredSourceName;
 };
 

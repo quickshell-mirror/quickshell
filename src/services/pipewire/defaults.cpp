@@ -12,7 +12,6 @@
 #include <spa/utils/json.h>
 
 #include "../../core/logcat.hpp"
-#include "../../core/util.hpp"
 #include "metadata.hpp"
 #include "node.hpp"
 #include "registry.hpp"
@@ -37,42 +36,14 @@ void PwDefaultTracker::reset() {
 	}
 
 	this->defaultsMetadata.setObject(nullptr);
-
-	if (this->mDefaultSink) {
-		this->mDefaultSink = nullptr;
-		emit this->defaultSinkChanged();
-	}
-	if (!this->mDefaultSinkName.isEmpty()) {
-		this->mDefaultSinkName.clear();
-		emit this->defaultSinkNameChanged();
-	}
-
-	if (this->mDefaultSource) {
-		this->mDefaultSource = nullptr;
-		emit this->defaultSourceChanged();
-	}
-	if (!this->mDefaultSourceName.isEmpty()) {
-		this->mDefaultSourceName.clear();
-		emit this->defaultSourceNameChanged();
-	}
-
-	if (this->mDefaultConfiguredSink) {
-		this->mDefaultConfiguredSink = nullptr;
-		emit this->defaultConfiguredSinkChanged();
-	}
-	if (!this->mDefaultConfiguredSinkName.isEmpty()) {
-		this->mDefaultConfiguredSinkName.clear();
-		emit this->defaultConfiguredSinkNameChanged();
-	}
-
-	if (this->mDefaultConfiguredSource) {
-		this->mDefaultConfiguredSource = nullptr;
-		emit this->defaultConfiguredSourceChanged();
-	}
-	if (!this->mDefaultConfiguredSourceName.isEmpty()) {
-		this->mDefaultConfiguredSourceName.clear();
-		emit this->defaultConfiguredSourceNameChanged();
-	}
+	this->setDefaultSink(nullptr);
+	this->setDefaultSinkName(QString());
+	this->setDefaultSource(nullptr);
+	this->setDefaultSourceName(QString());
+	this->setDefaultConfiguredSink(nullptr);
+	this->setDefaultConfiguredSinkName(QString());
+	this->setDefaultConfiguredSource(nullptr);
+	this->setDefaultConfiguredSourceName(QString());
 }
 
 void PwDefaultTracker::onMetadataAdded(PwMetadata* metadata) {
@@ -166,32 +137,6 @@ void PwDefaultTracker::onNodeAdded(PwNode* node) {
 	}
 }
 
-void PwDefaultTracker::onNodeDestroyed(QObject* node) {
-	if (node == this->mDefaultSink) {
-		qCInfo(logDefaults) << "Default sink destroyed.";
-		this->mDefaultSink = nullptr;
-		emit this->defaultSinkChanged();
-	}
-
-	if (node == this->mDefaultSource) {
-		qCInfo(logDefaults) << "Default source destroyed.";
-		this->mDefaultSource = nullptr;
-		emit this->defaultSourceChanged();
-	}
-
-	if (node == this->mDefaultConfiguredSink) {
-		qCInfo(logDefaults) << "Default configured sink destroyed.";
-		this->mDefaultConfiguredSink = nullptr;
-		emit this->defaultConfiguredSinkChanged();
-	}
-
-	if (node == this->mDefaultConfiguredSource) {
-		qCInfo(logDefaults) << "Default configured source destroyed.";
-		this->mDefaultConfiguredSource = nullptr;
-		emit this->defaultConfiguredSourceChanged();
-	}
-}
-
 void PwDefaultTracker::changeConfiguredSink(PwNode* node) {
 	if (node != nullptr) {
 		if (!node->type.testFlags(PwNodeType::AudioSink)) {
@@ -268,10 +213,18 @@ void PwDefaultTracker::setDefaultSink(PwNode* node) {
 	if (node == this->mDefaultSink) return;
 	qCInfo(logDefaults) << "Default sink changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultSink,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultSinkChanged>(this, node);
+	QObject::disconnect(this->mDefaultSinkDestroyConn);
+	this->mDefaultSink = node;
+
+	if (node) {
+		this->mDefaultSinkDestroyConn = QObject::connect(node, &QObject::destroyed, this, [this]() {
+			qCInfo(logDefaults) << "Default sink destroyed.";
+			this->mDefaultSink = nullptr;
+			emit this->defaultSinkChanged();
+		});
+	}
+
+	emit this->defaultSinkChanged();
 }
 
 void PwDefaultTracker::setDefaultSinkName(const QString& name) {
@@ -285,10 +238,18 @@ void PwDefaultTracker::setDefaultSource(PwNode* node) {
 	if (node == this->mDefaultSource) return;
 	qCInfo(logDefaults) << "Default source changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultSource,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultSourceChanged>(this, node);
+	QObject::disconnect(this->mDefaultSourceDestroyConn);
+	this->mDefaultSource = node;
+
+	if (node) {
+		this->mDefaultSourceDestroyConn = QObject::connect(node, &QObject::destroyed, this, [this]() {
+			qCInfo(logDefaults) << "Default source destroyed.";
+			this->mDefaultSource = nullptr;
+			emit this->defaultSourceChanged();
+		});
+	}
+
+	emit this->defaultSourceChanged();
 }
 
 void PwDefaultTracker::setDefaultSourceName(const QString& name) {
@@ -302,10 +263,19 @@ void PwDefaultTracker::setDefaultConfiguredSink(PwNode* node) {
 	if (node == this->mDefaultConfiguredSink) return;
 	qCInfo(logDefaults) << "Default configured sink changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultConfiguredSink,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultConfiguredSinkChanged>(this, node);
+	QObject::disconnect(this->mDefaultConfiguredSinkDestroyConn);
+	this->mDefaultConfiguredSink = node;
+
+	if (node) {
+		this->mDefaultConfiguredSinkDestroyConn =
+		    QObject::connect(node, &QObject::destroyed, this, [this]() {
+			    qCInfo(logDefaults) << "Default configured sink destroyed.";
+			    this->mDefaultConfiguredSink = nullptr;
+			    emit this->defaultConfiguredSinkChanged();
+		    });
+	}
+
+	emit this->defaultConfiguredSinkChanged();
 }
 
 void PwDefaultTracker::setDefaultConfiguredSinkName(const QString& name) {
@@ -319,10 +289,19 @@ void PwDefaultTracker::setDefaultConfiguredSource(PwNode* node) {
 	if (node == this->mDefaultConfiguredSource) return;
 	qCInfo(logDefaults) << "Default configured source changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultConfiguredSource,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultConfiguredSourceChanged>(this, node);
+	QObject::disconnect(this->mDefaultConfiguredSourceDestroyConn);
+	this->mDefaultConfiguredSource = node;
+
+	if (node) {
+		this->mDefaultConfiguredSourceDestroyConn =
+		    QObject::connect(node, &QObject::destroyed, this, [this]() {
+			    qCInfo(logDefaults) << "Default configured source destroyed.";
+			    this->mDefaultConfiguredSource = nullptr;
+			    emit this->defaultConfiguredSourceChanged();
+		    });
+	}
+
+	emit this->defaultConfiguredSourceChanged();
 }
 
 void PwDefaultTracker::setDefaultConfiguredSourceName(const QString& name) {
