@@ -153,7 +153,7 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 			}
 		} else {
 			qWarning()
-			    << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
+			    << "Layershell screen does not correspond to a real screen. Letting the compositor pick.";
 		}
 	}
 
