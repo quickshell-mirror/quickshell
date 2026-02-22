@@ -1,6 +1,7 @@
 #include "scanenv.hpp"
 
 #include <qcontainerfwd.h>
+#include <qtenvironmentvariables.h>
 
 #include "build.hpp"
 
@@ -17,6 +18,14 @@ bool PreprocEnv::hasVersion(int major, int minor, const QStringList& features) {
 	}
 
 	return QS_VERSION_MAJOR == major && QS_VERSION_MINOR == minor;
+}
+
+QString PreprocEnv::env(const QString& variable) {
+	return qEnvironmentVariable(variable.toStdString().c_str());
+}
+
+bool PreprocEnv::isEnvSet(const QString& variable) {
+	return qEnvironmentVariableIsSet(variable.toStdString().c_str());
 }
 
 } // namespace qs::scan::env
