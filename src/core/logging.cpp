@@ -217,6 +217,7 @@ void LogManager::messageHandler(
 	}
 
 	if (display) {
+		QMutexLocker locker(&self->stdoutMutex);
 		LogMessage::formatMessage(
 		    self->stdoutStream,
 		    message,

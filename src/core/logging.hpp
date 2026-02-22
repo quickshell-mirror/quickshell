@@ -10,6 +10,7 @@
 #include <qlatin1stringview.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qmutex.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
 
@@ -135,6 +136,7 @@ private:
 	QHash<QLatin1StringView, CategoryFilter> allFilters;
 
 	QTextStream stdoutStream;
+	QMutex stdoutMutex;
 	LoggingThreadProxy threadProxy;
 
 	friend void initLogCategoryLevel(const char* name, QtMsgType defaultLevel);
