@@ -1,5 +1,6 @@
 (define-module (quickshell)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
@@ -8,6 +9,7 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ninja)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages polkit)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages vulkan)
   #:use-module (gnu packages xdisorg)
@@ -29,15 +31,16 @@
                         #:select? (or (git-predicate (current-source-directory))
                                       (const #t))))
     (build-system cmake-build-system)
-    (propagated-inputs (list qtbase qtdeclarative qtsvg))
+    (propagated-inputs (list qtsvg))
     (native-inputs (list ninja
                          gcc-14
                          pkg-config
                          qtshadertools
                          spirv-tools
-                         wayland-protocols
-                         cli11))
-    (inputs (list jemalloc
+                         wayland-protocols))
+    (inputs (list bash-minimal
+                  cli11
+                  jemalloc
                   libdrm
                   libxcb
                   libxkbcommon
@@ -60,14 +63,12 @@
                    "-DCRASH_REPORTER=OFF")
            #:phases
            #~(modify-phases %standard-phases
-               (replace 'build (lambda _ (invoke "cmake" "--build" ".")))
-               (replace 'install (lambda _ (invoke "cmake" "--install" ".")))
                (add-after 'install 'wrap-program
                  (lambda* (#:key inputs #:allow-other-keys)
                    (wrap-program (string-append #$output "/bin/quickshell")
                      `("QML_IMPORT_PATH" ":"
                        = (,(getenv "QML_IMPORT_PATH")))))))))
-    (home-page "https://quickshell.outfoxxed.me")
+    (home-page "https://quickshell.org")
     (synopsis "QtQuick-based desktop shell toolkit")
     (description
      "Quickshell is a flexible QtQuick-based toolkit for creating and
