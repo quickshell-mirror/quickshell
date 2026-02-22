@@ -116,11 +116,11 @@ class PanelWindowInterface: public WindowInterface {
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// If the panel should render above standard windows. Defaults to true.
 	///
-	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.layer.
+	/// Note: On Wayland this property corresponds to @@Quickshell.Wayland.WlrLayershell.layer.
 	Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
 	/// If the panel should accept keyboard focus. Defaults to false.
 	///
-	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
+	/// Note: On Wayland this property corresponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
 	Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(PanelWindow);
