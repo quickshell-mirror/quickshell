@@ -213,6 +213,7 @@ void ProxyWindowBase::completeWindow() {
 	this->trySetHeight(this->implicitHeight());
 	this->setColor(this->mColor);
 	this->updateMask();
+	QQuickWindowPrivate::get(this->window)->updatesEnabled = this->mUpdatesEnabled;
 
 	// notify initial / post-connection geometry
 	emit this->xChanged();
@@ -467,6 +468,19 @@ void ProxyWindowBase::setSurfaceFormat(QsSurfaceFormat format) {
 
 	this->qsSurfaceFormat = format;
 	emit this->surfaceFormatChanged();
+}
+
+bool ProxyWindowBase::updatesEnabled() const { return this->mUpdatesEnabled; }
+
+void ProxyWindowBase::setUpdatesEnabled(bool updatesEnabled) {
+	if (updatesEnabled == this->mUpdatesEnabled) return;
+	this->mUpdatesEnabled = updatesEnabled;
+
+	if (this->window != nullptr) {
+		QQuickWindowPrivate::get(this->window)->updatesEnabled = updatesEnabled;
+	}
+
+	emit this->updatesEnabledChanged();
 }
 
 qreal ProxyWindowBase::devicePixelRatio() const {
