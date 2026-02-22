@@ -144,10 +144,16 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 		    dynamic_cast<QtWaylandClient::QWaylandScreen*>(qwindow->screen()->handle());
 
 		if (waylandScreen != nullptr) {
-			output = waylandScreen->output();
+			if (waylandScreen->isPlaceholder()) {
+				qWarning()
+				    << "Creating a layer shell for placeholder screen. This will be positioned incorrectly";
+				output = nullptr; // let compositor pick; do NOT use placeholder output
+			} else {
+				output = waylandScreen->output();
+			}
 		} else {
 			qWarning()
-			    << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
+			    << "Layershell screen does not correspond to a real screen. Letting the compositor pick.";
 		}
 	}
 
