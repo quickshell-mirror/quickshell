@@ -11,17 +11,17 @@
 #include <qqmlintegration.h>
 #include <qtypes.h>
 
-#include "../wifi.hpp"
-#include "dbus_types.hpp"
+#include "../enums.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 
 namespace qs::network {
 
 WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings) {
-	const QVariantMap& security = settings.value("802-11-wireless-security");
-	if (security.isEmpty()) {
-		return WifiSecurityType::Open;
-	};
+	const QString mapName = "802-11-wireless-security";
+	if (!settings.contains(mapName)) return WifiSecurityType::Unknown;
+	const QVariantMap& security = settings.value(mapName);
+	if (security.isEmpty()) return WifiSecurityType::Open;
 
 	const QString keyMgmt = security["key-mgmt"].toString();
 	const QString authAlg = security["auth-alg"].toString();
@@ -45,6 +45,8 @@ WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMa
 		return WifiSecurityType::Sae;
 	} else if (keyMgmt == "wpa-eap-suite-b-192") {
 		return WifiSecurityType::Wpa3SuiteB192;
+	} else if (keyMgmt == "owe") {
+		return WifiSecurityType::Owe;
 	}
 	return WifiSecurityType::Open;
 }
@@ -222,6 +224,15 @@ WifiSecurityType::Enum findBestWirelessSecurity(
 		}
 	}
 	return WifiSecurityType::Unknown;
+}
+
+ConnectionSettingsMap
+mergeSettingsMaps(const ConnectionSettingsMap& target, const ConnectionSettingsMap& source) {
+	ConnectionSettingsMap result = target;
+	for (auto iter = source.constBegin(); iter != source.constEnd(); ++iter) {
+		result[iter.key()].insert(iter.value());
+	}
+	return result;
 }
 
 // NOLINTBEGIN

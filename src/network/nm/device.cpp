@@ -14,7 +14,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "../device.hpp"
+#include "../enums.hpp"
 #include "connection.hpp"
 #include "dbus_nm_device.h"
 
@@ -41,10 +41,19 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	// clang-format off
 	QObject::connect(this, &NMDevice::availableConnectionPathsChanged, this, &NMDevice::onAvailableConnectionPathsChanged);
 	QObject::connect(this, &NMDevice::activeConnectionPathChanged, this, &NMDevice::onActiveConnectionPathChanged);
+	QObject::connect(this->deviceProxy, &DBusNMDeviceProxy::StateChanged, this, &NMDevice::onStateChanged);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->deviceProxy);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 reason) {
+	auto enumReason = static_cast<NMDeviceStateReason::Enum>(reason);
+	auto enumNewState = static_cast<NMDeviceState::Enum>(newState);
+	if (enumNewState == NMDeviceState::Failed) this->bLastFailReason = enumReason;
+	if (this->bStateReason == enumReason) return;
+	this->bStateReason = enumReason;
 }
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
@@ -123,6 +132,12 @@ void NMDevice::setAutoconnect(bool autoconnect) {
 	if (autoconnect == this->bAutoconnect) return;
 	this->bAutoconnect = autoconnect;
 	this->pAutoconnect.write();
+}
+
+void NMDevice::setManaged(bool managed) {
+	if (managed == this->bManaged) return;
+	this->bManaged = managed;
+	this->pManaged.write();
 }
 
 bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }

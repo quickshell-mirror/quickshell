@@ -9,11 +9,11 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../wifi.hpp"
+#include "../enums.hpp"
 #include "dbus_nm_active_connection.h"
 #include "dbus_nm_connection_settings.h"
-#include "dbus_types.hpp"
 #include "enums.hpp"
+#include "types.hpp"
 
 namespace qs::dbus {
 
@@ -36,26 +36,34 @@ public:
 	explicit NMConnectionSettings(const QString& path, QObject* parent = nullptr);
 
 	void forget();
+	void updateSettings(const QString& mapName, const QVariantMap& map);
+	void clearSecrets();
+	void setWifiPsk(const QString& psk);
 
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] ConnectionSettingsMap settings() const { return this->bSettings; };
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
-	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; };
+	[[nodiscard]] QString id() const { return this->bId; };
 
 signals:
 	void loaded();
 	void settingsChanged(ConnectionSettingsMap settings);
+	void secretSettingsChanged(ConnectionSettingsMap settings);
 	void securityChanged(WifiSecurityType::Enum security);
-	void ssidChanged(QString ssid);
+	void idChanged(QString id);
 
 private:
 	bool mLoaded = false;
-	void updateSettings();
+	void getSettings();
+	void getSecrets();
+
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSettings, &NMConnectionSettings::settingsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, ConnectionSettingsMap, bSecretSettings, &NMConnectionSettings::secretSettingsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, WifiSecurityType::Enum, bSecurity, &NMConnectionSettings::securityChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMConnectionSettings, QString, bId, &NMConnectionSettings::idChanged);
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMConnectionSettings, connectionSettingsProperties);
 	// clang-format on
 
@@ -74,25 +82,24 @@ public:
 	[[nodiscard]] QString address() const;
 	[[nodiscard]] QDBusObjectPath connection() const { return this->bConnection; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
-	[[nodiscard]] NMConnectionStateReason::Enum stateReason() const { return this->mStateReason; };
+	[[nodiscard]] NMNetworkStateReason::Enum stateReason() const { return this->bStateReason; };
 
 signals:
 	void loaded();
 	void connectionChanged(QDBusObjectPath path);
 	void stateChanged(NMConnectionState::Enum state);
-	void stateReasonChanged(NMConnectionStateReason::Enum reason);
+	void stateReasonChanged(NMNetworkStateReason::Enum reason);
 	void uuidChanged(const QString& uuid);
 
 private slots:
 	void onStateChanged(quint32 state, quint32 reason);
 
 private:
-	NMConnectionStateReason::Enum mStateReason = NMConnectionStateReason::Unknown;
-
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, QDBusObjectPath, bConnection, &NMActiveConnection::connectionChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, QString, bUuid, &NMActiveConnection::uuidChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, NMConnectionState::Enum, bState, &NMActiveConnection::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMActiveConnection, NMNetworkStateReason::Enum, bStateReason, &NMActiveConnection::stateReasonChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMActiveConnection, activeConnectionProperties);
 	QS_DBUS_PROPERTY_BINDING(NMActiveConnection, pConnection, bConnection, activeConnectionProperties, "Connection");

@@ -7,6 +7,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../nm_settings.hpp"
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
 #include "connection.hpp"
@@ -42,34 +43,46 @@ public:
 	void addAccessPoint(NMAccessPoint* ap);
 	void addConnection(NMConnectionSettings* conn);
 	void addActiveConnection(NMActiveConnection* active);
+	void registerFrontendSettings(NMConnectionSettings* conn);
+	void removeFrontendSettings(NMConnectionSettings* conn);
+	NMConnectionSettings* getConnectionFromSettings(NMSettings* settings);
+	void connect();
 	void forget();
 
+	// clang-format off
 	[[nodiscard]] QString ssid() const { return this->mSsid; };
 	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; };
 	[[nodiscard]] bool known() const { return this->bKnown; };
-	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->bReason; };
+	[[nodiscard]] NMNetworkStateReason::Enum reason() const { return this->bReason; };
+	QBindable<NMDeviceStateReason::Enum> bindableDeviceFailReason() { return &this->bDeviceFailReason; };
+	[[nodiscard]] NMDeviceStateReason::Enum deviceFailReason() const { return this->bDeviceFailReason; };
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
-	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
-	[[nodiscard]] QList<NMConnectionSettings*> connections() const {
-		return this->mConnections.values();
-	}
-	[[nodiscard]] QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
-	[[nodiscard]] QBindable<bool> bindableVisible() { return &this->bVisible; };
-	[[nodiscard]] bool visible() const { return this->bVisible; };
+	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); }
+	[[nodiscard]] QList<NMSettings*> frontendSettings() const { return this->mFrontendSettings.values(); }
+	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; }
+	[[nodiscard]] NMSettings* activeSettings() const { return this->bActiveSettings; };
+	QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
+	QBindable<bool> bindableVisible() { return &this->bVisible; };
+	bool visible() const { return this->bVisible; };
+	// clang-format on
 
 signals:
 	void disappeared();
+	void settingsAdded(NMSettings* conn);
+	void settingsRemoved(NMSettings* conn);
 	void visibilityChanged(bool visible);
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
 	void securityChanged(WifiSecurityType::Enum security);
-	void reasonChanged(NMConnectionStateReason::Enum reason);
+	void reasonChanged(NMNetworkStateReason::Enum reason);
+	void deviceFailReasonChanged(NMDeviceStateReason::Enum reason);
 	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
 	void activeApPathChanged(QString path);
+	void activeSettingsChanged(NMSettings* settings);
 
 private:
 	void updateReferenceAp();
@@ -78,6 +91,7 @@ private:
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
 	QHash<QString, NMConnectionSettings*> mConnections;
+	QHash<QString, NMSettings*> mFrontendSettings;
 	NMAccessPoint* mReferenceAp = nullptr;
 	NMConnectionSettings* mReferenceConn = nullptr;
 	NMActiveConnection* mActiveConnection = nullptr;
@@ -86,10 +100,12 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bVisible, &NMWirelessNetwork::visibilityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, bool, bKnown, &NMWirelessNetwork::knownChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMNetworkStateReason::Enum, bReason, &NMWirelessNetwork::reasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMConnectionState::Enum, bState, &NMWirelessNetwork::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMDeviceStateReason::Enum, bDeviceFailReason, &NMWirelessNetwork::deviceFailReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMSettings*, bActiveSettings, &NMWirelessNetwork::activeSettingsChanged);
 	// clang-format on
 };
 
