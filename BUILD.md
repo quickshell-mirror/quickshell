@@ -171,6 +171,11 @@ To disable: `-DSERVICE_PIPEWIRE=OFF`
 
 Dependencies: `libpipewire`
 
+### OSS
+This feature enables sound system support on FreeBSD.
+
+To disable: `-DSERVICE_OSS=OFF`
+
 ### StatusNotifier / System Tray
 This feature enables system tray support using the status notifier dbus protocol.
 

@@ -11,6 +11,7 @@ set shell id.
 
 ## New Features
 
+- Added support for OSS on FreeBSD.
 - Added support for creating Polkit agents.
 - Added support for creating wayland idle inhibitors.
 - Added support for wayland idle timeouts.
