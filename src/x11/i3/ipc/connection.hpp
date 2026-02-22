@@ -19,6 +19,15 @@ enum EventCode {
 	Subscribe = 2,
 	GetOutputs = 3,
 	GetTree = 4,
+	GetMarks = 5,
+	GetVersion = 7,
+	GetBindingModes = 8,
+	GetBindingState = 12,
+	GetInputs = 100,
+	GetScroller = 120,
+	GetTrails = 121,
+	GetSpaces = 122,
+	GetBindings = 123,
 
 	Workspace = 0x80000000,
 	Output = 0x80000001,
@@ -30,6 +39,9 @@ enum EventCode {
 	Tick = 0x80000007,
 	BarStateUpdate = 0x80000014,
 	Input = 0x80000015,
+	Lua = 0x8000001d,
+	Scroller = 0x8000001e,
+	Trails = 0x8000001f,
 	Unknown = 999,
 };
 
@@ -67,6 +79,7 @@ public:
 	explicit I3Ipc(const QList<QString>& events);
 
 	[[nodiscard]] QString socketPath() const;
+	[[nodiscard]] QString compositor() const;
 
 	void makeRequest(const QByteArray& request);
 	void dispatch(const QString& payload);
@@ -101,6 +114,7 @@ protected:
 
 private:
 	QList<QString> mEvents;
+	QString mCompositor;
 };
 
 } // namespace qs::i3::ipc

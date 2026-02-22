@@ -35,8 +35,8 @@ QString I3IpcEvent::type() const { return I3IpcEvent::eventToString(this->mCode)
 QString I3IpcEvent::data() const { return QString::fromUtf8(this->mData.toJson()); }
 
 EventCode I3IpcEvent::intToEvent(quint32 raw) {
-	if ((EventCode::Workspace <= raw && raw <= EventCode::Input)
-	    || (EventCode::RunCommand <= raw && raw <= EventCode::GetTree))
+	if ((EventCode::Workspace <= raw && raw <= EventCode::Trails)
+	    || (EventCode::RunCommand <= raw && raw <= EventCode::GetBindings))
 	{
 		return static_cast<EventCode>(raw);
 	} else {
@@ -51,6 +51,15 @@ QString I3IpcEvent::eventToString(EventCode event) {
 	case EventCode::Subscribe: return "subscribe"; break;
 	case EventCode::GetOutputs: return "get_outputs"; break;
 	case EventCode::GetTree: return "get_tree"; break;
+	case EventCode::GetMarks: return "get_marks"; break;
+	case EventCode::GetVersion: return "get_version"; break;
+	case EventCode::GetBindingModes: return "get_binding_modes"; break;
+	case EventCode::GetBindingState: return "get_binding_state"; break;
+	case EventCode::GetInputs: return "get_inputs"; break;
+	case EventCode::GetScroller: return "get_scroller"; break;
+	case EventCode::GetTrails: return "get_trails"; break;
+	case EventCode::GetSpaces: return "get_spaces"; break;
+	case EventCode::GetBindings: return "get_bindings"; break;
 
 	case EventCode::Output: return "output"; break;
 	case EventCode::Workspace: return "workspace"; break;
@@ -62,23 +71,41 @@ QString I3IpcEvent::eventToString(EventCode event) {
 	case EventCode::Tick: return "tick"; break;
 	case EventCode::BarStateUpdate: return "bar_state_update"; break;
 	case EventCode::Input: return "input"; break;
+	case EventCode::Lua: return "lua"; break;
+	case EventCode::Scroller: return "scroller"; break;
+	case EventCode::Trails: return "trails"; break;
 
 	default: return "unknown"; break;
 	}
 }
 
 I3Ipc::I3Ipc(const QList<QString>& events): mEvents(events) {
-	auto sock = qEnvironmentVariable("I3SOCK");
+	auto sock = qEnvironmentVariable("SCROLLSOCK");
 
 	if (sock.isEmpty()) {
-		qCWarning(logI3Ipc) << "$I3SOCK is unset. Trying $SWAYSOCK.";
+		qCWarning(logI3Ipc) << "$SCROLLSOCK is unset. Trying $SWAYSOCK.";
 
 		sock = qEnvironmentVariable("SWAYSOCK");
 
 		if (sock.isEmpty()) {
-			qCWarning(logI3Ipc) << "$SWAYSOCK and I3SOCK are unset. Cannot connect to socket.";
-			return;
+			qCWarning(logI3Ipc) << "$SCROLLSOCK and $SWAYSOCK are unset. Trying $I3SOCK.";
+
+			sock = qEnvironmentVariable("I3SOCK");
+
+			if (sock.isEmpty()) {
+				qCWarning(logI3Ipc) << "$SCROLLSOCK, $SWAYSOCK and $I3SOCK are unset. Cannot connect to socket.";
+				return;
+			} else {
+				this->mCompositor = "i3";
+			}
+		} else {
+			this->mCompositor = "sway";
 		}
+	} else {
+		this->mCompositor = "scroll";
+		this->mEvents.append("scroller");
+		this->mEvents.append("trails");
+		this->mEvents.append("lua");
 	}
 
 	this->mSocketPath = sock;
@@ -214,5 +241,7 @@ void I3Ipc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) {
 }
 
 QString I3Ipc::socketPath() const { return this->mSocketPath; }
+
+QString I3Ipc::compositor() const { return this->mCompositor; }
 
 } // namespace qs::i3::ipc
