@@ -143,6 +143,15 @@ void PwCore::onSync(void* data, quint32 id, qint32 seq) {
 void PwCore::onError(void* data, quint32 id, qint32 /*seq*/, qint32 res, const char* message) {
 	auto* self = static_cast<PwCore*>(data);
 
+	if (res == -ENOENT) {
+		if (message != nullptr) {
+			qCWarning(logLoop) << "Pipewire error on object" << id << "with code" << res << message;
+		} else {
+			qCWarning(logLoop) << "Pipewire error on object" << id << "with code" << res;
+		}
+		return;
+	}
+
 	if (message != nullptr) {
 		qCWarning(logLoop) << "Fatal pipewire error on object" << id << "with code" << res << message;
 	} else {
