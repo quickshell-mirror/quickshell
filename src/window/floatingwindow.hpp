@@ -19,6 +19,10 @@ public:
 	explicit ProxyFloatingWindow(QObject* parent = nullptr): ProxyWindowBase(parent) {}
 
 	void connectWindow() override;
+	void setVisible(bool visible) override;
+
+	[[nodiscard]] QObject* parentWindow() const;
+	void setParentWindow(QObject* window);
 
 	// Setting geometry while the window is visible makes the content item shrink but not the window
 	// which is awful so we disable it for floating windows.
@@ -30,10 +34,17 @@ signals:
 	void maximumSizeChanged();
 	void titleChanged();
 
+private slots:
+	void onParentDestroyed();
+	void onParentVisible();
+
 private:
 	void onMinimumSizeChanged();
 	void onMaximumSizeChanged();
 	void onTitleChanged();
+
+	QObject* mParentWindow = nullptr;
+	ProxyWindowBase* mParentProxyWindow = nullptr;
 
 public:
 	Q_OBJECT_BINDABLE_PROPERTY(
@@ -75,6 +86,11 @@ class FloatingWindowInterface: public WindowInterface {
 	Q_PROPERTY(bool maximized READ isMaximized WRITE setMaximized NOTIFY maximizedChanged);
 	/// Whether the window is currently fullscreen.
 	Q_PROPERTY(bool fullscreen READ isFullscreen WRITE setFullscreen NOTIFY fullscreenChanged);
+	/// The parent window of this window. Setting this makes the window a child of the parent,
+	/// which affects window stacking behavior.
+	///
+	/// > [!NOTE] This property cannot be changed after the window is visible.
+	Q_PROPERTY(QObject* parentWindow READ parentWindow WRITE setParentWindow);
 	// clang-format on
 	QML_NAMED_ELEMENT(FloatingWindow);
 
@@ -100,6 +116,9 @@ public:
 	Q_INVOKABLE [[nodiscard]] bool startSystemMove() const;
 	/// Start a system resize operation. Must be called during a pointer press/drag.
 	Q_INVOKABLE [[nodiscard]] bool startSystemResize(Qt::Edges edges) const;
+
+	[[nodiscard]] QObject* parentWindow() const;
+	void setParentWindow(QObject* window);
 
 signals:
 	void minimumSizeChanged();
