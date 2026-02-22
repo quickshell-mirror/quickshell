@@ -1,4 +1,5 @@
 #include "region.hpp"
+#include <algorithm>
 #include <cmath>
 
 #include <qobject.h>
@@ -18,6 +19,7 @@ PendingRegion::PendingRegion(QObject* parent): QObject(parent) {
 	QObject::connect(this, &PendingRegion::yChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::widthChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::heightChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::radiusChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::childrenChanged, this, &PendingRegion::changed);
 }
 
@@ -88,6 +90,25 @@ QRegion PendingRegion::build() const {
 		);
 	} else {
 		region = QRegion(this->mX, this->mY, this->mWidth, this->mHeight, type);
+	}
+
+	if (this->mShape == RegionShape::Rect && this->mRadius > 0) {
+		auto rect = region.boundingRect();
+		auto x = rect.x();
+		auto y = rect.y();
+		auto w = rect.width();
+		auto h = rect.height();
+		auto r = std::min(this->mRadius, std::min(w, h) / 2);
+
+		for (int i = 0; i < r; i++) {
+			auto dx = static_cast<double>(r * r - (r - i) * (r - i));
+			auto cut = r - static_cast<int>(std::round(std::sqrt(dx)));
+			if (cut <= 0) continue;
+			region -= QRegion(x, y + i, cut, 1);
+			region -= QRegion(x + w - cut, y + i, cut, 1);
+			region -= QRegion(x, y + h - 1 - i, cut, 1);
+			region -= QRegion(x + w - cut, y + h - 1 - i, cut, 1);
+		}
 	}
 
 	for (const auto& childRegion: this->mRegions) {
