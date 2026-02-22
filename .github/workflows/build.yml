@@ -50,6 +50,7 @@ jobs:
             wayland-protocols \
             wayland \
             libdrm \
+            vulkan-headers \
             libxcb \
             libpipewire \
             cli11 \

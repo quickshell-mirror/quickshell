@@ -19,6 +19,7 @@
   xorg,
   libdrm,
   libgbm ? null,
+  vulkan-headers,
   pipewire,
   pam,
   polkit,
@@ -77,7 +78,7 @@
     ++ lib.optional withJemalloc jemalloc
     ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
     ++ lib.optionals withWayland [ wayland wayland-protocols ]
-    ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
+    ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm vulkan-headers ]
     ++ lib.optional withX11 xorg.libxcb
     ++ lib.optional withPam pam
     ++ lib.optional withPipewire pipewire
