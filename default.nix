@@ -16,7 +16,7 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  xorg,
+  libxcb,
   libdrm,
   libgbm ? null,
   pipewire,
@@ -78,7 +78,7 @@
     ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
     ++ lib.optionals withWayland [ wayland wayland-protocols ]
     ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
-    ++ lib.optional withX11 xorg.libxcb
+    ++ lib.optional withX11 libxcb
     ++ lib.optional withPam pam
     ++ lib.optional withPipewire pipewire
     ++ lib.optionals withPolkit [ polkit glib ];
