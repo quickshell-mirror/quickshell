@@ -28,6 +28,7 @@
 #include <qscopedpointer.h>
 #include <qsgrendererinterface.h>
 #include <qsgtexture_platform.h>
+#include <qtypes.h>
 #include <qvulkanfunctions.h>
 #include <qvulkaninstance.h>
 #include <qwayland-linux-dmabuf-v1.h>
@@ -35,7 +36,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <qtypes.h>
 #include <vulkan/vulkan_core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
@@ -80,10 +80,8 @@ bool drmFormatHasAlpha(uint32_t drmFormat) {
 	case DRM_FORMAT_ABGR8888:
 	case DRM_FORMAT_ARGB2101010:
 	case DRM_FORMAT_ABGR2101010:
-	case DRM_FORMAT_ABGR16161616F:
-		return true;
-	default:
-		return false;
+	case DRM_FORMAT_ABGR16161616F: return true;
+	default: return false;
 	}
 }
 
@@ -818,7 +816,8 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 
 	// dup() is required because vkAllocateMemory with VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
 	// takes ownership of the fd on succcess. Without dup, WlDmaBuffer would double-close.
-	const int dupFd = dup(this->planes[0].fd); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+	const int dupFd =
+	    dup(this->planes[0].fd); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 	if (dupFd < 0) {
 		qCWarning(logDmabuf) << "Failed to dup() fd for DMA-BUF import";
 		goto cleanup_fail; // NOLINT
@@ -909,12 +908,12 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 			// find the graphics queue family index for the ownrship transfer.
 			uint32_t graphicsQueueFamily = 0;
 			uint32_t queueFamilyCount = 0;
-			instFuncs->vkGetPhysicalDeviceQueueFamilyProperties(
-			    physDevice, &queueFamilyCount, nullptr
-			);
+			instFuncs->vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
 			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 			instFuncs->vkGetPhysicalDeviceQueueFamilyProperties(
-			    physDevice, &queueFamilyCount, queueFamilies.data()
+			    physDevice,
+			    &queueFamilyCount,
+			    queueFamilies.data()
 			);
 			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
 				if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -989,13 +988,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 			}
 		}
 
-		auto* tex = new WlDmaBufferVulkanQSGTexture(
-		    devFuncs,
-		    device,
-		    image,
-		    memory,
-		    qsgTexture
-		);
+		auto* tex = new WlDmaBufferVulkanQSGTexture(devFuncs, device, image, memory, qsgTexture);
 		qCDebug(logDmabuf) << "Created WlDmaBufferVulkanQSGTexture" << tex << "from" << this;
 		return tex;
 	}
