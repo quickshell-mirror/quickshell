@@ -63,7 +63,8 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 qt_add_library(quickshell-network-nm STATIC
 	backend.cpp
 	device.cpp
-	connection.cpp
+	active_connection.cpp
+	settings.cpp
 	accesspoint.cpp
 	wireless.cpp
 	utils.cpp

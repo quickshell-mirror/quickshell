@@ -17,16 +17,8 @@
 
 namespace qs::network {
 
-WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings) {
-	const QString mapName = "802-11-wireless-security";
-	if (!settings.contains(mapName)) return WifiSecurityType::Unknown;
-	const QVariantMap& security = settings.value(mapName);
-	if (security.isEmpty()) return WifiSecurityType::Open;
-
-	const QString keyMgmt = security["key-mgmt"].toString();
-	const QString authAlg = security["auth-alg"].toString();
-	const QList<QVariant> proto = security["proto"].toList();
-
+WifiSecurityType::Enum
+securityFromWifiSettings(const QString& keyMgmt, const QString& authAlg, const QStringList& proto) {
 	if (keyMgmt == "none") {
 		return WifiSecurityType::StaticWep;
 	} else if (keyMgmt == "ieee8021x") {

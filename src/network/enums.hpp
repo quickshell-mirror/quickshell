@@ -254,4 +254,28 @@ public:
 	Q_INVOKABLE static QString toString(WifiDeviceMode::Enum mode);
 };
 
+///! A flag associated with a NetworkManager secret that describes how to handle its storage.
+/// The property is a bitfield that contains zero or more of the Enum values logically OR-ed together.
+class NMSecretFlag: public QObject {
+	Q_OBJECT;
+	QML_ELEMENT;
+	QML_SINGLETON;
+
+public:
+	enum Enum : quint8 {
+		/// The secret will be stored by NetworkManager and be available to all users.
+		/// These permissions can be limited by changing the respective settings @@NMConnectionSettings.permissions.
+		None = 0x0,
+		/// The secret will be stored by a user-session secret agent if available.
+		/// When it is required, agents will be asked to provide it.
+		AgentOwned = 0x1,
+		/// The secret will not be saved and should be requested from the user each time it is required.
+		NotSaved = 0x2,
+		/// In some situations it cannot be automatically determined that a secret is required or not.
+		/// This flag hints that the secret is not required and should not be requested from the user.
+		NotRequired = 0x4,
+	};
+	Q_FLAG(Enum);
+};
+
 } // namespace qs::network

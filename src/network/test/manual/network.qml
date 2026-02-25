@@ -112,37 +112,55 @@ FloatingWindow {
 								onSettingsChanged: contextLoader.sourceComponent = null
 
 								onNoSecrets: {
-									contextLoader.sourceComponent = passwordComponent;
+									contextLoader.sourceComponent = secretsComponent;
 								}
 							}
 
 							Component {
-								id: passwordComponent
+								id: secretsComponent
 								RowLayout {
-									property var security: context.settings?.wifiSecurity
-									Label {
-										text: "Password incorrect or not provided!"
+									Label { text: "Secrets required!" }
+									Label { text: "PSK:"; visible: pskField.visible }
+									TextField {
+										id: pskField
+										placeholderText: "Password"
+										visible: modelData.security === WifiSecurityType.WpaPsk || modelData.security === WifiSecurityType.Wpa2Psk || modelData.security === WifiSecurityType.Sae
 									}
-									RowLayout {
-										Label {
-											text: "Enter PSK:"
-										}
-										TextField {
-											id: pskField
-											placeholderText: "Password"
-										}
-										Button {
-											text: "Set PSK"
-											onClicked: {
-												context.settings.setPsk(pskField.text);
-												contextLoader.sourceComponent = null;
+									Label { text: "WEP Key:"; visible: wepKeyField.visible }
+									TextField {
+										id: wepKeyField
+										placeholderText: "Key"
+										visible: modelData.security === WifiSecurityType.StaticWep
+									}
+									Label { text: "Index:"; visible: wepKeyIndex.visible }
+									SpinBox {
+										id: wepKeyIndex
+										from: 0
+										to: 3
+										value: 0
+										visible: wepKeyField.visible
+									}
+									Label { text: "Type:"; visible: wepKeyType.visible }
+									ComboBox {
+										id: wepKeyType
+										model: ["Key", "Passphrase"]
+										visible: wepKeyField.visible
+									}
+									Button {
+										text: "Set"
+										visible: pskField.visible || wepKeyField.visible
+										onClicked: {
+											if (pskField.visible) {
+												context.settings?.wirelessSecuritySettings?.setPsk(pskField.text);
+											} else if (wepKeyField.visible) {
+												context.settings?.wirelessSecuritySettings?.setWepKey(wepKeyField.text, wepKeyIndex.value, wepKeyType.currentIndex + 1);
 											}
+											contextLoader.sourceComponent = null;
 										}
-										Button {
-											text: "Cancel"
-											onClicked: contextLoader.sourceComponent = null
-										}
-										visible: security === WifiSecurityType.WpaPsk || security === WifiSecurityType.Wpa2Psk || security === WifiSecurityType.Sae
+									}
+									Button {
+										text: "Cancel"
+										onClicked: contextLoader.sourceComponent = null
 									}
 								}
 							}
@@ -204,10 +222,10 @@ FloatingWindow {
 											}
 											ComboBox {
 												id: settingsComboBox
-												model: modelData.nmSettings.values.map(conn => conn.id)
+												model: modelData.nmSettings.values.map(s => s?.connectionSettings?.id)
 												currentIndex: 0
 												onActivated: function (index) {
-													selectedSettings = modelData.nmSettings.values[index];
+													settingsConnectionRow.selectedSettings = modelData.nmSettings.values[index];
 												}
 											}
 											Button {

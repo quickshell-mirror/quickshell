@@ -3,15 +3,15 @@
 #include <qcontainerfwd.h>
 #include <qdbusservicewatcher.h>
 #include <qobject.h>
-#include <qqmlintegration.h>
 
-#include "../wifi.hpp"
+#include "../enums.hpp"
 #include "enums.hpp"
 #include "types.hpp"
 
 namespace qs::network {
 
-WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings);
+WifiSecurityType::Enum
+securityFromWifiSettings(const QString& keyMgmt, const QString& authAlg, const QStringList& proto);
 
 bool deviceSupportsApCiphers(
     NMWirelessCapabilities::Enum caps,

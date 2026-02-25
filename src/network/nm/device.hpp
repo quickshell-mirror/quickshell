@@ -9,9 +9,9 @@
 
 #include "../../dbus/properties.hpp"
 #include "../enums.hpp"
-#include "../nm_settings.hpp"
-#include "connection.hpp"
+#include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "settings.hpp"
 #include "types.hpp"
 
 namespace qs::dbus {
@@ -55,9 +55,9 @@ signals:
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& apPath
 	);
-	void connectionLoaded(NMConnectionSettings* connection);
-	void connectionRemoved(NMConnectionSettings* connection);
-	void availableConnectionPathsChanged(QList<QDBusObjectPath> paths);
+	void settingsLoaded(NMSettings* settings);
+	void settingsRemoved(NMSettings* settings);
+	void availableSettingsPathsChanged(QList<QDBusObjectPath> paths);
 	void activeConnectionPathChanged(const QDBusObjectPath& connection);
 	void activeConnectionLoaded(NMActiveConnection* active);
 	void interfaceChanged(const QString& interface);
@@ -75,14 +75,13 @@ public slots:
 
 private slots:
 	void onStateChanged(quint32 newState, quint32 oldState, quint32 reason);
-	void onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths);
+	void onAvailableSettingsPathsChanged(const QList<QDBusObjectPath>& paths);
 	void onActiveConnectionPathChanged(const QDBusObjectPath& path);
 
 private:
-	void registerConnection(const QString& path);
+	void registerSettings(const QString& path);
 
-	QHash<QString, NMConnectionSettings*> mConnections;
-	QHash<QString, NMSettings*> mFrontendConnections;
+	QHash<QString, NMSettings*> mSettings;
 	NMActiveConnection* mActiveConnection = nullptr;
 
 	// clang-format off
@@ -93,7 +92,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bStateReason, &NMDevice::stateReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bLastFailReason, &NMDevice::lastFailReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bAutoconnect, &NMDevice::autoconnectChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableConnectionPathsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableSettingsPathsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);

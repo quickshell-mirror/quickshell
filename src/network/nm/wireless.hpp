@@ -7,13 +7,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../nm_settings.hpp"
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
-#include "connection.hpp"
+#include "active_connection.hpp"
 #include "dbus_nm_wireless.h"
 #include "device.hpp"
 #include "enums.hpp"
+#include "settings.hpp"
 
 namespace qs::dbus {
 template <>
@@ -33,7 +33,7 @@ struct DBusDataTransform<QDateTime> {
 } // namespace qs::dbus
 namespace qs::network {
 
-// NMWirelessNetwork aggregates all related NMActiveConnection, NMAccessPoint, and NMConnectionSetting objects.
+// NMWirelessNetwork aggregates all related NMActiveConnection, NMAccessPoint, and NMSettings objects.
 class NMWirelessNetwork: public QObject {
 	Q_OBJECT;
 
@@ -41,11 +41,8 @@ public:
 	explicit NMWirelessNetwork(QString ssid, QObject* parent = nullptr);
 
 	void addAccessPoint(NMAccessPoint* ap);
-	void addConnection(NMConnectionSettings* conn);
+	void addSettings(NMSettings* settings);
 	void addActiveConnection(NMActiveConnection* active);
-	void registerFrontendSettings(NMConnectionSettings* conn);
-	void removeFrontendSettings(NMConnectionSettings* conn);
-	NMConnectionSettings* getConnectionFromSettings(NMSettings* settings);
 	void connect();
 	void forget();
 
@@ -60,9 +57,8 @@ public:
 	[[nodiscard]] NMDeviceStateReason::Enum deviceFailReason() const { return this->bDeviceFailReason; };
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->mReferenceAp; };
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); };
-	[[nodiscard]] QList<NMConnectionSettings*> connections() const { return this->mConnections.values(); }
-	[[nodiscard]] QList<NMSettings*> frontendSettings() const { return this->mFrontendSettings.values(); }
-	[[nodiscard]] NMConnectionSettings* referenceConnection() const { return this->mReferenceConn; }
+	[[nodiscard]] QList<NMSettings*> settings() const { return this->mSettings.values(); }
+	[[nodiscard]] NMSettings* referenceSettings() const { return this->mReferenceSettings; }
 	[[nodiscard]] NMSettings* activeSettings() const { return this->bActiveSettings; };
 	QBindable<QString> bindableActiveApPath() { return &this->bActiveApPath; };
 	QBindable<bool> bindableVisible() { return &this->bVisible; };
@@ -71,8 +67,8 @@ public:
 
 signals:
 	void disappeared();
-	void settingsAdded(NMSettings* conn);
-	void settingsRemoved(NMSettings* conn);
+	void settingsAdded(NMSettings* settings);
+	void settingsRemoved(NMSettings* settings);
 	void visibilityChanged(bool visible);
 	void signalStrengthChanged(quint8 signal);
 	void stateChanged(NMConnectionState::Enum state);
@@ -86,14 +82,13 @@ signals:
 
 private:
 	void updateReferenceAp();
-	void updateReferenceConnection();
+	void updateReferenceSettings();
 
 	QString mSsid;
 	QHash<QString, NMAccessPoint*> mAccessPoints;
-	QHash<QString, NMConnectionSettings*> mConnections;
-	QHash<QString, NMSettings*> mFrontendSettings;
+	QHash<QString, NMSettings*> mSettings;
 	NMAccessPoint* mReferenceAp = nullptr;
-	NMConnectionSettings* mReferenceConn = nullptr;
+	NMSettings* mReferenceSettings = nullptr;
 	NMActiveConnection* mActiveConnection = nullptr;
 
 	// clang-format off
@@ -139,7 +134,7 @@ private slots:
 	void onAccessPointAdded(const QDBusObjectPath& path);
 	void onAccessPointRemoved(const QDBusObjectPath& path);
 	void onAccessPointLoaded(NMAccessPoint* ap);
-	void onConnectionLoaded(NMConnectionSettings* conn);
+	void onSettingsLoaded(NMSettings* settings);
 	void onActiveConnectionLoaded(NMActiveConnection* active);
 	void onScanTimeout();
 	void onScanningChanged(bool scanning);

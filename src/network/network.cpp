@@ -12,7 +12,7 @@
 #include "device.hpp"
 #include "enums.hpp"
 #include "nm/backend.hpp"
-#include "nm_settings.hpp"
+#include "nm/settings.hpp"
 
 namespace qs::network {
 
