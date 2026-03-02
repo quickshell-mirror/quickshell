@@ -78,7 +78,7 @@ CrashReporterGui::CrashReporterGui(QString reportFolder, int pid)
 
 	mainLayout->addWidget(new ReportLabel(
 	    "Github:",
-	    "https://github.com/quickshell-mirror/quickshell/issues/new?template=crash.yml",
+	    "https://github.com/quickshell-mirror/quickshell/issues/new?template=crash2.yml",
 	    this
 	));
 
@@ -114,7 +114,7 @@ void CrashReporterGui::openFolder() {
 
 void CrashReporterGui::openReportUrl() {
 	QDesktopServices::openUrl(
-	    QUrl("https://github.com/outfoxxed/quickshell/issues/new?template=crash.yml")
+	    QUrl("https://github.com/outfoxxed/quickshell/issues/new?template=crash2.yml")
 	);
 }
 

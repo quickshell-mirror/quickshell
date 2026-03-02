@@ -1,12 +1,12 @@
 #include "handler.hpp"
+#include <algorithm>
 #include <array>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 
-#include <bits/types/sigset_t.h>
-#include <breakpad/client/linux/handler/exception_handler.h>
-#include <breakpad/client/linux/handler/minidump_descriptor.h>
-#include <breakpad/common/linux/linux_libc_support.h>
+#include <cpptrace/basic.hpp>
+#include <cpptrace/forward.hpp>
 #include <qdatastream.h>
 #include <qfile.h>
 #include <qlogging.h>
@@ -19,98 +19,60 @@
 
 extern char** environ; // NOLINT
 
-using namespace google_breakpad;
-
 namespace qs::crash {
 
 namespace {
+
 QS_LOGGING_CATEGORY(logCrashHandler, "quickshell.crashhandler", QtWarningMsg);
-}
 
-struct CrashHandlerPrivate {
-	ExceptionHandler* exceptionHandler = nullptr;
-	int minidumpFd = -1;
-	int infoFd = -1;
+void writeEnvInt(char* buf, const char* name, int value) {
+	// NOLINTBEGIN (cppcoreguidelines-pro-bounds-pointer-arithmetic)
+	while (*name != '\0') *buf++ = *name++;
+	*buf++ = '=';
 
-	static bool minidumpCallback(const MinidumpDescriptor& descriptor, void* context, bool succeeded);
-};
-
-CrashHandler::CrashHandler(): d(new CrashHandlerPrivate()) {}
-
-void CrashHandler::init() {
-	// MinidumpDescriptor has no move constructor and the copy constructor breaks fds.
-	auto createHandler = [this](const MinidumpDescriptor& desc) {
-		this->d->exceptionHandler = new ExceptionHandler(
-		    desc,
-		    nullptr,
-		    &CrashHandlerPrivate::minidumpCallback,
-		    this->d,
-		    true,
-		    -1
-		);
-	};
-
-	qCDebug(logCrashHandler) << "Starting crash handler...";
-
-	this->d->minidumpFd = memfd_create("quickshell:minidump", MFD_CLOEXEC);
-
-	if (this->d->minidumpFd == -1) {
-		qCCritical(
-		    logCrashHandler
-		) << "Failed to allocate minidump memfd, minidumps will be saved in the working directory.";
-		createHandler(MinidumpDescriptor("."));
-	} else {
-		qCDebug(logCrashHandler) << "Created memfd" << this->d->minidumpFd
-		                         << "for holding possible minidumps.";
-		createHandler(MinidumpDescriptor(this->d->minidumpFd));
+	if (value < 0) {
+		*buf++ = '-';
+		value = -value;
 	}
 
-	qCInfo(logCrashHandler) << "Crash handler initialized.";
-}
-
-void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
-	this->d->infoFd = memfd_create("quickshell:instance_info", MFD_CLOEXEC);
-
-	if (this->d->infoFd == -1) {
-		qCCritical(
-		    logCrashHandler
-		) << "Failed to allocate instance info memfd, crash recovery will not work.";
+	if (value == 0) {
+		*buf++ = '0';
+		*buf = '\0';
 		return;
 	}
 
-	QFile file;
-
-	if (!file.open(this->d->infoFd, QFile::ReadWrite)) {
-		qCCritical(
-		    logCrashHandler
-		) << "Failed to open instance info memfd, crash recovery will not work.";
+	auto* start = buf;
+	while (value > 0) {
+		*buf++ = static_cast<char>('0' + (value % 10));
+		value /= 10;
 	}
 
-	QDataStream ds(&file);
-	ds << info;
-	file.flush();
-
-	qCDebug(logCrashHandler) << "Stored instance info in memfd" << this->d->infoFd;
+	*buf = '\0';
+	std::reverse(start, buf);
+	// NOLINTEND
 }
 
-CrashHandler::~CrashHandler() {
-	delete this->d->exceptionHandler;
-	delete this->d;
-}
-
-bool CrashHandlerPrivate::minidumpCallback(
-    const MinidumpDescriptor& /*descriptor*/,
-    void* context,
-    bool /*success*/
+void signalHandler(
+    int sig,
+    siginfo_t* /*info*/, // NOLINT (misc-include-cleaner)
+    void*                /*context*/
 ) {
-	// A fork that just dies to ensure the coredump is caught by the system.
-	auto coredumpPid = fork();
+	if (CrashInfo::INSTANCE.traceFd != -1) {
+		auto traceBuffer = std::array<cpptrace::frame_ptr, 1024>();
+		auto frameCount = cpptrace::safe_generate_raw_trace(traceBuffer.data(), traceBuffer.size(), 1);
 
-	if (coredumpPid == 0) {
-		return false;
+		for (size_t i = 0; i < static_cast<size_t>(frameCount); i++) {
+			auto frame = cpptrace::safe_object_frame();
+			cpptrace::get_safe_object_frame(traceBuffer[i], &frame);
+			write(CrashInfo::INSTANCE.traceFd, &frame, sizeof(cpptrace::safe_object_frame));
+		}
 	}
 
-	auto* self = static_cast<CrashHandlerPrivate*>(context);
+	auto coredumpPid = fork();
+	if (coredumpPid == 0) {
+		raise(sig);
+		_exit(-1);
+	}
 
 	auto exe = std::array<char, 4096>();
 	if (readlink("/proc/self/exe", exe.data(), exe.size() - 1) == -1) {
@@ -123,16 +85,18 @@ bool CrashHandlerPrivate::minidumpCallback(
 	auto env = std::array<char*, 4096>();
 	auto envi = 0;
 
-	auto infoFd = dup(self->infoFd);
-	auto infoFdStr = std::array<char, 38>();
-	memcpy(infoFdStr.data(), "__QUICKSHELL_CRASH_INFO_FD=-1" /*\0*/, 30);
-	if (infoFd != -1) my_uitos(&infoFdStr[27], infoFd, 10);
+	// dup to remove CLOEXEC
+	auto infoFdStr = std::array<char, 48>();
+	writeEnvInt(infoFdStr.data(), "__QUICKSHELL_CRASH_INFO_FD", dup(CrashInfo::INSTANCE.infoFd));
 	env[envi++] = infoFdStr.data();
 
-	auto corePidStr = std::array<char, 39>();
-	memcpy(corePidStr.data(), "__QUICKSHELL_CRASH_DUMP_PID=-1" /*\0*/, 31);
-	if (coredumpPid != -1) my_uitos(&corePidStr[28], coredumpPid, 10);
+	auto corePidStr = std::array<char, 48>();
+	writeEnvInt(corePidStr.data(), "__QUICKSHELL_CRASH_DUMP_PID", coredumpPid);
 	env[envi++] = corePidStr.data();
+
+	auto sigStr = std::array<char, 48>();
+	writeEnvInt(sigStr.data(), "__QUICKSHELL_CRASH_SIGNAL", sig);
+	env[envi++] = sigStr.data();
 
 	auto populateEnv = [&]() {
 		auto senvi = 0;
@@ -145,30 +109,18 @@ bool CrashHandlerPrivate::minidumpCallback(
 		env[envi] = nullptr;
 	};
 
-	sigset_t sigset;
-	sigemptyset(&sigset);                       // NOLINT (include)
-	sigprocmask(SIG_SETMASK, &sigset, nullptr); // NOLINT
-
 	auto pid = fork();
 
 	if (pid == -1) {
 		perror("Failed to fork and launch crash reporter.\n");
-		return false;
+		_exit(-1);
 	} else if (pid == 0) {
+
 		// dup to remove CLOEXEC
-		// if already -1 will return -1
-		auto dumpFd = dup(self->minidumpFd);
-		auto logFd = dup(CrashInfo::INSTANCE.logFd);
-
-		// allow up to 10 digits, which should never happen
-		auto dumpFdStr = std::array<char, 38>();
-		auto logFdStr = std::array<char, 37>();
-
-		memcpy(dumpFdStr.data(), "__QUICKSHELL_CRASH_DUMP_FD=-1" /*\0*/, 30);
-		memcpy(logFdStr.data(), "__QUICKSHELL_CRASH_LOG_FD=-1" /*\0*/, 29);
-
-		if (dumpFd != -1) my_uitos(&dumpFdStr[27], dumpFd, 10);
-		if (logFd != -1) my_uitos(&logFdStr[26], logFd, 10);
+		auto dumpFdStr = std::array<char, 48>();
+		auto logFdStr = std::array<char, 48>();
+		writeEnvInt(dumpFdStr.data(), "__QUICKSHELL_CRASH_DUMP_FD", dup(CrashInfo::INSTANCE.traceFd));
+		writeEnvInt(logFdStr.data(), "__QUICKSHELL_CRASH_LOG_FD", dup(CrashInfo::INSTANCE.logFd));
 
 		env[envi++] = dumpFdStr.data();
 		env[envi++] = logFdStr.data();
@@ -185,8 +137,83 @@ bool CrashHandlerPrivate::minidumpCallback(
 		perror("Failed to relaunch quickshell.\n");
 		_exit(-1);
 	}
+}
 
-	return false; // should make sure it hits the system coredump handler
+} // namespace
+
+void CrashHandler::init() {
+	qCDebug(logCrashHandler) << "Starting crash handler...";
+
+	CrashInfo::INSTANCE.traceFd = memfd_create("quickshell:trace", MFD_CLOEXEC);
+
+	if (CrashInfo::INSTANCE.traceFd == -1) {
+		qCCritical(logCrashHandler) << "Failed to allocate trace memfd, stack traces will not be "
+		                               "available in crash reports.";
+	} else {
+		qCDebug(logCrashHandler) << "Created memfd" << CrashInfo::INSTANCE.traceFd
+		                         << "for holding possible stack traces.";
+	}
+
+	{
+		// Preload anything dynamically linked to avoid malloc etc in the dynamic loader.
+		// See cpptrace documentation for more information.
+		auto buffer = std::array<cpptrace::frame_ptr, 10>();
+		cpptrace::safe_generate_raw_trace(buffer.data(), buffer.size());
+		auto frame = cpptrace::safe_object_frame();
+		cpptrace::get_safe_object_frame(buffer[0], &frame);
+	}
+
+	// NOLINTBEGIN (misc-include-cleaner)
+
+	// Set up alternate signal stack for stack overflow handling
+	auto ss = stack_t();
+	ss.ss_sp = new char[SIGSTKSZ];
+	;
+	ss.ss_size = SIGSTKSZ;
+	ss.ss_flags = 0;
+	sigaltstack(&ss, nullptr);
+
+	// Install signal handlers
+	struct sigaction sa {};
+	sa.sa_sigaction = &signalHandler;
+	sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESETHAND;
+	sigemptyset(&sa.sa_mask);
+
+	sigaction(SIGSEGV, &sa, nullptr);
+	sigaction(SIGABRT, &sa, nullptr);
+	sigaction(SIGFPE, &sa, nullptr);
+	sigaction(SIGILL, &sa, nullptr);
+	sigaction(SIGBUS, &sa, nullptr);
+	sigaction(SIGTRAP, &sa, nullptr);
+
+	// NOLINTEND (misc-include-cleaner)
+
+	qCInfo(logCrashHandler) << "Crash handler initialized.";
+}
+
+void CrashHandler::setRelaunchInfo(const RelaunchInfo& info) {
+	CrashInfo::INSTANCE.infoFd = memfd_create("quickshell:instance_info", MFD_CLOEXEC);
+
+	if (CrashInfo::INSTANCE.infoFd == -1) {
+		qCCritical(
+		    logCrashHandler
+		) << "Failed to allocate instance info memfd, crash recovery will not work.";
+		return;
+	}
+
+	QFile file;
+
+	if (!file.open(CrashInfo::INSTANCE.infoFd, QFile::ReadWrite)) {
+		qCCritical(
+		    logCrashHandler
+		) << "Failed to open instance info memfd, crash recovery will not work.";
+	}
+
+	QDataStream ds(&file);
+	ds << info;
+	file.flush();
+
+	qCDebug(logCrashHandler) << "Stored instance info in memfd" << CrashInfo::INSTANCE.infoFd;
 }
 
 } // namespace qs::crash

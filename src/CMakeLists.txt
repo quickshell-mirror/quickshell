@@ -12,7 +12,7 @@ add_subdirectory(io)
 add_subdirectory(widgets)
 add_subdirectory(ui)
 
-if (CRASH_REPORTER)
+if (CRASH_HANDLER)
 	add_subdirectory(crash)
 endif()
 

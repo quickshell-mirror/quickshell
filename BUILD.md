@@ -64,14 +64,18 @@ At least Qt 6.6 is required.
 
 All features are enabled by default and some have their own dependencies.
 
-### Crash Reporter
-The crash reporter catches crashes, restarts quickshell when it crashes,
+### Crash Handler
+The crash reporter catches crashes, restarts Quickshell when it crashes,
 and collects useful crash information in one place. Leaving this enabled will
 enable us to fix bugs far more easily.
 
-To disable: `-DCRASH_REPORTER=OFF`
+To disable: `-DCRASH_HANDLER=OFF`
 
-Dependencies: `google-breakpad` (static library)
+Dependencies: `cpptrace`
+
+Note: `-DVENDOR_CPPTRACE=ON` can be set to vendor cpptrace using FetchContent.
+
+When using FetchContent, `libunwind` is required, and `libdwarf` can be provided by the package manager or fetched with FetchContent.
 
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused

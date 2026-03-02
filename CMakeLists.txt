@@ -47,12 +47,11 @@ boption(ASAN "ASAN (dev)" OFF) # note: better output with gcc than clang
 boption(FRAME_POINTERS "Keep Frame Pointers (dev)" ${ASAN})
 
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-	boption(CRASH_REPORTER "Crash Handling" OFF)
 	boption(USE_JEMALLOC "Use jemalloc" OFF)
 else()
-	boption(CRASH_REPORTER "Crash Handling" ON)
 	boption(USE_JEMALLOC "Use jemalloc" ON)
 endif()
+boption(CRASH_HANDLER "Crash Handling" ON)
 boption(SOCKETS "Unix Sockets" ON)
 boption(WAYLAND "Wayland" ON)
 boption(WAYLAND_WLR_LAYERSHELL "  Wlroots Layer-Shell" ON REQUIRES WAYLAND)

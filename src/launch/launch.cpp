@@ -27,7 +27,7 @@
 #include "build.hpp"
 #include "launch_p.hpp"
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 #include "../crash/handler.hpp"
 #endif
 
@@ -137,13 +137,12 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	    .display = getDisplayConnection(),
 	};
 
-#if CRASH_REPORTER
-	auto crashHandler = crash::CrashHandler();
-	crashHandler.init();
+#if CRASH_HANDLER
+	crash::CrashHandler::init();
 
 	{
 		auto* log = LogManager::instance();
-		crashHandler.setRelaunchInfo({
+		crash::CrashHandler::setRelaunchInfo({
 		    .instance = InstanceInfo::CURRENT,
 		    .noColor = !log->colorLogs,
 		    .timestamp = log->timestampLogs,
