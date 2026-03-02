@@ -32,6 +32,7 @@ set shell id.
 - FreeBSD is now partially supported.
 - IPC operations filter available instances to the current display connection by default.
 - PwNodeLinkTracker ignores sound level monitoring programs.
+- Replaced breakpad with cpptrace.
 
 ## Bug Fixes
 
@@ -52,5 +53,6 @@ set shell id.
 
 ## Packaging Changes
 
-`glib` and `polkit` have been added as dependencies when compiling with polkit agent support.
-`vulkan-headers` has been added as a build-time dependency for screencopy (Vulkan backend support).
+- `glib` and `polkit` have been added as dependencies when compiling with polkit agent support.
+- `vulkan-headers` has been added as a build-time dependency for screencopy (Vulkan backend support).
+- `breakpad` has been replaced by `cpptrace`, which is far easier to package, and the `CRASH_REPORTER` cmake variable has been replaced with `CRASH_HANDLER` to stop this from being easy to ignore.

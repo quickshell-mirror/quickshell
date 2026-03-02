@@ -56,8 +56,7 @@
            #~(list "-GNinja"
                    "-DDISTRIBUTOR=\"In-tree Guix channel\""
                    "-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO"
-                   ;; Breakpad is not currently packaged for Guix.
-                   "-DCRASH_REPORTER=OFF")
+                   "-DCRASH_HANDLER=OFF")
            #:phases
            #~(modify-phases %standard-phases
                (replace 'build (lambda _ (invoke "cmake" "--build" ".")))

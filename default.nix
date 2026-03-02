@@ -10,7 +10,9 @@
   ninja,
   spirv-tools,
   qt6,
-  breakpad,
+  cpptrace ? null,
+  libunwind,
+  libdwarf,
   jemalloc,
   cli11,
   wayland,
@@ -49,6 +51,8 @@
   withPolkit ? true,
   withNetworkManager ? true,
 }: let
+  withCrashHandler = withCrashReporter && cpptrace != null && lib.strings.compareVersions cpptrace.version "0.7.2" >= 0;
+
   unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
     version = "0.2.1";
@@ -74,7 +78,16 @@
       cli11
     ]
     ++ lib.optional withQtSvg qt6.qtsvg
-    ++ lib.optional withCrashReporter breakpad
+    ++ lib.optionals withCrashHandler [
+      (cpptrace.overrideAttrs (prev: {
+        cmakeFlags = prev.cmakeFlags ++ [
+          "-DCPPTRACE_UNWIND_WITH_LIBUNWIND=TRUE"
+        ];
+        buildInputs = prev.buildInputs ++ [ libunwind ];
+      }))
+      libunwind
+      libdwarf
+    ]
     ++ lib.optional withJemalloc jemalloc
     ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
     ++ lib.optionals withWayland [ wayland wayland-protocols ]
@@ -91,7 +104,7 @@
       (lib.cmakeFeature "INSTALL_QML_PREFIX" qt6.qtbase.qtQmlPrefix)
       (lib.cmakeBool "DISTRIBUTOR_DEBUGINFO_AVAILABLE" true)
       (lib.cmakeFeature "GIT_REVISION" gitRev)
-      (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
+      (lib.cmakeBool "CRASH_HANDLER" withCrashHandler)
       (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
       (lib.cmakeBool "WAYLAND" withWayland)
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))

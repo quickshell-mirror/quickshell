@@ -35,6 +35,8 @@ namespace qs::crash {
 
 struct CrashInfo {
 	int logFd = -1;
+	int traceFd = -1;
+	int infoFd = -1;
 
 	static CrashInfo INSTANCE; // NOLINT
 };

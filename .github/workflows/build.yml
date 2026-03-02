@@ -55,10 +55,11 @@ jobs:
             libpipewire \
             cli11 \
             polkit \
-            jemalloc
+            jemalloc \
+            libunwind \
+            git # for cpptrace clone
 
       - name: Build
-        # breakpad is annoying to build in ci due to makepkg not running as root
         run: |
-          cmake -GNinja -B build -DCRASH_REPORTER=OFF
+          cmake -GNinja -B build -DVENDOR_CPPTRACE=ON
           cmake --build build
