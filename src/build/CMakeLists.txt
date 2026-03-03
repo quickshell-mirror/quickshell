@@ -15,12 +15,6 @@ else()
 	set(CRASH_HANDLER_DEF 0)
 endif()
 
-if (DISTRIBUTOR_DEBUGINFO_AVAILABLE)
-	set(DEBUGINFO_AVAILABLE 1)
-else()
-	set(DEBUGINFO_AVAILABLE 0)
-endif()
-
 configure_file(build.hpp.in build.hpp @ONLY ESCAPE_QUOTES)
 
 target_include_directories(quickshell-build INTERFACE ${CMAKE_CURRENT_BINARY_DIR})

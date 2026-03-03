@@ -1,6 +1,7 @@
 #include "handler.hpp"
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
@@ -64,8 +65,18 @@ void signalHandler(
 		for (size_t i = 0; i < static_cast<size_t>(frameCount); i++) {
 			auto frame = cpptrace::safe_object_frame();
 			cpptrace::get_safe_object_frame(traceBuffer[i], &frame);
-			write(CrashInfo::INSTANCE.traceFd, &frame, sizeof(cpptrace::safe_object_frame));
+
+			auto* wptr = reinterpret_cast<char*>(&frame);
+			auto* end = wptr + sizeof(cpptrace::safe_object_frame); // NOLINT
+			while (wptr != end) {
+				auto r = write(CrashInfo::INSTANCE.traceFd, &frame, sizeof(cpptrace::safe_object_frame));
+				if (r < 0 && errno == EINTR) continue;
+				if (r <= 0) goto fail;
+				wptr += r; // NOLINT
+			}
 		}
+
+	fail:;
 	}
 
 	auto coredumpPid = fork();
@@ -168,7 +179,6 @@ void CrashHandler::init() {
 	// Set up alternate signal stack for stack overflow handling
 	auto ss = stack_t();
 	ss.ss_sp = new char[SIGSTKSZ];
-	;
 	ss.ss_size = SIGSTKSZ;
 	ss.ss_flags = 0;
 	sigaltstack(&ss, nullptr);

@@ -40,7 +40,6 @@ string(APPEND QS_BUILD_OPTIONS "  Distributor: ${DISTRIBUTOR}")
 
 message(STATUS "Quickshell configuration")
 message(STATUS "  Distributor: ${DISTRIBUTOR}")
-boption(DISTRIBUTOR_DEBUGINFO_AVAILABLE "Distributor provided debuginfo" NO)
 boption(NO_PCH "Disable precompild headers (dev)" OFF)
 boption(BUILD_TESTING "Build tests (dev)" OFF)
 boption(ASAN "ASAN (dev)" OFF) # note: better output with gcc than clang

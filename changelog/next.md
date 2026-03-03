@@ -56,3 +56,4 @@ set shell id.
 - `glib` and `polkit` have been added as dependencies when compiling with polkit agent support.
 - `vulkan-headers` has been added as a build-time dependency for screencopy (Vulkan backend support).
 - `breakpad` has been replaced by `cpptrace`, which is far easier to package, and the `CRASH_REPORTER` cmake variable has been replaced with `CRASH_HANDLER` to stop this from being easy to ignore.
+- `DISTRIBUTOR_DEBUGINFO_AVAILABLE` was removed as it is no longer important without breakpad.

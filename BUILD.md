@@ -15,15 +15,7 @@ Please make this descriptive enough to identify your specific package, for examp
 - `Nixpkgs`
 - `Fedora COPR (errornointernet/quickshell)`
 
-`-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=YES/NO`
-
-If we can retrieve binaries and debug information for the package without actually running your
-distribution (e.g. from an website), and you would like to strip the binary, please set this to `YES`.
-
-If we cannot retrieve debug information, please set this to `NO` and
-**ensure you aren't distributing stripped (non debuggable) binaries**.
-
-In both cases you should build with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (then split or keep the debuginfo).
+Please leave at least symbol names attached to the binary for debugging purposes.
 
 ### QML Module dir
 Currently all QML modules are statically linked to quickshell, but this is where
