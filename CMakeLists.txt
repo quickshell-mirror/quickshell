@@ -47,6 +47,8 @@ boption(FRAME_POINTERS "Keep Frame Pointers (dev)" ${ASAN})
 
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 	boption(USE_JEMALLOC "Use jemalloc" OFF)
+	include_directories(/usr/local/include)
+	link_directories(/usr/local/lib)
 else()
 	boption(USE_JEMALLOC "Use jemalloc" ON)
 endif()
