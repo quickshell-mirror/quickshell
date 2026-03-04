@@ -119,7 +119,7 @@ void I3IpcController::handleGetWorkspacesEvent(I3IpcEvent* event) {
 		}
 
 		if (!this->bFocusedWorkspace && object.value("focused").value<bool>()) {
-			this->bFocusedMonitor = workspace->bindableMonitor().value();
+			this->setFocusedMonitor(workspace->bindableMonitor().value());
 		}
 
 		names.push_back(name);
@@ -277,7 +277,7 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 		if (newWorkspace->bindableMonitor().value()) {
 			auto* monitor = newWorkspace->bindableMonitor().value();
 			monitor->setFocusedWorkspace(newWorkspace);
-			this->bFocusedMonitor = monitor;
+			this->setFocusedMonitor(monitor);
 		}
 	} else if (change == "empty") {
 		auto name = event->mData["current"]["name"].toString();
@@ -288,7 +288,9 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->bindableId().value() << name;
 
 			if (this->bFocusedWorkspace == oldWorkspace) {
-				this->bFocusedMonitor->setFocusedWorkspace(nullptr);
+				if (auto* focusedMonitor = this->bFocusedMonitor.value()) {
+					focusedMonitor->setFocusedWorkspace(nullptr);
+				}
 			}
 
 			this->workspaces()->removeObject(oldWorkspace);
