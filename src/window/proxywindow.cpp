@@ -258,7 +258,10 @@ void ProxyWindowBase::onSceneGraphError(
 
 void ProxyWindowBase::onVisibleChanged() {
 	if (this->mVisible && !this->window->isVisible()) {
-		this->mVisible = false;
+		if (!this->deleteOnInvisible()) {
+			this->mVisible = false;
+		}
+
 		this->setVisibleDirect(false);
 		emit this->closed();
 	}
@@ -403,6 +406,10 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	if (oldScreen != qscreen) {
 		if (this->window == nullptr) {
 			emit this->screenChanged();
+
+			if (qscreen != nullptr && this->mVisible && this->reloadComplete) {
+				this->setVisibleDirect(true);
+			}
 		} else if (qscreen) {
 			auto reshow = this->isVisibleDirect();
 			if (reshow) this->setVisibleDirect(false);
