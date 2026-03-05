@@ -143,11 +143,16 @@ void PwCore::onSync(void* data, quint32 id, qint32 seq) {
 void PwCore::onError(void* data, quint32 id, qint32 /*seq*/, qint32 res, const char* message) {
 	auto* self = static_cast<PwCore*>(data);
 
-	if (message != nullptr) {
-		qCWarning(logLoop) << "Fatal pipewire error on object" << id << "with code" << res << message;
-	} else {
-		qCWarning(logLoop) << "Fatal pipewire error on object" << id << "with code" << res;
+	// Pipewire's documentation describes the error event as being fatal, however it isn't.
+	// We're not sure what causes these ENOENTs on device removal, presumably something in
+	// the teardown sequence, but they're harmless. Attempting to handle them as a fatal
+	// error causes unnecessary triggers for shells.
+	if (res == -ENOENT) {
+		qCDebug(logLoop) << "Pipewire ENOENT on object" << id << "with code" << res << message;
+		return;
 	}
+
+	qCWarning(logLoop) << "Pipewire error on object" << id << "with code" << res << message;
 
 	emit self->fatalError();
 }
