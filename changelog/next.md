@@ -50,6 +50,7 @@ set shell id.
 - Fixed ClippingRectangle related crashes.
 - Fixed crashes when monitors are unplugged.
 - Fixed crashes when default pipewire devices are lost.
+- Desktop action order is now preserved.
 
 ## Packaging Changes
 

@@ -43,7 +43,7 @@ struct ParsedDesktopEntryData {
 	QVector<QString> categories;
 	QVector<QString> keywords;
 	QHash<QString, QString> entries;
-	QHash<QString, DesktopActionData> actions;
+	QVector<DesktopActionData> actions;
 };
 
 /// A desktop entry. See @@DesktopEntries for details.
@@ -164,10 +164,10 @@ public:
 	// clang-format on
 
 private:
-	void updateActions(const QHash<QString, DesktopActionData>& newActions);
+	void updateActions(const QVector<DesktopActionData>& newActions);
 
 	ParsedDesktopEntryData state;
-	QHash<QString, DesktopAction*> mActions;
+	QVector<DesktopAction*> mActions;
 
 	friend class DesktopAction;
 };
