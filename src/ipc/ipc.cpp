@@ -3,6 +3,7 @@
 #include <variant>
 
 #include <qbuffer.h>
+#include <qcoreapplication.h>
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
 #include <qlogging.h>
@@ -127,7 +128,9 @@ int IpcClient::connect(const QString& id, const std::function<void(IpcClient& cl
 
 void IpcKillCommand::exec(IpcServerConnection* /*unused*/) {
 	qInfo() << "Exiting due to IPC request.";
-	EngineGeneration::currentGeneration()->quit();
+	auto* generation = EngineGeneration::currentGeneration();
+	if (generation) generation->quit();
+	else QCoreApplication::exit(0);
 }
 
 } // namespace qs::ipc
