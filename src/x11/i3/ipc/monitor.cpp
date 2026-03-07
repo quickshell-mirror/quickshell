@@ -74,7 +74,7 @@ void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) {
 	}
 
 	this->bActiveWorkspace = workspace;
-};
+}
 
 void I3Monitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
 
