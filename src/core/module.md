@@ -29,5 +29,6 @@ headers = [
 	"clock.hpp",
 	"scriptmodel.hpp",
 	"colorquantizer.hpp",
+	"itemimagegrab.hpp",
 ]
 -----
