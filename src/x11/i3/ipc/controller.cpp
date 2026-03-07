@@ -288,9 +288,7 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->bindableId().value() << name;
 
 			if (this->bFocusedWorkspace == oldWorkspace) {
-				if (auto* focusedMonitor = this->bFocusedMonitor.value()) {
-					focusedMonitor->setFocusedWorkspace(nullptr);
-				}
+				this->bFocusedMonitor->setFocusedWorkspace(nullptr);
 			}
 
 			this->workspaces()->removeObject(oldWorkspace);

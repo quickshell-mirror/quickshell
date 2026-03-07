@@ -44,9 +44,9 @@ void I3Monitor::updateFromObject(const QVariantMap& obj) {
 	    || activeWorkspaceName != this->bActiveWorkspace->bindableName().value())
 	{
 		if (activeWorkspaceName.isEmpty()) {
-			this->setActiveWorkspace(nullptr);
+			this->setFocusedWorkspace(nullptr);
 		} else {
-			this->setActiveWorkspace(this->ipc->findWorkspaceByName(activeWorkspaceName));
+			this->setFocusedWorkspace(this->ipc->findWorkspaceByName(activeWorkspaceName));
 		}
 	};
 
@@ -55,9 +55,7 @@ void I3Monitor::updateFromObject(const QVariantMap& obj) {
 
 void I3Monitor::updateInitial(const QString& name) { this->bName = name; }
 
-void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) { this->setActiveWorkspace(workspace); };
-
-void I3Monitor::setActiveWorkspace(I3Workspace* workspace) {
+void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) {
 	auto* oldWorkspace = this->bActiveWorkspace.value();
 
 	if (oldWorkspace == workspace) return;
@@ -76,7 +74,7 @@ void I3Monitor::setActiveWorkspace(I3Workspace* workspace) {
 	}
 
 	this->bActiveWorkspace = workspace;
-}
+};
 
 void I3Monitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
 
