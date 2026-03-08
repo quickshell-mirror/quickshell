@@ -42,11 +42,11 @@ GreetdConnection::GreetdConnection() {
 	this->mAvailable = true;
 
 	// clang-format off
-	QObject::connect(&this->socket, &QLocalSocket::connected, this, &GreetdConnection::onSocketConnected);
-	QObject::connect(&this->socket, &QLocalSocket::readyRead, this, &GreetdConnection::onSocketReady);
+	QObject::connect(&this->mSocket, &QLocalSocket::connected, this, &GreetdConnection::onSocketConnected);
+	QObject::connect(&this->mSocket, &QLocalSocket::readyRead, this, &GreetdConnection::onSocketReady);
 	// clang-format on
 
-	this->socket.connectToServer(socket, QLocalSocket::ReadWrite);
+	this->mSocket.connectToServer(socket, QLocalSocket::ReadWrite);
 }
 
 void GreetdConnection::createSession(QString user) {
@@ -103,7 +103,7 @@ bool GreetdConnection::isAvailable() const { return this->mAvailable; }
 GreetdState::Enum GreetdConnection::state() const { return this->mState; }
 
 void GreetdConnection::setActive(bool active) {
-	if (this->socket.state() == QLocalSocket::ConnectedState) {
+	if (this->mSocket.state() == QLocalSocket::ConnectedState) {
 		this->mTargetActive = active;
 		if (active == (this->mState != GreetdState::Inactive)) return;
 
@@ -160,11 +160,23 @@ void GreetdConnection::onSocketError(QLocalSocket::LocalSocketError error) {
 }
 
 void GreetdConnection::onSocketReady() {
-	qint32 length = 0;
+	while (true) {
+		if (this->mSocketExpectedLength <= 0) {
+			if (this->mSocket.bytesAvailable() < static_cast<qsizetype>(sizeof(qint32))) return;
 
-	this->socket.read(reinterpret_cast<char*>(&length), sizeof(qint32));
+			this->mSocket.read(reinterpret_cast<char*>(&this->mSocketExpectedLength), sizeof(qint32));
+		}
 
-	auto text = this->socket.read(length);
+		if (this->mSocket.bytesAvailable() < this->mSocketExpectedLength) return;
+
+		const auto text = this->mSocket.read(this->mSocketExpectedLength);
+		this->mSocketExpectedLength = 0;
+
+		this->handleMessage(text);
+	}
+}
+
+void GreetdConnection::handleMessage(const QByteArray& text) {
 	auto json = QJsonDocument::fromJson(text).object();
 	auto type = json.value("type").toString();
 
@@ -253,10 +265,10 @@ void GreetdConnection::sendRequest(const QJsonObject& json) {
 		                             << QJsonDocument(debugJson).toJson(QJsonDocument::Compact);
 	}
 
-	this->socket.write(reinterpret_cast<char*>(&length), sizeof(qint32));
+	this->mSocket.write(reinterpret_cast<char*>(&length), sizeof(qint32));
 
-	this->socket.write(text);
-	this->socket.flush();
+	this->mSocket.write(text);
+	this->mSocket.flush();
 }
 
 GreetdConnection* GreetdConnection::instance() {

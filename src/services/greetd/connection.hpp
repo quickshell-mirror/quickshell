@@ -62,6 +62,7 @@ private slots:
 private:
 	explicit GreetdConnection();
 
+	void handleMessage(const QByteArray& text);
 	void sendRequest(const QJsonObject& json);
 	void setActive(bool active);
 	void setInactive();
@@ -73,5 +74,6 @@ private:
 	QString mMessage;
 	bool mResponseRequired = false;
 	QString mUser;
-	QLocalSocket socket;
+	QLocalSocket mSocket;
+	qint32 mSocketExpectedLength = 0;
 };
