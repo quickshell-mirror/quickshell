@@ -161,7 +161,11 @@ void ToplevelManager::onToplevelReady(impl::ToplevelHandle* handle) {
 
 void ToplevelManager::onToplevelActiveChanged() {
 	auto* toplevel = qobject_cast<Toplevel*>(this->sender());
-	if (toplevel->activated()) this->setActiveToplevel(toplevel);
+	if (toplevel->activated()) {
+		this->setActiveToplevel(toplevel);
+	} else if (toplevel == this->mActiveToplevel) {
+		this->setActiveToplevel(nullptr);
+	}
 }
 
 void ToplevelManager::onToplevelClosed() {
