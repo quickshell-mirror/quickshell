@@ -48,6 +48,7 @@
   withPam ? true,
   withHyprland ? true,
   withI3 ? true,
+  withDWL ? true,
   withPolkit ? true,
   withNetworkManager ? true,
 }: let
@@ -109,6 +110,7 @@
       (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
       (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
       (lib.cmakeBool "HYPRLAND" withHyprland)
+      (lib.cmakeBool "DWL" withDWL)
       (lib.cmakeBool "I3" withI3)
     ];
 

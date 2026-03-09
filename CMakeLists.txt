@@ -68,6 +68,7 @@ boption(SCREENCOPY_HYPRLAND_TOPLEVEL "    Hyprland Toplevel Export" ON REQUIRES 
 boption(X11 "X11" ON)
 boption(I3 "I3/Sway" ON)
 boption(I3_IPC "  I3/Sway IPC" ON REQUIRES I3)
+boption(DWL "DWL" ON)
 boption(SERVICE_STATUS_NOTIFIER "System Tray" ON)
 boption(SERVICE_PIPEWIRE "PipeWire" ON)
 boption(SERVICE_MPRIS "Mpris" ON)
