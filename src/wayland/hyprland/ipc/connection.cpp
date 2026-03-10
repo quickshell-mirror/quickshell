@@ -93,6 +93,7 @@ void HyprlandIpc::eventSocketError(QLocalSocket::LocalSocketError error) const {
 
 void HyprlandIpc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) {
 	if (state == QLocalSocket::ConnectedState) {
+		this->eventReader.setDevice(&this->eventSocket);
 		qCInfo(logHyprlandIpc) << "Hyprland event socket connected.";
 		emit this->connected();
 	} else if (state == QLocalSocket::UnconnectedState && this->valid) {
@@ -104,11 +105,11 @@ void HyprlandIpc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) 
 
 void HyprlandIpc::eventSocketReady() {
 	while (true) {
-		auto rawEvent = this->eventSocket.readLine();
-		if (rawEvent.isEmpty()) break;
+		this->eventReader.startTransaction();
+		auto rawEvent = this->eventReader.readUntil('\n');
+		if (!this->eventReader.commitTransaction()) return;
 
-		// remove trailing \n
-		rawEvent.truncate(rawEvent.length() - 1);
+		rawEvent.chop(1); // remove trailing \n
 		auto splitIdx = rawEvent.indexOf(">>");
 		auto event = QByteArrayView(rawEvent.data(), splitIdx);
 		auto data = QByteArrayView(

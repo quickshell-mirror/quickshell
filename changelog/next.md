@@ -52,6 +52,7 @@ set shell id.
 - Fixed crashes when default pipewire devices are lost.
 - Fixed ToplevelManager not clearing activeToplevel on deactivation.
 - Desktop action order is now preserved.
+- Fixed partial socket reads in greetd and hyprland on slow machines.
 
 ## Packaging Changes
 

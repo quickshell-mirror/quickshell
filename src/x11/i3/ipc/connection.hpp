@@ -1,13 +1,14 @@
 #pragma once
 
 #include <qbytearrayview.h>
-#include <qdatastream.h>
 #include <qjsondocument.h>
 #include <qlocalsocket.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+
+#include "../../../core/streamreader.hpp"
 
 namespace qs::i3::ipc {
 
@@ -92,7 +93,7 @@ protected:
 	QVector<std::tuple<EventCode, QJsonDocument>> parseResponse();
 
 	QLocalSocket liveEventSocket;
-	QDataStream liveEventSocketDs;
+	StreamReader eventReader;
 
 	QString mSocketPath;
 	bool valid = false;

@@ -8,6 +8,8 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/streamreader.hpp"
+
 ///! State of the Greetd connection.
 /// See @@Greetd.state.
 class GreetdState: public QObject {
@@ -74,4 +76,5 @@ private:
 	bool mResponseRequired = false;
 	QString mUser;
 	QLocalSocket socket;
+	StreamReader reader;
 };

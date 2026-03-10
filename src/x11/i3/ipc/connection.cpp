@@ -7,7 +7,6 @@
 #include <qbytearray.h>
 #include <qbytearrayview.h>
 #include <qcontainerfwd.h>
-#include <qdatastream.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -15,9 +14,7 @@
 #include <qlocalsocket.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qnamespace.h>
 #include <qobject.h>
-#include <qsysinfo.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -89,9 +86,6 @@ I3Ipc::I3Ipc(const QList<QString>& events): mEvents(events) {
 	QObject::connect(&this->liveEventSocket, &QLocalSocket::readyRead, this, &I3Ipc::eventSocketReady);
 	QObject::connect(&this->liveEventSocket, &QLocalSocket::connected, this, &I3Ipc::subscribe);
 	// clang-format on
-
-	this->liveEventSocketDs.setDevice(&this->liveEventSocket);
-	this->liveEventSocketDs.setByteOrder(static_cast<QDataStream::ByteOrder>(QSysInfo::ByteOrder));
 }
 
 void I3Ipc::makeRequest(const QByteArray& request) {
@@ -145,34 +139,21 @@ void I3Ipc::reconnectIPC() {
 }
 
 QVector<Event> I3Ipc::parseResponse() {
-	QVector<std::tuple<EventCode, QJsonDocument>> events;
-	const int magicLen = 6;
+	QVector<Event> events;
 
-	while (!this->liveEventSocketDs.atEnd()) {
-		this->liveEventSocketDs.startTransaction();
-		this->liveEventSocketDs.startTransaction();
+	while (true) {
+		this->eventReader.startTransaction();
+		auto magic = this->eventReader.readBytes(6);
+		auto size = this->eventReader.readI32();
+		auto type = this->eventReader.readI32();
+		auto payload = this->eventReader.readBytes(size);
+		if (!this->eventReader.commitTransaction()) return events;
 
-		std::array<char, 6> buffer = {};
-		qint32 size = 0;
-		qint32 type = EventCode::Unknown;
-
-		this->liveEventSocketDs.readRawData(buffer.data(), magicLen);
-		this->liveEventSocketDs >> size;
-		this->liveEventSocketDs >> type;
-
-		if (!this->liveEventSocketDs.commitTransaction()) break;
-
-		QByteArray payload(size, Qt::Uninitialized);
-
-		this->liveEventSocketDs.readRawData(payload.data(), size);
-
-		if (!this->liveEventSocketDs.commitTransaction()) break;
-
-		if (strncmp(buffer.data(), MAGIC.data(), 6) != 0) {
+		if (magic.size() < 6 || strncmp(magic.data(), MAGIC.data(), 6) != 0) {
 			qCWarning(logI3Ipc) << "No magic sequence found in string.";
 			this->reconnectIPC();
 			break;
-		};
+		}
 
 		if (I3IpcEvent::intToEvent(type) == EventCode::Unknown) {
 			qCWarning(logI3Ipc) << "Received unknown event";
@@ -204,6 +185,7 @@ void I3Ipc::eventSocketError(QLocalSocket::LocalSocketError error) const {
 
 void I3Ipc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) {
 	if (state == QLocalSocket::ConnectedState) {
+		this->eventReader.setDevice(&this->liveEventSocket);
 		qCInfo(logI3Ipc) << "I3 event socket connected.";
 		emit this->connected();
 	} else if (state == QLocalSocket::UnconnectedState && this->valid) {
