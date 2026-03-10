@@ -127,7 +127,7 @@ bool BackgroundEffect::eventFilter(QObject* object, QEvent* event) {
 		}
 	}
 
-	return QObject::eventFilter(object, event);
+	return this->QObject::eventFilter(object, event);
 }
 
 void BackgroundEffect::onWindowConnected() {
