@@ -1,5 +1,4 @@
 #include "region.hpp"
-#include <algorithm>
 #include <cmath>
 
 #include <qobject.h>
@@ -98,17 +97,20 @@ QRegion PendingRegion::build() const {
 		auto y = rect.y();
 		auto w = rect.width();
 		auto h = rect.height();
-		auto r = std::min(this->mRadius, std::min(w, h) / 2);
+		auto r = this->mRadius;
+		auto d = r * 2;
 
-		for (int i = 0; i < r; i++) {
-			auto dx = static_cast<double>(r * r - (r - i) * (r - i));
-			auto cut = r - static_cast<int>(std::round(std::sqrt(dx)));
-			if (cut <= 0) continue;
-			region -= QRegion(x, y + i, cut, 1);
-			region -= QRegion(x + w - cut, y + i, cut, 1);
-			region -= QRegion(x, y + h - 1 - i, cut, 1);
-			region -= QRegion(x + w - cut, y + h - 1 - i, cut, 1);
-		}
+		QRegion rounded;
+
+		if (w > d) rounded |= QRegion(x + r, y, w - d, h);
+		if (h > d) rounded |= QRegion(x, y + r, w, h - d);
+
+		rounded |= QRegion(x, y, d, d, QRegion::Ellipse);
+		rounded |= QRegion(x + w - d, y, d, d, QRegion::Ellipse);
+		rounded |= QRegion(x, y + h - d, d, d, QRegion::Ellipse);
+		rounded |= QRegion(x + w - d, y + h - d, d, d, QRegion::Ellipse);
+
+		region &= rounded;
 	}
 
 	for (const auto& childRegion: this->mRegions) {

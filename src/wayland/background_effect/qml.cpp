@@ -1,8 +1,12 @@
 #include "qml.hpp"
 #include <memory>
 
+#include <private/qhighdpiscaling_p.h>
 #include <private/qwaylandwindow_p.h>
+#include <qcoreevent.h>
+#include <qevent.h>
 #include <qlogging.h>
+#include <qnumeric.h>
 #include <qobject.h>
 #include <qregion.h>
 #include <qtmetamacros.h>
@@ -91,11 +95,20 @@ void BackgroundEffect::updateBlurRegion() {
 
 void BackgroundEffect::onWindowPolished() {
 	if (!this->surface || !this->pendingBlurRegion) return;
+	if (!this->mWaylandWindow || !this->mWaylandWindow->surface()) {
+		this->pendingBlurRegion = false;
+		return;
+	}
 
 	QRegion region;
 	if (this->mBlurRegion) {
 		region =
 		    this->mBlurRegion->applyTo(QRect(0, 0, this->mWindow->width(), this->mWindow->height()));
+
+		auto scale = QHighDpiScaling::factor(this->mWindow);
+		if (!qFuzzyCompare(scale, 1.0)) {
+			region = QHighDpi::scale(region, scale);
+		}
 
 		auto margins = this->mWaylandWindow->clientSideMargins();
 		region.translate(margins.left(), margins.top());
@@ -105,8 +118,21 @@ void BackgroundEffect::onWindowPolished() {
 	this->pendingBlurRegion = false;
 }
 
+bool BackgroundEffect::eventFilter(QObject* object, QEvent* event) {
+	if (event->type() == QEvent::PlatformSurface) {
+		auto* surfaceEvent = dynamic_cast<QPlatformSurfaceEvent*>(event);
+		if (surfaceEvent->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
+			this->surface = nullptr;
+			this->pendingBlurRegion = false;
+		}
+	}
+
+	return QObject::eventFilter(object, event);
+}
+
 void BackgroundEffect::onWindowConnected() {
 	this->mWindow = this->proxyWindow->backingWindow();
+	this->mWindow->installEventFilter(this);
 
 	QObject::connect(
 	    this->mWindow,
@@ -196,7 +222,6 @@ void BackgroundEffect::onWaylandSurfaceCreated() {
 }
 
 void BackgroundEffect::onWaylandSurfaceDestroyed() {
-	if (this->surface) this->surface->setInert();
 	this->surface = nullptr;
 	this->pendingBlurRegion = false;
 

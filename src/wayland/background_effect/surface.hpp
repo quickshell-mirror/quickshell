@@ -13,10 +13,6 @@ public:
 	Q_DISABLE_COPY_MOVE(BackgroundEffectSurface);
 
 	void setBlurRegion(const QRegion& region);
-	void setInert();
-
-private:
-	bool mInert = false;
 };
 
 } // namespace qs::wayland::background_effect::impl

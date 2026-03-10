@@ -15,15 +15,8 @@ BackgroundEffectSurface::BackgroundEffectSurface(
 
 BackgroundEffectSurface::~BackgroundEffectSurface() {
 	if (!this->isInitialized()) return;
-
-	if (this->mInert) {
-		wl_proxy_destroy(reinterpret_cast<wl_proxy*>(this->object())); // NOLINT(misc-include-cleaner)
-	} else {
-		this->destroy();
-	}
+	this->destroy();
 }
-
-void BackgroundEffectSurface::setInert() { this->mInert = true; }
 
 void BackgroundEffectSurface::setBlurRegion(const QRegion& region) {
 	if (!this->isInitialized()) return;

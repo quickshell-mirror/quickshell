@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <private/qwaylandwindow_p.h>
+#include <qcoreevent.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
@@ -49,6 +50,8 @@ public:
 	void setBlurRegion(PendingRegion* region);
 
 	static BackgroundEffect* qmlAttachedProperties(QObject* object);
+
+	bool eventFilter(QObject* object, QEvent* event) override;
 
 signals:
 	void blurRegionChanged();
