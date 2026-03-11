@@ -1,4 +1,5 @@
 #include "region.hpp"
+#include <algorithm>
 #include <cmath>
 
 #include <qobject.h>
@@ -192,12 +193,12 @@ QRegion PendingRegion::build() const {
 			rounded |= QRegion(x + maxL, y, w - maxL - maxR, h);
 			rounded |= QRegion(x, y + maxT, w, h - maxT - maxB);
 
+			// clang-format off
 			if (tl > 0) rounded |= QRegion(x, y, tl * 2, tl * 2, QRegion::Ellipse);
 			if (tr > 0) rounded |= QRegion(x + w - tr * 2, y, tr * 2, tr * 2, QRegion::Ellipse);
 			if (bl > 0) rounded |= QRegion(x, y + h - bl * 2, bl * 2, bl * 2, QRegion::Ellipse);
-			if (br > 0) {
-				rounded |= QRegion(x + w - br * 2, y + h - br * 2, br * 2, br * 2, QRegion::Ellipse);
-			}
+			if (br > 0) rounded |= QRegion(x + w - br * 2, y + h - br * 2, br * 2, br * 2, QRegion::Ellipse);
+			// clang-format on
 
 			region &= rounded;
 		}
