@@ -19,6 +19,7 @@ public:
 	explicit ProxyFloatingWindow(QObject* parent = nullptr): ProxyWindowBase(parent) {}
 
 	void connectWindow() override;
+	void postCompleteWindow() override;
 	void setVisible(bool visible) override;
 
 	[[nodiscard]] QObject* parentWindow() const;
@@ -33,18 +34,22 @@ signals:
 	void minimumSizeChanged();
 	void maximumSizeChanged();
 	void titleChanged();
+	void parentWindowChanged();
 
 private slots:
 	void onParentDestroyed();
-	void onParentVisible();
+	void onParentUpdated();
 
 private:
 	void onMinimumSizeChanged();
 	void onMaximumSizeChanged();
 	void onTitleChanged();
+	void updateTransientParent();
+	void updateVisible();
 
 	QObject* mParentWindow = nullptr;
 	ProxyWindowBase* mParentProxyWindow = nullptr;
+	bool wantsVisible = true;
 
 public:
 	Q_OBJECT_BINDABLE_PROPERTY(
@@ -90,7 +95,7 @@ class FloatingWindowInterface: public WindowInterface {
 	/// which affects window stacking behavior.
 	///
 	/// > [!NOTE] This property cannot be changed after the window is visible.
-	Q_PROPERTY(QObject* parentWindow READ parentWindow WRITE setParentWindow);
+	Q_PROPERTY(QObject* parentWindow READ parentWindow WRITE setParentWindow NOTIFY parentWindowChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(FloatingWindow);
 
@@ -127,6 +132,7 @@ signals:
 	void minimizedChanged();
 	void maximizedChanged();
 	void fullscreenChanged();
+	void parentWindowChanged();
 
 private slots:
 	void onWindowConnected();

@@ -19,56 +19,41 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setMaximumSize(this->bMaximumSize);
 }
 
+void ProxyFloatingWindow::postCompleteWindow() { this->updateTransientParent(); }
+
 void ProxyFloatingWindow::onParentDestroyed() {
 	this->mParentWindow = nullptr;
 	this->mParentProxyWindow = nullptr;
+	this->updateVisible();
 }
 
-void ProxyFloatingWindow::onParentVisible() {
-	auto* pw = this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
-	if (!pw || !pw->isVisible() || !this->window) return;
+void ProxyFloatingWindow::onParentUpdated() { this->updateTransientParent(); }
 
-	this->window->setTransientParent(pw);
-	QObject::disconnect(
-	    this->mParentProxyWindow,
-	    &ProxyWindowBase::backerVisibilityChanged,
-	    this,
-	    &ProxyFloatingWindow::onParentVisible
-	);
-	this->ProxyWindowBase::setVisible(true);
+void ProxyFloatingWindow::updateTransientParent() {
+	if (!this->window) return;
+
+	auto* bw = this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+
+	if (bw != this->window->transientParent()) {
+		this->window->setTransientParent(bw);
+	}
+
+	this->updateVisible();
+}
+
+void ProxyFloatingWindow::updateVisible() {
+	auto target = this->wantsVisible;
+
+	if (this->mParentProxyWindow) {
+		target = target && this->mParentProxyWindow->isVisibleDirect();
+	}
+
+	this->ProxyWindowBase::setVisible(target);
 }
 
 void ProxyFloatingWindow::setVisible(bool visible) {
-	if (!visible) {
-		if (this->mParentProxyWindow) {
-			QObject::disconnect(
-			    this->mParentProxyWindow,
-			    &ProxyWindowBase::backerVisibilityChanged,
-			    this,
-			    &ProxyFloatingWindow::onParentVisible
-			);
-		}
-		this->ProxyWindowBase::setVisible(false);
-		return;
-	}
-
-	// If there's a parent, set transient before showing
-	if (this->mParentProxyWindow) {
-		auto* pw = this->mParentProxyWindow->backingWindow();
-		if (pw && pw->isVisible()) {
-			if (this->window) this->window->setTransientParent(pw);
-		} else {
-			QObject::connect(
-			    this->mParentProxyWindow,
-			    &ProxyWindowBase::backerVisibilityChanged,
-			    this,
-			    &ProxyFloatingWindow::onParentVisible
-			);
-			return;
-		}
-	}
-
-	this->ProxyWindowBase::setVisible(true);
+	this->wantsVisible = visible;
+	this->updateVisible();
 }
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
@@ -130,13 +115,14 @@ void ProxyFloatingWindow::setParentWindow(QObject* window) {
 		}
 
 		this->mParentWindow = window;
-		QObject::connect(
-		    this->mParentWindow,
-		    &QObject::destroyed,
-		    this,
-		    &ProxyFloatingWindow::onParentDestroyed
-		);
+
+		// clang-format off
+		QObject::connect(this->mParentWindow, &QObject::destroyed, this, &ProxyFloatingWindow::onParentDestroyed);
+		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::backerVisibilityChanged, this, &ProxyFloatingWindow::onParentUpdated);
+		// clang-format on
 	}
+
+	emit this->parentWindowChanged();
 }
 
 // FloatingWindowInterface
@@ -150,6 +136,7 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyFloatingWindow::titleChanged, this, &FloatingWindowInterface::titleChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::minimumSizeChanged, this, &FloatingWindowInterface::minimumSizeChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::maximumSizeChanged, this, &FloatingWindowInterface::maximumSizeChanged);
+	QObject::connect(this->window, &ProxyFloatingWindow::parentWindowChanged, this, &FloatingWindowInterface::parentWindowChanged);
 	QObject::connect(this->window, &ProxyWindowBase::windowConnected, this, &FloatingWindowInterface::onWindowConnected);
 	// clang-format on
 }
