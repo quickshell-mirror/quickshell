@@ -81,6 +81,11 @@ void signalHandler(
 
 	auto coredumpPid = fork();
 	if (coredumpPid == 0) {
+		// NOLINTBEGIN (misc-include-cleaner)
+		sigset_t set;
+		sigfillset(&set);
+		sigprocmask(SIG_UNBLOCK, &set, nullptr);
+		// NOLINTEND
 		raise(sig);
 		_exit(-1);
 	}
