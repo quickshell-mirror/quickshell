@@ -33,6 +33,7 @@ set shell id.
 - IPC operations filter available instances to the current display connection by default.
 - PwNodeLinkTracker ignores sound level monitoring programs.
 - Replaced breakpad with cpptrace.
+- Reloads are prevented if no file content has changed.
 
 ## Bug Fixes
 

@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <qcontainerfwd.h>
+#include <qcryptographichash.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qjsengine.h>
@@ -20,6 +21,25 @@
 #include "scanenv.hpp"
 
 QS_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
+
+bool QmlScanner::readAndHashFile(const QString& path, QByteArray& data) {
+	auto file = QFile(path);
+	if (!file.open(QFile::ReadOnly)) return false;
+	data = file.readAll();
+	this->fileHashes.insert(path, QCryptographicHash::hash(data, QCryptographicHash::Md5));
+	return true;
+}
+
+bool QmlScanner::hasFileContentChanged(const QString& path) const {
+	auto it = this->fileHashes.constFind(path);
+	if (it == this->fileHashes.constEnd()) return true;
+
+	auto file = QFile(path);
+	if (!file.open(QFile::ReadOnly)) return true;
+
+	auto newHash = QCryptographicHash::hash(file.readAll(), QCryptographicHash::Md5);
+	return newHash != it.value();
+}
 
 void QmlScanner::scanDir(const QDir& dir) {
 	if (this->scannedDirs.contains(dir)) return;
@@ -109,13 +129,13 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 
 	qCDebug(logQmlScanner) << "Scanning qml file" << path;
 
-	auto file = QFile(path);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+	QByteArray fileData;
+	if (!this->readAndHashFile(path, fileData)) {
 		qCWarning(logQmlScanner) << "Failed to open file" << path;
 		return false;
 	}
 
-	auto stream = QTextStream(&file);
+	auto stream = QTextStream(&fileData);
 	auto imports = QVector<QString>();
 
 	bool inHeader = true;
@@ -219,8 +239,6 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 		postError("unclosed preprocessor if block");
 	}
 
-	file.close();
-
 	if (isOverridden) {
 		this->fileIntercepts.insert(path, overrideText);
 	}
@@ -257,8 +275,11 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			continue;
 		}
 
-		if (import.endsWith(".js")) this->scannedFiles.push_back(cpath);
-		else this->scanDir(cpath);
+		if (import.endsWith(".js")) {
+			this->scannedFiles.push_back(cpath);
+			QByteArray jsData;
+			this->readAndHashFile(cpath, jsData);
+		} else this->scanDir(cpath);
 	}
 
 	return true;
@@ -273,13 +294,11 @@ void QmlScanner::scanQmlRoot(const QString& path) {
 bool QmlScanner::scanQmlJson(const QString& path) {
 	qCDebug(logQmlScanner) << "Scanning qml.json file" << path;
 
-	auto file = QFile(path);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+	QByteArray data;
+	if (!this->readAndHashFile(path, data)) {
 		qCWarning(logQmlScanner) << "Failed to open file" << path;
 		return false;
 	}
-
-	auto data = file.readAll();
 
 	// Importing this makes CI builds fail for some reason.
 	QJsonParseError error; // NOLINT (misc-include-cleaner)

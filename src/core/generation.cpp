@@ -209,6 +209,8 @@ bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
 	for (const auto& file: files) {
 		if (!this->scanner.scannedFiles.contains(file)) {
 			this->extraWatchedFiles.append(file);
+			QByteArray data;
+			this->scanner.readAndHashFile(file, data);
 		}
 	}
 
@@ -229,6 +231,11 @@ void EngineGeneration::onFileChanged(const QString& name) {
 		auto fileInfo = QFileInfo(name);
 		if (fileInfo.isFile() && fileInfo.size() == 0) return;
 
+		if (!this->scanner.hasFileContentChanged(name)) {
+			qCDebug(logQmlScanner) << "Ignoring file change with unchanged content:" << name;
+			return;
+		}
+
 		emit this->filesChanged();
 	}
 }
@@ -237,6 +244,11 @@ void EngineGeneration::onDirectoryChanged() {
 	// try to find any files that were just deleted from a replace operation
 	for (auto& file: this->deletedWatchedFiles) {
 		if (QFileInfo(file).exists()) {
+			if (!this->scanner.hasFileContentChanged(file)) {
+				qCDebug(logQmlScanner) << "Ignoring restored file with unchanged content:" << file;
+				continue;
+			}
+
 			emit this->filesChanged();
 			break;
 		}

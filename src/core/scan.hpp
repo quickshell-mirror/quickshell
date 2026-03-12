@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qbytearray.h>
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qhash.h>
@@ -21,6 +22,7 @@ public:
 
 	QVector<QDir> scannedDirs;
 	QVector<QString> scannedFiles;
+	QHash<QString, QByteArray> fileHashes;
 	QHash<QString, QString> fileIntercepts;
 
 	struct ScanError {
@@ -30,6 +32,9 @@ public:
 	};
 
 	QVector<ScanError> scanErrors;
+
+	bool readAndHashFile(const QString& path, QByteArray& data);
+	[[nodiscard]] bool hasFileContentChanged(const QString& path) const;
 
 private:
 	QDir rootPath;
