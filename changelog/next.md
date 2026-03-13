@@ -34,6 +34,8 @@ set shell id.
 - PwNodeLinkTracker ignores sound level monitoring programs.
 - Replaced breakpad with cpptrace.
 - Reloads are prevented if no file content has changed.
+- Added `QS_DISABLE_FILE_WATCHER` environment variable to disable file watching.
+- Added `QS_DISABLE_CRASH_HANDLER` environment variable to disable crash handling.
 
 ## Bug Fixes
 

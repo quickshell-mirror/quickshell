@@ -60,7 +60,9 @@ void QuickshellSettings::setWorkingDirectory(QString workingDirectory) { // NOLI
 	emit this->workingDirectoryChanged();
 }
 
-bool QuickshellSettings::watchFiles() const { return this->mWatchFiles; }
+bool QuickshellSettings::watchFiles() const {
+	return this->mWatchFiles && qEnvironmentVariableIsEmpty("QS_DISABLE_FILE_WATCHER");
+}
 
 void QuickshellSettings::setWatchFiles(bool watchFiles) {
 	if (watchFiles == this->mWatchFiles) return;

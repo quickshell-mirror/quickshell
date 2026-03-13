@@ -138,9 +138,11 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	};
 
 #if CRASH_HANDLER
-	crash::CrashHandler::init();
+	if (qEnvironmentVariableIsSet("QS_DISABLE_CRASH_HANDLER")) {
+		qInfo() << "Crash handling disabled.";
+	} else {
+		crash::CrashHandler::init();
 
-	{
 		auto* log = LogManager::instance();
 		crash::CrashHandler::setRelaunchInfo({
 		    .instance = InstanceInfo::CURRENT,
