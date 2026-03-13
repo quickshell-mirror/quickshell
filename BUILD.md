@@ -67,7 +67,13 @@ Dependencies: `cpptrace`
 
 Note: `-DVENDOR_CPPTRACE=ON` can be set to vendor cpptrace using FetchContent.
 
-When using FetchContent, `libunwind` is required, and `libdwarf` can be provided by the package manager or fetched with FetchContent.
+When using FetchContent, `libunwind` is required, and `libdwarf` can be provided by the
+package manager or fetched with FetchContent.
+
+*Please ensure binaries have usable symbols.* We do not necessarily need full debuginfo, but
+leaving symbols in the binary is extremely helpful. You can check if symbols are useful
+by sending a SIGSEGV to the process and ensuring symbols for the quickshell binary are present
+in the trace.
 
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused
@@ -236,7 +242,7 @@ Only `ninja` builds are tested, but makefiles may work.
 
 #### Configuring the build
 ```sh
-$ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo [additional disable flags from above here]
+$ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release [additional disable flags from above here]
 ```
 
 Note that features you do not supply dependencies for MUST be disabled with their associated flags
