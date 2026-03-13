@@ -169,7 +169,7 @@ QRegion PendingRegion::build() const {
 		region = QRegion(this->mX, this->mY, this->mWidth, this->mHeight, type);
 	}
 
-	if (this->mShape == RegionShape::Rect) {
+	if (this->mShape == RegionShape::Rect && !region.isEmpty()) {
 		auto tl = this->topLeftRadius();
 		auto tr = this->topRightRadius();
 		auto bl = this->bottomLeftRadius();
@@ -182,16 +182,22 @@ QRegion PendingRegion::build() const {
 			auto w = rect.width();
 			auto h = rect.height();
 
-			// Build a rounded mask using a cross of rectangles between corner
-			// centers, plus an ellipse per corner, then intersect with the base.
 			auto maxL = std::max(tl, bl);
 			auto maxR = std::max(tr, br);
 			auto maxT = std::max(tl, tr);
 			auto maxB = std::max(bl, br);
 
+			// Build rounded mask from per-corner ellipses and 5 fill rectangles
+			// that bridge the gaps between corners of different sizes.
 			QRegion rounded;
-			rounded |= QRegion(x + maxL, y, w - maxL - maxR, h);
-			rounded |= QRegion(x, y + maxT, w, h - maxT - maxB);
+
+			// Center fill
+			rounded |= QRegion(x + maxL, y + maxT, w - maxL - maxR, h - maxT - maxB);
+			// Edge fills sized to each corner's actual radius
+			rounded |= QRegion(x, y + tl, maxL, h - tl - bl);
+			rounded |= QRegion(x + w - maxR, y + tr, maxR, h - tr - br);
+			rounded |= QRegion(x + tl, y, w - tl - tr, maxT);
+			rounded |= QRegion(x + bl, y + h - maxB, w - bl - br, maxB);
 
 			// clang-format off
 			if (tl > 0) rounded |= QRegion(x, y, tl * 2, tl * 2, QRegion::Ellipse);
