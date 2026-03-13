@@ -15,7 +15,7 @@ Please make this descriptive enough to identify your specific package, for examp
 - `Nixpkgs`
 - `Fedora COPR (errornointernet/quickshell)`
 
-Please leave at least symbol names attached to the binary for debugging purposes.
+If you are forking quickshell, please change `CRASHREPORT_URL` to your own issue tracker.
 
 ### QML Module dir
 Currently all QML modules are statically linked to quickshell, but this is where

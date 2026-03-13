@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(QS_BUILD_OPTIONS "")
 
+# should be changed for forks
+set(CRASHREPORT_URL "https://github.com/outfoxxed/quickshell/issues/new?template=crash2.yml" CACHE STRING "Bugreport URL")
+
 function(boption VAR NAME DEFAULT)
 	cmake_parse_arguments(PARSE_ARGV 3 arg "" "REQUIRES" "")
 
