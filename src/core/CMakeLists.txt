@@ -1,3 +1,4 @@
+pkg_check_modules(libdrm REQUIRED IMPORTED_TARGET libdrm)
 qt_add_library(quickshell-core STATIC
 	plugin.cpp
 	shell.cpp
@@ -54,7 +55,7 @@ qt_add_qml_module(quickshell-core
 
 install_qml_module(quickshell-core)
 
-target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::QuickPrivate Qt::Widgets quickshell-build)
+target_link_libraries(quickshell-core PRIVATE Qt::Quick Qt::QuickPrivate Qt::Widgets quickshell-build PkgConfig::libdrm)
 
 qs_module_pch(quickshell-core SET large)
 

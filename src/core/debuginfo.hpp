@@ -6,6 +6,7 @@ namespace qs::debuginfo {
 
 QString qsVersion();
 QString qtVersion();
+QString gpuInfo();
 QString systemInfo();
 QString combinedInfo();
 

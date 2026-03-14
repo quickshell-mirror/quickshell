@@ -33,6 +33,7 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `cmake`
 - `qt6base`
 - `qt6declarative`
+- `libdrm`
 - `qtshadertools` (build-time)
 - `spirv-tools` (build-time)
 - `pkg-config` (build-time)
@@ -146,7 +147,6 @@ Enables streaming video from monitors and toplevel windows through various proto
 To disable: `-DSCREENCOPY=OFF`
 
 Dependencies:
-- `libdrm`
 - `libgbm`
 - `vulkan-headers` (build-time)
 

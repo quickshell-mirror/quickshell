@@ -76,6 +76,7 @@
     buildInputs = [
       qt6.qtbase
       qt6.qtdeclarative
+      libdrm
       cli11
     ]
     ++ lib.optional withQtSvg qt6.qtsvg
@@ -88,7 +89,7 @@
     ++ lib.optional withJemalloc jemalloc
     ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
     ++ lib.optionals withWayland [ wayland wayland-protocols ]
-    ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm vulkan-headers ]
+    ++ lib.optionals (withWayland && libgbm != null) [ libgbm vulkan-headers ]
     ++ lib.optional withX11 libxcb
     ++ lib.optional withPam pam
     ++ lib.optional withPipewire pipewire
