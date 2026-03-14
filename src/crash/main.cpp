@@ -6,7 +6,6 @@
 #include <cpptrace/basic.hpp>
 #include <cpptrace/formatting.hpp>
 #include <qapplication.h>
-#include <qconfig.h>
 #include <qcoreapplication.h>
 #include <qdatastream.h>
 #include <qdir.h>
@@ -15,19 +14,18 @@
 #include <qloggingcategory.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
-#include <qtversion.h>
 #include <qtypes.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "../core/debuginfo.hpp"
 #include "../core/instanceinfo.hpp"
 #include "../core/logcat.hpp"
 #include "../core/logging.hpp"
 #include "../core/logging_p.hpp"
 #include "../core/paths.hpp"
 #include "../core/ringbuf.hpp"
-#include "build.hpp"
 #include "interface.hpp"
 
 namespace {
@@ -171,40 +169,14 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 			qCCritical(logCrashReporter) << "Failed to open crash info file for writing.";
 		} else {
 			auto stream = QTextStream(&extraInfoFile);
-			stream << "===== Build Information =====\n";
-			stream << "Git Revision: " << GIT_REVISION << '\n';
-			stream << "Buildtime Qt Version: " << QT_VERSION_STR << "\n";
-			stream << "Build Type: " << BUILD_TYPE << '\n';
-			stream << "Compiler: " << COMPILER << '\n';
-			stream << "Complie Flags: " << COMPILE_FLAGS << "\n\n";
-			stream << "Build configuration:\n" << BUILD_CONFIGURATION << "\n";
+			stream << qs::debuginfo::combinedInfo();
 
-			stream << "\n===== Runtime Information =====\n";
-			stream << "Runtime Qt Version: " << qVersion() << '\n';
+			stream << "\n===== Instance Information =====\n";
 			stream << "Signal: " << strsignal(crashSignal) << " (" << crashSignal << ")\n"; // NOLINT
 			stream << "Crashed process ID: " << crashProc << '\n';
 			stream << "Run ID: " << instance.instanceId << '\n';
 			stream << "Shell ID: " << instance.shellId << '\n';
 			stream << "Config Path: " << instance.configPath << '\n';
-
-			stream << "\n===== System Information =====\n\n";
-			stream << "/etc/os-release:";
-			auto osReleaseFile = QFile("/etc/os-release");
-			if (osReleaseFile.open(QFile::ReadOnly)) {
-				stream << '\n' << osReleaseFile.readAll() << '\n';
-				osReleaseFile.close();
-			} else {
-				stream << "FAILED TO OPEN\n";
-			}
-
-			stream << "/etc/lsb-release:";
-			auto lsbReleaseFile = QFile("/etc/lsb-release");
-			if (lsbReleaseFile.open(QFile::ReadOnly)) {
-				stream << '\n' << lsbReleaseFile.readAll();
-				lsbReleaseFile.close();
-			} else {
-				stream << "FAILED TO OPEN\n";
-			}
 
 			stream << "\n===== Stacktrace =====\n";
 			if (stacktrace.empty()) {

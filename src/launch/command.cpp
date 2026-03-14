@@ -25,12 +25,12 @@
 #include <qtversion.h>
 #include <unistd.h>
 
+#include "../core/debuginfo.hpp"
 #include "../core/instanceinfo.hpp"
 #include "../core/logging.hpp"
 #include "../core/paths.hpp"
 #include "../io/ipccomm.hpp"
 #include "../ipc/ipc.hpp"
-#include "build.hpp"
 #include "launch_p.hpp"
 
 namespace qs::launch {
@@ -519,20 +519,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote().nospace() << "quickshell " << QS_VERSION << ", revision "
-		                                    << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
-
-		if (state.log.verbosity > 1) {
-			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
-			qCInfo(logBare).noquote() << "Runtime Qt Version:" << qVersion();
-			qCInfo(logBare).noquote() << "Compiler:" << COMPILER;
-			qCInfo(logBare).noquote() << "Compile Flags:" << COMPILE_FLAGS;
-		}
-
-		if (state.log.verbosity > 0) {
-			qCInfo(logBare).noquote() << "\nBuild Type:" << BUILD_TYPE;
-			qCInfo(logBare).noquote() << "Build configuration:";
-			qCInfo(logBare).noquote().nospace() << BUILD_CONFIGURATION;
+		if (state.log.verbosity == 0) {
+			qCInfo(logBare).noquote() << "Quickshell" << qs::debuginfo::qsVersion();
+		} else {
+			qCInfo(logBare).noquote() << qs::debuginfo::combinedInfo();
 		}
 	} else if (*state.subcommand.log) {
 		return readLogFile(state);

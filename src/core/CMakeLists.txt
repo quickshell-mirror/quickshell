@@ -41,6 +41,7 @@ qt_add_library(quickshell-core STATIC
 	colorquantizer.cpp
 	toolsupport.cpp
 	streamreader.cpp
+	debuginfo.cpp
 )
 
 qt_add_qml_module(quickshell-core
