@@ -114,6 +114,9 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
+add_subdirectory(background_effect)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._BackgroundEffect)
+
 add_subdirectory(idle_inhibit)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleInhibitor)
 
