@@ -3,7 +3,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlengine.h>
-#include <qqmllist.h>
+#include <qqmlinfo.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qwindow.h>
@@ -17,6 +17,43 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setTitle(this->bTitle);
 	this->window->setMinimumSize(this->bMinimumSize);
 	this->window->setMaximumSize(this->bMaximumSize);
+}
+
+void ProxyFloatingWindow::postCompleteWindow() { this->updateTransientParent(); }
+
+void ProxyFloatingWindow::onParentDestroyed() {
+	this->mParentWindow = nullptr;
+	this->mParentProxyWindow = nullptr;
+	this->updateVisible();
+}
+
+void ProxyFloatingWindow::onParentUpdated() { this->updateTransientParent(); }
+
+void ProxyFloatingWindow::updateTransientParent() {
+	if (!this->window) return;
+
+	auto* bw = this->mParentProxyWindow ? this->mParentProxyWindow->backingWindow() : nullptr;
+
+	if (bw != this->window->transientParent()) {
+		this->window->setTransientParent(bw);
+	}
+
+	this->updateVisible();
+}
+
+void ProxyFloatingWindow::updateVisible() {
+	auto target = this->wantsVisible;
+
+	if (this->mParentProxyWindow) {
+		target = target && this->mParentProxyWindow->isVisibleDirect();
+	}
+
+	this->ProxyWindowBase::setVisible(target);
+}
+
+void ProxyFloatingWindow::setVisible(bool visible) {
+	this->wantsVisible = visible;
+	this->updateVisible();
 }
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
@@ -46,6 +83,48 @@ void ProxyFloatingWindow::onMaximumSizeChanged() {
 	emit this->maximumSizeChanged();
 }
 
+QObject* ProxyFloatingWindow::parentWindow() const { return this->mParentWindow; }
+
+void ProxyFloatingWindow::setParentWindow(QObject* window) {
+	if (window == this->mParentWindow) return;
+
+	if (this->window && this->window->isVisible()) {
+		qmlWarning(this) << "parentWindow cannot be changed after the window is visible.";
+		return;
+	}
+
+	if (this->mParentProxyWindow) {
+		QObject::disconnect(this->mParentProxyWindow, nullptr, this, nullptr);
+	}
+
+	if (this->mParentWindow) {
+		QObject::disconnect(this->mParentWindow, nullptr, this, nullptr);
+	}
+
+	this->mParentWindow = nullptr;
+	this->mParentProxyWindow = nullptr;
+
+	if (window) {
+		if (auto* proxy = qobject_cast<ProxyWindowBase*>(window)) {
+			this->mParentProxyWindow = proxy;
+		} else if (auto* iface = qobject_cast<WindowInterface*>(window)) {
+			this->mParentProxyWindow = iface->proxyWindow();
+		} else {
+			qmlWarning(this) << "parentWindow must be a quickshell window.";
+			return;
+		}
+
+		this->mParentWindow = window;
+
+		// clang-format off
+		QObject::connect(this->mParentWindow, &QObject::destroyed, this, &ProxyFloatingWindow::onParentDestroyed);
+		QObject::connect(this->mParentProxyWindow, &ProxyWindowBase::backerVisibilityChanged, this, &ProxyFloatingWindow::onParentUpdated);
+		// clang-format on
+	}
+
+	emit this->parentWindowChanged();
+}
+
 // FloatingWindowInterface
 
 FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
@@ -57,6 +136,7 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyFloatingWindow::titleChanged, this, &FloatingWindowInterface::titleChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::minimumSizeChanged, this, &FloatingWindowInterface::minimumSizeChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::maximumSizeChanged, this, &FloatingWindowInterface::maximumSizeChanged);
+	QObject::connect(this->window, &ProxyFloatingWindow::parentWindowChanged, this, &FloatingWindowInterface::parentWindowChanged);
 	QObject::connect(this->window, &ProxyWindowBase::windowConnected, this, &FloatingWindowInterface::onWindowConnected);
 	// clang-format on
 }
@@ -168,4 +248,10 @@ bool FloatingWindowInterface::startSystemResize(Qt::Edges edges) const {
 	auto* qw = this->window->backingWindow();
 	if (!qw) return false;
 	return qw->startSystemResize(edges);
+}
+
+QObject* FloatingWindowInterface::parentWindow() const { return this->window->parentWindow(); }
+
+void FloatingWindowInterface::setParentWindow(QObject* window) {
+	this->window->setParentWindow(window);
 }
