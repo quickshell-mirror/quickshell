@@ -4,6 +4,16 @@
 			<arg name="settings" type="a{sa{sv}}" direction="out"/>
     	<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConnectionSettingsMap"/>
     </method>
+    <method name="GetSecrets">
+			<arg name="setting_name" type="s" direction="in"/>
+			<arg name="secrets" type="a{sa{sv}}" direction="out"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConnectionSettingsMap"/>
+    </method>
+    <method name="Update">
+			<arg name="properties" type="a{sa{sv}}" direction="in"/>
+    	<annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConnectionSettingsMap"/>
+    </method>
+		<method name="ClearSecrets"/>
 		<method name="Delete"/>
     <signal name="Updated"/>
 		<signal name="Removed"/>

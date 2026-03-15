@@ -14,9 +14,10 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "../device.hpp"
-#include "connection.hpp"
+#include "../enums.hpp"
+#include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "settings.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -39,12 +40,21 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	}
 
 	// clang-format off
-	QObject::connect(this, &NMDevice::availableConnectionPathsChanged, this, &NMDevice::onAvailableConnectionPathsChanged);
+	QObject::connect(this, &NMDevice::availableSettingsPathsChanged, this, &NMDevice::onAvailableSettingsPathsChanged);
 	QObject::connect(this, &NMDevice::activeConnectionPathChanged, this, &NMDevice::onActiveConnectionPathChanged);
+	QObject::connect(this->deviceProxy, &DBusNMDeviceProxy::StateChanged, this, &NMDevice::onStateChanged);
 	// clang-format on
 
 	this->deviceProperties.setInterface(this->deviceProxy);
 	this->deviceProperties.updateAllViaGetAll();
+}
+
+void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 reason) {
+	auto enumReason = static_cast<NMDeviceStateReason::Enum>(reason);
+	auto enumNewState = static_cast<NMDeviceState::Enum>(newState);
+	if (enumNewState == NMDeviceState::Failed) this->bLastFailReason = enumReason;
+	if (this->bStateReason == enumReason) return;
+	this->bStateReason = enumReason;
 }
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
@@ -76,22 +86,22 @@ void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
 	}
 }
 
-void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths) {
+void NMDevice::onAvailableSettingsPathsChanged(const QList<QDBusObjectPath>& paths) {
 	QSet<QString> newPathSet;
 	for (const QDBusObjectPath& path: paths) {
 		newPathSet.insert(path.path());
 	}
-	const auto existingPaths = this->mConnections.keys();
+	const auto existingPaths = this->mSettings.keys();
 	const QSet<QString> existingPathSet(existingPaths.begin(), existingPaths.end());
 
-	const auto addedConnections = newPathSet - existingPathSet;
-	const auto removedConnections = existingPathSet - newPathSet;
+	const auto addedSettings = newPathSet - existingPathSet;
+	const auto removedSettings = existingPathSet - newPathSet;
 
-	for (const QString& path: addedConnections) {
-		this->registerConnection(path);
+	for (const QString& path: addedSettings) {
+		this->registerSettings(path);
 	}
-	for (const QString& path: removedConnections) {
-		auto* connection = this->mConnections.take(path);
+	for (const QString& path: removedSettings) {
+		auto* connection = this->mSettings.take(path);
 		if (!connection) {
 			qCDebug(logNetworkManager) << "Sent removal signal for" << path << "which is not registered.";
 		} else {
@@ -100,18 +110,18 @@ void NMDevice::onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& p
 	};
 }
 
-void NMDevice::registerConnection(const QString& path) {
-	auto* connection = new NMConnectionSettings(path, this);
-	if (!connection->isValid()) {
+void NMDevice::registerSettings(const QString& path) {
+	auto* settings = new NMSettings(path, this);
+	if (!settings->isValid()) {
 		qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
-		delete connection;
+		delete settings;
 	} else {
-		this->mConnections.insert(path, connection);
+		this->mSettings.insert(path, settings);
 		QObject::connect(
-		    connection,
-		    &NMConnectionSettings::loaded,
+		    settings,
+		    &NMSettings::loaded,
 		    this,
-		    [this, connection]() { emit this->connectionLoaded(connection); },
+		    [this, settings]() { emit this->settingsLoaded(settings); },
 		    Qt::SingleShotConnection
 		);
 	}
@@ -123,6 +133,12 @@ void NMDevice::setAutoconnect(bool autoconnect) {
 	if (autoconnect == this->bAutoconnect) return;
 	this->bAutoconnect = autoconnect;
 	this->pAutoconnect.write();
+}
+
+void NMDevice::setManaged(bool managed) {
+	if (managed == this->bManaged) return;
+	this->bManaged = managed;
+	this->pManaged.write();
 }
 
 bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }

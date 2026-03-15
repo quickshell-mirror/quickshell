@@ -6,67 +6,9 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "enums.hpp"
+
 namespace qs::network {
-
-///! Connection state of a NetworkDevice.
-class DeviceConnectionState: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Connecting = 1,
-		Connected = 2,
-		Disconnecting = 3,
-		Disconnected = 4,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(DeviceConnectionState::Enum state);
-};
-
-///! Type of network device.
-class DeviceType: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		None = 0,
-		Wifi = 1,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(DeviceType::Enum type);
-};
-
-///! NetworkManager-specific device state.
-/// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceState.
-class NMDeviceState: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Unmanaged = 10,
-		Unavailable = 20,
-		Disconnected = 30,
-		Prepare = 40,
-		Config = 50,
-		NeedAuth = 60,
-		IPConfig = 70,
-		IPCheck = 80,
-		Secondaries = 90,
-		Activated = 100,
-		Deactivating = 110,
-		Failed = 120,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NMDeviceState::Enum state);
-};
 
 ///! A network device.
 /// When @@type is `Wifi`, the device is a @@WifiDevice, which can be used to scan for and connect to access points.
@@ -85,9 +27,19 @@ class NetworkDevice: public QObject {
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 	/// Connection state of the device.
 	Q_PROPERTY(qs::network::DeviceConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
-	/// A more specific device state when the backend is NetworkManager.
-	Q_PROPERTY(qs::network::NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
-	/// True if the device is allowed to autoconnect.
+	/// A more specific device state.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend. 
+	Q_PROPERTY(NMDeviceState::Enum nmState READ default NOTIFY nmStateChanged BINDABLE bindableNmState);
+	/// A reason for the @@nmState of the device.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_PROPERTY(NMDeviceStateReason::Enum nmStateReason READ default NOTIFY nmStateReasonChanged BINDABLE bindableNmStateReason);
+	/// True if the device is managed by NetworkManager.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_PROPERTY(bool nmManaged READ nmManaged WRITE setNmManaged NOTIFY nmManagedChanged)
+	/// True if the device is allowed to autoconnect to a network.
 	Q_PROPERTY(bool autoconnect READ autoconnect WRITE setAutoconnect NOTIFY autoconnectChanged);
 	// clang-format on
 
@@ -104,18 +56,25 @@ public:
 	QBindable<bool> bindableConnected() { return &this->bConnected; };
 	QBindable<DeviceConnectionState::Enum> bindableState() { return &this->bState; };
 	QBindable<NMDeviceState::Enum> bindableNmState() { return &this->bNmState; };
-	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
+	QBindable<NMDeviceStateReason::Enum> bindableNmStateReason() { return &this->bNmStateReason; };
+	QBindable<bool> bindableNmManaged() { return &this->bNmManaged; };
+	[[nodiscard]] bool nmManaged() { return this->bNmManaged; };
+	void setNmManaged(bool managed);
 	QBindable<bool> bindableAutoconnect() { return &this->bAutoconnect; };
+	[[nodiscard]] bool autoconnect() { return this->bAutoconnect; };
 	void setAutoconnect(bool autoconnect);
 
 signals:
 	void requestDisconnect();
 	void requestSetAutoconnect(bool autoconnect);
+	void requestSetNmManaged(bool managed);
 	void nameChanged();
 	void addressChanged();
 	void connectedChanged();
 	void stateChanged();
 	void nmStateChanged();
+	void nmStateReasonChanged();
+	void nmManagedChanged();
 	void autoconnectChanged();
 
 private:
@@ -126,6 +85,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bConnected, &NetworkDevice::connectedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, DeviceConnectionState::Enum, bState, &NetworkDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceState::Enum, bNmState, &NetworkDevice::nmStateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, NMDeviceStateReason::Enum, bNmStateReason, &NetworkDevice::nmStateReasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bNmManaged, &NetworkDevice::nmManagedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bAutoconnect, &NetworkDevice::autoconnectChanged);
 	// clang-format on
 };
