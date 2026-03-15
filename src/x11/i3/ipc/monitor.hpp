@@ -82,6 +82,8 @@ signals:
 private:
 	I3IpcController* ipc;
 
+	void onActiveWorkspaceDestroyed();
+
 	QVariantMap mLastIpcObject;
 
 	// clang-format off
