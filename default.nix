@@ -46,6 +46,7 @@
   withWayland ? true,
   withX11 ? true,
   withPipewire ? true,
+  withOSS ? false,
   withPam ? true,
   withHyprland ? true,
   withI3 ? true,
@@ -107,6 +108,7 @@
       (lib.cmakeBool "WAYLAND" withWayland)
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
+      (lib.cmakeBool "SERVICE_OSS" withOSS)
       (lib.cmakeBool "SERVICE_PAM" withPam)
       (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
       (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
