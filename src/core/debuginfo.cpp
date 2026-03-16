@@ -1,4 +1,7 @@
 #include "debuginfo.hpp"
+#include <array>
+#include <cstring>
+#include <string_view>
 
 #include <fcntl.h>
 #include <qconfig.h>
@@ -13,6 +16,8 @@
 #include <xf86drm.h>
 
 #include "build.hpp"
+
+extern char** environ; // NOLINT
 
 namespace qs::debuginfo {
 
@@ -119,6 +124,31 @@ QString systemInfo() {
 	return info;
 }
 
+QString envInfo() {
+	QString info;
+	auto stream = QTextStream(&info);
+
+	for (auto** envp = environ; *envp != nullptr; ++envp) { // NOLINT
+		auto prefixes = std::array<std::string_view, 5> {
+		    "QS_",
+		    "QT_",
+		    "QML_",
+		    "QML2_",
+		    "QSG_",
+		};
+
+		for (const auto& prefix: prefixes) {
+			if (strncmp(prefix.data(), *envp, prefix.length()) == 0) goto print;
+		}
+		continue;
+
+	print:
+		stream << *envp << '\n';
+	}
+
+	return info;
+}
+
 QString combinedInfo() {
 	QString info;
 	auto stream = QTextStream(&info);
@@ -135,6 +165,9 @@ QString combinedInfo() {
 
 	stream << "\n===== System Information =====\n";
 	stream << systemInfo();
+
+	stream << "\n===== Environment (trimmed) =====\n";
+	stream << envInfo();
 
 	return info;
 }

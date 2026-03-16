@@ -8,6 +8,7 @@ QString qsVersion();
 QString qtVersion();
 QString gpuInfo();
 QString systemInfo();
+QString envInfo();
 QString combinedInfo();
 
 } // namespace qs::debuginfo
