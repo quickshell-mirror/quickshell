@@ -17,6 +17,7 @@
 #include <qvariant.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 #include <qwindow.h>
+#include <wayland-xdg-shell-client-protocol.h>
 
 #include "../../window/panelinterface.hpp"
 #include "shell_integration.hpp"
@@ -247,9 +248,19 @@ void LayerSurface::commit() {
 }
 
 void LayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {
-	std::any role = popup->surfaceRole();
-
-	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) { // NOLINT
+#ifdef __FreeBSD__
+	// FreeBSD uses an alternate RTTI matching strategy by default which does
+	// not work across modules, preventing std::any from downcasting. On
+	// FreeBSD, Qt is built with a patch to expose the surface role through a
+	// pointer instead of an any, which does not have this problem.
+	// See https://bugs.kde.org/show_bug.cgi?id=479679
+	if (auto* xdgPopup = static_cast<::xdg_popup*>(popup->nativeResource("xdg_popup"))) {
+		this->get_popup(xdgPopup);
+		return;
+	}
+#endif
+	auto role = popup->surfaceRole(); // NOLINT
+	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) {
 		this->get_popup(*popupRole);
 	} else {
 		qWarning() << "Cannot attach popup" << popup << "to shell surface" << this
