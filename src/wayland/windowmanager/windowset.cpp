@@ -8,9 +8,9 @@
 #include <qobjectdefs.h>
 #include <qproperty.h>
 
+#include "../../windowmanager/screenprojection.hpp"
 #include "../../windowmanager/windowmanager.hpp"
 #include "../../windowmanager/windowset.hpp"
-#include "../../windowmanager/screenprojection.hpp"
 #include "ext_workspace.hpp"
 
 namespace qs::wm::wayland {

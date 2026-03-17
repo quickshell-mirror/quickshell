@@ -58,6 +58,7 @@ set shell id.
 - Fixed ToplevelManager not clearing activeToplevel on deactivation.
 - Desktop action order is now preserved.
 - Fixed partial socket reads in greetd and hyprland on slow machines.
+- Worked around Qt bug causing crashes when plugging and unplugging monitors.
 
 ## Packaging Changes
 
