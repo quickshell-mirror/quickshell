@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <utility>
 
 #include <qcontainerfwd.h>
@@ -39,7 +40,15 @@ struct ParsedDesktopEntryData {
 	QString execString;
 	QVector<QString> command;
 	QString workingDirectory;
-	bool terminal = false;
+	bool runInTerminal = false;
+	QString tryExec;
+	struct {
+		std::optional<QString> execArg;
+		QString appIdArg;
+		QString titleArg;
+		QString dirArg;
+		QString holdArg;
+	} terminal;
 	QVector<QString> categories;
 	QVector<QString> keywords;
 	QHash<QString, QString> entries;
@@ -94,9 +103,15 @@ public:
 	static ParsedDesktopEntryData parseText(const QString& id, const QString& text);
 	void updateState(const ParsedDesktopEntryData& newState);
 
-	/// Run the application. Currently ignores @@runInTerminal and field codes.
+	/// Run the application. Currently ignores field codes (%f, %u, %F, %U, etc encoded in @@command).
 	///
-	/// This is equivalent to calling @@Quickshell.Quickshell.execDetached() with @@command
+	/// When @@runInTerminal is true, a suitable terminal emulator resolved via
+	/// the [xdg-terminal-exec] strict mode algorithm is spawned, with @@command,
+	/// ID (@@startupClass, or if it is not set, @@id), @@name and @@workingDirectory
+	/// passed in as arguments.
+	///
+	/// When @@runInTerminal is false, this is equivalent to calling
+	/// @@Quickshell.Quickshell.execDetached() with @@command
 	/// and @@DesktopEntry.workingDirectory as shown below:
 	///
 	/// ```qml
@@ -105,6 +120,8 @@ public:
 	///   workingDirectory: desktopEntry.workingDirectory,
 	/// });
 	/// ```
+	///
+	/// [xdg-terminal-exec]: https://github.com/Vladimir-csp/xdg-terminal-exec
 	Q_INVOKABLE void execute() const;
 
 	[[nodiscard]] bool isValid() const;
@@ -127,9 +144,19 @@ public:
 	}
 	[[nodiscard]] QBindable<QVector<QString>> bindableKeywords() const { return &this->bKeywords; }
 
-	// currently ignores all field codes.
+	struct DoExecTerminal {
+		bool enabled;
+		QString appId;
+		QString title;
+	};
+
+	// currently ignores all field codes (%f, %u, %F, %U, etc).
 	static QVector<QString> parseExecString(const QString& execString);
-	static void doExec(const QList<QString>& execString, const QString& workingDirectory);
+	static void doExec(
+	    const QList<QString>& execString,
+	    const QString& workingDirectory,
+	    const DoExecTerminal& terminal = {}
+	);
 
 signals:
 	void nameChanged();
@@ -162,6 +189,16 @@ public:
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bCategories, &DesktopEntry::categoriesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QVector<QString>, bKeywords, &DesktopEntry::keywordsChanged);
 	// clang-format on
+
+	// TODO: Expose as bindable.
+	QString tryExec;
+	struct {
+		std::optional<QString> execArg;
+		QString appIdArg;
+		QString titleArg;
+		QString dirArg;
+		QString holdArg;
+	} terminal;
 
 private:
 	void updateActions(const QVector<DesktopActionData>& newActions);
@@ -202,10 +239,7 @@ public:
 	    , entry(entry)
 	    , mId(std::move(id)) {}
 
-	/// Run the application. Currently ignores @@DesktopEntry.runInTerminal and field codes.
-	///
-	/// This is equivalent to calling @@Quickshell.Quickshell.execDetached() with @@command
-	/// and @@DesktopEntry.workingDirectory.
+	/// Run the action. See @@DesktopEntry.execute() for details on terminal handling.
 	Q_INVOKABLE void execute() const;
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
@@ -232,6 +266,7 @@ private:
 	// clang-format on
 
 	friend class DesktopEntry;
+	friend class DesktopEntryManager;
 };
 
 class DesktopEntryManager;
@@ -274,13 +309,25 @@ private slots:
 private:
 	explicit DesktopEntryManager();
 
+	struct ResolvedTerminal {
+		QVector<QString> command;
+		QString tryExec;
+		QString execArg;
+		QString appIdArg;
+		QString titleArg;
+		QString dirArg;
+		QString holdArg;
+	};
+
 	QHash<QString, DesktopEntry*> desktopEntries;
 	QHash<QString, DesktopEntry*> lowercaseDesktopEntries;
 	ObjectModel<DesktopEntry> mApplications {this};
+	QVector<ResolvedTerminal> resolvedTerminals;
 	DesktopEntryMonitor* monitor = nullptr;
 	bool scanInProgress = false;
 	bool scanQueued = false;
 
+	friend class DesktopEntry;
 	friend class DesktopEntryScanner;
 };
 
