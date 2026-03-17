@@ -9,21 +9,21 @@ body:
       description: |
         Any information likely to help debug the crash. What were you doing when the crash occurred,
         what changes did you make, can you get it to happen again?
-  - type: textarea
+  - type: upload
     id: report
     attributes:
       label: Report file
       description: Attach `report.txt` here.
     validations:
         required: true
-  - type: textarea
+  - type: upload
     id: logs
     attributes:
       label: Log file
       description: |
         Attach `log.qslog.log` here. If it is too big to upload, compress it.
 
-        You can preview the log if you'd like using `quickshell read-log <path-to-log>`.
+        You can preview the log if you'd like using `qs log <path-to-log> -r '*=true'`.
     validations:
         required: true
   - type: textarea
@@ -31,7 +31,7 @@ body:
     attributes:
       label: Configuration
       description: |
-        Attach your configuration here, preferrably in full (not just one file).
+        Attach or link your configuration here, preferrably in full (not just one file).
         Compress it into a zip, tar, etc.
 
         This will help us reproduce the crash ourselves.

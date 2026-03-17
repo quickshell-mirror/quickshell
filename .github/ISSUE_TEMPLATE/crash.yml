@@ -1,82 +1,17 @@
 name: Crash Report (v1)
-description: Quickshell has crashed
-labels: ["bug", "crash"]
+description: Quickshell has crashed (old)
+labels: ["unactionable"]
 body:
-  - type: textarea
-    id: crashinfo
+  - type: markdown
     attributes:
-      label: General crash information
-      description: |
-        Paste the contents of the `info.txt` file in your crash folder here.
-      value: "<details> <summary>General information</summary>
-
-
-        ```
-
-        <Paste the contents of the file here inside of the triple backticks>
-
-        ```
-
-
-        </details>"
-    validations:
-        required: true
-  - type: textarea
-    id: userinfo
+      value: |
+        Thank you for taking the time to click the report button.
+        At this point most of the worst issues in 0.2.1 and before have been fixed and we are
+        preparing for a new release. Please do not submit this report.
+  - type: checkboxes
+    id: donotcheck
     attributes:
-      label: What caused the crash
-      description: |
-        Any information likely to help debug the crash. What were you doing when the crash occurred,
-        what changes did you make, can you get it to happen again?
-  - type: textarea
-    id: dump
-    attributes:
-      label: Minidump
-      description: |
-        Attach `minidump.dmp.log` here. If it is too big to upload, compress it.
-
-        You may skip this step if quickshell crashed while processing a password
-        or other sensitive information. If you skipped it write why instead.
-    validations:
-        required: true
-  - type: textarea
-    id: logs
-    attributes:
-      label: Log file
-      description: |
-        Attach `log.qslog.log` here. If it is too big to upload, compress it.
-
-        You can preview the log if you'd like using `quickshell read-log <path-to-log>`.
-    validations:
-        required: true
-  - type: textarea
-    id: config
-    attributes:
-      label: Configuration
-      description: |
-        Attach your configuration here, preferrably in full (not just one file).
-        Compress it into a zip, tar, etc.
-
-        This will help us reproduce the crash ourselves.
-  - type: textarea
-    id: bt
-    attributes:
-      label: Backtrace
-      description: |
-        If you have gdb installed and use systemd, or otherwise know how to get a backtrace,
-        we would appreciate one. (You may have gdb installed without knowing it)
-
-        1. Run `coredumpctl debug <pid>` where `pid` is the number shown after "Crashed process ID"
-        in the crash reporter.
-        2. Once it loads, type `bt -full` (then enter)
-        3. Copy the output and attach it as a file or in a spoiler.
-  - type: textarea
-    id: exe
-    attributes:
-      label: Executable
-      description: |
-        If the crash folder contains a executable.txt file, upload it here. If not you can ignore this field.
-        If it is too big to upload, compress it.
-
-        Note: executable.txt is the quickshell binary. It has a .txt extension due to github's limitations on
-        filetypes.
+      label: Read the text above. Do not submit the report.
+      options:
+        - label: Yes I want this report to be deleted.
+          required: true

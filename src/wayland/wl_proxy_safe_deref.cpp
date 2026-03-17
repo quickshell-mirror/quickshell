@@ -1,4 +1,3 @@
-
 #include <dlfcn.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
