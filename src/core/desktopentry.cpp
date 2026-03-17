@@ -15,6 +15,7 @@
 #include <qpair.h>
 #include <qproperty.h>
 #include <qscopeguard.h>
+#include <qstandardpaths.h>
 #include <qtenvironmentvariables.h>
 #include <qthreadpool.h>
 #include <qtmetamacros.h>
@@ -128,8 +129,18 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				else if (key == "Exec") {
 					data.execString = value;
 					data.command = DesktopEntry::parseExecString(value);
-				} else if (key == "Path") data.workingDirectory = value;
-				else if (key == "Terminal") data.terminal = value == "true";
+				} else if (key == "TryExec") data.tryExec = value;
+				else if (key == "Path") data.workingDirectory = value;
+				else if (key == "Terminal") data.runInTerminal = value == "true";
+				else if (key == "X-TerminalArgExec" || key == "TerminalArgExec")
+					data.terminal.execArg = value;
+				else if (key == "X-TerminalArgAppId" || key == "TerminalArgAppId")
+					data.terminal.appIdArg = value;
+				else if (key == "X-TerminalArgTitle" || key == "TerminalArgTitle")
+					data.terminal.titleArg = value;
+				else if (key == "X-TerminalArgDir" || key == "TerminalArgDir") data.terminal.dirArg = value;
+				else if (key == "X-TerminalArgHold" || key == "TerminalArgHold")
+					data.terminal.holdArg = value;
 				else if (key == "Categories") data.categories = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Keywords") data.keywords = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Actions") actionOrder = value.split(u';', Qt::SkipEmptyParts);
@@ -218,10 +229,20 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 	this->bExecString = newState.execString;
 	this->bCommand = newState.command;
 	this->bWorkingDirectory = newState.workingDirectory;
-	this->bRunInTerminal = newState.terminal;
+	this->bRunInTerminal = newState.runInTerminal;
 	this->bCategories = newState.categories;
 	this->bKeywords = newState.keywords;
 	Qt::endPropertyUpdateGroup();
+
+	this->tryExec = newState.tryExec;
+	this->sourcePriority = newState.sourcePriority;
+	this->terminal = {
+	    .execArg = newState.terminal.execArg,
+	    .appIdArg = newState.terminal.appIdArg,
+	    .titleArg = newState.terminal.titleArg,
+	    .dirArg = newState.terminal.dirArg,
+	    .holdArg = newState.terminal.holdArg,
+	};
 
 	this->state = newState;
 	this->updateActions(newState.actions);
@@ -258,7 +279,15 @@ void DesktopEntry::updateActions(const QVector<DesktopActionData>& newActions) {
 }
 
 void DesktopEntry::execute() const {
-	DesktopEntry::doExec(this->bCommand.value(), this->bWorkingDirectory.value());
+	DesktopEntry::doExec(
+	    this->bCommand.value(),
+	    this->bWorkingDirectory.value(),
+	    {
+	        .enabled = this->bRunInTerminal.value(),
+	        .appId = this->bStartupClass.value().isEmpty() ? this->mId : this->bStartupClass.value(),
+	        .title = this->bName.value(),
+	    }
+	);
 }
 
 bool DesktopEntry::isValid() const { return !this->bName.value().isEmpty(); }
@@ -335,15 +364,87 @@ QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 	return arguments;
 }
 
-void DesktopEntry::doExec(const QList<QString>& execString, const QString& workingDirectory) {
+void DesktopEntry::doExec(
+    const QList<QString>& execString,
+    const QString& workingDirectory,
+    const DoExecTerminal& terminal
+) {
+	auto command = execString;
+
+	if (terminal.enabled) {
+		auto* manager = DesktopEntryManager::instance();
+		auto found = false;
+
+		for (const auto& term: manager->resolvedTerminals) {
+			if (!term.tryExec.isEmpty() && QStandardPaths::findExecutable(term.tryExec).isEmpty()) {
+				qCWarning(logDesktopEntry) << "Terminal" << term.command.first() << "TryExec"
+				                           << term.tryExec << "not found in PATH (skipping)";
+				continue;
+			}
+
+			if (term.command.isEmpty() || QStandardPaths::findExecutable(term.command.first()).isEmpty())
+			{
+				qCWarning(logDesktopEntry)
+				    << "Terminal executable" << (term.command.isEmpty() ? "(empty)" : term.command.first())
+				    << "not found in PATH (skipping)";
+				continue;
+			}
+
+			command = QList<QString>();
+			command.append(term.command);
+
+			auto appendTermArg = [&command](const QString& arg, const QString& value) {
+				if (arg.isEmpty() || value.isEmpty()) return;
+				if (arg.endsWith('=')) {
+					command.append(arg + value);
+				} else {
+					command.append(arg);
+					command.append(value);
+				}
+			};
+
+			appendTermArg(term.appIdArg, terminal.appId);
+			appendTermArg(term.titleArg, terminal.title);
+			appendTermArg(term.dirArg, workingDirectory);
+
+			// Do not append the exec argumnet (the "-e" in ghostty -e bash) if it is empty.
+			//
+			// If we don't add a check & the exec argument doesn't exist,
+			// arguments would look like ["termemulator", "", "hx", "a.cpp", "a.hpp"],
+			// which is not desired.
+			if (!term.execArg.isEmpty()) command.append(term.execArg);
+			command.append(
+			    execString
+			); // This is a special(ly stupid) overload in QList. Think of it as Rust's `Vec::extend`.
+
+			qCDebug(logDesktopEntry) << "Using terminal emulator:" << term.command.first();
+			found = true;
+			break;
+		}
+
+		if (!found) {
+			qCWarning(logDesktopEntry) << "No terminal emulator found; refusing to run without terminal.";
+			return;
+		}
+	}
+
 	qs::io::process::ProcessContext ctx;
-	ctx.setCommand(execString);
+	ctx.setCommand(command);
 	ctx.setWorkingDirectory(workingDirectory);
 	QuickshellGlobal::execDetached(ctx);
 }
 
 void DesktopAction::execute() const {
-	DesktopEntry::doExec(this->bCommand.value(), this->entry->bWorkingDirectory.value());
+	auto* e = this->entry;
+	DesktopEntry::doExec(
+	    this->bCommand.value(),
+	    e->bWorkingDirectory.value(),
+	    {
+	        .enabled = e->bRunInTerminal.value(),
+	        .appId = e->bStartupClass.value().isEmpty() ? e->mId : e->bStartupClass.value(),
+	        .title = e->bName.value(),
+	    }
+	);
 }
 
 DesktopEntryScanner::DesktopEntryScanner(DesktopEntryManager* manager): manager(manager) {
@@ -354,11 +455,14 @@ void DesktopEntryScanner::run() {
 	const auto& desktopPaths = DesktopEntryManager::desktopPaths();
 	auto scanResults = QList<ParsedDesktopEntryData>();
 
+	auto sourcePriority = desktopPaths.size();
 	for (const auto& path: desktopPaths | std::views::reverse) {
+		--sourcePriority; // Can't use std::views::enumerate, boo hoo.
+
 		auto file = QFileInfo(path);
 		if (!file.isDir()) continue;
 
-		this->scanDirectory(QDir(path), QString(), scanResults);
+		this->scanDirectory(QDir(path), QString(), scanResults, static_cast<int>(sourcePriority));
 	}
 
 	QMetaObject::invokeMethod(
@@ -372,14 +476,15 @@ void DesktopEntryScanner::run() {
 void DesktopEntryScanner::scanDirectory(
     const QDir& dir,
     const QString& idPrefix,
-    QList<ParsedDesktopEntryData>& entries
+    QList<ParsedDesktopEntryData>& entries,
+    int sourcePriority
 ) {
 	auto dirEntries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
 	for (auto& entry: dirEntries) {
 		if (entry.isDir()) {
 			auto subdirPrefix = idPrefix.isEmpty() ? entry.fileName() : idPrefix + '-' + entry.fileName();
-			this->scanDirectory(QDir(entry.absoluteFilePath()), subdirPrefix, entries);
+			this->scanDirectory(QDir(entry.absoluteFilePath()), subdirPrefix, entries, sourcePriority);
 		} else if (entry.isFile()) {
 			auto path = entry.filePath();
 			if (!path.endsWith(".desktop")) {
@@ -398,6 +503,7 @@ void DesktopEntryScanner::scanDirectory(
 			auto content = QString::fromUtf8(file.readAll());
 
 			auto data = DesktopEntry::parseText(id, content);
+			data.sourcePriority = sourcePriority;
 			entries.append(std::move(data));
 		}
 	}
@@ -582,6 +688,231 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 		if (!entry->bNoDisplay) newApplications.append(entry);
 
 	this->mApplications.diffUpdate(newApplications);
+
+	// Resolve terminal emulators via xdg-terminal-exec strict mode algorithm.
+	{
+		this->resolvedTerminals.clear();
+
+		struct ConfigEntry {
+			QString id;
+			QString action;
+		};
+		enum class ConfigLineType { Explicit, Exclude, Protect };
+
+		auto configEntries = QVector<ConfigEntry>();
+		auto seenExplicitIds = QSet<QString>();
+		auto excludedIds = QSet<QString>();
+		auto seenFallbackDirectiveIds = QSet<QString>();
+
+		// Collect config dirs in priority order.
+		auto configDirs = QStringList();
+		{
+			auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
+			if (configHome.isEmpty() && qEnvironmentVariableIsSet("HOME"))
+				configHome = qEnvironmentVariable("HOME") + "/.config";
+			if (!configHome.isEmpty()) configDirs.append(configHome);
+
+			auto configDirsStr = qEnvironmentVariable("XDG_CONFIG_DIRS");
+			if (configDirsStr.isEmpty()) configDirsStr = "/etc/xdg";
+			for (const auto& dir: configDirsStr.split(':', Qt::SkipEmptyParts)) configDirs.append(dir);
+
+			auto dataDirs = qEnvironmentVariable("XDG_DATA_DIRS");
+			if (dataDirs.isEmpty()) dataDirs = "/usr/local/share:/usr/share";
+			for (const auto& dir: dataDirs.split(':', Qt::SkipEmptyParts))
+				configDirs.append(dir + "/xdg-terminal-exec");
+		}
+
+		auto parseConfigFile = [&](const QString& path) {
+			auto isValidConfigEntryId = [](const QString& id) {
+				if (!id.endsWith(".desktop") || id == ".desktop") return false;
+
+				return std::ranges::all_of(id, [](QChar c) {
+					auto u = c.unicode();
+					return (u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z') || (u >= '0' && u <= '9')
+					    || u == '_' || u == '.' || u == '-';
+				});
+			};
+			auto isValidConfigActionId = [](const QString& id) {
+				return std::ranges::all_of(id, [](QChar c) {
+					auto u = c.unicode();
+					return (u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z') || (u >= '0' && u <= '9')
+					    || u == '-';
+				});
+			};
+
+			auto file = QFile(path);
+			if (!file.open(QFile::ReadOnly | QFile::Text)) return;
+
+			qCDebug(logDesktopEntry) << "Reading terminal config:" << path;
+			auto content = QString::fromUtf8(file.readAll());
+
+			for (const auto& rawLine: content.split('\n', Qt::SkipEmptyParts)) {
+				auto line = rawLine.trimmed();
+				if (line.isEmpty() || line.startsWith('#') || line.startsWith('/')) continue;
+
+				auto type = ConfigLineType::Explicit;
+				auto target = line;
+
+				if (target.startsWith('-')) {
+					type = ConfigLineType::Exclude;
+					target = target.mid(1);
+				} else if (target.startsWith('+')) {
+					type = ConfigLineType::Protect;
+					target = target.mid(1);
+				}
+
+				auto desktopFileId = target;
+				auto actionId = QString();
+				auto colonIdx = target.indexOf(':');
+				if (colonIdx != -1) {
+					actionId = target.mid(colonIdx + 1);
+					desktopFileId = target.left(colonIdx);
+				}
+
+				if (!isValidConfigEntryId(desktopFileId) || !isValidConfigActionId(actionId)) {
+					qCWarning(logDesktopEntry) << "Discarding invalid terminal config entry:" << line;
+					continue;
+				}
+
+				auto entryId = desktopFileId.chopped(8);
+
+				if (type == ConfigLineType::Exclude || type == ConfigLineType::Protect) {
+					if (seenFallbackDirectiveIds.contains(entryId)) continue;
+					seenFallbackDirectiveIds.insert(entryId);
+					if (type == ConfigLineType::Exclude) excludedIds.insert(entryId);
+					continue;
+				}
+
+				if (seenExplicitIds.contains(entryId)) continue;
+				seenExplicitIds.insert(entryId);
+
+				configEntries.append({
+				    .id = entryId,
+				    .action = actionId,
+				});
+			}
+		};
+
+		for (const auto& dir: configDirs) {
+			for (const auto& name: desktopNames)
+				parseConfigFile(dir + "/" + name.toLower() + "-xdg-terminals.list");
+			parseConfigFile(dir + "/xdg-terminals.list");
+		}
+
+		// Expand escape sequences in X-TerminalArg* values (\s \n \t \r \\).
+		auto expandEscapes = [](const QString& value) {
+			QString result;
+			result.reserve(value.size());
+			auto escape = false;
+
+			for (auto c: value) {
+				if (escape) {
+					switch (c.unicode()) {
+					case 's': result += u' '; break;
+					case 'n': result += u'\n'; break;
+					case 't': result += u'\t'; break;
+					case 'r': result += u'\r'; break;
+					case '\\': result += u'\\'; break;
+					default:
+						qCWarning(logDesktopEntry).noquote()
+						    << "Illegal escape sequence in desktop entry terminal arg:" << value;
+						result += c;
+						break;
+					}
+					escape = false;
+				} else if (c == u'\\') {
+					escape = true;
+				} else {
+					result += c;
+				}
+			}
+
+			return result;
+		};
+
+		auto termWarn = [](const QString& id, const char* reason) {
+			qCWarning(logDesktopEntry) << "Terminal" << id << reason << "(skipping)";
+		};
+		auto termDebug = [](const QString& id, const char* reason) {
+			qCDebug(logDesktopEntry) << "Terminal" << id << reason << "(skipping)";
+		};
+
+		// Scan-time validation: structural checks only, no PATH lookups.
+		auto isValidTerminal = [](const DesktopEntry* entry, auto&& log) -> bool {
+			if (!entry->bCategories.value().contains("TerminalEmulator")) {
+				log(entry->mId, "missing TerminalEmulator category");
+				return false;
+			}
+			if (entry->bCommand.value().isEmpty()) {
+				log(entry->mId, "has empty Exec command");
+				return false;
+			}
+			if (!entry->terminal.execArg.has_value()) {
+				log(entry->mId, "missing [X-]TerminalArgExec");
+				return false;
+			}
+			return true;
+		};
+
+		auto addResolved =
+		    [this, &expandEscapes](const DesktopEntry* entry, const QVector<QString>& command) {
+			    this->resolvedTerminals.append({
+			        .command = command,
+			        .tryExec = entry->tryExec,
+			        .execArg = expandEscapes(entry->terminal.execArg.value()),
+			        .appIdArg = expandEscapes(entry->terminal.appIdArg),
+			        .titleArg = expandEscapes(entry->terminal.titleArg),
+			        .dirArg = expandEscapes(entry->terminal.dirArg),
+			        .holdArg = expandEscapes(entry->terminal.holdArg),
+			    });
+		    };
+
+		// Explicit phase: config entries in priority order.
+		for (const auto& configEntry: configEntries) {
+			auto* dentry = this->desktopEntries.value(configEntry.id);
+			if (!dentry) {
+				qCWarning(logDesktopEntry)
+				    << "Terminal" << configEntry.id
+				    << "not found in desktop entries (instructed from xdg-terminals.list)";
+				continue;
+			}
+			if (!isValidTerminal(dentry, termWarn)) continue;
+
+			auto command = dentry->bCommand.value();
+			if (!configEntry.action.isEmpty()) {
+				auto actions = dentry->actions();
+				auto action = std::ranges::find(actions, configEntry.action, &DesktopAction::mId);
+				if (action == actions.end()) {
+					qCWarning(logDesktopEntry)
+					    << "Terminal entry" << configEntry.id << "no action named" << configEntry.action;
+					continue;
+				}
+				command = (*action)->bCommand.value();
+			}
+
+			addResolved(dentry, command);
+			qCDebug(logDesktopEntry) << "Terminal candidate (explicit):" << dentry->mId;
+		}
+
+		// Fallback phase: remaining TerminalEmulator entries. Preserve XDG data-dir
+		// priority, sort by ID only where the spec leaves order undefined.
+		auto fallbackEntries = this->desktopEntries.values();
+		std::ranges::sort(fallbackEntries, [](const DesktopEntry* a, const DesktopEntry* b) {
+			if (a->sourcePriority != b->sourcePriority) return a->sourcePriority < b->sourcePriority;
+			return a->mId < b->mId;
+		});
+		for (auto* entry: fallbackEntries) {
+			if (seenExplicitIds.contains(entry->mId)) continue;
+			if (!isValidTerminal(entry, termDebug)) continue;
+			if (excludedIds.contains(entry->mId)) continue;
+
+			addResolved(entry, entry->bCommand.value());
+			qCDebug(logDesktopEntry) << "Terminal candidate (fallback):" << entry->mId;
+		}
+
+		qCDebug(logDesktopEntry) << "Resolved" << this->resolvedTerminals.size()
+		                         << "terminal candidates";
+	}
 
 	emit this->applicationsChanged();
 
