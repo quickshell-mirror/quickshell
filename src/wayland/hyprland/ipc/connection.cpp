@@ -729,7 +729,7 @@ void HyprlandIpc::refreshToplevels() {
 			}
 
 			auto* workspace = toplevel->bindableWorkspace().value();
-			workspace->insertToplevel(toplevel);
+			if (workspace) workspace->insertToplevel(toplevel);
 		}
 	});
 }

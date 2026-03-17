@@ -48,6 +48,7 @@ set shell id.
 - Fixed volumes not initializing if a pipewire device was already loaded before its node.
 - Fixed hyprland active toplevel not resetting after window closes.
 - Fixed hyprland ipc window names and titles being reversed.
+- Fixed a hyprland ipc crash when refreshing toplevels before workspaces.
 - Fixed missing signals for system tray item title and description updates.
 - Fixed asynchronous loaders not working after reload.
 - Fixed asynchronous loaders not working before window creation.

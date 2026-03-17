@@ -72,20 +72,16 @@ void HyprlandToplevel::updateFromObject(const QVariantMap& object) {
 	Qt::beginPropertyUpdateGroup();
 	bool ok = false;
 	auto address = addressStr.toULongLong(&ok, 16);
-	if (!ok || !address) {
-		return;
-	}
+	if (ok && address) this->setAddress(address);
 
-	this->setAddress(address);
 	this->bTitle = title;
 
 	auto workspaceMap = object.value("workspace").toMap();
 	auto workspaceName = workspaceMap.value("name").toString();
 
-	auto* workspace = this->ipc->findWorkspaceByName(workspaceName, false);
-	if (!workspace) return;
+	auto* workspace = this->ipc->findWorkspaceByName(workspaceName, true);
+	if (workspace) this->setWorkspace(workspace);
 
-	this->setWorkspace(workspace);
 	this->bLastIpcObject = object;
 	Qt::endPropertyUpdateGroup();
 }
