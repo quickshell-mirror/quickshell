@@ -34,6 +34,8 @@ struct ParsedDesktopEntryData {
 	QString genericName;
 	QString startupClass;
 	bool noDisplay = false;
+	std::optional<QVector<QString>> onlyShowIn;
+	std::optional<QVector<QString>> notShowIn;
 	bool hidden = false;
 	QString comment;
 	QString icon;
@@ -171,6 +173,8 @@ signals:
 	void runInTerminalChanged();
 	void categoriesChanged();
 	void keywordsChanged();
+	void onlyShowInChanged();
+	void notShowInChanged();
 
 public:
 	QString mId;
@@ -180,6 +184,8 @@ public:
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bGenericName, &DesktopEntry::genericNameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bStartupClass, &DesktopEntry::startupClassChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, bool, bNoDisplay, &DesktopEntry::noDisplayChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, std::optional<QVector<QString>>, bOnlyShowIn, &DesktopEntry::onlyShowInChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, std::optional<QVector<QString>>, bNotShowIn, &DesktopEntry::notShowInChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bComment, &DesktopEntry::commentChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bIcon, &DesktopEntry::iconChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(DesktopEntry, QString, bExecString, &DesktopEntry::execStringChanged);

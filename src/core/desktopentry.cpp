@@ -124,6 +124,8 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				else if (key == "StartupWMClass") data.startupClass = value;
 				else if (key == "NoDisplay") data.noDisplay = value == "true";
 				else if (key == "Hidden") data.hidden = value == "true";
+				else if (key == "OnlyShowIn") data.onlyShowIn = value.split(u';', Qt::SkipEmptyParts);
+				else if (key == "NotShowIn") data.notShowIn = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Comment") data.comment = value;
 				else if (key == "Icon") data.icon = value;
 				else if (key == "Exec") {
@@ -224,6 +226,8 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 	this->bGenericName = newState.genericName;
 	this->bStartupClass = newState.startupClass;
 	this->bNoDisplay = newState.noDisplay;
+	this->bOnlyShowIn = newState.onlyShowIn;
+	this->bNotShowIn = newState.notShowIn;
 	this->bComment = newState.comment;
 	this->bIcon = newState.icon;
 	this->bExecString = newState.execString;
@@ -613,6 +617,7 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 	auto oldEntries = this->desktopEntries;
 	auto newEntries = QHash<QString, DesktopEntry*>();
 	auto newLowercaseEntries = QHash<QString, DesktopEntry*>();
+	auto desktopNames = qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(':', Qt::SkipEmptyParts);
 
 	for (const auto& data: scanResults) {
 		auto lowerId = data.id.toLower();
@@ -677,8 +682,27 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 	this->lowercaseDesktopEntries = newLowercaseEntries;
 
 	auto newApplications = QVector<DesktopEntry*>();
-	for (auto* entry: this->desktopEntries.values())
-		if (!entry->bNoDisplay) newApplications.append(entry);
+	for (auto* entry: this->desktopEntries.values()) {
+		if (entry->bNoDisplay) continue;
+
+		const auto& onlyShowIn = entry->bOnlyShowIn.value();
+		const auto& notShowIn = entry->bNotShowIn.value();
+		if (onlyShowIn.has_value() && notShowIn.has_value()) {
+			qCWarning(logDesktopEntry) << "Desktop entry" << entry->mId
+			                           << "defines both OnlyShowIn and NotShowIn (skipping display)";
+			continue;
+		}
+		if (onlyShowIn.has_value() && !std::ranges::any_of(desktopNames, [&](const QString& name) {
+			    return onlyShowIn->contains(name);
+		    }))
+			continue;
+		if (notShowIn.has_value() && std::ranges::any_of(desktopNames, [&](const QString& name) {
+			    return notShowIn->contains(name);
+		    }))
+			continue;
+
+		newApplications.append(entry);
+	}
 
 	this->mApplications.diffUpdate(newApplications);
 
