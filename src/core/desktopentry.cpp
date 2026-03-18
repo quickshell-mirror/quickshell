@@ -124,6 +124,8 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				else if (key == "StartupWMClass") data.startupClass = value;
 				else if (key == "NoDisplay") data.noDisplay = value == "true";
 				else if (key == "Hidden") data.hidden = value == "true";
+				else if (key == "OnlyShowIn") data.onlyShowIn = value.split(u';', Qt::SkipEmptyParts);
+				else if (key == "NotShowIn") data.notShowIn = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Comment") data.comment = value;
 				else if (key == "Icon") data.icon = value;
 				else if (key == "Exec") {
@@ -224,6 +226,8 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 	this->bGenericName = newState.genericName;
 	this->bStartupClass = newState.startupClass;
 	this->bNoDisplay = newState.noDisplay;
+	this->bOnlyShowIn = newState.onlyShowIn;
+	this->bNotShowIn = newState.notShowIn;
 	this->bComment = newState.comment;
 	this->bIcon = newState.icon;
 	this->bExecString = newState.execString;
@@ -618,74 +622,94 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 	});
 
 	auto oldEntries = this->desktopEntries;
-	auto newEntries = QHash<QString, DesktopEntry*>();
-	auto newLowercaseEntries = QHash<QString, DesktopEntry*>();
 
-	for (const auto& data: scanResults) {
-		auto lowerId = data.id.toLower();
+	{
+		auto newEntries = QHash<QString, DesktopEntry*>();
+		auto newEntriesLowercase = QHash<QString, DesktopEntry*>();
 
-		if (data.hidden) {
-			if (auto* victim = newEntries.take(data.id)) victim->deleteLater();
-			newLowercaseEntries.remove(lowerId);
+		for (const auto& data: scanResults) {
+			auto lowerId = data.id.toLower();
+
+			if (data.hidden) {
+				if (auto* victim = newEntries.take(data.id)) victim->deleteLater();
+				newEntriesLowercase.remove(lowerId);
+
+				if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
+					it.value()->deleteLater();
+					oldEntries.erase(it);
+				}
+
+				qCDebug(logDesktopEntry) << "Masking hidden desktop entry" << data.id;
+				continue;
+			}
+
+			DesktopEntry* dentry = nullptr;
 
 			if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
-				it.value()->deleteLater();
+				dentry = it.value();
 				oldEntries.erase(it);
+				dentry->updateState(data);
+			} else {
+				dentry = new DesktopEntry(data.id, this);
+				dentry->updateState(data);
 			}
 
-			qCDebug(logDesktopEntry) << "Masking hidden desktop entry" << data.id;
-			continue;
-		}
-
-		DesktopEntry* dentry = nullptr;
-
-		if (auto it = oldEntries.find(data.id); it != oldEntries.end()) {
-			dentry = it.value();
-			oldEntries.erase(it);
-			dentry->updateState(data);
-		} else {
-			dentry = new DesktopEntry(data.id, this);
-			dentry->updateState(data);
-		}
-
-		if (!dentry->isValid()) {
-			qCDebug(logDesktopEntry) << "Skipping desktop entry" << data.id;
-			if (!oldEntries.contains(data.id)) {
-				dentry->deleteLater();
+			if (!dentry->isValid()) {
+				qCDebug(logDesktopEntry) << "Skipping desktop entry" << data.id;
+				if (!oldEntries.contains(data.id)) {
+					dentry->deleteLater();
+				}
+				continue;
 			}
-			continue;
+
+			qCDebug(logDesktopEntry) << "Found desktop entry" << data.id;
+
+			auto conflictingId = newEntries.contains(data.id);
+
+			if (conflictingId) {
+				qCDebug(logDesktopEntry) << "Replacing old entry for" << data.id;
+				if (auto* victim = newEntries.take(data.id)) victim->deleteLater();
+				newEntriesLowercase.remove(lowerId);
+			}
+
+			newEntries.insert(data.id, dentry);
+
+			if (newEntriesLowercase.contains(lowerId)) {
+				qCInfo(logDesktopEntry).nospace()
+				    << "Multiple desktop entries have the same lowercased id " << lowerId
+				    << ". This can cause ambiguity when byId requests are not made with the correct case "
+				       "already.";
+
+				newEntriesLowercase.remove(lowerId);
+			}
+
+			newEntriesLowercase.insert(lowerId, dentry);
 		}
 
-		qCDebug(logDesktopEntry) << "Found desktop entry" << data.id;
-
-		auto conflictingId = newEntries.contains(data.id);
-
-		if (conflictingId) {
-			qCDebug(logDesktopEntry) << "Replacing old entry for" << data.id;
-			if (auto* victim = newEntries.take(data.id)) victim->deleteLater();
-			newLowercaseEntries.remove(lowerId);
-		}
-
-		newEntries.insert(data.id, dentry);
-
-		if (newLowercaseEntries.contains(lowerId)) {
-			qCInfo(logDesktopEntry).nospace()
-			    << "Multiple desktop entries have the same lowercased id " << lowerId
-			    << ". This can cause ambiguity when byId requests are not made with the correct case "
-			       "already.";
-
-			newLowercaseEntries.remove(lowerId);
-		}
-
-		newLowercaseEntries.insert(lowerId, dentry);
+		this->desktopEntries = newEntries;
+		this->lowercaseDesktopEntries = newEntriesLowercase;
 	}
 
-	this->desktopEntries = newEntries;
-	this->lowercaseDesktopEntries = newLowercaseEntries;
+	auto desktopNames = qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(':', Qt::SkipEmptyParts);
+	auto showInCurrentDesktop = [&desktopNames](const DesktopEntry* entry) {
+		const auto& onlyShowIn = entry->bOnlyShowIn.value();
+		const auto& notShowIn = entry->bNotShowIn.value();
+
+		for (const auto& name: desktopNames) {
+			if (onlyShowIn.has_value() && onlyShowIn->contains(name)) return true;
+			if (notShowIn.has_value() && notShowIn->contains(name)) return false;
+		}
+
+		return !onlyShowIn.has_value();
+	};
 
 	auto newApplications = QVector<DesktopEntry*>();
-	for (auto* entry: this->desktopEntries.values())
-		if (!entry->bNoDisplay) newApplications.append(entry);
+	for (auto* entry: this->desktopEntries.values()) {
+		if (entry->bNoDisplay) continue;
+		if (!showInCurrentDesktop(entry)) continue;
+
+		newApplications.append(entry);
+	}
 
 	this->mApplications.diffUpdate(newApplications);
 
@@ -904,6 +928,7 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 		for (auto* entry: fallbackEntries) {
 			if (seenExplicitIds.contains(entry->mId)) continue;
 			if (!isValidTerminal(entry, termDebug)) continue;
+			if (!showInCurrentDesktop(entry)) continue;
 			if (excludedIds.contains(entry->mId)) continue;
 
 			addResolved(entry, entry->bCommand.value());
