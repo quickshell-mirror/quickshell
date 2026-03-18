@@ -83,10 +83,7 @@ qt_add_library(quickshell-wayland STATIC
 
 # required for wl_proxy_safe_deref
 target_link_libraries(quickshell-wayland PRIVATE ${CMAKE_DL_LIBS})
-target_link_options(quickshell PRIVATE
-	"LINKER:--export-dynamic-symbol=wl_proxy_get_listener"
-	"LINKER:--require-defined=wl_proxy_get_listener"
-)
+target_link_options(quickshell PRIVATE "LINKER:--export-dynamic-symbol=wl_proxy_get_listener")
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)
