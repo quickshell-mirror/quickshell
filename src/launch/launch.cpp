@@ -196,13 +196,10 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	// This seems to be controlled by the QPA and qt6ct does not provide it.
 	{
 		QList<QString> dataPaths;
-
-		if (qEnvironmentVariableIsSet("XDG_DATA_DIRS")) {
-			auto var = qEnvironmentVariable("XDG_DATA_DIRS");
-			dataPaths = var.split(u':', Qt::SkipEmptyParts);
-		} else {
-			dataPaths.push_back("/usr/local/share");
-			dataPaths.push_back("/usr/share");
+		{
+			auto dataDirs = qEnvironmentVariable("XDG_DATA_DIRS");
+			if (dataDirs.isEmpty()) dataDirs = "/usr/local/share:/usr/share";
+			dataPaths = dataDirs.split(u':', Qt::SkipEmptyParts);
 		}
 
 		auto fallbackPaths = QIcon::fallbackSearchPaths();
