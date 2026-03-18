@@ -47,7 +47,7 @@ public:
 	///
 	/// > [!NOTE] This is equivalent to running
 	/// > ```qml
-	/// > I3.dispatch(`workspace number ${workspace.number}`);
+	/// > I3.dispatch(`workspace ${workspace.name}`);
 	/// > ```
 	Q_INVOKABLE void activate();
 
