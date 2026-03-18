@@ -68,6 +68,7 @@ function (wl_proto target name dir)
 	target_include_directories(${target} INTERFACE ${PROTO_BUILD_PATH})
 	target_link_libraries(${target} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
 	qs_pch(${target} SET wayland-protocol)
+	target_compile_options(wl-proto-${name}-wl PRIVATE ${wayland_CFLAGS})
 endfunction()
 
 # -----
