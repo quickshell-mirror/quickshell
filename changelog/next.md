@@ -60,6 +60,7 @@ set shell id.
 - Desktop action order is now preserved.
 - Fixed partial socket reads in greetd and hyprland on slow machines.
 - Worked around Qt bug causing crashes when plugging and unplugging monitors.
+- Fixed HyprlandFocusGrab crashing if windows were destroyed after being passed to it.
 
 ## Packaging Changes
 

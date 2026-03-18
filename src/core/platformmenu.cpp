@@ -18,7 +18,6 @@
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
-#include "../window/windowinterface.hpp"
 #include "iconprovider.hpp"
 #include "model.hpp"
 #include "platformmenu_p.hpp"
@@ -91,10 +90,8 @@ bool PlatformMenuEntry::display(QObject* parentWindow, int relativeX, int relati
 	} else if (parentWindow == nullptr) {
 		qCritical() << "Cannot display PlatformMenuEntry with null parent window.";
 		return false;
-	} else if (auto* proxy = qobject_cast<ProxyWindowBase*>(parentWindow)) {
+	} else if (auto* proxy = ProxyWindowBase::forObject(parentWindow)) {
 		window = proxy->backingWindow();
-	} else if (auto* interface = qobject_cast<WindowInterface*>(parentWindow)) {
-		window = interface->proxyWindow()->backingWindow();
 	} else {
 		qCritical() << "PlatformMenuEntry.display() must be called with a window.";
 		return false;

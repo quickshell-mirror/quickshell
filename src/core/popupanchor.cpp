@@ -11,7 +11,6 @@
 #include <qwindow.h>
 
 #include "../window/proxywindow.hpp"
-#include "../window/windowinterface.hpp"
 #include "types.hpp"
 
 bool PopupAnchorState::operator==(const PopupAnchorState& other) const {
@@ -40,10 +39,8 @@ void PopupAnchor::setWindowInternal(QObject* window) {
 	}
 
 	if (window) {
-		if (auto* proxy = qobject_cast<ProxyWindowBase*>(window)) {
+		if (auto* proxy = ProxyWindowBase::forObject(window)) {
 			this->bProxyWindow = proxy;
-		} else if (auto* interface = qobject_cast<WindowInterface*>(window)) {
-			this->bProxyWindow = interface->proxyWindow();
 		} else {
 			qWarning() << "Tried to set popup anchor window to" << window
 			           << "which is not a quickshell window.";

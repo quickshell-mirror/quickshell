@@ -9,7 +9,6 @@
 #include "../../core/qmlscreen.hpp"
 #include "../../core/util.hpp"
 #include "../../window/proxywindow.hpp"
-#include "../../window/windowinterface.hpp"
 #include "../output_tracking.hpp"
 #include "handle.hpp"
 #include "manager.hpp"
@@ -73,13 +72,7 @@ void Toplevel::fullscreenOn(QuickshellScreenInfo* screen) {
 }
 
 void Toplevel::setRectangle(QObject* window, QRect rect) {
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(window);
-
-	if (proxyWindow == nullptr) {
-		if (auto* iface = qobject_cast<WindowInterface*>(window)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
+	auto* proxyWindow = ProxyWindowBase::forObject(window);
 
 	if (proxyWindow != this->rectWindow) {
 		if (this->rectWindow != nullptr) {

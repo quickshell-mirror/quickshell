@@ -6,7 +6,6 @@
 #include <qtmetamacros.h>
 
 #include "../../window/proxywindow.hpp"
-#include "../../window/windowinterface.hpp"
 #include "proto.hpp"
 
 namespace qs::wayland::idle_inhibit {
@@ -25,27 +24,13 @@ QObject* IdleInhibitor::window() const { return this->bWindowObject; }
 void IdleInhibitor::setWindow(QObject* window) {
 	if (window == this->bWindowObject) return;
 
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(window);
-
-	if (proxyWindow == nullptr) {
-		if (auto* iface = qobject_cast<WindowInterface*>(window)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
-
+	auto* proxyWindow = ProxyWindowBase::forObject(window);
 	this->bWindowObject = proxyWindow ? window : nullptr;
 }
 
 void IdleInhibitor::boundWindowChanged() {
 	auto* window = this->bBoundWindow.value();
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(window);
-
-	if (proxyWindow == nullptr) {
-		if (auto* iface = qobject_cast<WindowInterface*>(window)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
-
+	auto* proxyWindow = ProxyWindowBase::forObject(window);
 	if (proxyWindow == this->proxyWindow) return;
 
 	if (this->mWaylandWindow) {

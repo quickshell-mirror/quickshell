@@ -57,6 +57,12 @@ ProxyWindowBase::ProxyWindowBase(QObject* parent)
 
 ProxyWindowBase::~ProxyWindowBase() { this->deleteWindow(true); }
 
+ProxyWindowBase* ProxyWindowBase::forObject(QObject* obj) {
+	if (auto* proxy = qobject_cast<ProxyWindowBase*>(obj)) return proxy;
+	if (auto* iface = qobject_cast<WindowInterface*>(obj)) return iface->proxyWindow();
+	return nullptr;
+}
+
 void ProxyWindowBase::onReload(QObject* oldInstance) {
 	if (this->mVisible) this->window = this->retrieveWindow(oldInstance);
 	auto wasVisible = this->window != nullptr && this->window->isVisible();
