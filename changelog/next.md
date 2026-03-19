@@ -38,6 +38,7 @@ set shell id.
 - Added `QS_DISABLE_FILE_WATCHER` environment variable to disable file watching.
 - Added `QS_DISABLE_CRASH_HANDLER` environment variable to disable crash handling.
 - Added `QS_CRASHREPORT_URL` environment variable to allow overriding the crash reporter link.
+- Added `AppId` pragma and `QS_APP_ID` environment variable to allow overriding the desktop application ID.
 
 ## Bug Fixes
 

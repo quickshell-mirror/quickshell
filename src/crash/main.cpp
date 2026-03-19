@@ -230,7 +230,9 @@ void qsCheckCrash(int argc, char** argv) {
 	);
 
 	auto app = QApplication(argc, argv);
-	QApplication::setDesktopFileName("org.quickshell");
+	auto desktopId =
+	    info.instance.appId.isEmpty() ? QStringLiteral("org.quickshell") : info.instance.appId;
+	QApplication::setDesktopFileName(desktopId);
 
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 

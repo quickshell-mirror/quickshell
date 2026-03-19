@@ -76,6 +76,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool useSystemStyle = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
+		QString appId = qEnvironmentVariable("QS_APP_ID");
 		QString dataDir;
 		QString stateDir;
 		QString cacheDir;
@@ -104,6 +105,8 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 				auto var = envPragma.sliced(0, splitIdx).trimmed();
 				auto val = envPragma.sliced(splitIdx + 1).trimmed();
 				pragmas.envOverrides.insert(var, val);
+			} else if (pragma.startsWith("AppId ")) {
+				pragmas.appId = pragma.sliced(6).trimmed();
 			} else if (pragma.startsWith("ShellId ")) {
 				shellId = pragma.sliced(8).trimmed();
 			} else if (pragma.startsWith("DataDir ")) {
@@ -128,10 +131,13 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 
 	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
+	auto appId = pragmas.appId.isEmpty() ? QStringLiteral("org.quickshell") : pragmas.appId;
+
 	InstanceInfo::CURRENT = InstanceInfo {
 	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
 	    .configPath = args.configPath,
 	    .shellId = shellId,
+	    .appId = appId,
 	    .launchTime = qs::Common::LAUNCH_TIME,
 	    .pid = getpid(),
 	    .display = getDisplayConnection(),
@@ -231,7 +237,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		app = new QGuiApplication(qArgC, argv);
 	}
 
-	QGuiApplication::setDesktopFileName("org.quickshell");
+	QGuiApplication::setDesktopFileName(appId);
 
 	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);

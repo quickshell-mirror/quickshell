@@ -9,6 +9,7 @@ struct InstanceInfo {
 	QString instanceId;
 	QString configPath;
 	QString shellId;
+	QString appId;
 	QDateTime launchTime;
 	pid_t pid = -1;
 	QString display;
