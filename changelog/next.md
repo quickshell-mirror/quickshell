@@ -27,6 +27,7 @@ set shell id.
 - Added a way to detect if an icon is from the system icon theme or not.
 - Added vulkan support to screencopy.
 - Added generic WindowManager interface implementing ext-workspace.
+- Added ext-background-effect window blur support.
 
 ## Other Changes
 
