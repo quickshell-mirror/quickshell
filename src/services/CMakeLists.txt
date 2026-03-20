@@ -29,3 +29,7 @@ endif()
 if (SERVICE_NOTIFICATIONS)
 	add_subdirectory(notifications)
 endif()
+
+if (SERVICE_OSS)
+	add_subdirectory(oss)
+endif()
