@@ -66,6 +66,29 @@ class PendingRegion: public QObject {
 	Q_PROPERTY(qint32 width MEMBER mWidth NOTIFY widthChanged);
 	/// Defaults to 0. Does nothing if @@item is set.
 	Q_PROPERTY(qint32 height MEMBER mHeight NOTIFY heightChanged);
+	// clang-format off
+	/// Corner radius for rounded rectangles. Only applies when @@shape is `Rect`. Defaults to 0.
+	///
+	/// Acts as the default for @@topLeftRadius, @@topRightRadius, @@bottomLeftRadius,
+	/// and @@bottomRightRadius.
+	Q_PROPERTY(qint32 radius READ radius WRITE setRadius NOTIFY radiusChanged);
+	/// Top-left corner radius. Only applies when @@shape is `Rect`.
+	///
+	/// Defaults to @@radius, and may be reset by assigning `undefined`.
+	Q_PROPERTY(qint32 topLeftRadius READ topLeftRadius WRITE setTopLeftRadius RESET resetTopLeftRadius NOTIFY topLeftRadiusChanged);
+	/// Top-right corner radius. Only applies when @@shape is `Rect`.
+	///
+	/// Defaults to @@radius, and may be reset by assigning `undefined`.
+	Q_PROPERTY(qint32 topRightRadius READ topRightRadius WRITE setTopRightRadius RESET resetTopRightRadius NOTIFY topRightRadiusChanged);
+	/// Bottom-left corner radius. Only applies when @@shape is `Rect`.
+	///
+	/// Defaults to @@radius, and may be reset by assigning `undefined`.
+	Q_PROPERTY(qint32 bottomLeftRadius READ bottomLeftRadius WRITE setBottomLeftRadius RESET resetBottomLeftRadius NOTIFY bottomLeftRadiusChanged);
+	/// Bottom-right corner radius. Only applies when @@shape is `Rect`.
+	///
+	/// Defaults to @@radius, and may be reset by assigning `undefined`.
+	Q_PROPERTY(qint32 bottomRightRadius READ bottomRightRadius WRITE setBottomRightRadius RESET resetBottomRightRadius NOTIFY bottomRightRadiusChanged);
+	// clang-format on
 
 	/// Regions to apply on top of this region.
 	///
@@ -91,6 +114,25 @@ public:
 
 	void setItem(QQuickItem* item);
 
+	[[nodiscard]] qint32 radius() const;
+	void setRadius(qint32 radius);
+
+	[[nodiscard]] qint32 topLeftRadius() const;
+	void setTopLeftRadius(qint32 radius);
+	void resetTopLeftRadius();
+
+	[[nodiscard]] qint32 topRightRadius() const;
+	void setTopRightRadius(qint32 radius);
+	void resetTopRightRadius();
+
+	[[nodiscard]] qint32 bottomLeftRadius() const;
+	void setBottomLeftRadius(qint32 radius);
+	void resetBottomLeftRadius();
+
+	[[nodiscard]] qint32 bottomRightRadius() const;
+	void setBottomRightRadius(qint32 radius);
+	void resetBottomRightRadius();
+
 	QQmlListProperty<PendingRegion> regions();
 
 	[[nodiscard]] bool empty() const;
@@ -109,6 +151,11 @@ signals:
 	void yChanged();
 	void widthChanged();
 	void heightChanged();
+	void radiusChanged();
+	void topLeftRadiusChanged();
+	void topRightRadiusChanged();
+	void bottomLeftRadiusChanged();
+	void bottomRightRadiusChanged();
 	void childrenChanged();
 
 	/// Triggered when the region's geometry changes.
@@ -130,12 +177,25 @@ private:
 	static void
 	regionsReplace(QQmlListProperty<PendingRegion>* prop, qsizetype i, PendingRegion* region);
 
+	enum CornerOverride : quint8 {
+		TopLeft = 0b1,
+		TopRight = 0b10,
+		BottomLeft = 0b100,
+		BottomRight = 0b1000,
+	};
+
 	QQuickItem* mItem = nullptr;
 
 	qint32 mX = 0;
 	qint32 mY = 0;
 	qint32 mWidth = 0;
 	qint32 mHeight = 0;
+	qint32 mRadius = 0;
+	qint32 mTopLeftRadius = 0;
+	qint32 mTopRightRadius = 0;
+	qint32 mBottomLeftRadius = 0;
+	qint32 mBottomRightRadius = 0;
+	quint8 mCornerOverrides = 0;
 
 	QList<PendingRegion*> mRegions;
 };

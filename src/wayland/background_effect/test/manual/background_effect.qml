@@ -38,10 +38,25 @@ FloatingWindow {
 			to: 1000
 			value: 100
 		}
+
+		component EdgeSlider: Slider {
+			from: -1
+			to: 1000
+			value: -1
+		}
+
+		EdgeSlider { id: topLeftSlider }
+		EdgeSlider { id: topRightSlider }
+		EdgeSlider { id: bottomLeftSlider }
+		EdgeSlider { id: bottomRightSlider }
 	}
 
 	BackgroundEffect.blurRegion: Region {
 		item: enableBox.checked ? root.contentItem : null
 		radius: radiusSlider.value == -1 ? undefined : radiusSlider.value
+		topLeftRadius: topLeftSlider.value == -1 ? undefined : topLeftSlider.value
+		topRightRadius: topRightSlider.value == -1 ? undefined : topRightSlider.value
+		bottomLeftRadius: bottomLeftSlider.value == -1 ? undefined : bottomLeftSlider.value
+		bottomRightRadius: bottomRightSlider.value == -1 ? undefined : bottomRightSlider.value
 	}
 }

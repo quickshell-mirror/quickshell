@@ -28,6 +28,7 @@ set shell id.
 - Added vulkan support to screencopy.
 - Added generic WindowManager interface implementing ext-workspace.
 - Added ext-background-effect window blur support.
+- Added per-corner radius support to Region.
 
 ## Other Changes
 
