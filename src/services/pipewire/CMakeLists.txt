@@ -4,6 +4,7 @@ pkg_check_modules(pipewire REQUIRED IMPORTED_TARGET libpipewire-0.3)
 qt_add_library(quickshell-service-pipewire STATIC
 	qml.cpp
 	peak.cpp
+	spectrum.cpp
 	core.cpp
 	connection.cpp
 	registry.cpp

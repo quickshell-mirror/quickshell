@@ -1,5 +1,6 @@
 #include "generation.hpp"
 #include <utility>
+#include <ranges>
 
 #include <qcontainerfwd.h>
 #include <qcoreapplication.h>
