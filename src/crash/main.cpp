@@ -232,7 +232,7 @@ void qsCheckCrash(int argc, char** argv) {
 
 	auto app = QApplication(argc, argv);
 	auto desktopId =
-	    info.instance.appId.isEmpty() ? QStringLiteral("org.quickshell") : info.instance.appId;
+	    info.instance.appId.isEmpty() ? QStringLiteral("dev.noctalia.noctalia-qs") : info.instance.appId;
 	QApplication::setDesktopFileName(desktopId);
 
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);

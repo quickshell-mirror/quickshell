@@ -5,6 +5,7 @@
 # build files
 /result
 /build/
+/build-release/
 /compile_commands.json
 
 # clangd
@@ -13,3 +14,5 @@
 # direnv
 /.envrc
 /.direnv/
+# apt repo
+/debian/

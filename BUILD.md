@@ -240,6 +240,9 @@ To disable: `-DI3_IPC=OFF`
 
 Only `ninja` builds are tested, but makefiles may work.
 
+Make sure `LC_ALL` or `LANG` is set to a UTF-8 locale (e.g. `en_US.UTF-8`).
+When set to `C` or `POSIX`, Qt emits a large number of warnings that bury real build diagnostics.
+
 #### Configuring the build
 ```sh
 $ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release [additional disable flags from above here]

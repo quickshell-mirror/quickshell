@@ -3,5 +3,5 @@ Version=1.5
 Type=Application
 NoDisplay=true
 
-Name=Quickshell
-Icon=org.quickshell
+Name=noctalia-qs
+Icon=dev.noctalia.noctalia-qs

@@ -93,7 +93,7 @@ struct CommandState {
 		bool checkCompat = false;
 		bool printVersion = false;
 		bool killAll = false;
-		bool noDuplicate = false;
+		bool noDuplicate = true;
 		bool daemonize = false;
 	} misc;
 };

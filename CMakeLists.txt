@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(quickshell VERSION "0.2.1" LANGUAGES CXX C)
+project(quickshell VERSION "0.0.9" LANGUAGES CXX C)
 
 set(UNRELEASED_FEATURES "network.2")
 
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QS_BUILD_OPTIONS "")
 
 # should be changed for forks
-set(CRASHREPORT_URL "https://github.com/outfoxxed/quickshell/issues/new?template=crash2.yml" CACHE STRING "Bugreport URL")
+set(CRASHREPORT_URL "https://github.com/noctalia-dev/noctalia-qs/issues/new" CACHE STRING "Bugreport URL")
 
 function(boption VAR NAME DEFAULT)
 	cmake_parse_arguments(PARSE_ARGV 3 arg "" "REQUIRES" "")
@@ -53,7 +53,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 else()
 	boption(USE_JEMALLOC "Use jemalloc" ON)
 endif()
-boption(CRASH_HANDLER "Crash Handling" ON)
+boption(CRASH_HANDLER "Crash Handling" OFF)
 boption(SOCKETS "Unix Sockets" ON)
 boption(WAYLAND "Wayland" ON)
 boption(WAYLAND_WLR_LAYERSHELL "  Wlroots Layer-Shell" ON REQUIRES WAYLAND)
@@ -64,6 +64,8 @@ boption(HYPRLAND_IPC "    Hyprland IPC" ON REQUIRES HYPRLAND)
 boption(HYPRLAND_GLOBAL_SHORTCUTS "    Hyprland Global Shortcuts" ON REQUIRES HYPRLAND)
 boption(HYPRLAND_FOCUS_GRAB "    Hyprland Focus Grabbing" ON REQUIRES HYPRLAND)
 boption(HYPRLAND_SURFACE_EXTENSIONS "    Hyprland Surface Extensions" ON REQUIRES HYPRLAND)
+boption(NIRI "  Niri" ON REQUIRES WAYLAND)
+boption(NIRI_IPC "    Niri IPC" ON REQUIRES NIRI)
 boption(SCREENCOPY "  Screencopy" ON REQUIRES WAYLAND)
 boption(SCREENCOPY_ICC "    Image Copy Capture" ON REQUIRES WAYLAND)
 boption(SCREENCOPY_WLR "    Wlroots Screencopy" ON REQUIRES WAYLAND)
@@ -71,6 +73,7 @@ boption(SCREENCOPY_HYPRLAND_TOPLEVEL "    Hyprland Toplevel Export" ON REQUIRES 
 boption(X11 "X11" ON)
 boption(I3 "I3/Sway" ON)
 boption(I3_IPC "  I3/Sway IPC" ON REQUIRES I3)
+boption(DWL "DWL" ON)
 boption(SERVICE_STATUS_NOTIFIER "System Tray" ON)
 boption(SERVICE_PIPEWIRE "PipeWire" ON)
 boption(SERVICE_MPRIS "Mpris" ON)
@@ -85,7 +88,10 @@ boption(NETWORK "Network" ON)
 include(cmake/install-qml-module.cmake)
 include(cmake/util.cmake)
 
-add_compile_options(-Wall -Wextra -Wno-vla-cxx-extension)
+add_compile_options(-Wall -Wextra)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	add_compile_options(-Wno-vla-cxx-extension)
+endif()
 
 # pipewire defines these, breaking PCH
 add_compile_definitions(_REENTRANT)
@@ -168,12 +174,12 @@ install(CODE "
 ")
 
 install(
-	FILES ${CMAKE_SOURCE_DIR}/assets/org.quickshell.desktop
+	FILES ${CMAKE_SOURCE_DIR}/assets/dev.noctalia.noctalia-qs.desktop
 	DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
 
 install(
-	FILES ${CMAKE_SOURCE_DIR}/assets/quickshell.svg
+	FILES ${CMAKE_SOURCE_DIR}/assets/noctalia-qs.svg
 	DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
-	RENAME org.quickshell.svg
+	RENAME dev.noctalia.noctalia-qs.svg
 )

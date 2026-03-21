@@ -1,12 +1,14 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp> // NOLINT: Need to include this for impls of some CLI11 classes
 #include <CLI/Validators.hpp>
 
+#include "build.hpp"
 #include "launch_p.hpp"
 
 namespace qs::launch {
@@ -21,7 +23,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		auto* group =
 		    cmd->add_option_group("Config Selection")
 		        ->description(
-		            "Quickshell detects configurations as named directories under each XDG config "
+		            "qs detects configurations as named directories under each XDG config "
 		            "directory as `<xdg dir>/quickshell/<config name>/shell.qml`.\n\n"
 		            "If `<xdg dir>/quickshell/shell.qml` exists, it will be registered as the "
 		            "'default' configuration, and no subdirectories will be considered. "
@@ -39,7 +41,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		                 ->envname("QS_CONFIG_PATH");
 
 		group->add_option("-c,--config", state.config.name)
-		    ->description("Name of a quickshell configuration to run.")
+		    ->description("Name of a noctalia-qs configuration to run.")
 		    ->envname("QS_CONFIG_NAME")
 		    ->excludes(path);
 
@@ -123,7 +125,10 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		return group;
 	};
 
-	state.app = std::make_unique<CLI::App>();
+	state.app = std::make_unique<CLI::App>(
+	    std::string("noctalia-qs " QS_VERSION ", revision ") + std::string(GIT_REVISION).substr(0, 8)
+	    + ", distributed by: " DISTRIBUTOR
+	);
 	auto* cli = state.app.get();
 
 	// Require 0-1 subcommands. Without this, positionals can be parsed as more subcommands.
@@ -137,17 +142,20 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 		cli->add_option_group("")->add_flag("--private-check-compat", state.misc.checkCompat);
 
 		cli->add_flag("-V,--version", state.misc.printVersion)
-		    ->description("Print quickshell's version and exit.");
+		    ->description("Print noctalia-qs's version and exit.");
 
-		cli->add_flag("-n,--no-duplicate", state.misc.noDuplicate)
-		    ->description("Exit immediately if another instance of the given config is running.");
+		cli->add_flag("-n,--no-duplicate{true},!--allow-duplicate{false}", state.misc.noDuplicate)
+		    ->description(
+		        "Exit immediately if another instance of the given config is running.\nEnabled by "
+		        "default. Use --allow-duplicate to disable."
+		    );
 
 		cli->add_flag("-d,--daemonize", state.misc.daemonize)
 		    ->description("Detach from the controlling terminal.");
 	}
 
 	{
-		auto* sub = cli->add_subcommand("log", "Print quickshell logs.");
+		auto* sub = cli->add_subcommand("log", "Print noctalia-qs logs.");
 
 		auto* file = sub->add_option("file", state.log.file, "Log file to read.");
 
@@ -169,7 +177,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli->add_subcommand("list", "List running quickshell instances.");
+		auto* sub = cli->add_subcommand("list", "List running noctalia-qs instances.");
 
 		auto* all = sub->add_flag("-a,--all", state.instance.all)
 		                ->description(
@@ -190,7 +198,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli->add_subcommand("kill", "Kill quickshell instances.");
+		auto* sub = cli->add_subcommand("kill", "Kill noctalia-qs instances.");
 		//sub->add_flag("-a,--all", "Kill all matching instances instead of just one.");
 		auto* instance = addInstanceSelection(sub);
 		addConfigSelection(sub, true)->excludes(instance);
@@ -200,7 +208,7 @@ int parseCommand(int argc, char** argv, CommandState& state) {
 	}
 
 	{
-		auto* sub = cli->add_subcommand("ipc", "Communicate with other Quickshell instances.")
+		auto* sub = cli->add_subcommand("ipc", "Communicate with other noctalia-qs instances.")
 		                ->require_subcommand();
 		state.ipc.ipc = sub;
 

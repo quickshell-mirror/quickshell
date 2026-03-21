@@ -57,6 +57,10 @@ QList<QString> configBaseDirs() {
 		dir.append("/quickshell");
 	}
 
+	// Extra admin-installed locations, searched *after* user config
+	configDirs.append("/usr/local/share/quickshell");
+	configDirs.append("/usr/share/quickshell");
+
 	return configDirs;
 }
 
@@ -461,10 +465,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 
 	if (state.misc.checkCompat) {
 		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
-			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
+			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: noctalia-qs was built against Qt "
 			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
 			                    << " without rebuilding the package. This is likely to cause crashes, so "
-			                       "you must rebuild the quickshell package.\n\033[0m";
+			                       "you must rebuild the noctalia-qs package.\n\033[0m";
 			return 1;
 		}
 
@@ -520,7 +524,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 
 	if (state.misc.printVersion) {
 		if (state.log.verbosity == 0) {
-			qCInfo(logBare).noquote() << "Quickshell" << qs::debuginfo::qsVersion();
+			qCInfo(logBare).noquote() << "noctalia-qs" << qs::debuginfo::qsVersion();
 		} else {
 			qCInfo(logBare).noquote() << qs::debuginfo::combinedInfo();
 		}
@@ -534,10 +538,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		return ipcCommand(state);
 	} else {
 		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
-			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR
+			qWarning() << "\033[31mnoctalia-qs was built against Qt" << QT_VERSION_STR
 			           << "but the system has updated to Qt" << qVersion()
 			           << "without rebuilding the package. This is likely to cause crashes, so "
-			              "the quickshell package must be rebuilt.\n";
+			              "the noctalia-qs package must be rebuilt.\n";
 		}
 
 		return launchFromCommand(state, coreApplication);

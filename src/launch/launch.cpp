@@ -131,7 +131,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 
 	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
-	auto appId = pragmas.appId.isEmpty() ? QStringLiteral("org.quickshell") : pragmas.appId;
+	auto appId = pragmas.appId.isEmpty() ? QStringLiteral("dev.noctalia.noctalia-qs") : pragmas.appId;
 
 	InstanceInfo::CURRENT = InstanceInfo {
 	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
