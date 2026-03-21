@@ -120,6 +120,14 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
+if (NIRI)
+	add_subdirectory(niri)
+endif()
+
+if (DWL)
+	add_subdirectory(dwl)
+endif()
+
 add_subdirectory(background_effect)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._BackgroundEffect)
 
