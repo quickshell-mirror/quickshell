@@ -1,9 +1,15 @@
 {
-  pkgs ? import <nixpkgs> {},
-  stdenv ? pkgs.clangStdenv, # faster compiles than gcc
-  quickshell ? pkgs.callPackage ./default.nix { inherit stdenv; },
-  ...
-}: let
+  pkgs,
+  mkShell,
+  clangStdenv,
+  just,
+  clang-tools,
+  parallel,
+  makeWrapper,
+  openssl,
+  quickshell,
+}:
+let
   tidyfox = import (pkgs.fetchFromGitea {
     domain = "git.outfoxxed.me";
     owner = "outfoxxed";
@@ -11,14 +17,16 @@
     rev = "9d85d7e7dea2602aa74ec3168955fee69967e92f";
     hash = "sha256-77ERiweF6lumonp2c/124rAoVG6/o9J+Aajhttwtu0w=";
   }) { inherit pkgs; };
-in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
+in
+mkShell.override { stdenv = clangStdenv; } {
   inputsFrom = [ quickshell ];
 
-  nativeBuildInputs = with pkgs; [
+  packages = [
     just
     clang-tools
     parallel
     makeWrapper
+    openssl
   ];
 
   TIDYFOX = "${tidyfox}/lib/libtidyfox.so";
@@ -26,7 +34,7 @@ in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
   shellHook = ''
     export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
 
-    # Add Qt-related environment variables.
+    # Qt environment setup
     # https://discourse.nixos.org/t/qt-development-environment-on-a-flake-system/23707/5
     setQtEnvironment=$(mktemp)
     random=$(openssl rand -base64 20 | sed "s/[^a-zA-Z0-9]//g")

@@ -19,6 +19,7 @@
 #include <qquickwindow.h>
 #include <qtmetamacros.h>
 
+#include "build.hpp"
 #include "iconimageprovider.hpp"
 #include "imageprovider.hpp"
 #include "incubator.hpp"
@@ -172,12 +173,18 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 		if (this->watcher == nullptr) {
 			this->watcher = new QFileSystemWatcher();
 
-			for (auto& file: this->scanner.scannedFiles) {
-				this->watcher->addPath(file);
-				this->watcher->addPath(QFileInfo(file).dir().absolutePath());
-			}
+			const auto files = {
+				this->scanner.scannedFiles,
+				this->extraWatchedFiles,
+			};
 
-			for (auto& file: this->extraWatchedFiles) {
+			for (auto& file: files | std::views::join) {
+#if NIX_STORE_DIR_SKIP_WATCH
+				// note: not using canonicalFilePath() here on purpose,
+				//       since the path could be a link to the nix store
+				//       and the link might change
+				if (file.startsWith(NIX_STORE_DIR "/")) continue;
+#endif
 				this->watcher->addPath(file);
 				this->watcher->addPath(QFileInfo(file).dir().absolutePath());
 			}

@@ -31,13 +31,17 @@ function (qs_add_pchset SETNAME)
 		return()
 	endif()
 
-	cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "HEADERS;DEPENDENCIES")
+	cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "HEADERS;DEPENDENCIES;COMPILE_DEFINITIONS")
 
 	set(LIBNAME "qs-pchset-${SETNAME}")
 
 	add_library(${LIBNAME} ${CMAKE_BINARY_DIR}/pchstub.cpp)
 	target_link_libraries(${LIBNAME} ${arg_DEPENDENCIES})
 	target_precompile_headers(${LIBNAME} PUBLIC ${arg_HEADERS})
+
+	if (arg_COMPILE_DEFINITIONS)
+		target_compile_definitions(${LIBNAME} PUBLIC ${arg_COMPILE_DEFINITIONS})
+	endif()
 endfunction()
 
 set(COMMON_PCH_SET
@@ -56,6 +60,7 @@ set(COMMON_PCH_SET
 qs_add_pchset(common
 	DEPENDENCIES Qt::Quick
 	HEADERS ${COMMON_PCH_SET}
+	COMPILE_DEFINITIONS _REENTRANT
 )
 
 qs_add_pchset(large
@@ -72,6 +77,7 @@ qs_add_pchset(large
 		<qdir.h>
 		<qtimer.h>
 		<qabstractitemmodel.h>
+	COMPILE_DEFINITIONS _REENTRANT
 )
 
 

@@ -1,13 +1,16 @@
 let
-  byCommit = {
-    commit,
-    sha256,
-  }: import (builtins.fetchTarball {
-    name = "nixpkgs-${commit}";
-    url = "https://github.com/nixos/nixpkgs/archive/${commit}.tar.gz";
-    inherit sha256;
-  }) {};
-in rec {
+  byCommit =
+    {
+      commit,
+      sha256,
+    }:
+    import (builtins.fetchTarball {
+      name = "nixpkgs-${commit}";
+      url = "https://github.com/nixos/nixpkgs/archive/${commit}.tar.gz";
+      inherit sha256;
+    }) { };
+in
+rec {
   latest = qt6_10_0;
 
   qt6_10_1 = byCommit {
