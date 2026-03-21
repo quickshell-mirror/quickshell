@@ -322,7 +322,7 @@ void NMWirelessDevice::registerAccessPoints() {
 			}
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);

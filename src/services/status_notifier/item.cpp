@@ -231,7 +231,7 @@ void StatusNotifierItem::activate() {
 			}
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -257,7 +257,7 @@ void StatusNotifierItem::secondaryActivate() {
 			}
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);

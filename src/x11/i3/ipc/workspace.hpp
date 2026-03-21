@@ -75,6 +75,9 @@ signals:
 private:
 	I3IpcController* ipc;
 
+	void setMonitor(I3Monitor* monitor);
+	void onMonitorDestroyed();
+
 	QVariantMap mLastIpcObject;
 
 	// clang-format off

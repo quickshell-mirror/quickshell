@@ -52,7 +52,7 @@ void tryLaunchService(
 			callback(true);
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, parent, responseCallback);

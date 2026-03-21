@@ -211,15 +211,15 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 						const auto& jsonValue = array.at(i);
 						if (jsonValue.isObject()) {
 							if (isNew) {
-								currentValue = lp.at(&lp, i);
-								if (this->oldCreatedObjects.removeOne(currentValue)) {
-									this->createdObjects.push_back(currentValue);
-								}
-							} else {
 								// FIXME: should be the type inside the QQmlListProperty but how can we get that?
 								currentValue = static_cast<JsonObject*>(QMetaType::fromType<JsonObject>().create());
 								currentValue->setParent(this);
 								this->createdObjects.push_back(currentValue);
+							} else {
+								currentValue = lp.at(&lp, i);
+								if (this->oldCreatedObjects.removeOne(currentValue)) {
+									this->createdObjects.push_back(currentValue);
+								}
 							}
 
 							this->deserializeRec(

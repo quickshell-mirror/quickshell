@@ -32,7 +32,11 @@
 #include "qml.hpp"
 
 #pragma GCC diagnostic push
+#ifdef __clang__
 #pragma GCC diagnostic ignored "-Wmissing-designated-field-initializers"
+#else
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 namespace qs::service::pipewire {
 
@@ -98,6 +102,7 @@ bool PwPeakStream::start() {
 	    PW_KEY_STREAM_MONITOR, "true",
 		  PW_KEY_STREAM_CAPTURE_SINK, this->node->type.testFlags(PwNodeType::Sink) ? "true" : "false",
 	    PW_KEY_TARGET_OBJECT, target.constData(),
+	    PW_KEY_NODE_PASSIVE, "true",
 	    nullptr
 	);
 	// clang-format on

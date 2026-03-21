@@ -102,8 +102,10 @@ void PwConnection::startSocketWatcher() {
 void PwConnection::stopSocketWatcher() {
 	if (this->socketWatcher == nullptr) return;
 
-	this->socketWatcher->deleteLater();
+	auto* watcher = this->socketWatcher;
 	this->socketWatcher = nullptr;
+	watcher->disconnect(this);
+	delete watcher;
 }
 
 void PwConnection::queueFatalError() {

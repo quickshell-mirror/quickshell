@@ -166,7 +166,11 @@ public:
 	}
 
 	[[nodiscard]] QList<QObject*> values() override {
-		return *reinterpret_cast<QList<QObject*>*>(&this->mValuesList);
+		QList<QObject*> result;
+		result.reserve(this->mValuesList.size());
+		for (auto* item: this->mValuesList)
+			result.append(reinterpret_cast<QObject*>(item));
+		return result;
 	}
 
 private:

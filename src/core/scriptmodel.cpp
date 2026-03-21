@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iterator>
 
+#include <qscopeguard.h>
+
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
 #include <qlist.h>
@@ -13,6 +15,7 @@
 
 void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 	this->hasActiveIterators = true;
+	auto guard = qScopeGuard([this] { this->hasActiveIterators = false; });
 	this->mValues.reserve(newValues.size());
 
 	auto iter = this->mValues.begin();
@@ -153,7 +156,6 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 		}
 	}
 
-	this->hasActiveIterators = false;
 }
 
 void ScriptModel::setValues(const QVariantList& newValues) {

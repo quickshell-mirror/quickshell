@@ -1,6 +1,6 @@
 qt_add_library(quickshell-hyprland STATIC)
 
-target_link_libraries(quickshell-hyprland PRIVATE ${QT_DEPS})
+target_link_libraries(quickshell-hyprland PRIVATE Qt::Quick)
 
 set(HYPRLAND_MODULES)
 

@@ -105,8 +105,8 @@ PwBindableObjectRef::~PwBindableObjectRef() { this->setObject(nullptr); }
 
 void PwBindableObjectRef::setObject(PwBindableObject* object) {
 	if (this->mObject != nullptr) {
-		this->mObject->unref();
 		QObject::disconnect(this->mObject, nullptr, this, nullptr);
+		this->mObject->unref();
 	}
 
 	this->mObject = object;

@@ -230,6 +230,7 @@ bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
 }
 
 void EngineGeneration::onFileChanged(const QString& name) {
+	if (this->watcher == nullptr) return;
 	if (!this->watcher->files().contains(name)) {
 		this->deletedWatchedFiles.push_back(name);
 	} else {

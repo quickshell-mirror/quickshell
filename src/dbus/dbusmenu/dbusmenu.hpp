@@ -45,7 +45,7 @@ public:
 ///! Menu item shared by an external program.
 /// Menu item shared by an external program via the
 /// [DBusMenu specification](https://github.com/AyatanaIndicators/libdbusmenu/blob/master/libdbusmenu-glib/dbus-menu.xml).
-class DBusMenuItem: public QsMenuEntry {
+class DBusMenuItem: public qs::menu::QsMenuEntry {
 	Q_OBJECT;
 	/// Handle to the root of this menu.
 	Q_PROPERTY(qs::dbus::dbusmenu::DBusMenu* menuHandle READ menuHandle CONSTANT);

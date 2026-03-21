@@ -179,43 +179,70 @@ LayerSurface::~LayerSurface() {
 		this->bridge->surface = nullptr;
 	}
 
-	this->destroy();
+	if (this->object()) this->destroy();
 }
 
 void LayerSurface::zwlr_layer_surface_v1_configure(quint32 serial, quint32 width, quint32 height) {
 	this->ack_configure(serial);
 
+	auto* window = this->window();
+	if (!window) return;
+
 	this->size = QSize(static_cast<qint32>(width), static_cast<qint32>(height));
 	if (!this->configured) {
 		this->configured = true;
-		this->window()->resizeFromApplyConfigure(this->size);
+		window->resizeFromApplyConfigure(this->size);
 #if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
-		this->window()->handleExpose(QRect(QPoint(), this->size));
+		window->handleExpose(QRect(QPoint(), this->size));
 #elif QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
-		this->window()->sendRecursiveExposeEvent();
+		window->sendRecursiveExposeEvent();
 #else
-		this->window()->updateExposure();
+		window->updateExposure();
 #endif
 	} else {
-		this->window()->applyConfigureWhenPossible();
+		window->applyConfigureWhenPossible();
 	}
 }
 
-void LayerSurface::zwlr_layer_surface_v1_closed() { this->window()->window()->close(); }
+void LayerSurface::zwlr_layer_surface_v1_closed() {
+	this->configured = false;
+
+	if (this->object()) {
+		this->destroy();
+	}
+
+	if (auto* window = this->window(); window != nullptr) {
+		if (auto* qwindow = window->window(); qwindow != nullptr) {
+			qwindow->close();
+		}
+	}
+}
 
 bool LayerSurface::isExposed() const { return this->configured; }
 
-void LayerSurface::applyConfigure() { this->window()->resizeFromApplyConfigure(this->size); }
+void LayerSurface::applyConfigure() {
+	if (auto* window = this->window(); window != nullptr) {
+		window->resizeFromApplyConfigure(this->size);
+	}
+}
 
-QWindow* LayerSurface::qwindow() { return this->window()->window(); }
+QWindow* LayerSurface::qwindow() {
+	auto* w = this->window();
+	return w ? w->window() : nullptr;
+}
 
 void LayerSurface::commit() {
+	if (!this->object()) return;
+
+	auto* qw = this->qwindow();
+	if (!qw) return;
+
 	const auto& p = this->bridge->state;
 	auto& c = this->committed;
 
 	if (p.implicitSize != c.implicitSize || p.anchors != c.anchors) {
 		auto size =
-		    constrainedSize(p.anchors, QHighDpi::toNativePixels(p.implicitSize, this->qwindow()));
+		    constrainedSize(p.anchors, QHighDpi::toNativePixels(p.implicitSize, qw));
 		this->set_size(size.width(), size.height());
 	}
 
@@ -225,10 +252,10 @@ void LayerSurface::commit() {
 
 	if (p.margins != c.margins) {
 		this->set_margin(
-		    QHighDpi::toNativePixels(p.margins.top, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.right, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.bottom, this->qwindow()),
-		    QHighDpi::toNativePixels(p.margins.left, this->qwindow())
+		    QHighDpi::toNativePixels(p.margins.top, qw),
+		    QHighDpi::toNativePixels(p.margins.right, qw),
+		    QHighDpi::toNativePixels(p.margins.bottom, qw),
+		    QHighDpi::toNativePixels(p.margins.left, qw)
 		);
 	}
 
@@ -237,7 +264,7 @@ void LayerSurface::commit() {
 	}
 
 	if (p.exclusiveZone != c.exclusiveZone) {
-		this->set_exclusive_zone(QHighDpi::toNativePixels(p.exclusiveZone, this->qwindow()));
+		this->set_exclusive_zone(QHighDpi::toNativePixels(p.exclusiveZone, qw));
 	}
 
 	if (p.keyboardFocus != c.keyboardFocus) {

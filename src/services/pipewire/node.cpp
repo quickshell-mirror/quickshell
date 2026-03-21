@@ -116,6 +116,9 @@ void PwNode::unbindHooks() {
 		emit this->readyChanged();
 	}
 
+	if (auto* core = this->registry->core) {
+		QObject::disconnect(core, &PwCore::synced, this, &PwNode::onCoreSync);
+	}
 	this->syncSeq = 0;
 	this->listener.remove();
 	this->routeDevice = -1;
@@ -268,6 +271,7 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 
 void PwNode::onCoreSync(quint32 id, qint32 seq) {
 	if (id != this->id || seq != this->syncSeq) return;
+	QObject::disconnect(this->registry->core, &PwCore::synced, this, &PwNode::onCoreSync);
 	qCInfo(logNode) << "Completed initial sync for" << this;
 	this->ready = true;
 	this->syncSeq = 0;

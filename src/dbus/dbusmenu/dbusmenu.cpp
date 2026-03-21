@@ -318,7 +318,7 @@ void DBusMenu::prepareToShow(qint32 item, qint32 depth) {
 
 		this->updateLayout(item, depth);
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -339,7 +339,7 @@ void DBusMenu::updateLayout(qint32 parent, qint32 depth) {
 			this->updateLayoutRecursive(layout, this->items.value(parent), depth);
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -444,7 +444,7 @@ void DBusMenu::sendEvent(qint32 item, const QString& event) {
 			                       << reply.error();
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);

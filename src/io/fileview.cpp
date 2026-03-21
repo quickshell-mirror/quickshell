@@ -494,7 +494,11 @@ void FileView::updatePath() {
 void FileView::updateWatchedFiles() {
 	// If inotify events are sent to the watcher after deletion and deleteLater
 	// isn't used, a use after free in the QML engine will occur.
+	// Disconnect signals before nulling the pointer to prevent a race where an
+	// inotify event fires between deleteLater() and actual destruction, causing
+	// onWatchedFileChanged/onWatchedDirectoryChanged to dereference nullptr.
 	if (this->watcher) {
+		this->watcher->disconnect(this);
 		this->watcher->deleteLater();
 		this->watcher = nullptr;
 	}
@@ -529,6 +533,7 @@ void FileView::updateWatchedFiles() {
 }
 
 void FileView::onWatchedFileChanged() {
+	if (!this->watcher) return;
 	if (!this->watcher->files().contains(this->targetPath)) {
 		this->watcher->addPath(this->targetPath);
 	}
@@ -537,6 +542,7 @@ void FileView::onWatchedFileChanged() {
 }
 
 void FileView::onWatchedDirectoryChanged() {
+	if (!this->watcher) return;
 	if (!this->watcher->files().contains(this->targetPath) && QFileInfo(this->targetPath).exists()) {
 		// the file was just created
 		this->watcher->addPath(this->targetPath);

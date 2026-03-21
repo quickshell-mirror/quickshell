@@ -106,7 +106,7 @@ void asyncReadPropertyInternal(
 			}
 		});
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, &interface, responseCallback);
@@ -184,7 +184,7 @@ void DBusPropertyGroup::updateAllViaGetAll() {
 			emit this->getAllFinished();
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -259,7 +259,7 @@ void DBusPropertyGroup::requestPropertyUpdate(DBusPropertyCore* property) {
 			this->tryUpdateProperty(property, reply.value().variant());
 		}
 
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
@@ -290,7 +290,7 @@ void DBusPropertyGroup::pushPropertyUpdate(DBusPropertyCore* property) {
 			qCWarning(logDbusProperties).noquote() << "Error writing property" << propStr;
 			qCWarning(logDbusProperties) << reply.error();
 		}
-		delete call;
+		call->deleteLater();
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
