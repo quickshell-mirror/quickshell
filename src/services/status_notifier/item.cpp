@@ -16,7 +16,6 @@
 #include <qrect.h>
 #include <qsize.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 

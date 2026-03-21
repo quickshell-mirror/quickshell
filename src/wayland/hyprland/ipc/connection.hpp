@@ -14,6 +14,7 @@
 
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
+#include "../../../core/streamreader.hpp"
 #include "../../../wayland/toplevel_management/handle.hpp"
 
 namespace qs::hyprland::ipc {
@@ -139,6 +140,7 @@ private:
 	static bool compareWorkspaces(HyprlandWorkspace* a, HyprlandWorkspace* b);
 
 	QLocalSocket eventSocket;
+	StreamReader eventReader;
 	QString mRequestSocketPath;
 	QString mEventSocketPath;
 	bool valid = false;

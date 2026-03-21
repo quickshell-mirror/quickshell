@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
-project(quickshell VERSION "0.2.0" LANGUAGES CXX C)
+project(quickshell VERSION "0.2.1" LANGUAGES CXX C)
+
+set(UNRELEASED_FEATURES)
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(QS_BUILD_OPTIONS "")
+
+# should be changed for forks
+set(CRASHREPORT_URL "https://github.com/outfoxxed/quickshell/issues/new?template=crash2.yml" CACHE STRING "Bugreport URL")
 
 function(boption VAR NAME DEFAULT)
 	cmake_parse_arguments(PARSE_ARGV 3 arg "" "REQUIRES" "")
@@ -38,14 +43,17 @@ string(APPEND QS_BUILD_OPTIONS "  Distributor: ${DISTRIBUTOR}")
 
 message(STATUS "Quickshell configuration")
 message(STATUS "  Distributor: ${DISTRIBUTOR}")
-boption(DISTRIBUTOR_DEBUGINFO_AVAILABLE "Distributor provided debuginfo" NO)
 boption(NO_PCH "Disable precompild headers (dev)" OFF)
 boption(BUILD_TESTING "Build tests (dev)" OFF)
 boption(ASAN "ASAN (dev)" OFF) # note: better output with gcc than clang
 boption(FRAME_POINTERS "Keep Frame Pointers (dev)" ${ASAN})
 
-boption(CRASH_REPORTER "Crash Handling" ON)
-boption(USE_JEMALLOC "Use jemalloc" ON)
+if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	boption(USE_JEMALLOC "Use jemalloc" OFF)
+else()
+	boption(USE_JEMALLOC "Use jemalloc" ON)
+endif()
+boption(CRASH_HANDLER "Crash Handling" ON)
 boption(SOCKETS "Unix Sockets" ON)
 boption(WAYLAND "Wayland" ON)
 boption(WAYLAND_WLR_LAYERSHELL "  Wlroots Layer-Shell" ON REQUIRES WAYLAND)
@@ -67,10 +75,12 @@ boption(SERVICE_STATUS_NOTIFIER "System Tray" ON)
 boption(SERVICE_PIPEWIRE "PipeWire" ON)
 boption(SERVICE_MPRIS "Mpris" ON)
 boption(SERVICE_PAM "Pam" ON)
+boption(SERVICE_POLKIT "Polkit" ON)
 boption(SERVICE_GREETD "Greetd" ON)
 boption(SERVICE_UPOWER "UPower" ON)
 boption(SERVICE_NOTIFICATIONS "Notifications" ON)
 boption(BLUETOOTH "Bluetooth" ON)
+boption(NETWORK "Network" ON)
 
 include(cmake/install-qml-module.cmake)
 include(cmake/util.cmake)
@@ -100,6 +110,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(QT_FPDEPS Gui Qml Quick QuickControls2 Widgets ShaderTools)
+set(QT_PRIVDEPS QuickPrivate)
 
 include(cmake/pch.cmake)
 
@@ -115,9 +126,10 @@ endif()
 
 if (WAYLAND)
 	list(APPEND QT_FPDEPS WaylandClient)
+	list(APPEND QT_PRIVDEPS WaylandClientPrivate)
 endif()
 
-if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS OR BLUETOOTH)
+if (SERVICE_STATUS_NOTIFIER OR SERVICE_MPRIS OR SERVICE_UPOWER OR SERVICE_NOTIFICATIONS OR BLUETOOTH OR NETWORK)
 	set(DBUS ON)
 endif()
 
@@ -126,6 +138,13 @@ if (DBUS)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS ${QT_FPDEPS})
+
+# In Qt 6.10, private dependencies are required to be explicit,
+# but they could not be explicitly depended on prior to 6.9.
+if (Qt6_VERSION VERSION_GREATER_EQUAL "6.9.0")
+	set(QT_NO_PRIVATE_MODULE_WARNING ON)
+	find_package(Qt6 REQUIRED COMPONENTS ${QT_PRIVDEPS})
+endif()
 
 set(CMAKE_AUTOUIC OFF)
 qt_standard_project_setup(REQUIRES 6.6)

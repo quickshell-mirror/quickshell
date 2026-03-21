@@ -11,7 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
@@ -23,6 +23,7 @@
 #include <spa/pod/vararg.h>
 #include <spa/utils/dict.h>
 #include <spa/utils/keys.h>
+#include <spa/utils/string.h>
 #include <spa/utils/type.h>
 
 #include "../../core/logcat.hpp"
@@ -160,6 +161,24 @@ void PwNode::initProps(const spa_dict* props) {
 		this->nick = nodeNick;
 	}
 
+	if (const auto* nodeCategory = spa_dict_lookup(props, PW_KEY_MEDIA_CATEGORY)) {
+		if (strcmp(nodeCategory, "Monitor") == 0 || strcmp(nodeCategory, "Manager") == 0) {
+			this->isMonitor = true;
+		}
+	}
+
+	if (const auto* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL)) {
+		auto ok = false;
+		auto value = QString::fromUtf8(serial).toULongLong(&ok);
+		if (!ok) {
+			qCWarning(logNode) << this
+			                   << "has an object.serial property but the value is not valid. Value:"
+			                   << serial;
+		} else {
+			this->objectSerial = value;
+		}
+	}
+
 	if (const auto* deviceId = spa_dict_lookup(props, PW_KEY_DEVICE_ID)) {
 		auto ok = false;
 		auto id = QString::fromUtf8(deviceId).toInt(&ok);
@@ -171,7 +190,8 @@ void PwNode::initProps(const spa_dict* props) {
 			this->device = this->registry->devices.value(id);
 
 			if (this->device == nullptr) {
-				qCCritical(logNode
+				qCCritical(
+				    logNode
 				) << this
 				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
 			}
@@ -195,21 +215,36 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PROPS) != 0) {
 		auto properties = QMap<QString, QString>();
 
+		bool proAudio = false;
+		if (const auto* proAudioStr = spa_dict_lookup(info->props, "device.profile.pro")) {
+			proAudio = spa_atob(proAudioStr);
+		}
+
+		if (proAudio != self->proAudio) {
+			qCDebug(logNode) << self << "pro audio state changed:" << proAudio;
+			self->proAudio = proAudio;
+		}
+
 		if (self->device) {
 			if (const auto* routeDevice = spa_dict_lookup(info->props, "card.profile.device")) {
 				auto ok = false;
 				auto id = QString::fromUtf8(routeDevice).toInt(&ok);
 
 				if (!ok) {
-					qCCritical(logNode
+					qCCritical(
+					    logNode
 					) << self
 					  << "has a card.profile.device property but the value is not an integer. Value:" << id;
 				}
 
 				self->routeDevice = id;
+				if (self->boundData) self->boundData->onDeviceChanged();
 			} else {
-				qCCritical(logNode) << self << "has attached device" << self->device
-				                    << "but no card.profile.device property.";
+				qCDebug(
+				    logNode
+				) << self
+				  << "has attached device" << self->device
+				  << "but no card.profile.device property. Node volume control will be used.";
 			}
 		}
 
@@ -266,6 +301,15 @@ PwNodeBoundAudio::PwNodeBoundAudio(PwNode* node): QObject(node), node(node) {
 	}
 }
 
+void PwNodeBoundAudio::onDeviceChanged() {
+	PwVolumeProps volumeProps;
+	if (this->node->device->tryLoadVolumeProps(this->node->routeDevice, volumeProps)) {
+		qCDebug(logNode) << "Initializing volume props for" << this->node
+		                 << "with known values from backing device.";
+		this->updateVolumeProps(volumeProps);
+	}
+}
+
 void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 	if ((info->change_mask & PW_NODE_CHANGE_MASK_PARAMS) != 0) {
 		for (quint32 i = 0; i < info->n_params; i++) {
@@ -286,9 +330,10 @@ void PwNodeBoundAudio::onInfo(const pw_node_info* info) {
 
 void PwNodeBoundAudio::onSpaParam(quint32 id, quint32 index, const spa_pod* param) {
 	if (id == SPA_PARAM_Props && index == 0) {
-		if (this->node->device) {
+		if (this->node->shouldUseDevice()) {
 			qCDebug(logNode) << "Skipping node volume props update for" << this->node
-			                 << "in favor of device updates.";
+			                 << "in favor of device updates from routeDevice" << this->node->routeDevice
+			                 << "of" << this->node->device;
 			return;
 		}
 
@@ -303,6 +348,8 @@ void PwNodeBoundAudio::updateVolumeProps(const PwVolumeProps& volumeProps) {
 		                   << volumeProps.volumes.size() << volumeProps.channels.size();
 		return;
 	}
+
+	this->volumeStep = volumeProps.volumeStep;
 
 	// It is important that the lengths of channels and volumes stay in sync whenever you read them.
 	auto channelsChanged = false;
@@ -356,7 +403,7 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 
 	if (muted == this->mMuted) return;
 
-	if (this->node->device) {
+	if (this->node->shouldUseDevice()) {
 		qCInfo(logNode) << "Changing muted state of" << this->node << "to" << muted << "via device";
 		if (!this->node->device->setMuted(this->node->routeDevice, muted)) {
 			return;
@@ -382,6 +429,10 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 }
 
 float PwNodeBoundAudio::averageVolume() const {
+	if (this->mVolumes.isEmpty()) {
+		return 0.0f;
+	}
+
 	float total = 0;
 
 	for (auto volume: this->mVolumes) {
@@ -429,37 +480,41 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 		return;
 	}
 
-	if (this->node->device) {
+	if (this->node->shouldUseDevice()) {
 		if (this->node->device->waitingForDevice()) {
 			qCInfo(logNode) << "Waiting to change volumes of" << this->node << "to" << realVolumes
 			                << "via device";
 			this->waitingVolumes = realVolumes;
 		} else {
-			auto significantChange = this->mServerVolumes.isEmpty();
-			for (auto i = 0; i < this->mServerVolumes.length(); i++) {
-				auto serverVolume = this->mServerVolumes.value(i);
-				auto targetVolume = realVolumes.value(i);
-				if (targetVolume == 0 || abs(targetVolume - serverVolume) >= 0.0001) {
-					significantChange = true;
-					break;
-				}
-			}
-
-			if (significantChange) {
-				qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
-				                << "via device";
-				if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
-					return;
+			if (this->volumeStep != -1) {
+				auto significantChange = this->mServerVolumes.isEmpty();
+				for (auto i = 0; i < this->mServerVolumes.length(); i++) {
+					auto serverVolume = this->mServerVolumes.value(i);
+					auto targetVolume = realVolumes.value(i);
+					if (targetVolume == 0 || abs(targetVolume - serverVolume) >= this->volumeStep) {
+						significantChange = true;
+						break;
+					}
 				}
 
-				this->mDeviceVolumes = realVolumes;
-				this->node->device->waitForDevice();
-			} else {
-				// Insignificant changes won't cause an info event on the device, leaving qs hung in the
-				// "waiting for acknowledgement" state forever.
-				qCInfo(logNode) << "Ignoring volume change for" << this->node << "to" << realVolumes
-				                << "from" << this->mServerVolumes
-				                << "as it is a device node and the change is too small.";
+				if (significantChange) {
+					qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
+					                << "via device";
+					if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
+						return;
+					}
+
+					this->mDeviceVolumes = realVolumes;
+					this->node->device->waitForDevice();
+				} else {
+					// Insignificant changes won't cause an info event on the device, leaving qs hung in the
+					// "waiting for acknowledgement" state forever.
+					qCInfo(logNode).nospace()
+					    << "Ignoring volume change for " << this->node << " to " << realVolumes << " from "
+					    << this->mServerVolumes
+					    << " as it is a device node and the change is too small (min step: "
+					    << this->volumeStep << ").";
+				}
 			}
 		}
 	} else {
@@ -505,7 +560,7 @@ void PwNodeBoundAudio::onDeviceVolumesChanged(
     qint32 routeDevice,
     const PwVolumeProps& volumeProps
 ) {
-	if (this->node->device && this->node->routeDevice == routeDevice) {
+	if (this->node->shouldUseDevice() && this->node->routeDevice == routeDevice) {
 		qCDebug(logNode) << "Got updated device volume props for" << this->node << "via"
 		                 << this->node->device;
 
@@ -519,23 +574,36 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 	const auto* volumesProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelVolumes);
 	const auto* channelsProp = spa_pod_find_prop(param, nullptr, SPA_PROP_channelMap);
 	const auto* muteProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
+	const auto* volumeStepProp = spa_pod_find_prop(param, nullptr, SPA_PROP_volumeStep);
 
-	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
-	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
-
-	spa_pod* iter = nullptr;
-	SPA_POD_ARRAY_FOREACH(volumes, iter) {
-		// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
-		auto linear = *reinterpret_cast<float*>(iter);
-		auto visual = std::cbrt(linear);
-		props.volumes.push_back(visual);
+	if (volumesProp) {
+		const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(volumes, iter) {
+			// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
+			auto linear = *reinterpret_cast<float*>(iter);
+			auto visual = std::cbrt(linear);
+			props.volumes.push_back(visual);
+		}
 	}
 
-	SPA_POD_ARRAY_FOREACH(channels, iter) {
-		props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+	if (channelsProp) {
+		const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(channels, iter) {
+			props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+		}
 	}
 
-	spa_pod_get_bool(&muteProp->value, &props.mute);
+	if (muteProp) {
+		spa_pod_get_bool(&muteProp->value, &props.mute);
+	}
+
+	if (volumeStepProp) {
+		spa_pod_get_float(&volumeStepProp->value, &props.volumeStep);
+	} else {
+		props.volumeStep = -1;
+	}
 
 	return props;
 }

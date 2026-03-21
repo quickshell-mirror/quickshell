@@ -7,6 +7,7 @@
 #include "../../../core/doc.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "connection.hpp"
+#include "controller.hpp"
 
 namespace qs::i3::ipc {
 

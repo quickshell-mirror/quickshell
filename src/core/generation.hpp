@@ -9,6 +9,7 @@
 #include <qqmlengine.h>
 #include <qqmlerror.h>
 #include <qqmlincubator.h>
+#include <qquickwindow.h>
 #include <qtclasshelpermacros.h>
 
 #include "incubator.hpp"
@@ -40,8 +41,7 @@ public:
 	void setWatchingFiles(bool watching);
 	bool setExtraWatchedFiles(const QVector<QString>& files);
 
-	void registerIncubationController(QQmlIncubationController* controller);
-	void deregisterIncubationController(QQmlIncubationController* controller);
+	void trackWindowIncubationController(QQuickWindow* window);
 
 	// takes ownership
 	void registerExtension(const void* key, EngineGenerationExt* extension);
@@ -65,7 +65,7 @@ public:
 	QFileSystemWatcher* watcher = nullptr;
 	QVector<QString> deletedWatchedFiles;
 	QVector<QString> extraWatchedFiles;
-	DelayedQmlIncubationController delayedIncubationController;
+	QsIncubationController incubationController;
 	bool reloadComplete = false;
 	QuickshellGlobal* qsgInstance = nullptr;
 
@@ -84,13 +84,13 @@ public slots:
 private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
-	void incubationControllerDestroyed();
+	void onTrackedWindowDestroyed(QObject* object);
 	static void onEngineWarnings(const QList<QQmlError>& warnings);
 
 private:
 	void postReload();
-	void assignIncubationController();
-	QVector<QObject*> incubationControllers;
+	void updateIncubationMode();
+	QVector<QQuickWindow*> trackedWindows;
 	bool incubationControllersLocked = false;
 	QHash<const void*, EngineGenerationExt*> extensions;
 

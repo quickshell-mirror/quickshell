@@ -143,6 +143,12 @@ class WindowInterface: public Reloadable {
 	///
 	/// > [!NOTE] The surface format cannot be changed after the window is created.
 	Q_PROPERTY(QsSurfaceFormat surfaceFormat READ surfaceFormat WRITE setSurfaceFormat NOTIFY surfaceFormatChanged);
+	/// If the window should receive render updates. Defaults to true.
+	///
+	/// When set to false, the window will not re-render in response to animations
+	/// or other visual updates from other windows. This is useful for static windows
+	/// such as wallpapers that do not need to update frequently, saving GPU cycles.
+	Q_PROPERTY(bool updatesEnabled READ updatesEnabled WRITE setUpdatesEnabled NOTIFY updatesEnabledChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
@@ -231,6 +237,9 @@ public:
 	[[nodiscard]] QsSurfaceFormat surfaceFormat() const;
 	void setSurfaceFormat(QsSurfaceFormat format) const;
 
+	[[nodiscard]] bool updatesEnabled() const;
+	void setUpdatesEnabled(bool updatesEnabled) const;
+
 	[[nodiscard]] QQmlListProperty<QObject> data() const;
 
 	static QsWindowAttached* qmlAttachedProperties(QObject* object);
@@ -258,6 +267,7 @@ signals:
 	void colorChanged();
 	void maskChanged();
 	void surfaceFormatChanged();
+	void updatesEnabledChanged();
 
 protected:
 	void connectSignals() const;

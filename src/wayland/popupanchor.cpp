@@ -16,7 +16,6 @@ using XdgPositioner = QtWayland::xdg_positioner;
 using qs::wayland::xdg_shell::XdgWmBase;
 
 void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bool onlyIfDirty) {
-
 	auto* waylandWindow = dynamic_cast<QWaylandWindow*>(window->handle());
 	auto* popupRole = waylandWindow ? waylandWindow->surfaceRole<::xdg_popup>() : nullptr;
 

@@ -5,6 +5,7 @@
 #include <qtypes.h>
 
 #include "connection.hpp"
+#include "controller.hpp"
 
 namespace qs::i3::ipc {
 
@@ -40,7 +41,7 @@ class I3Workspace: public QObject {
 	QML_UNCREATABLE("I3Workspaces must be retrieved from the I3 object.");
 
 public:
-	I3Workspace(I3Ipc* ipc);
+	I3Workspace(I3IpcController* ipc);
 
 	/// Activate the workspace.
 	///
@@ -72,7 +73,7 @@ signals:
 	void lastIpcObjectChanged();
 
 private:
-	I3Ipc* ipc;
+	I3IpcController* ipc;
 
 	QVariantMap mLastIpcObject;
 

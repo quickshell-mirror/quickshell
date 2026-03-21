@@ -107,7 +107,7 @@ void PwDevice::addDeviceIndexPairs(const spa_pod* param) {
 	qint32 device = 0;
 	qint32 index = 0;
 
-	spa_pod* props = nullptr;
+	const spa_pod* props = nullptr;
 
 	// clang-format off
 	quint32 id = SPA_PARAM_Route;
@@ -125,18 +125,32 @@ void PwDevice::addDeviceIndexPairs(const spa_pod* param) {
 	// Insert into the main map as well, staging's purpose is to remove old entries.
 	this->routeDeviceIndexes.insert(device, index);
 
+	// Used for initial node volume if the device is bound before the node
+	// (e.g. multiple nodes pointing to the same device)
+	this->routeDeviceVolumes.insert(device, volumeProps);
+
 	qCDebug(logDevice).nospace() << "Registered device/index pair for " << this
 	                             << ": [device: " << device << ", index: " << index << ']';
 
 	emit this->routeVolumesChanged(device, volumeProps);
 }
 
+bool PwDevice::tryLoadVolumeProps(qint32 routeDevice, PwVolumeProps& volumeProps) {
+	if (!this->routeDeviceVolumes.contains(routeDevice)) return false;
+	volumeProps = this->routeDeviceVolumes.value(routeDevice);
+	return true;
+}
+
+bool PwDevice::hasRouteDevice(qint32 routeDevice) const {
+	return this->routeDeviceIndexes.contains(routeDevice);
+}
+
 void PwDevice::polled() {
 	// It is far more likely that the list content has not come in yet than it having no entries,
 	// and there isn't a way to check in the case that there *aren't* actually any entries.
 	if (!this->stagingIndexes.isEmpty()) {
-		this->routeDeviceIndexes.removeIf([&](const std::pair<qint32, qint32>& entry) {
-			if (!stagingIndexes.contains(entry.first)) {
+		this->routeDeviceIndexes.removeIf([&, this](const std::pair<qint32, qint32>& entry) {
+			if (!this->stagingIndexes.contains(entry.first)) {
 				qCDebug(logDevice).nospace() << "Removed device/index pair [device: " << entry.first
 				                             << ", index: " << entry.second << "] for" << this;
 				return true;

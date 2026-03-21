@@ -15,8 +15,8 @@ public:
 	~LayerShellIntegration() override;
 	Q_DISABLE_COPY_MOVE(LayerShellIntegration);
 
-	QtWaylandClient::QWaylandShellSurface* createShellSurface(QtWaylandClient::QWaylandWindow* window
-	) override;
+	QtWaylandClient::QWaylandShellSurface*
+	createShellSurface(QtWaylandClient::QWaylandWindow* window) override;
 };
 
 } // namespace qs::wayland::layershell

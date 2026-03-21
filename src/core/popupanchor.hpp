@@ -6,6 +6,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
+#include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qquickitem.h>
 #include <qsize.h>
@@ -139,7 +140,9 @@ public:
 	void markDirty();
 
 	[[nodiscard]] QObject* window() const { return this->mWindow; }
-	[[nodiscard]] ProxyWindowBase* proxyWindow() const { return this->mProxyWindow; }
+	[[nodiscard]] QBindable<ProxyWindowBase*> bindableProxyWindow() const {
+		return &this->bProxyWindow;
+	}
 	[[nodiscard]] QWindow* backingWindow() const;
 	void setWindowInternal(QObject* window);
 	void setWindow(QObject* window);
@@ -193,11 +196,12 @@ private slots:
 private:
 	QObject* mWindow = nullptr;
 	QQuickItem* mItem = nullptr;
-	ProxyWindowBase* mProxyWindow = nullptr;
 	PopupAnchorState state;
 	Box mUserRect;
 	Margins mMargins;
 	std::optional<PopupAnchorState> lastState;
+
+	Q_OBJECT_BINDABLE_PROPERTY(PopupAnchor, ProxyWindowBase*, bProxyWindow);
 };
 
 class PopupPositioner {

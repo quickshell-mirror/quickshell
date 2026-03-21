@@ -1,5 +1,7 @@
 #include "ipchandler.hpp"
 #include <cstddef>
+#include <memory>
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdebug.h>
@@ -139,6 +141,75 @@ WirePropertyDefinition IpcProperty::wireDef() const {
 	return wire;
 }
 
+WireSignalDefinition IpcSignal::wireDef() const {
+	WireSignalDefinition wire;
+	wire.name = this->signal.name();
+	if (this->targetSlot != IpcSignalListener::SLOT_VOID) {
+		wire.retname = this->signal.parameterNames().value(0);
+		if (this->targetSlot == IpcSignalListener::SLOT_STRING) wire.rettype = "string";
+		else if (this->targetSlot == IpcSignalListener::SLOT_INT) wire.rettype = "int";
+		else if (this->targetSlot == IpcSignalListener::SLOT_BOOL) wire.rettype = "bool";
+		else if (this->targetSlot == IpcSignalListener::SLOT_REAL) wire.rettype = "real";
+		else if (this->targetSlot == IpcSignalListener::SLOT_COLOR) wire.rettype = "color";
+	}
+	return wire;
+}
+
+// NOLINTBEGIN (cppcoreguidelines-interfaces-global-init)
+// clang-format off
+const int IpcSignalListener::SLOT_VOID = IpcSignalListener::staticMetaObject.indexOfSlot("invokeVoid()");
+const int IpcSignalListener::SLOT_STRING = IpcSignalListener::staticMetaObject.indexOfSlot("invokeString(QString)");
+const int IpcSignalListener::SLOT_INT = IpcSignalListener::staticMetaObject.indexOfSlot("invokeInt(int)");
+const int IpcSignalListener::SLOT_BOOL = IpcSignalListener::staticMetaObject.indexOfSlot("invokeBool(bool)");
+const int IpcSignalListener::SLOT_REAL = IpcSignalListener::staticMetaObject.indexOfSlot("invokeReal(double)");
+const int IpcSignalListener::SLOT_COLOR = IpcSignalListener::staticMetaObject.indexOfSlot("invokeColor(QColor)");
+// clang-format on
+// NOLINTEND
+
+bool IpcSignal::resolve(QString& error) {
+	if (this->signal.parameterCount() > 1) {
+		error = "Due to technical limitations, IPC signals can have at most one argument.";
+		return false;
+	}
+
+	auto slot = IpcSignalListener::SLOT_VOID;
+
+	if (this->signal.parameterCount() == 1) {
+		auto paramType = this->signal.parameterType(0);
+		if (paramType == QMetaType::QString) slot = IpcSignalListener::SLOT_STRING;
+		else if (paramType == QMetaType::Int) slot = IpcSignalListener::SLOT_INT;
+		else if (paramType == QMetaType::Bool) slot = IpcSignalListener::SLOT_BOOL;
+		else if (paramType == QMetaType::Double) slot = IpcSignalListener::SLOT_REAL;
+		else if (paramType == QMetaType::QColor) slot = IpcSignalListener::SLOT_COLOR;
+		else {
+			error = QString("Type of argument (%2: %3) cannot be used across IPC.")
+			            .arg(this->signal.parameterNames().value(0))
+			            .arg(QMetaType(paramType).name());
+
+			return false;
+		}
+	}
+
+	this->targetSlot = slot;
+	return true;
+}
+
+void IpcSignal::connectListener(IpcHandler* handler) {
+	if (this->targetSlot == -1) {
+		qFatal() << "Tried to connect unresolved IPC signal";
+	}
+
+	this->listener = std::make_shared<IpcSignalListener>(this->signal.name());
+	QMetaObject::connect(handler, this->signal.methodIndex(), this->listener.get(), this->targetSlot);
+
+	QObject::connect(
+	    this->listener.get(),
+	    &IpcSignalListener::triggered,
+	    handler,
+	    &IpcHandler::onSignalTriggered
+	);
+}
+
 IpcCallStorage::IpcCallStorage(const IpcFunction& function): returnSlot(function.returnType) {
 	for (const auto& arg: function.argumentTypes) {
 		this->argumentSlots.emplace_back(arg);
@@ -172,16 +243,28 @@ void IpcHandler::onPostReload() {
 	// which should handle inheritance on the qml side.
 	for (auto i = smeta.methodCount(); i != meta->methodCount(); i++) {
 		const auto& method = meta->method(i);
-		if (method.methodType() != QMetaMethod::Slot) continue;
+		if (method.methodType() == QMetaMethod::Slot) {
+			auto ipcFunc = IpcFunction(method);
+			QString error;
 
-		auto ipcFunc = IpcFunction(method);
-		QString error;
+			if (!ipcFunc.resolve(error)) {
+				qmlWarning(this).nospace().noquote()
+				    << "Error parsing function \"" << method.name() << "\": " << error;
+			} else {
+				this->functionMap.insert(method.name(), ipcFunc);
+			}
+		} else if (method.methodType() == QMetaMethod::Signal) {
+			qmlDebug(this) << "Signal detected: " << method.name();
+			auto ipcSig = IpcSignal(method);
+			QString error;
 
-		if (!ipcFunc.resolve(error)) {
-			qmlWarning(this).nospace().noquote()
-			    << "Error parsing function \"" << method.name() << "\": " << error;
-		} else {
-			this->functionMap.insert(method.name(), ipcFunc);
+			if (!ipcSig.resolve(error)) {
+				qmlWarning(this).nospace().noquote()
+				    << "Error parsing signal \"" << method.name() << "\": " << error;
+			} else {
+				ipcSig.connectListener(this);
+				this->signalMap.emplace(method.name(), std::move(ipcSig));
+			}
 		}
 	}
 
@@ -220,6 +303,11 @@ IpcHandlerRegistry* IpcHandlerRegistry::forGeneration(EngineGeneration* generati
 	}
 
 	return dynamic_cast<IpcHandlerRegistry*>(ext);
+}
+
+void IpcHandler::onSignalTriggered(const QString& signal, const QString& value) const {
+	emit IpcSignalRemoteListener::instance()
+	    -> triggered(this->registeredState.target, signal, value);
 }
 
 void IpcHandler::updateRegistration(bool destroying) {
@@ -324,6 +412,10 @@ WireTargetDefinition IpcHandler::wireDef() const {
 		wire.properties += prop.wireDef();
 	}
 
+	for (const auto& sig: this->signalMap.values()) {
+		wire.signalFunctions += sig.wireDef();
+	}
+
 	return wire;
 }
 
@@ -368,6 +460,13 @@ IpcProperty* IpcHandler::findProperty(const QString& name) {
 	else return &*itr;
 }
 
+IpcSignal* IpcHandler::findSignal(const QString& name) {
+	auto itr = this->signalMap.find(name);
+
+	if (itr == this->signalMap.end()) return nullptr;
+	else return &*itr;
+}
+
 IpcHandler* IpcHandlerRegistry::findHandler(const QString& target) {
 	return this->handlers.value(target);
 }
@@ -380,6 +479,11 @@ QVector<WireTargetDefinition> IpcHandlerRegistry::wireTargets() const {
 	}
 
 	return wire;
+}
+
+IpcSignalRemoteListener* IpcSignalRemoteListener::instance() {
+	static auto* instance = new IpcSignalRemoteListener();
+	return instance;
 }
 
 } // namespace qs::io::ipc

@@ -115,6 +115,8 @@ XPanelWindow::XPanelWindow(QObject* parent): ProxyWindowBase(parent) {
 				return 0;
 			}
 		}
+
+		return 0;
 	});
 
 	this->bcExclusionEdge.setBinding([this] { return this->bAnchors.value().exclusionEdge(); });

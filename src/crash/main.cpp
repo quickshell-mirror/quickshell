@@ -1,9 +1,11 @@
 #include "main.hpp"
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 
+#include <cpptrace/basic.hpp>
+#include <cpptrace/formatting.hpp>
 #include <qapplication.h>
-#include <qconfig.h>
 #include <qcoreapplication.h>
 #include <qdatastream.h>
 #include <qdir.h>
@@ -12,15 +14,18 @@
 #include <qloggingcategory.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
-#include <qtversion.h>
+#include <qtypes.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
+#include <unistd.h>
 
+#include "../core/debuginfo.hpp"
 #include "../core/instanceinfo.hpp"
 #include "../core/logcat.hpp"
 #include "../core/logging.hpp"
+#include "../core/logging_p.hpp"
 #include "../core/paths.hpp"
-#include "build.hpp"
+#include "../core/ringbuf.hpp"
 #include "interface.hpp"
 
 namespace {
@@ -61,6 +66,76 @@ int tryDup(int fd, const QString& path) {
 	return 0;
 }
 
+QString readRecentLogs(int logFd, int maxLines, qint64 maxAgeSecs) {
+	QFile file;
+	if (!file.open(logFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+		return QStringLiteral("(failed to open log fd)\n");
+	}
+
+	file.seek(0);
+
+	qs::log::EncodedLogReader reader;
+	reader.setDevice(&file);
+
+	bool readable = false;
+	quint8 logVersion = 0;
+	quint8 readerVersion = 0;
+	if (!reader.readHeader(&readable, &logVersion, &readerVersion) || !readable) {
+		return QStringLiteral("(failed to read log header)\n");
+	}
+
+	// Read all messages, keeping last maxLines in a ring buffer
+	auto tail = RingBuffer<qs::log::LogMessage>(maxLines);
+	qs::log::LogMessage message;
+	while (reader.read(&message)) {
+		tail.emplace(message);
+	}
+
+	if (tail.size() == 0) {
+		return QStringLiteral("(no logs)\n");
+	}
+
+	// Filter to only messages within maxAgeSecs of the newest message
+	auto cutoff = tail.at(0).time.addSecs(-maxAgeSecs);
+
+	QString result;
+	auto stream = QTextStream(&result);
+	for (auto i = tail.size() - 1; i != -1; i--) {
+		if (tail.at(i).time < cutoff) continue;
+		qs::log::LogMessage::formatMessage(stream, tail.at(i), false, true);
+		stream << '\n';
+	}
+
+	if (result.isEmpty()) {
+		return QStringLiteral("(no recent logs)\n");
+	}
+
+	return result;
+}
+
+cpptrace::stacktrace resolveStacktrace(int dumpFd) {
+	QFile sourceFile;
+	if (!sourceFile.open(dumpFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+		qCCritical(logCrashReporter) << "Failed to open trace memfd.";
+		return {};
+	}
+
+	sourceFile.seek(0);
+	auto data = sourceFile.readAll();
+
+	auto frameCount = static_cast<size_t>(data.size()) / sizeof(cpptrace::safe_object_frame);
+	if (frameCount == 0) return {};
+
+	const auto* frames = reinterpret_cast<const cpptrace::safe_object_frame*>(data.constData());
+
+	cpptrace::object_trace objectTrace;
+	for (size_t i = 0; i < frameCount; i++) {
+		objectTrace.frames.push_back(frames[i].resolve()); // NOLINT
+	}
+
+	return objectTrace.resolve();
+}
+
 void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 	qCDebug(logCrashReporter) << "Recording crash information at" << crashDir.path();
 
@@ -71,74 +146,49 @@ void recordCrashInfo(const QDir& crashDir, const InstanceInfo& instance) {
 	}
 
 	auto crashProc = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
+	auto crashSignal = qEnvironmentVariable("__QUICKSHELL_CRASH_SIGNAL").toInt();
 	auto dumpFd = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_FD").toInt();
 	auto logFd = qEnvironmentVariable("__QUICKSHELL_CRASH_LOG_FD").toInt();
 
-	qCDebug(logCrashReporter) << "Saving minidump from fd" << dumpFd;
-	auto dumpDupStatus = tryDup(dumpFd, crashDir.filePath("minidump.dmp.log"));
-	if (dumpDupStatus != 0) {
-		qCCritical(logCrashReporter) << "Failed to write minidump:" << dumpDupStatus;
-	}
+	qCDebug(logCrashReporter) << "Resolving stacktrace from fd" << dumpFd;
+	auto stacktrace = resolveStacktrace(dumpFd);
 
-	qCDebug(logCrashReporter) << "Saving log from fd" << logFd;
-	auto logDupStatus = tryDup(logFd, crashDir.filePath("log.qslog.log"));
+	qCDebug(logCrashReporter) << "Reading recent log lines from fd" << logFd;
+	auto logDupFd = dup(logFd);
+	auto recentLogs = readRecentLogs(logFd, 100, 10);
+
+	qCDebug(logCrashReporter) << "Saving log from fd" << logDupFd;
+	auto logDupStatus = tryDup(logDupFd, crashDir.filePath("log.qslog.log"));
 	if (logDupStatus != 0) {
 		qCCritical(logCrashReporter) << "Failed to save log:" << logDupStatus;
 	}
 
-	auto copyBinStatus = 0;
-	if (!DISTRIBUTOR_DEBUGINFO_AVAILABLE) {
-		qCDebug(logCrashReporter) << "Copying binary to crash folder";
-		if (!QFile(QCoreApplication::applicationFilePath()).copy(crashDir.filePath("executable.txt"))) {
-			copyBinStatus = 1;
-			qCCritical(logCrashReporter) << "Failed to copy binary.";
-		}
-	}
-
 	{
-		auto extraInfoFile = QFile(crashDir.filePath("info.txt"));
+		auto extraInfoFile = QFile(crashDir.filePath("report.txt"));
 		if (!extraInfoFile.open(QFile::WriteOnly)) {
 			qCCritical(logCrashReporter) << "Failed to open crash info file for writing.";
 		} else {
 			auto stream = QTextStream(&extraInfoFile);
-			stream << "===== Build Information =====\n";
-			stream << "Git Revision: " << GIT_REVISION << '\n';
-			stream << "Buildtime Qt Version: " << QT_VERSION_STR << "\n";
-			stream << "Build Type: " << BUILD_TYPE << '\n';
-			stream << "Compiler: " << COMPILER << '\n';
-			stream << "Complie Flags: " << COMPILE_FLAGS << "\n\n";
-			stream << "Build configuration:\n" << BUILD_CONFIGURATION << "\n";
+			stream << qs::debuginfo::combinedInfo();
 
-			stream << "\n===== Runtime Information =====\n";
-			stream << "Runtime Qt Version: " << qVersion() << '\n';
+			stream << "\n===== Instance Information =====\n";
+			stream << "Signal: " << strsignal(crashSignal) << " (" << crashSignal << ")\n"; // NOLINT
 			stream << "Crashed process ID: " << crashProc << '\n';
 			stream << "Run ID: " << instance.instanceId << '\n';
 			stream << "Shell ID: " << instance.shellId << '\n';
 			stream << "Config Path: " << instance.configPath << '\n';
 
-			stream << "\n===== Report Integrity =====\n";
-			stream << "Minidump save status: " << dumpDupStatus << '\n';
-			stream << "Log save status: " << logDupStatus << '\n';
-			stream << "Binary copy status: " << copyBinStatus << '\n';
-
-			stream << "\n===== System Information =====\n\n";
-			stream << "/etc/os-release:";
-			auto osReleaseFile = QFile("/etc/os-release");
-			if (osReleaseFile.open(QFile::ReadOnly)) {
-				stream << '\n' << osReleaseFile.readAll() << '\n';
-				osReleaseFile.close();
+			stream << "\n===== Stacktrace =====\n";
+			if (stacktrace.empty()) {
+				stream << "(no trace available)\n";
 			} else {
-				stream << "FAILED TO OPEN\n";
+				auto formatter = cpptrace::formatter().header(std::string());
+				auto traceStr = formatter.format(stacktrace);
+				stream << QString::fromStdString(traceStr) << '\n';
 			}
 
-			stream << "/etc/lsb-release:";
-			auto lsbReleaseFile = QFile("/etc/lsb-release");
-			if (lsbReleaseFile.open(QFile::ReadOnly)) {
-				stream << '\n' << lsbReleaseFile.readAll();
-				lsbReleaseFile.close();
-			} else {
-				stream << "FAILED TO OPEN\n";
-			}
+			stream << "\n===== Log Tail =====\n";
+			stream << recentLogs;
 
 			extraInfoFile.close();
 		}
@@ -161,7 +211,10 @@ void qsCheckCrash(int argc, char** argv) {
 		auto infoFd = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD").toInt();
 
 		QFile file;
-		file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		if (!file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+			qFatal() << "Failed to open instance info fd.";
+		}
+
 		file.seek(0);
 
 		auto ds = QDataStream(&file);
@@ -177,7 +230,9 @@ void qsCheckCrash(int argc, char** argv) {
 	);
 
 	auto app = QApplication(argc, argv);
-	QApplication::setDesktopFileName("org.quickshell");
+	auto desktopId =
+	    info.instance.appId.isEmpty() ? QStringLiteral("org.quickshell") : info.instance.appId;
+	QApplication::setDesktopFileName(desktopId);
 
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 

@@ -15,6 +15,7 @@
 #include <spa/pod/pod.h>
 
 #include "core.hpp"
+#include "device.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
@@ -158,6 +159,7 @@ struct PwVolumeProps {
 	QVector<PwAudioChannel::Enum> channels;
 	QVector<float> volumes;
 	bool mute = false;
+	float volumeStep = -1;
 
 	static PwVolumeProps parseSpaPod(const spa_pod* param);
 };
@@ -168,6 +170,7 @@ public:
 	virtual ~PwNodeBoundData() = default;
 	Q_DISABLE_COPY_MOVE(PwNodeBoundData);
 
+	virtual void onDeviceChanged() {};
 	virtual void onInfo(const pw_node_info* /*info*/) {}
 	virtual void onSpaParam(quint32 /*id*/, quint32 /*index*/, const spa_pod* /*param*/) {}
 	virtual void onUnbind() {}
@@ -181,6 +184,7 @@ class PwNodeBoundAudio
 public:
 	explicit PwNodeBoundAudio(PwNode* node);
 
+	void onDeviceChanged() override;
 	void onInfo(const pw_node_info* info) override;
 	void onSpaParam(quint32 id, quint32 index, const spa_pod* param) override;
 	void onUnbind() override;
@@ -195,6 +199,8 @@ public:
 
 	[[nodiscard]] QVector<float> volumes() const;
 	void setVolumes(const QVector<float>& volumes);
+
+	[[nodiscard]] QVector<float> server() const;
 
 signals:
 	void volumesChanged();
@@ -214,6 +220,7 @@ private:
 	QVector<float> mServerVolumes;
 	QVector<float> mDeviceVolumes;
 	QVector<float> waitingVolumes;
+	float volumeStep = -1;
 	PwNode* node;
 };
 
@@ -229,6 +236,8 @@ public:
 	QString description;
 	QString nick;
 	QMap<QString, QString> properties;
+	quint64 objectSerial = 0;
+	bool isMonitor = false;
 
 	PwNodeType::Flags type = PwNodeType::Untracked;
 
@@ -238,6 +247,13 @@ public:
 
 	PwDevice* device = nullptr;
 	qint32 routeDevice = -1;
+	bool proAudio = false;
+
+	[[nodiscard]] bool shouldUseDevice() const {
+		if (!this->device || this->proAudio || this->routeDevice == -1) return false;
+		// Only use device control if the device actually has route indexes for this routeDevice
+		return this->device->hasRouteDevice(this->routeDevice);
+	}
 
 signals:
 	void propertiesChanged();

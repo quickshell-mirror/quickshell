@@ -50,6 +50,7 @@ struct CommandState {
 		QStringOption manifest;
 		QStringOption name;
 		bool newest = false;
+		bool anyDisplay = false;
 	} config;
 
 	struct {
@@ -73,6 +74,8 @@ struct CommandState {
 		CLI::App* show = nullptr;
 		CLI::App* call = nullptr;
 		CLI::App* getprop = nullptr;
+		CLI::App* wait = nullptr;
+		CLI::App* listen = nullptr;
 		bool showOld = false;
 		QStringOption target;
 		QStringOption name;
@@ -105,6 +108,8 @@ void exitDaemon(int code);
 
 int parseCommand(int argc, char** argv, CommandState& state);
 int runCommand(int argc, char** argv, QCoreApplication* coreApplication);
+
+QString getDisplayConnection();
 
 int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication);
 

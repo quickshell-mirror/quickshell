@@ -145,6 +145,7 @@ void GreetdConnection::setInactive() {
 QString GreetdConnection::user() const { return this->mUser; }
 
 void GreetdConnection::onSocketConnected() {
+	this->reader.setDevice(&this->socket);
 	qCDebug(logGreetd) << "Connected to greetd socket.";
 
 	if (this->mTargetActive) {
@@ -160,77 +161,84 @@ void GreetdConnection::onSocketError(QLocalSocket::LocalSocketError error) {
 }
 
 void GreetdConnection::onSocketReady() {
-	qint32 length = 0;
+	while (true) {
+		this->reader.startTransaction();
+		auto length = this->reader.readI32();
+		auto text = this->reader.readBytes(length);
+		if (!this->reader.commitTransaction()) return;
 
-	this->socket.read(reinterpret_cast<char*>(&length), sizeof(qint32));
+		auto json = QJsonDocument::fromJson(text).object();
+		auto type = json.value("type").toString();
 
-	auto text = this->socket.read(length);
-	auto json = QJsonDocument::fromJson(text).object();
-	auto type = json.value("type").toString();
+		qCDebug(logGreetd).noquote() << "Received greetd response:" << text;
 
-	qCDebug(logGreetd).noquote() << "Received greetd response:" << text;
+		if (type == "success") {
+			switch (this->mState) {
+			case GreetdState::Authenticating:
+				qCDebug(logGreetd) << "Authentication complete.";
+				this->mState = GreetdState::ReadyToLaunch;
+				emit this->stateChanged();
+				emit this->readyToLaunch();
+				break;
+			case GreetdState::Launching:
+				qCDebug(logGreetd) << "Target session set successfully.";
+				this->mState = GreetdState::Launched;
+				emit this->stateChanged();
+				emit this->launched();
 
-	if (type == "success") {
-		switch (this->mState) {
-		case GreetdState::Authenticating:
-			qCDebug(logGreetd) << "Authentication complete.";
-			this->mState = GreetdState::ReadyToLaunch;
-			emit this->stateChanged();
-			emit this->readyToLaunch();
-			break;
-		case GreetdState::Launching:
-			qCDebug(logGreetd) << "Target session set successfully.";
-			this->mState = GreetdState::Launched;
-			emit this->stateChanged();
-			emit this->launched();
+				if (this->mExitAfterLaunch) {
+					qCDebug(logGreetd) << "Quitting.";
+					EngineGeneration::currentGeneration()->quit();
+				}
 
-			if (this->mExitAfterLaunch) {
-				qCDebug(logGreetd) << "Quitting.";
-				EngineGeneration::currentGeneration()->quit();
+				break;
+			default: goto unexpected;
+			}
+		} else if (type == "error") {
+			auto errorType = json.value("error_type").toString();
+			auto desc = json.value("description").toString();
+
+			// Special case this error in case a session was already running.
+			// This cancels and restarts the session.
+			if (errorType == "error" && desc == "a session is already being configured") {
+				qCDebug(
+				    logGreetd
+				) << "A session was already in progress, cancelling it and starting a new one.";
+				this->setActive(false);
+				this->setActive(true);
+				return;
 			}
 
-			break;
-		default: goto unexpected;
-		}
-	} else if (type == "error") {
-		auto errorType = json.value("error_type").toString();
-		auto desc = json.value("description").toString();
+			if (errorType == "auth_error") {
+				emit this->authFailure(desc);
+				this->setActive(false);
+			} else if (errorType == "error") {
+				qCWarning(logGreetd) << "Greetd error occurred" << desc;
+				emit this->error(desc);
+			} else goto unexpected;
 
-		// Special case this error in case a session was already running.
-		// This cancels and restarts the session.
-		if (errorType == "error" && desc == "a session is already being configured") {
-			qCDebug(logGreetd
-			) << "A session was already in progress, cancelling it and starting a new one.";
-			this->setActive(false);
-			this->setActive(true);
-			return;
-		}
+			// errors terminate the session
+			this->setInactive();
+		} else if (type == "auth_message") {
+			auto message = json.value("auth_message").toString();
+			auto type = json.value("auth_message_type").toString();
+			auto error = type == "error";
+			auto responseRequired = type == "visible" || type == "secret";
+			auto echoResponse = type != "secret";
 
-		if (errorType == "auth_error") {
-			emit this->authFailure(desc);
-			this->setActive(false);
-		} else if (errorType == "error") {
-			qCWarning(logGreetd) << "Greetd error occurred" << desc;
-			emit this->error(desc);
+			this->mResponseRequired = responseRequired;
+			emit this->authMessage(message, error, responseRequired, echoResponse);
+
+			if (!responseRequired) {
+				this->sendRequest({{"type", "post_auth_message_response"}});
+			}
 		} else goto unexpected;
 
-		// errors terminate the session
-		this->setInactive();
-	} else if (type == "auth_message") {
-		auto message = json.value("auth_message").toString();
-		auto type = json.value("auth_message_type").toString();
-		auto error = type == "error";
-		auto responseRequired = type == "visible" || type == "secret";
-		auto echoResponse = type != "secret";
-
-		this->mResponseRequired = responseRequired;
-		emit this->authMessage(message, error, responseRequired, echoResponse);
-	} else goto unexpected;
-
-	return;
-unexpected:
-	qCCritical(logGreetd) << "Received unexpected greetd response" << text;
-	this->setActive(false);
+		continue;
+	unexpected:
+		qCCritical(logGreetd) << "Received unexpected greetd response" << text;
+		this->setActive(false);
+	}
 }
 
 void GreetdConnection::sendRequest(const QJsonObject& json) {

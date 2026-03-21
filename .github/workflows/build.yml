@@ -6,17 +6,23 @@ jobs:
     name: Nix
     strategy:
       matrix:
-        qtver: [qt6.9.0, qt6.8.3, qt6.8.2, qt6.8.1, qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
+        qtver: [qt6.10.1, qt6.10.0, qt6.9.2, qt6.9.1, qt6.9.0, qt6.8.3, qt6.8.2, qt6.8.1, qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
         compiler: [clang, gcc]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       # Use cachix action over detsys for testing with act.
       # - uses: cachix/install-nix-action@v27
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
 
       - name: Download Dependencies
-        run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).inputDerivation'
+        run: nix-build --no-out-link --expr '((import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }).unwrapped.inputDerivation'
 
       - name: Build
         run: nix-build --no-out-link --expr '(import ./ci/matrix.nix) { qtver = "${{ matrix.qtver }}"; compiler = "${{ matrix.compiler }}"; }'
@@ -44,13 +50,16 @@ jobs:
             wayland-protocols \
             wayland \
             libdrm \
+            vulkan-headers \
             libxcb \
             libpipewire \
             cli11 \
-            jemalloc
+            polkit \
+            jemalloc \
+            libunwind \
+            git # for cpptrace clone
 
       - name: Build
-        # breakpad is annoying to build in ci due to makepkg not running as root
         run: |
-          cmake -GNinja -B build -DCRASH_REPORTER=OFF
+          cmake -GNinja -B build -DVENDOR_CPPTRACE=ON
           cmake --build build

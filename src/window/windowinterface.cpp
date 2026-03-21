@@ -127,6 +127,9 @@ void WindowInterface::setMask(PendingRegion* mask) const { this->proxyWindow()->
 QsSurfaceFormat WindowInterface::surfaceFormat() const { return this->proxyWindow()->surfaceFormat(); };
 void WindowInterface::setSurfaceFormat(QsSurfaceFormat format) const { this->proxyWindow()->setSurfaceFormat(format); };
 
+bool WindowInterface::updatesEnabled() const { return this->proxyWindow()->updatesEnabled(); };
+void WindowInterface::setUpdatesEnabled(bool updatesEnabled) const { this->proxyWindow()->setUpdatesEnabled(updatesEnabled); };
+
 QQmlListProperty<QObject> WindowInterface::data() const { return this->proxyWindow()->data(); };
 // clang-format on
 
@@ -148,6 +151,7 @@ void WindowInterface::connectSignals() const {
 	QObject::connect(window, &ProxyWindowBase::colorChanged, this, &WindowInterface::colorChanged);
 	QObject::connect(window, &ProxyWindowBase::maskChanged, this, &WindowInterface::maskChanged);
 	QObject::connect(window, &ProxyWindowBase::surfaceFormatChanged, this, &WindowInterface::surfaceFormatChanged);
+	QObject::connect(window, &ProxyWindowBase::updatesEnabledChanged, this, &WindowInterface::updatesEnabledChanged);
 	// clang-format on
 }
 

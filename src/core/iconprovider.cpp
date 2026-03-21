@@ -22,8 +22,8 @@ class PixmapCacheIconEngine: public QIconEngine {
 	    QIcon::Mode /*unused*/,
 	    QIcon::State /*unused*/
 	) override {
-		qFatal(
-		) << "Unexpected icon paint request bypassed pixmap method. Please report this as a bug.";
+		qFatal()
+		    << "Unexpected icon paint request bypassed pixmap method. Please report this as a bug.";
 	}
 
 	QPixmap pixmap(const QSize& size, QIcon::Mode /*unused*/, QIcon::State /*unused*/) override {

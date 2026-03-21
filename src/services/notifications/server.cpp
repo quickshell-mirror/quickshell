@@ -117,10 +117,12 @@ void NotificationServer::tryRegister() {
 	if (success) {
 		qCInfo(logNotifications) << "Registered notification server with dbus.";
 	} else {
-		qCWarning(logNotifications
+		qCWarning(
+		    logNotifications
 		) << "Could not register notification server at org.freedesktop.Notifications, presumably "
 		     "because one is already registered.";
-		qCWarning(logNotifications
+		qCWarning(
+		    logNotifications
 		) << "Registration will be attempted again if the active service is unregistered.";
 	}
 }

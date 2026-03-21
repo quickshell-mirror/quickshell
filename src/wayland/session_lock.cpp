@@ -9,6 +9,7 @@
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
+#include <qquickgraphicsconfiguration.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
@@ -79,8 +80,8 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 			auto* instance = qobject_cast<WlSessionLockSurface*>(instanceObj);
 
 			if (instance == nullptr) {
-				qWarning(
-				) << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
+				qWarning()
+				    << "WlSessionLock.surface does not create a WlSessionLockSurface. Aborting lock.";
 				if (instanceObj != nullptr) instanceObj->deleteLater();
 				this->unlock();
 				return;
@@ -216,6 +217,15 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 
 	if (this->window == nullptr) {
 		this->window = new QQuickWindow();
+
+		// needed for vulkan dmabuf import, qt ignores these if not applicable
+		auto graphicsConfig = this->window->graphicsConfiguration();
+		graphicsConfig.setDeviceExtensions({
+		    "VK_KHR_external_memory_fd",
+		    "VK_EXT_external_memory_dma_buf",
+		    "VK_EXT_image_drm_format_modifier",
+		});
+		this->window->setGraphicsConfiguration(graphicsConfig);
 	}
 
 	this->mContentItem->setParentItem(this->window->contentItem());

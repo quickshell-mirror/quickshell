@@ -11,12 +11,12 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlerror.h>
 #include <qqmlincubator.h>
+#include <qquickwindow.h>
 #include <qtmetamacros.h>
 
 #include "iconimageprovider.hpp"
@@ -49,7 +49,8 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	this->engine->addImportPath("qs:@/");
 
 	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
-	this->engine->setIncubationController(&this->delayedIncubationController);
+	this->incubationController.initLoop();
+	this->engine->setIncubationController(&this->incubationController);
 
 	this->engine->addImageProvider("icon", new IconImageProvider());
 	this->engine->addImageProvider("qsimage", new QsImageProvider());
@@ -134,7 +135,7 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 		// new generation acquires it then incubators will hang intermittently
 		qCDebug(logIncubator) << "Locking incubation controllers of old generation" << old;
 		old->incubationControllersLocked = true;
-		old->assignIncubationController();
+		old->updateIncubationMode();
 	}
 
 	QObject::connect(this->engine, &QQmlEngine::quit, this, &EngineGeneration::quit);
@@ -208,6 +209,8 @@ bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
 	for (const auto& file: files) {
 		if (!this->scanner.scannedFiles.contains(file)) {
 			this->extraWatchedFiles.append(file);
+			QByteArray data;
+			this->scanner.readAndHashFile(file, data);
 		}
 	}
 
@@ -228,6 +231,11 @@ void EngineGeneration::onFileChanged(const QString& name) {
 		auto fileInfo = QFileInfo(name);
 		if (fileInfo.isFile() && fileInfo.size() == 0) return;
 
+		if (!this->scanner.hasFileContentChanged(name)) {
+			qCDebug(logQmlScanner) << "Ignoring file change with unchanged content:" << name;
+			return;
+		}
+
 		emit this->filesChanged();
 	}
 }
@@ -236,93 +244,14 @@ void EngineGeneration::onDirectoryChanged() {
 	// try to find any files that were just deleted from a replace operation
 	for (auto& file: this->deletedWatchedFiles) {
 		if (QFileInfo(file).exists()) {
+			if (!this->scanner.hasFileContentChanged(file)) {
+				qCDebug(logQmlScanner) << "Ignoring restored file with unchanged content:" << file;
+				continue;
+			}
+
 			emit this->filesChanged();
 			break;
 		}
-	}
-}
-
-void EngineGeneration::registerIncubationController(QQmlIncubationController* controller) {
-	// We only want controllers that we can swap out if destroyed.
-	// This happens if the window owning the active controller dies.
-	auto* obj = dynamic_cast<QObject*>(controller);
-	if (!obj) {
-		qCWarning(logIncubator) << "Could not register incubation controller as it is not a QObject"
-		                        << controller;
-
-		return;
-	}
-
-	QObject::connect(
-	    obj,
-	    &QObject::destroyed,
-	    this,
-	    &EngineGeneration::incubationControllerDestroyed,
-	    Qt::UniqueConnection
-	);
-
-	this->incubationControllers.push_back(obj);
-	qCDebug(logIncubator) << "Registered incubation controller" << obj << "to generation" << this;
-
-	// This function can run during destruction.
-	if (this->engine == nullptr) return;
-
-	if (this->engine->incubationController() == &this->delayedIncubationController) {
-		this->assignIncubationController();
-	}
-}
-
-// Multiple controllers may be destroyed at once. Dynamic casts must be performed before working
-// with any controllers. The QQmlIncubationController destructor will already have run by the
-// point QObject::destroyed is called, so we can't cast to that.
-void EngineGeneration::deregisterIncubationController(QQmlIncubationController* controller) {
-	auto* obj = dynamic_cast<QObject*>(controller);
-	if (!obj) {
-		qCCritical(logIncubator) << "Deregistering incubation controller which is not a QObject, "
-		                            "however only QObject controllers should be registered.";
-	}
-
-	QObject::disconnect(obj, nullptr, this, nullptr);
-
-	if (this->incubationControllers.removeOne(obj)) {
-		qCDebug(logIncubator) << "Deregistered incubation controller" << obj << "from" << this;
-	} else {
-		qCCritical(logIncubator) << "Failed to deregister incubation controller" << obj << "from"
-		                         << this << "as it was not registered to begin with";
-		qCCritical(logIncubator) << "Current registered incuabation controllers"
-		                         << this->incubationControllers;
-	}
-
-	// This function can run during destruction.
-	if (this->engine == nullptr) return;
-
-	if (this->engine->incubationController() == controller) {
-		qCDebug(logIncubator
-		) << "Destroyed incubation controller was currently active, reassigning from pool";
-		this->assignIncubationController();
-	}
-}
-
-void EngineGeneration::incubationControllerDestroyed() {
-	auto* sender = this->sender();
-
-	if (this->incubationControllers.removeAll(sender) != 0) {
-		qCDebug(logIncubator) << "Destroyed incubation controller" << sender << "deregistered from"
-		                      << this;
-	} else {
-		qCCritical(logIncubator) << "Destroyed incubation controller" << sender
-		                         << "was not registered, but its destruction was observed by" << this;
-
-		return;
-	}
-
-	// This function can run during destruction.
-	if (this->engine == nullptr) return;
-
-	if (dynamic_cast<QObject*>(this->engine->incubationController()) == sender) {
-		qCDebug(logIncubator
-		) << "Destroyed incubation controller was currently active, reassigning from pool";
-		this->assignIncubationController();
 	}
 }
 
@@ -367,20 +296,23 @@ void EngineGeneration::exit(int code) {
 	this->destroy();
 }
 
-void EngineGeneration::assignIncubationController() {
-	QQmlIncubationController* controller = nullptr;
+void EngineGeneration::trackWindowIncubationController(QQuickWindow* window) {
+	if (this->trackedWindows.contains(window)) return;
 
-	if (this->incubationControllersLocked || this->incubationControllers.isEmpty()) {
-		controller = &this->delayedIncubationController;
-	} else {
-		controller = dynamic_cast<QQmlIncubationController*>(this->incubationControllers.first());
-	}
+	QObject::connect(window, &QObject::destroyed, this, &EngineGeneration::onTrackedWindowDestroyed);
+	this->trackedWindows.append(window);
+	this->updateIncubationMode();
+}
 
-	qCDebug(logIncubator) << "Assigning incubation controller" << controller << "to generation"
-	                      << this
-	                      << "fallback:" << (controller == &this->delayedIncubationController);
+void EngineGeneration::onTrackedWindowDestroyed(QObject* object) {
+	this->trackedWindows.removeAll(static_cast<QQuickWindow*>(object)); // NOLINT
+	this->updateIncubationMode();
+}
 
-	this->engine->setIncubationController(controller);
+void EngineGeneration::updateIncubationMode() {
+	// If we're in a situation with only hidden but tracked windows this might be wrong,
+	// but it seems to at least work.
+	this->incubationController.setIncubationMode(!this->trackedWindows.empty());
 }
 
 EngineGeneration* EngineGeneration::currentGeneration() {

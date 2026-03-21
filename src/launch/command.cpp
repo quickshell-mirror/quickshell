@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
 #include <utility>
 
@@ -13,6 +12,7 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qguiapplication.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -25,12 +25,12 @@
 #include <qtversion.h>
 #include <unistd.h>
 
+#include "../core/debuginfo.hpp"
 #include "../core/instanceinfo.hpp"
 #include "../core/logging.hpp"
 #include "../core/paths.hpp"
 #include "../io/ipccomm.hpp"
 #include "../ipc/ipc.hpp"
-#include "build.hpp"
 #include "launch_p.hpp"
 
 namespace qs::launch {
@@ -89,9 +89,9 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 		}
 
 		if (!manifestPath.isEmpty()) {
-			qWarning(
-			) << "Config manifests (manifest.conf) are deprecated and will be removed in a future "
-			     "release.";
+			qWarning()
+			    << "Config manifests (manifest.conf) are deprecated and will be removed in a future "
+			       "release.";
 			qWarning() << "Consider using symlinks to a subfolder of quickshell's XDG config dirs.";
 
 			auto file = QFile(manifestPath);
@@ -109,7 +109,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 					}
 
 					if (split[0].trimmed() == *cmd.config.name) {
-						path = QDir(QFileInfo(file).canonicalPath()).filePath(split[1].trimmed());
+						path = QDir(QFileInfo(file).absolutePath()).filePath(split[1].trimmed());
 						break;
 					}
 				}
@@ -129,7 +129,8 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 
 			if (path.isEmpty()) {
 				if (name == "default") {
-					qCCritical(logBare
+					qCCritical(
+					    logBare
 					) << "Could not find \"default\" config directory or shell.qml in any valid config path.";
 				} else {
 					qCCritical(logBare) << "Could not find" << name
@@ -139,8 +140,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 				return -1;
 			}
 
-			path = QFileInfo(path).canonicalFilePath();
-			return 0;
+			goto rpath;
 		}
 	}
 
@@ -153,7 +153,8 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 		return -1;
 	}
 
-	path = QFileInfo(path).canonicalFilePath();
+rpath:
+	path = QFileInfo(path).absoluteFilePath();
 	return 0;
 }
 
@@ -178,7 +179,8 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+		auto [liveInstances, deadInstances] =
+		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		liveInstances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
@@ -228,7 +230,8 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+		auto [liveInstances, deadInstances] =
+		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		auto instances = liveInstances;
 		if (instances.isEmpty() && deadFallback) {
@@ -311,7 +314,10 @@ int listInstances(CommandState& cmd) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	auto [liveInstances, deadInstances] = QsPaths::collectInstances(path);
+	auto [liveInstances, deadInstances] = QsPaths::collectInstances(
+	    path,
+	    cmd.config.anyDisplay || cmd.instance.all ? "" : getDisplayConnection()
+	);
 
 	sortInstances(liveInstances, cmd.config.newest);
 
@@ -373,6 +379,7 @@ int listInstances(CommandState& cmd) {
 				    << "  Process ID: " << instance.instance.pid << '\n'
 				    << "  Shell ID: " << instance.instance.shellId << '\n'
 				    << "  Config path: " << instance.instance.configPath << '\n'
+				    << "  Display connection: " << instance.instance.display << '\n'
 				    << "  Launch time: " << launchTimeStr
 				    << (isDead ? "" : " (running for " + runtimeStr + ")") << '\n'
 				    << (gray ? "\033[0m" : "");
@@ -404,6 +411,10 @@ int ipcCommand(CommandState& cmd) {
 			return qs::io::ipc::comm::queryMetadata(&client, *cmd.ipc.target, *cmd.ipc.name);
 		} else if (*cmd.ipc.getprop) {
 			return qs::io::ipc::comm::getProperty(&client, *cmd.ipc.target, *cmd.ipc.name);
+		} else if (*cmd.ipc.wait) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, true);
+		} else if (*cmd.ipc.listen) {
+			return qs::io::ipc::comm::listenToSignal(&client, *cmd.ipc.target, *cmd.ipc.name, false);
 		} else {
 			QVector<QString> arguments;
 			for (auto& arg: cmd.ipc.arguments) {
@@ -453,7 +464,7 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 			QTextStream(stdout) << "\033[31mCOMPATIBILITY WARNING: Quickshell was built against Qt "
 			                    << QT_VERSION_STR << " but the system has updated to Qt " << qVersion()
 			                    << " without rebuilding the package. This is likely to cause crashes, so "
-			                       "you must rebuild the quickshell package.\n";
+			                       "you must rebuild the quickshell package.\n\033[0m";
 			return 1;
 		}
 
@@ -508,20 +519,10 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	if (state.misc.printVersion) {
-		qCInfo(logBare).noquote().nospace()
-		    << "quickshell 0.2.0, revision " << GIT_REVISION << ", distributed by: " << DISTRIBUTOR;
-
-		if (state.log.verbosity > 1) {
-			qCInfo(logBare).noquote() << "\nBuildtime Qt Version:" << QT_VERSION_STR;
-			qCInfo(logBare).noquote() << "Runtime Qt Version:" << qVersion();
-			qCInfo(logBare).noquote() << "Compiler:" << COMPILER;
-			qCInfo(logBare).noquote() << "Compile Flags:" << COMPILE_FLAGS;
-		}
-
-		if (state.log.verbosity > 0) {
-			qCInfo(logBare).noquote() << "\nBuild Type:" << BUILD_TYPE;
-			qCInfo(logBare).noquote() << "Build configuration:";
-			qCInfo(logBare).noquote().nospace() << BUILD_CONFIGURATION;
+		if (state.log.verbosity == 0) {
+			qCInfo(logBare).noquote() << "Quickshell" << qs::debuginfo::qsVersion();
+		} else {
+			qCInfo(logBare).noquote() << qs::debuginfo::combinedInfo();
 		}
 	} else if (*state.subcommand.log) {
 		return readLogFile(state);
@@ -543,6 +544,20 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 	}
 
 	return 0;
+}
+
+QString getDisplayConnection() {
+	auto platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+	auto wlDisplay = qEnvironmentVariable("WAYLAND_DISPLAY");
+	auto xDisplay = qEnvironmentVariable("DISPLAY");
+
+	if (platform == "wayland" || (platform.isEmpty() && !wlDisplay.isEmpty())) {
+		return "wayland," + wlDisplay;
+	} else if (platform == "xcb" || (platform.isEmpty() && !xDisplay.isEmpty())) {
+		return "x11," + xDisplay;
+	} else {
+		return "unk," + QGuiApplication::platformName();
+	}
 }
 
 } // namespace qs::launch

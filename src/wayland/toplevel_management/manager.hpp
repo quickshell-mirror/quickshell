@@ -33,8 +33,8 @@ signals:
 protected:
 	explicit ToplevelManager();
 
-	void zwlr_foreign_toplevel_manager_v1_toplevel(::zwlr_foreign_toplevel_handle_v1* toplevel
-	) override;
+	void
+	zwlr_foreign_toplevel_manager_v1_toplevel(::zwlr_foreign_toplevel_handle_v1* toplevel) override;
 
 private slots:
 	void onToplevelReady();

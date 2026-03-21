@@ -14,6 +14,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qmutex.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
@@ -27,7 +28,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <sys/mman.h>
+#ifdef __linux__
 #include <sys/sendfile.h>
+#include <sys/types.h>
+#endif
+#ifdef __FreeBSD__
+#include <unistd.h>
+#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -42,6 +49,57 @@ namespace qs::log {
 using namespace qt_logging_registry;
 
 QS_LOGGING_CATEGORY(logLogging, "quickshell.logging", QtWarningMsg);
+
+namespace {
+bool copyFileData(int sourceFd, int destFd, qint64 size) {
+	auto usize = static_cast<size_t>(size);
+
+#ifdef __linux__
+	off_t offset = 0;
+	auto remaining = usize;
+
+	while (remaining > 0) {
+		auto r = sendfile(destFd, sourceFd, &offset, remaining);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+		remaining -= static_cast<size_t>(r);
+	}
+
+	return true;
+#else
+	std::array<char, 64 * 1024> buffer = {};
+	auto remaining = usize;
+
+	while (remaining > 0) {
+		auto chunk = std::min(remaining, buffer.size());
+		auto r = ::read(sourceFd, buffer.data(), chunk);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+
+		auto readBytes = static_cast<size_t>(r);
+		size_t written = 0;
+		while (written < readBytes) {
+			auto w = ::write(destFd, buffer.data() + written, readBytes - written);
+			if (w == -1) {
+				if (errno == EINTR) continue;
+				return false;
+			}
+			written += static_cast<size_t>(w);
+		}
+
+		remaining -= readBytes;
+	}
+
+	return true;
+#endif
+}
+} // namespace
 
 bool LogMessage::operator==(const LogMessage& other) const {
 	// note: not including time
@@ -163,6 +221,7 @@ void LogManager::messageHandler(
 	}
 
 	if (display) {
+		auto locker = QMutexLocker(&self->stdoutMutex);
 		LogMessage::formatMessage(
 		    self->stdoutStream,
 		    message,
@@ -313,8 +372,12 @@ void ThreadLogging::init() {
 
 	if (logMfd != -1) {
 		this->file = new QFile();
-		this->file->open(logMfd, QFile::ReadWrite, QFile::AutoCloseHandle);
-		this->fileStream.setDevice(this->file);
+
+		if (this->file->open(logMfd, QFile::ReadWrite, QFile::AutoCloseHandle)) {
+			this->fileStream.setDevice(this->file);
+		} else {
+			qCCritical(logLogging) << "Failed to open early logging memfd.";
+		}
 	}
 
 	if (dlogMfd != -1) {
@@ -322,14 +385,19 @@ void ThreadLogging::init() {
 
 		this->detailedFile = new QFile();
 		// buffered by WriteBuffer
-		this->detailedFile->open(dlogMfd, QFile::ReadWrite | QFile::Unbuffered, QFile::AutoCloseHandle);
-		this->detailedWriter.setDevice(this->detailedFile);
+		if (this->detailedFile
+		        ->open(dlogMfd, QFile::ReadWrite | QFile::Unbuffered, QFile::AutoCloseHandle))
+		{
+			this->detailedWriter.setDevice(this->detailedFile);
 
-		if (!this->detailedWriter.writeHeader()) {
-			qCCritical(logLogging) << "Could not write header for detailed logs.";
-			this->detailedWriter.setDevice(nullptr);
-			delete this->detailedFile;
-			this->detailedFile = nullptr;
+			if (!this->detailedWriter.writeHeader()) {
+				qCCritical(logLogging) << "Could not write header for detailed logs.";
+				this->detailedWriter.setDevice(nullptr);
+				delete this->detailedFile;
+				this->detailedFile = nullptr;
+			}
+		} else {
+			qCCritical(logLogging) << "Failed to open early detailed logging memfd.";
 		}
 	}
 
@@ -352,7 +420,8 @@ void ThreadLogging::initFs() {
 	auto* runDir = QsPaths::instance()->instanceRunDir();
 
 	if (!runDir) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logging as the runtime directory could not be created.";
 		return;
 	}
@@ -363,7 +432,8 @@ void ThreadLogging::initFs() {
 	auto* detailedFile = new QFile(detailedPath);
 
 	if (!file->open(QFile::ReadWrite | QFile::Truncate)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start filesystem logger as the log file could not be created:"
 		  << path;
 		delete file;
@@ -374,13 +444,14 @@ void ThreadLogging::initFs() {
 
 	// buffered by WriteBuffer
 	if (!detailedFile->open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered)) {
-		qCCritical(logLogging
+		qCCritical(
+		    logLogging
 		) << "Could not start detailed filesystem logger as the log file could not be created:"
 		  << detailedPath;
 		delete detailedFile;
 		detailedFile = nullptr;
 	} else {
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -402,7 +473,11 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->file;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
+
+			if (!copyFileData(oldFile->handle(), file->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		this->file = file;
@@ -414,7 +489,10 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->detailedFile;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
+			if (!copyFileData(oldFile->handle(), detailedFile->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy detailed log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
@@ -458,13 +536,13 @@ void ThreadLogging::onMessage(const LogMessage& msg, bool showInSparse) {
 	}
 
 	if (!this->detailedWriter.write(msg) || (this->detailedFile && !this->detailedFile->flush())) {
+		this->detailedWriter.setDevice(nullptr);
+
 		if (this->detailedFile) {
+			this->detailedFile->close();
+			this->detailedFile = nullptr;
 			qCCritical(logLogging) << "Detailed logger failed to write. Ending detailed logs.";
 		}
-
-		this->detailedWriter.setDevice(nullptr);
-		this->detailedFile->close();
-		this->detailedFile = nullptr;
 	}
 }
 
@@ -737,11 +815,11 @@ bool EncodedLogReader::readVarInt(quint32* slot) {
 		if (!this->reader.skip(1)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if ((bytes[1] != 0xff || bytes[2] != 0xff) && readLength >= 3) {
-		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1);
+		auto n = *reinterpret_cast<quint16*>(bytes.data() + 1); // NOLINT
 		if (!this->reader.skip(3)) return false;
 		*slot = qFromLittleEndian(n);
 	} else if (readLength == 7) {
-		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3);
+		auto n = *reinterpret_cast<quint32*>(bytes.data() + 3); // NOLINT
 		if (!this->reader.skip(7)) return false;
 		*slot = qFromLittleEndian(n);
 	} else return false;
@@ -877,7 +955,7 @@ bool LogReader::continueReading() {
 }
 
 void LogFollower::FcntlWaitThread::run() {
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_RDLCK, // won't block other read locks when we take it
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,

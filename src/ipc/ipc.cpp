@@ -3,6 +3,7 @@
 #include <variant>
 
 #include <qbuffer.h>
+#include <qcoreapplication.h>
 #include <qlocalserver.h>
 #include <qlocalsocket.h>
 #include <qlogging.h>
@@ -36,7 +37,8 @@ void IpcServer::start() {
 		auto path = run->filePath("ipc.sock");
 		new IpcServer(path);
 	} else {
-		qCCritical(logIpc
+		qCCritical(
+		    logIpc
 		) << "Could not start IPC server as the instance runtime path could not be created.";
 	}
 }
@@ -60,6 +62,7 @@ IpcServerConnection::IpcServerConnection(QLocalSocket* socket, IpcServer* server
 
 void IpcServerConnection::onDisconnected() {
 	qCInfo(logIpc) << "IPC connection disconnected" << this;
+	this->deleteLater();
 }
 
 void IpcServerConnection::onReadyRead() {
@@ -83,6 +86,11 @@ void IpcServerConnection::onReadyRead() {
 	);
 
 	if (!this->stream.commitTransaction()) return;
+
+	// async connections reparent
+	if (dynamic_cast<IpcServer*>(this->parent()) != nullptr) {
+		this->deleteLater();
+	}
 }
 
 IpcClient::IpcClient(const QString& path) {
@@ -120,7 +128,9 @@ int IpcClient::connect(const QString& id, const std::function<void(IpcClient& cl
 
 void IpcKillCommand::exec(IpcServerConnection* /*unused*/) {
 	qInfo() << "Exiting due to IPC request.";
-	EngineGeneration::currentGeneration()->quit();
+	auto* generation = EngineGeneration::currentGeneration();
+	if (generation) generation->quit();
+	else QCoreApplication::exit(0);
 }
 
 } // namespace qs::ipc

@@ -207,6 +207,8 @@ private:
 	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bOverlayIconPixmaps, updatePixmapIndex, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bAttentionIconPixmaps, updatePixmapIndex, onValueChanged);
 	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bMenuPath, onMenuPathChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bTooltip, tooltipTitleChanged, onValueChanged);
+	QS_BINDING_SUBSCRIBE_METHOD(StatusNotifierItem, bTooltip, tooltipDescriptionChanged, onValueChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, quint32, pixmapIndex);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bIcon, &StatusNotifierItem::iconChanged);
 

@@ -1,9 +1,12 @@
 #include "scan.hpp"
 #include <cmath>
+#include <utility>
 
 #include <qcontainerfwd.h>
+#include <qcryptographichash.h>
 #include <qdir.h>
 #include <qfileinfo.h>
+#include <qjsengine.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -12,19 +15,39 @@
 #include <qloggingcategory.h>
 #include <qpair.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 #include <qtextstream.h>
 
 #include "logcat.hpp"
+#include "scanenv.hpp"
 
 QS_LOGGING_CATEGORY(logQmlScanner, "quickshell.qmlscanner", QtWarningMsg);
 
-void QmlScanner::scanDir(const QString& path) {
-	if (this->scannedDirs.contains(path)) return;
-	this->scannedDirs.push_back(path);
+bool QmlScanner::readAndHashFile(const QString& path, QByteArray& data) {
+	auto file = QFile(path);
+	if (!file.open(QFile::ReadOnly)) return false;
+	data = file.readAll();
+	this->fileHashes.insert(path, QCryptographicHash::hash(data, QCryptographicHash::Md5));
+	return true;
+}
+
+bool QmlScanner::hasFileContentChanged(const QString& path) const {
+	auto it = this->fileHashes.constFind(path);
+	if (it == this->fileHashes.constEnd()) return true;
+
+	auto file = QFile(path);
+	if (!file.open(QFile::ReadOnly)) return true;
+
+	auto newHash = QCryptographicHash::hash(file.readAll(), QCryptographicHash::Md5);
+	return newHash != it.value();
+}
+
+void QmlScanner::scanDir(const QDir& dir) {
+	if (this->scannedDirs.contains(dir)) return;
+	this->scannedDirs.push_back(dir);
+
+	const auto& path = dir.path();
 
 	qCDebug(logQmlScanner) << "Scanning directory" << path;
-	auto dir = QDir(path);
 
 	struct Entry {
 		QString name;
@@ -37,7 +60,8 @@ void QmlScanner::scanDir(const QString& path) {
 
 	for (auto& name: dir.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
 		if (name == "qmldir") {
-			qCDebug(logQmlScanner
+			qCDebug(
+			    logQmlScanner
 			) << "Found qmldir file, qmldir synthesization will be disabled for directory"
 			  << path;
 			seenQmldir = true;
@@ -105,68 +129,128 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 
 	qCDebug(logQmlScanner) << "Scanning qml file" << path;
 
-	auto file = QFile(path);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+	QByteArray fileData;
+	if (!this->readAndHashFile(path, fileData)) {
 		qCWarning(logQmlScanner) << "Failed to open file" << path;
 		return false;
 	}
 
-	auto stream = QTextStream(&file);
+	auto stream = QTextStream(&fileData);
 	auto imports = QVector<QString>();
 
-	while (!stream.atEnd()) {
-		auto line = stream.readLine().trimmed();
-		if (!singleton && line == "pragma Singleton") {
-			singleton = true;
-		} else if (!internal && line == "//@ pragma Internal") {
-			internal = true;
-		} else if (line.startsWith("import")) {
-			// we dont care about "import qs" as we always load the root folder
-			if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
-				importCursor += 4;
-				QString path;
+	bool inHeader = true;
+	auto ifScopes = QVector<bool>();
+	bool sourceMasked = false;
+	int lineNum = 0;
+	QString overrideText;
+	bool isOverridden = false;
 
-				while (importCursor != line.length()) {
-					auto c = line.at(importCursor);
-					if (c == '.') c = '/';
-					else if (c == ' ') break;
-					else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-					         || c == '_')
-					{
-					} else {
-						qCWarning(logQmlScanner) << "Import line contains invalid characters: " << line;
-						goto next;
+	auto pragmaEngine = QJSEngine();
+	pragmaEngine.globalObject().setPrototype(
+	    pragmaEngine.newQObject(new qs::scan::env::PreprocEnv())
+	);
+
+	auto postError = [&, this](QString error) {
+		this->scanErrors.append({.file = path, .message = std::move(error), .line = lineNum});
+	};
+
+	while (!stream.atEnd()) {
+		++lineNum;
+		bool hideMask = false;
+		auto rawLine = stream.readLine();
+		auto line = rawLine.trimmed();
+		if (!sourceMasked && inHeader) {
+			if (!singleton && line == "pragma Singleton") {
+				singleton = true;
+			} else if (line.startsWith("import")) {
+				// we dont care about "import qs" as we always load the root folder
+				if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
+					importCursor += 4;
+					QString path;
+
+					while (importCursor != line.length()) {
+						auto c = line.at(importCursor);
+						if (c == '.') c = '/';
+						else if (c == ' ') break;
+						else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+						         || c == '_')
+						{
+						} else {
+							qCWarning(logQmlScanner) << "Import line contains invalid characters: " << line;
+							goto next;
+						}
+
+						path.append(c);
+						importCursor += 1;
 					}
 
-					path.append(c);
-					importCursor += 1;
+					imports.append(this->rootPath.filePath(path));
+				} else if (auto startQuot = line.indexOf('"');
+				           startQuot != -1 && line.length() >= startQuot + 3)
+				{
+					auto endQuot = line.indexOf('"', startQuot + 1);
+					if (endQuot == -1) continue;
+
+					auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
+					imports.push_back(name);
 				}
-
-				imports.append(this->rootPath.filePath(path));
-			} else if (auto startQuot = line.indexOf('"');
-			           startQuot != -1 && line.length() >= startQuot + 3)
-			{
-				auto endQuot = line.indexOf('"', startQuot + 1);
-				if (endQuot == -1) continue;
-
-				auto name = line.sliced(startQuot + 1, endQuot - startQuot - 1);
-				imports.push_back(name);
+			} else if (!internal && line == "//@ pragma Internal") {
+				internal = true;
+			} else if (line.contains('{')) {
+				inHeader = false;
 			}
-		} else if (line.contains('{')) break;
+		}
+
+		if (line.startsWith("//@ if ")) {
+			auto code = line.sliced(7);
+			auto value = pragmaEngine.evaluate(code, path, 1234);
+			bool mask = true;
+
+			if (value.isError()) {
+				postError(QString("Evaluating if: %0").arg(value.toString()));
+			} else if (!value.isBool()) {
+				postError(QString("If expression \"%0\" is not a boolean").arg(value.toString()));
+			} else if (value.toBool()) {
+				mask = false;
+			}
+			if (!sourceMasked && mask) hideMask = true;
+			mask = sourceMasked || mask; // cant unmask if a nested if passes
+			ifScopes.append(mask);
+			if (mask) isOverridden = true;
+			sourceMasked = mask;
+		} else if (line.startsWith("//@ endif")) {
+			if (ifScopes.isEmpty()) {
+				postError("endif without matching if");
+			} else {
+				ifScopes.pop_back();
+
+				if (ifScopes.isEmpty()) sourceMasked = false;
+				else sourceMasked = ifScopes.last();
+			}
+		}
+
+		if (!hideMask && sourceMasked) overrideText.append("// MASKED: " % rawLine % '\n');
+		else overrideText.append(rawLine % '\n');
 
 	next:;
 	}
 
-	file.close();
+	if (!ifScopes.isEmpty()) {
+		postError("unclosed preprocessor if block");
+	}
+
+	if (isOverridden) {
+		this->fileIntercepts.insert(path, overrideText);
+	}
 
 	if (logQmlScanner().isDebugEnabled() && !imports.isEmpty()) {
 		qCDebug(logQmlScanner) << "Found imports" << imports;
 	}
 
-	auto currentdir = QDir(QFileInfo(path).canonicalPath());
+	auto currentdir = QDir(QFileInfo(path).absolutePath());
 
 	// the root can never be a singleton so it dosent matter if we skip it
-	this->scanDir(currentdir.path());
+	this->scanDir(currentdir);
 
 	for (auto& import: imports) {
 		QString ipath;
@@ -179,9 +263,9 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 		}
 
 		auto pathInfo = QFileInfo(ipath);
-		auto cpath = pathInfo.canonicalFilePath();
+		auto cpath = pathInfo.absoluteFilePath();
 
-		if (cpath.isEmpty()) {
+		if (!pathInfo.exists()) {
 			qCWarning(logQmlScanner) << "Ignoring unresolvable import" << ipath << "from" << path;
 			continue;
 		}
@@ -191,8 +275,11 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			continue;
 		}
 
-		if (import.endsWith(".js")) this->scannedFiles.push_back(cpath);
-		else this->scanDir(cpath);
+		if (import.endsWith(".js")) {
+			this->scannedFiles.push_back(cpath);
+			QByteArray jsData;
+			this->readAndHashFile(cpath, jsData);
+		} else this->scanDir(cpath);
 	}
 
 	return true;
@@ -207,13 +294,11 @@ void QmlScanner::scanQmlRoot(const QString& path) {
 bool QmlScanner::scanQmlJson(const QString& path) {
 	qCDebug(logQmlScanner) << "Scanning qml.json file" << path;
 
-	auto file = QFile(path);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+	QByteArray data;
+	if (!this->readAndHashFile(path, data)) {
 		qCWarning(logQmlScanner) << "Failed to open file" << path;
 		return false;
 	}
-
-	auto data = file.readAll();
 
 	// Importing this makes CI builds fail for some reason.
 	QJsonParseError error; // NOLINT (misc-include-cleaner)

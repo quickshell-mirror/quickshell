@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qpointer.h>
 #include <qqmlincubator.h>
 #include <qtmetamacros.h>
 
@@ -25,7 +26,37 @@ signals:
 	void failed();
 };
 
-class DelayedQmlIncubationController: public QQmlIncubationController {
-	// Do nothing.
-	// This ensures lazy loaders don't start blocking before onReload creates windows.
+class QSGRenderLoop;
+
+class QsIncubationController
+    : public QObject
+    , public QQmlIncubationController {
+	Q_OBJECT
+
+public:
+	void initLoop();
+	void setIncubationMode(bool render);
+	void incubateLater();
+
+protected:
+	void timerEvent(QTimerEvent* event) override;
+
+public slots:
+	void incubate();
+	void animationStopped();
+	void updateIncubationTime();
+
+protected:
+	void incubatingObjectCountChanged(int count) override;
+
+private:
+// QPointer did not work with forward declarations prior to 6.7
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+	QPointer<QSGRenderLoop> renderLoop = nullptr;
+#else
+	QSGRenderLoop* renderLoop = nullptr;
+#endif
+	int incubationTime = 0;
+	int timerId = 0;
+	bool followRenderloop = false;
 };

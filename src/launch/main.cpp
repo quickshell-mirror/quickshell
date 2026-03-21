@@ -16,7 +16,7 @@
 #include "build.hpp"
 #include "launch_p.hpp"
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 #include "../crash/main.hpp"
 #endif
 
@@ -25,14 +25,17 @@ namespace qs::launch {
 namespace {
 
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
 
 	if (!lastInfoFdStr.isEmpty()) {
 		auto lastInfoFd = lastInfoFdStr.toInt();
 
 		QFile file;
-		file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle);
+		if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+			qFatal() << "Failed to open crash info fd. Cannot restart.";
+		}
+
 		file.seek(0);
 
 		auto ds = QDataStream(&file);
@@ -101,7 +104,7 @@ void exitDaemon(int code) {
 int main(int argc, char** argv) {
 	QCoreApplication::setApplicationName("quickshell");
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 	qsCheckCrash(argc, argv);
 #endif
 

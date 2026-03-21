@@ -1,10 +1,11 @@
 #include "ipccomm.hpp"
-#include <cstdio>
+#include <utility>
 #include <variant>
 
 #include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qobject.h>
 #include <qtextstream.h>
 #include <qtypes.h>
 
@@ -18,10 +19,6 @@
 using namespace qs::ipc;
 
 namespace qs::io::ipc::comm {
-
-struct NoCurrentGeneration: std::monostate {};
-struct TargetNotFound: std::monostate {};
-struct EntryNotFound: std::monostate {};
 
 using QueryResponse = std::variant<
     std::monostate,
@@ -313,5 +310,107 @@ int getProperty(IpcClient* client, const QString& target, const QString& propert
 
 	return -1;
 }
+
+int listenToSignal(IpcClient* client, const QString& target, const QString& signal, bool once) {
+	if (target.isEmpty()) {
+		qCCritical(logBare) << "Target required to listen for signals.";
+		return -1;
+	} else if (signal.isEmpty()) {
+		qCCritical(logBare) << "Signal required to listen.";
+		return -1;
+	}
+
+	client->sendMessage(IpcCommand(SignalListenCommand {.target = target, .signal = signal}));
+
+	while (true) {
+		SignalListenResponse slot;
+		if (!client->waitForResponse(slot)) return -1;
+
+		if (std::holds_alternative<SignalResponse>(slot)) {
+			auto& result = std::get<SignalResponse>(slot);
+			QTextStream(stdout) << result.response << Qt::endl;
+			if (once) return 0;
+			else continue;
+		} else if (std::holds_alternative<TargetNotFound>(slot)) {
+			qCCritical(logBare) << "Target not found.";
+		} else if (std::holds_alternative<EntryNotFound>(slot)) {
+			qCCritical(logBare) << "Signal not found.";
+		} else if (std::holds_alternative<NoCurrentGeneration>(slot)) {
+			qCCritical(logBare) << "Not ready to accept queries yet.";
+		} else {
+			qCCritical(logIpc) << "Received invalid IPC response from" << client;
+		}
+		break;
+	}
+
+	return -1;
+}
+
+void SignalListenCommand::exec(qs::ipc::IpcServerConnection* conn) {
+	auto resp = conn->responseStream<SignalListenResponse>();
+
+	if (auto* generation = EngineGeneration::currentGeneration()) {
+		auto* registry = IpcHandlerRegistry::forGeneration(generation);
+
+		auto* handler = registry->findHandler(this->target);
+		if (!handler) {
+			resp << TargetNotFound();
+			return;
+		}
+
+		auto* signal = handler->findSignal(this->signal);
+		if (!signal) {
+			resp << EntryNotFound();
+			return;
+		}
+
+		new RemoteSignalListener(conn, *this);
+	} else {
+		conn->respond(SignalListenResponse(NoCurrentGeneration()));
+	}
+}
+
+RemoteSignalListener::RemoteSignalListener(
+    qs::ipc::IpcServerConnection* conn,
+    SignalListenCommand command
+)
+    : conn(conn)
+    , command(std::move(command)) {
+	conn->setParent(this);
+
+	QObject::connect(
+	    IpcSignalRemoteListener::instance(),
+	    &IpcSignalRemoteListener::triggered,
+	    this,
+	    &RemoteSignalListener::onSignal
+	);
+
+	QObject::connect(
+	    conn,
+	    &qs::ipc::IpcServerConnection::destroyed,
+	    this,
+	    &RemoteSignalListener::onConnDestroyed
+	);
+
+	qCDebug(logIpc) << "Remote listener created for" << this->command.target << this->command.signal
+	                << ":" << this;
+}
+
+RemoteSignalListener::~RemoteSignalListener() {
+	qCDebug(logIpc) << "Destroying remote listener" << this;
+}
+
+void RemoteSignalListener::onSignal(
+    const QString& target,
+    const QString& signal,
+    const QString& value
+) {
+	if (target != this->command.target || signal != this->command.signal) return;
+	qCDebug(logIpc) << "Remote signal" << signal << "triggered on" << target << "with value" << value;
+
+	this->conn->respond(SignalListenResponse(SignalResponse {.response = value}));
+}
+
+void RemoteSignalListener::onConnDestroyed() { this->deleteLater(); }
 
 } // namespace qs::io::ipc::comm

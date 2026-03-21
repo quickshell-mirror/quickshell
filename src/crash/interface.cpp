@@ -5,6 +5,7 @@
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qconfig.h>
+#include <qcontainerfwd.h>
 #include <qdesktopservices.h>
 #include <qfont.h>
 #include <qfontinfo.h>
@@ -12,10 +13,21 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpushbutton.h>
+#include <qtenvironmentvariables.h>
 #include <qtversion.h>
 #include <qwidget.h>
 
 #include "build.hpp"
+
+namespace {
+QString crashreportUrl() {
+	if (auto url = qEnvironmentVariable("QS_CRASHREPORT_URL"); !url.isEmpty()) {
+		return url;
+	}
+
+	return CRASHREPORT_URL;
+}
+} // namespace
 
 class ReportLabel: public QWidget {
 public:
@@ -66,22 +78,17 @@ CrashReporterGui::CrashReporterGui(QString reportFolder, int pid)
 	mainLayout->addSpacing(textHeight);
 
 	if (qtVersionMatches) {
-		mainLayout->addWidget(new QLabel("Please open a bug report for this issue via github or email.")
+		mainLayout->addWidget(
+		    new QLabel("Please open a bug report for this issue on the issue tracker.")
 		);
 	} else {
 		mainLayout->addWidget(new QLabel(
 		    "Please rebuild Quickshell against the current Qt version.\n"
-		    "If this does not solve the problem, please open a bug report via github or email."
+		    "If this does not solve the problem, please open a bug report on the issue tracker."
 		));
 	}
 
-	mainLayout->addWidget(new ReportLabel(
-	    "Github:",
-	    "https://github.com/quickshell-mirror/quickshell/issues/new?template=crash.yml",
-	    this
-	));
-
-	mainLayout->addWidget(new ReportLabel("Email:", "quickshell-bugs@outfoxxed.me", this));
+	mainLayout->addWidget(new ReportLabel("Tracker:", crashreportUrl(), this));
 
 	auto* buttons = new QWidget(this);
 	buttons->setMinimumWidth(900);
@@ -111,10 +118,5 @@ void CrashReporterGui::openFolder() {
 	QDesktopServices::openUrl(QUrl::fromLocalFile(this->reportFolder));
 }
 
-void CrashReporterGui::openReportUrl() {
-	QDesktopServices::openUrl(
-	    QUrl("https://github.com/outfoxxed/quickshell/issues/new?template=crash.yml")
-	);
-}
-
+void CrashReporterGui::openReportUrl() { QDesktopServices::openUrl(QUrl(crashreportUrl())); }
 void CrashReporterGui::cancel() { QApplication::quit(); }

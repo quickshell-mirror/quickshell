@@ -2,6 +2,6 @@
   clangStdenv,
   gccStdenv,
 }: {
-  clang = { buildStdenv = clangStdenv; };
-  gcc = { buildStdenv = gccStdenv; };
+  clang = { stdenv = clangStdenv; };
+  gcc = { stdenv = gccStdenv; };
 }

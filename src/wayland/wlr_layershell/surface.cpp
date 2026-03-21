@@ -17,6 +17,7 @@
 #include <qvariant.h>
 #include <qwayland-wlr-layer-shell-unstable-v1.h>
 #include <qwindow.h>
+#include <wayland-xdg-shell-client-protocol.h>
 
 #include "../../window/panelinterface.hpp"
 #include "shell_integration.hpp"
@@ -30,8 +31,8 @@ namespace qs::wayland::layershell {
 
 namespace {
 
-[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer toWaylandLayer(const WlrLayer::Enum& layer
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_shell_v1::layer
+toWaylandLayer(const WlrLayer::Enum& layer) noexcept {
 	switch (layer) {
 	case WlrLayer::Background: return QtWayland::zwlr_layer_shell_v1::layer_background;
 	case WlrLayer::Bottom: return QtWayland::zwlr_layer_shell_v1::layer_bottom;
@@ -42,8 +43,8 @@ namespace {
 	return QtWayland::zwlr_layer_shell_v1::layer_top;
 }
 
-[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor toWaylandAnchors(const Anchors& anchors
-) noexcept {
+[[nodiscard]] QtWayland::zwlr_layer_surface_v1::anchor
+toWaylandAnchors(const Anchors& anchors) noexcept {
 	quint32 wl = 0;
 	if (anchors.mLeft) wl |= QtWayland::zwlr_layer_surface_v1::anchor_left;
 	if (anchors.mRight) wl |= QtWayland::zwlr_layer_surface_v1::anchor_right;
@@ -143,11 +144,11 @@ LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWayla
 		auto* waylandScreen =
 		    dynamic_cast<QtWaylandClient::QWaylandScreen*>(qwindow->screen()->handle());
 
-		if (waylandScreen != nullptr) {
+		if (waylandScreen != nullptr && !waylandScreen->isPlaceholder() && waylandScreen->output()) {
 			output = waylandScreen->output();
 		} else {
-			qWarning(
-			) << "Layershell screen does not corrospond to a real screen. Letting the compositor pick.";
+			qWarning()
+			    << "Layershell screen does not correspond to a real screen. Letting the compositor pick.";
 		}
 	}
 
@@ -247,9 +248,19 @@ void LayerSurface::commit() {
 }
 
 void LayerSurface::attachPopup(QtWaylandClient::QWaylandShellSurface* popup) {
-	std::any role = popup->surfaceRole();
-
-	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) { // NOLINT
+#ifdef __FreeBSD__
+	// FreeBSD uses an alternate RTTI matching strategy by default which does
+	// not work across modules, preventing std::any from downcasting. On
+	// FreeBSD, Qt is built with a patch to expose the surface role through a
+	// pointer instead of an any, which does not have this problem.
+	// See https://bugs.kde.org/show_bug.cgi?id=479679
+	if (auto* xdgPopup = static_cast<::xdg_popup*>(popup->nativeResource("xdg_popup"))) {
+		this->get_popup(xdgPopup);
+		return;
+	}
+#endif
+	auto role = popup->surfaceRole(); // NOLINT
+	if (auto* popupRole = std::any_cast<::xdg_popup*>(&role)) {
 		this->get_popup(*popupRole);
 	} else {
 		qWarning() << "Cannot attach popup" << popup << "to shell surface" << this

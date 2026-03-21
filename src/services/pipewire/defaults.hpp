@@ -12,6 +12,7 @@ class PwDefaultTracker: public QObject {
 
 public:
 	explicit PwDefaultTracker(PwRegistry* registry);
+	void reset();
 
 	[[nodiscard]] PwNode* defaultSink() const;
 	[[nodiscard]] PwNode* defaultSource() const;
@@ -43,7 +44,10 @@ private slots:
 	void onMetadataAdded(PwMetadata* metadata);
 	void onMetadataProperty(const char* key, const char* type, const char* value);
 	void onNodeAdded(PwNode* node);
-	void onNodeDestroyed(QObject* node);
+	void onDefaultSinkDestroyed();
+	void onDefaultSourceDestroyed();
+	void onDefaultConfiguredSinkDestroyed();
+	void onDefaultConfiguredSourceDestroyed();
 
 private:
 	void setDefaultSink(PwNode* node);

@@ -15,15 +15,7 @@ Please make this descriptive enough to identify your specific package, for examp
 - `Nixpkgs`
 - `Fedora COPR (errornointernet/quickshell)`
 
-`-DDISTRIBUTOR_DEBUGINFO_AVAILABLE=YES/NO`
-
-If we can retrieve binaries and debug information for the package without actually running your
-distribution (e.g. from an website), and you would like to strip the binary, please set this to `YES`.
-
-If we cannot retrieve debug information, please set this to `NO` and
-**ensure you aren't distributing stripped (non debuggable) binaries**.
-
-In both cases you should build with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (then split or keep the debuginfo).
+If you are forking quickshell, please change `CRASHREPORT_URL` to your own issue tracker.
 
 ### QML Module dir
 Currently all QML modules are statically linked to quickshell, but this is where
@@ -41,6 +33,7 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `cmake`
 - `qt6base`
 - `qt6declarative`
+- `libdrm`
 - `qtshadertools` (build-time)
 - `spirv-tools` (build-time)
 - `pkg-config` (build-time)
@@ -55,7 +48,7 @@ On some distros, private Qt headers are in separate packages which you may have 
 We currently require private headers for the following libraries:
 
 - `qt6declarative`
-- `qt6wayland`
+- `qt6wayland` (for Qt versions prior to 6.10)
 
 We recommend an implicit dependency on `qt6svg`. If it is not installed, svg images and
 svg icons will not work, including system ones.
@@ -64,14 +57,24 @@ At least Qt 6.6 is required.
 
 All features are enabled by default and some have their own dependencies.
 
-### Crash Reporter
-The crash reporter catches crashes, restarts quickshell when it crashes,
+### Crash Handler
+The crash reporter catches crashes, restarts Quickshell when it crashes,
 and collects useful crash information in one place. Leaving this enabled will
 enable us to fix bugs far more easily.
 
-To disable: `-DCRASH_REPORTER=OFF`
+To disable: `-DCRASH_HANDLER=OFF`
 
-Dependencies: `google-breakpad` (static library)
+Dependencies: `cpptrace`
+
+Note: `-DVENDOR_CPPTRACE=ON` can be set to vendor cpptrace using FetchContent.
+
+When using FetchContent, `libunwind` is required, and `libdwarf` can be provided by the
+package manager or fetched with FetchContent.
+
+*Please ensure binaries have usable symbols.* We do not necessarily need full debuginfo, but
+leaving symbols in the binary is extremely helpful. You can check if symbols are useful
+by sending a SIGSEGV to the process and ensuring symbols for the quickshell binary are present
+in the trace.
 
 ### Jemalloc
 We recommend leaving Jemalloc enabled as it will mask memory fragmentation caused
@@ -104,7 +107,7 @@ Currently supported Qt versions: `6.6`, `6.7`.
 To disable: `-DWAYLAND=OFF`
 
 Dependencies:
- - `qt6wayland`
+ - `qt6wayland` (for Qt versions prior to 6.10)
  - `wayland` (libwayland-client)
  - `wayland-scanner` (build time)
  - `wayland-protocols` (static library)
@@ -144,8 +147,8 @@ Enables streaming video from monitors and toplevel windows through various proto
 To disable: `-DSCREENCOPY=OFF`
 
 Dependencies:
-- `libdrm`
 - `libgbm`
+- `vulkan-headers` (build-time)
 
 Specific protocols can also be disabled:
 - `DSCREENCOPY_ICC=OFF` - Disable screencopy via [ext-image-copy-capture-v1]
@@ -192,6 +195,13 @@ To disable: `-DSERVICE_PAM=OFF`
 
 Dependencies: `pam`
 
+### Polkit
+This feature enables creating Polkit agents that can prompt user for authentication.
+
+To disable: `-DSERVICE_POLKIT=OFF`
+
+Dependencies: `polkit`, `glib`
+
 ### Hyprland
 This feature enables hyprland specific integrations. It requires wayland support
 but has no extra dependencies.
@@ -232,7 +242,7 @@ Only `ninja` builds are tested, but makefiles may work.
 
 #### Configuring the build
 ```sh
-$ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo [additional disable flags from above here]
+$ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release [additional disable flags from above here]
 ```
 
 Note that features you do not supply dependencies for MUST be disabled with their associated flags

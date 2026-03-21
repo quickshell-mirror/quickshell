@@ -102,7 +102,7 @@ class Process: public PostReloadHook {
 	/// If the process is already running changing this property will affect the next
 	/// started process. If the property has been changed after starting a process it will
 	/// return the new value, not the one for the currently running process.
-	Q_PROPERTY(QHash<QString, QVariant> environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
+	Q_PROPERTY(QVariantHash environment READ environment WRITE setEnvironment NOTIFY environmentChanged);
 	/// If the process's environment should be cleared prior to applying @@environment.
 	/// Defaults to false.
 	///

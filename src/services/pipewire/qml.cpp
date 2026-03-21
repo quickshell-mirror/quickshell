@@ -2,7 +2,6 @@
 
 #include <qcontainerfwd.h>
 #include <qlist.h>
-#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmllist.h>
 #include <qtmetamacros.h>
@@ -99,15 +98,8 @@ Pipewire::Pipewire(QObject* parent): QObject(parent) {
 	    &Pipewire::defaultConfiguredAudioSourceChanged
 	);
 
-	if (!connection->registry.isInitialized()) {
-		QObject::connect(
-		    &connection->registry,
-		    &PwRegistry::initialized,
-		    this,
-		    &Pipewire::readyChanged,
-		    Qt::SingleShotConnection
-		);
-	}
+	QObject::connect(&connection->registry, &PwRegistry::initialized, this, &Pipewire::readyChanged);
+	QObject::connect(&connection->registry, &PwRegistry::cleared, this, &Pipewire::readyChanged);
 }
 
 ObjectModel<PwNodeIface>* Pipewire::nodes() { return &this->mNodes; }
@@ -221,6 +213,7 @@ void PwNodeLinkTracker::updateLinks() {
 			    || (this->mNode->isSink() && link->inputNode() == this->mNode->id()))
 			{
 				auto* iface = PwLinkGroupIface::instance(link);
+				if (iface->target()->node()->isMonitor) return;
 
 				// do not connect twice
 				if (!this->mLinkGroups.contains(iface)) {
@@ -239,7 +232,7 @@ void PwNodeLinkTracker::updateLinks() {
 
 	for (auto* iface: this->mLinkGroups) {
 		// only disconnect no longer used nodes
-		if (!newLinks.contains(iface)) {
+		if (!newLinks.contains(iface) || iface->target()->node()->isMonitor) {
 			QObject::disconnect(iface, nullptr, this, nullptr);
 		}
 	}
@@ -279,6 +272,8 @@ void PwNodeLinkTracker::onLinkGroupCreated(PwLinkGroup* linkGroup) {
 	    || (this->mNode->isSink() && linkGroup->inputNode() == this->mNode->id()))
 	{
 		auto* iface = PwLinkGroupIface::instance(linkGroup);
+		if (iface->target()->node()->isMonitor) return;
+
 		QObject::connect(iface, &QObject::destroyed, this, &PwNodeLinkTracker::onLinkGroupDestroyed);
 		this->mLinkGroups.push_back(iface);
 		emit this->linkGroupsChanged();

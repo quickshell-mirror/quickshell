@@ -2,25 +2,31 @@
   lib,
   nix-gitignore,
   pkgs,
+  stdenv,
   keepDebugInfo,
-  buildStdenv ? pkgs.clangStdenv,
 
   pkg-config,
   cmake,
   ninja,
   spirv-tools,
   qt6,
-  breakpad,
+  cpptrace ? null,
+  libunwind,
+  libdwarf,
   jemalloc,
   cli11,
   wayland,
   wayland-protocols,
   wayland-scanner,
   xorg,
+  libxcb ? xorg.libxcb,
   libdrm,
   libgbm ? null,
+  vulkan-headers,
   pipewire,
   pam,
+  polkit,
+  glib,
 
   gitRev ? (let
     headExists = builtins.pathExists ./.git/HEAD;
@@ -43,10 +49,14 @@
   withPam ? true,
   withHyprland ? true,
   withI3 ? true,
+  withPolkit ? true,
+  withNetworkManager ? true,
 }: let
-  unwrapped = buildStdenv.mkDerivation {
+  withCrashHandler = withCrashReporter && cpptrace != null && lib.strings.compareVersions cpptrace.version "0.7.2" >= 0;
+
+  unwrapped = stdenv.mkDerivation {
     pname = "quickshell${lib.optionalString debug "-debug"}";
-    version = "0.2.0";
+    version = "0.2.1";
     src = nix-gitignore.gitignoreSource "/default.nix\n" ./.;
 
     dontWrapQtApps = true; # see wrappers
@@ -54,25 +64,36 @@
     nativeBuildInputs = [
       cmake
       ninja
-      qt6.qtshadertools
       spirv-tools
       pkg-config
     ]
-    ++ lib.optional withWayland wayland-scanner;
+    ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
+    ++ lib.optionals withWayland [
+      qt6.qtwayland # qtwaylandscanner required at build time
+      wayland-scanner
+    ];
 
     buildInputs = [
       qt6.qtbase
       qt6.qtdeclarative
+      libdrm
       cli11
     ]
     ++ lib.optional withQtSvg qt6.qtsvg
-    ++ lib.optional withCrashReporter breakpad
+    ++ lib.optional withCrashHandler (cpptrace.overrideAttrs (prev: {
+      cmakeFlags = prev.cmakeFlags ++ [
+        "-DCPPTRACE_UNWIND_WITH_LIBUNWIND=TRUE"
+      ];
+      buildInputs = prev.buildInputs ++ [ libunwind ];
+    }))
     ++ lib.optional withJemalloc jemalloc
-    ++ lib.optionals withWayland [ qt6.qtwayland wayland wayland-protocols ]
-    ++ lib.optionals (withWayland && libgbm != null) [ libdrm libgbm ]
-    ++ lib.optional withX11 xorg.libxcb
+    ++ lib.optional (withWayland && lib.strings.compareVersions qt6.qtbase.version "6.10.0" == -1) qt6.qtwayland
+    ++ lib.optionals withWayland [ wayland wayland-protocols ]
+    ++ lib.optionals (withWayland && libgbm != null) [ libgbm vulkan-headers ]
+    ++ lib.optional withX11 libxcb
     ++ lib.optional withPam pam
-    ++ lib.optional withPipewire pipewire;
+    ++ lib.optional withPipewire pipewire
+    ++ lib.optionals withPolkit [ polkit glib ];
 
     cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
@@ -81,12 +102,14 @@
       (lib.cmakeFeature "INSTALL_QML_PREFIX" qt6.qtbase.qtQmlPrefix)
       (lib.cmakeBool "DISTRIBUTOR_DEBUGINFO_AVAILABLE" true)
       (lib.cmakeFeature "GIT_REVISION" gitRev)
-      (lib.cmakeBool "CRASH_REPORTER" withCrashReporter)
+      (lib.cmakeBool "CRASH_HANDLER" withCrashHandler)
       (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
       (lib.cmakeBool "WAYLAND" withWayland)
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
       (lib.cmakeBool "SERVICE_PAM" withPam)
+      (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)
+      (lib.cmakeBool "SERVICE_POLKIT" withPolkit)
       (lib.cmakeBool "HYPRLAND" withHyprland)
       (lib.cmakeBool "I3" withI3)
     ];

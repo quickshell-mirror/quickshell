@@ -100,7 +100,7 @@ MprisPlayer::MprisPlayer(const QString& address, QObject* parent): QObject(paren
 		} else return static_cast<qlonglong>(-1);
 	});
 
-	this->bLengthSupported.setBinding([this]() { return this->bInternalLength != -1; });
+	this->bLengthSupported.setBinding([this]() { return this->bInternalLength.value() != -1; });
 
 	this->bIsPlaying.setBinding([this]() {
 		return this->bPlaybackState == MprisPlaybackState::Playing;
@@ -378,7 +378,7 @@ void MprisPlayer::onPlaybackStatusUpdated() {
 
 	// For exceptionally bad players that update playback timestamps at an indeterminate time AFTER
 	// updating playback state. (Youtube)
-	QTimer::singleShot(100, this, [&]() { this->pPosition.requestUpdate(); });
+	QTimer::singleShot(100, this, [this]() { this->pPosition.requestUpdate(); });
 
 	// For exceptionally bad players that don't update length (or other metadata) until a new track actually
 	// starts playing, and then don't trigger a metadata update when they do. (Jellyfin)

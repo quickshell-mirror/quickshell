@@ -7,7 +7,11 @@
 #include <qloggingcategory.h>
 #include <qstring.h>
 #include <sched.h>
+#ifdef __FreeBSD__
+#include <security/pam_types.h>
+#else
 #include <security/_pam_types.h>
+#endif
 #include <security/pam_appl.h>
 #include <unistd.h>
 
@@ -83,7 +87,11 @@ PamIpcExitCode PamSubprocess::exec(const char* configDir, const char* config, co
 	logIf(this->log) << "Starting pam session for user \"" << user << "\" with config \"" << config
 	                 << "\" in dir \"" << configDir << "\"" << std::endl;
 
+#ifdef __FreeBSD__
+	auto result = pam_start(config, user, &conv, &handle);
+#else
 	auto result = pam_start_confdir(config, user, &conv, configDir, &handle);
+#endif
 
 	if (result != PAM_SUCCESS) {
 		logIf(true) << "Unable to start pam conversation with error \"" << pam_strerror(handle, result)

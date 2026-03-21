@@ -1,6 +1,6 @@
 find_package(PkgConfig REQUIRED)
 find_package(WaylandScanner REQUIRED)
-pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols)
+pkg_check_modules(wayland REQUIRED IMPORTED_TARGET wayland-client wayland-protocols>=1.41)
 
 # wayland protocols
 
@@ -12,13 +12,13 @@ if(NOT TARGET Qt6::qtwaylandscanner)
 	message(FATAL_ERROR "qtwaylandscanner executable not found. Most likely there is an issue with your Qt installation.")
 endif()
 
-execute_process(
-	COMMAND pkg-config --variable=pkgdatadir wayland-protocols
-	OUTPUT_VARIABLE WAYLAND_PROTOCOLS
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+pkg_get_variable(WAYLAND_PROTOCOLS wayland-protocols pkgdatadir)
 
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+if(WAYLAND_PROTOCOLS)
+	message(STATUS "Found wayland protocols at ${WAYLAND_PROTOCOLS}")
+else()
+	message(FATAL_ERROR "Could not find wayland protocols")
+endif()
 
 qs_add_pchset(wayland-protocol
 	DEPENDENCIES Qt::Core Qt::WaylandClient Qt::WaylandClientPrivate
@@ -68,17 +68,23 @@ function (wl_proto target name dir)
 	target_include_directories(${target} INTERFACE ${PROTO_BUILD_PATH})
 	target_link_libraries(${target} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
 	qs_pch(${target} SET wayland-protocol)
+	target_compile_options(wl-proto-${name}-wl PRIVATE ${wayland_CFLAGS})
 endfunction()
 
 # -----
 
 qt_add_library(quickshell-wayland STATIC
+	wl_proxy_safe_deref.cpp
 	platformmenu.cpp
 	popupanchor.cpp
 	xdgshell.cpp
 	util.cpp
 	output_tracking.cpp
 )
+
+# required for wl_proxy_safe_deref
+target_link_libraries(quickshell-wayland PRIVATE ${CMAKE_DL_LIBS})
+target_link_options(quickshell PRIVATE "LINKER:--export-dynamic-symbol=wl_proxy_get_listener")
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)
@@ -113,6 +119,20 @@ endif()
 if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
+
+add_subdirectory(background_effect)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._BackgroundEffect)
+
+add_subdirectory(idle_inhibit)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleInhibitor)
+
+add_subdirectory(idle_notify)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleNotify)
+
+add_subdirectory(shortcuts_inhibit)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._ShortcutsInhibitor)
+
+add_subdirectory(windowmanager)
 
 # widgets for qmenu
 target_link_libraries(quickshell-wayland PRIVATE

@@ -27,7 +27,7 @@
 #include "build.hpp"
 #include "launch_p.hpp"
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 #include "../crash/handler.hpp"
 #endif
 
@@ -76,8 +76,10 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool useSystemStyle = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
+		QString appId = qEnvironmentVariable("QS_APP_ID");
 		QString dataDir;
 		QString stateDir;
+		QString cacheDir;
 	} pragmas;
 
 	auto stream = QTextStream(&file);
@@ -103,12 +105,16 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 				auto var = envPragma.sliced(0, splitIdx).trimmed();
 				auto val = envPragma.sliced(splitIdx + 1).trimmed();
 				pragmas.envOverrides.insert(var, val);
+			} else if (pragma.startsWith("AppId ")) {
+				pragmas.appId = pragma.sliced(6).trimmed();
 			} else if (pragma.startsWith("ShellId ")) {
 				shellId = pragma.sliced(8).trimmed();
 			} else if (pragma.startsWith("DataDir ")) {
 				pragmas.dataDir = pragma.sliced(8).trimmed();
 			} else if (pragma.startsWith("StateDir ")) {
 				pragmas.stateDir = pragma.sliced(9).trimmed();
+			} else if (pragma.startsWith("CacheDir ")) {
+				pragmas.cacheDir = pragma.sliced(9).trimmed();
 			} else {
 				qCritical() << "Unrecognized pragma" << pragma;
 				return -1;
@@ -125,21 +131,26 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 
 	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
+	auto appId = pragmas.appId.isEmpty() ? QStringLiteral("org.quickshell") : pragmas.appId;
+
 	InstanceInfo::CURRENT = InstanceInfo {
 	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
 	    .configPath = args.configPath,
 	    .shellId = shellId,
+	    .appId = appId,
 	    .launchTime = qs::Common::LAUNCH_TIME,
 	    .pid = getpid(),
+	    .display = getDisplayConnection(),
 	};
 
-#if CRASH_REPORTER
-	auto crashHandler = crash::CrashHandler();
-	crashHandler.init();
+#if CRASH_HANDLER
+	if (qEnvironmentVariableIsSet("QS_DISABLE_CRASH_HANDLER")) {
+		qInfo() << "Crash handling disabled.";
+	} else {
+		crash::CrashHandler::init();
 
-	{
 		auto* log = LogManager::instance();
-		crashHandler.setRelaunchInfo({
+		crash::CrashHandler::setRelaunchInfo({
 		    .instance = InstanceInfo::CURRENT,
 		    .noColor = !log->colorLogs,
 		    .timestamp = log->timestampLogs,
@@ -150,7 +161,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	}
 #endif
 
-	QsPaths::init(shellId, pathId, pragmas.dataDir, pragmas.stateDir);
+	QsPaths::init(shellId, pathId, pragmas.dataDir, pragmas.stateDir, pragmas.cacheDir);
 	QsPaths::instance()->linkRunDir();
 	QsPaths::instance()->linkPathDir();
 	LogManager::initFs();
@@ -226,7 +237,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		app = new QGuiApplication(qArgC, argv);
 	}
 
-	QGuiApplication::setDesktopFileName("org.quickshell");
+	QGuiApplication::setDesktopFileName(appId);
 
 	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qbytearray.h>
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qhash.h>
@@ -16,14 +17,24 @@ public:
 	QmlScanner() = default;
 	QmlScanner(const QDir& rootPath): rootPath(rootPath) {}
 
-	// path must be canonical
-	void scanDir(const QString& path);
-
+	void scanDir(const QDir& dir);
 	void scanQmlRoot(const QString& path);
 
-	QVector<QString> scannedDirs;
+	QVector<QDir> scannedDirs;
 	QVector<QString> scannedFiles;
+	QHash<QString, QByteArray> fileHashes;
 	QHash<QString, QString> fileIntercepts;
+
+	struct ScanError {
+		QString file;
+		QString message;
+		int line;
+	};
+
+	QVector<ScanError> scanErrors;
+
+	bool readAndHashFile(const QString& path, QByteArray& data);
+	[[nodiscard]] bool hasFileContentChanged(const QString& path) const;
 
 private:
 	QDir rootPath;

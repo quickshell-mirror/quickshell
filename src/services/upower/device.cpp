@@ -73,7 +73,7 @@ UPowerDevice::UPowerDevice(QObject* parent): QObject(parent) {
 		return this->bType == UPowerDeviceType::Battery && this->bPowerSupply;
 	});
 
-	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage != 0; });
+	this->bHealthSupported.setBinding([this]() { return this->bHealthPercentage.value() != 0; });
 }
 
 void UPowerDevice::init(const QString& path) {
@@ -101,7 +101,7 @@ QString UPowerDevice::address() const { return this->device ? this->device->serv
 QString UPowerDevice::path() const { return this->device ? this->device->path() : QString(); }
 
 void UPowerDevice::onGetAllFinished() {
-	qCDebug(logUPowerDevice) << "UPowerDevice" << device->path() << "ready.";
+	qCDebug(logUPowerDevice) << "UPowerDevice" << this->device->path() << "ready.";
 	this->bReady = true;
 }
 
@@ -126,8 +126,8 @@ DBusDataTransform<UPowerDeviceState::Enum>::fromWire(quint32 wire) {
 	);
 }
 
-DBusResult<UPowerDeviceType::Enum> DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire
-) {
+DBusResult<UPowerDeviceType::Enum>
+DBusDataTransform<UPowerDeviceType::Enum>::fromWire(quint32 wire) {
 	if (wire >= UPowerDeviceType::Unknown && wire <= UPowerDeviceType::BluetoothGeneric) {
 		return DBusResult(static_cast<UPowerDeviceType::Enum>(wire));
 	}

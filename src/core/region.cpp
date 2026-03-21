@@ -1,4 +1,5 @@
 #include "region.hpp"
+#include <algorithm>
 #include <cmath>
 
 #include <qobject.h>
@@ -18,6 +19,11 @@ PendingRegion::PendingRegion(QObject* parent): QObject(parent) {
 	QObject::connect(this, &PendingRegion::yChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::widthChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::heightChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::radiusChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::topLeftRadiusChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::topRightRadiusChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::bottomLeftRadiusChanged, this, &PendingRegion::changed);
+	QObject::connect(this, &PendingRegion::bottomRightRadiusChanged, this, &PendingRegion::changed);
 	QObject::connect(this, &PendingRegion::childrenChanged, this, &PendingRegion::changed);
 }
 
@@ -44,6 +50,79 @@ void PendingRegion::setItem(QQuickItem* item) {
 void PendingRegion::onItemDestroyed() { this->mItem = nullptr; }
 
 void PendingRegion::onChildDestroyed() { this->mRegions.removeAll(this->sender()); }
+
+qint32 PendingRegion::radius() const { return this->mRadius; }
+
+void PendingRegion::setRadius(qint32 radius) {
+	if (radius == this->mRadius) return;
+	this->mRadius = radius;
+	emit this->radiusChanged();
+
+	if (!(this->mCornerOverrides & TopLeft)) emit this->topLeftRadiusChanged();
+	if (!(this->mCornerOverrides & TopRight)) emit this->topRightRadiusChanged();
+	if (!(this->mCornerOverrides & BottomLeft)) emit this->bottomLeftRadiusChanged();
+	if (!(this->mCornerOverrides & BottomRight)) emit this->bottomRightRadiusChanged();
+}
+
+qint32 PendingRegion::topLeftRadius() const {
+	return (this->mCornerOverrides & TopLeft) ? this->mTopLeftRadius : this->mRadius;
+}
+
+void PendingRegion::setTopLeftRadius(qint32 radius) {
+	this->mTopLeftRadius = radius;
+	this->mCornerOverrides |= TopLeft;
+	emit this->topLeftRadiusChanged();
+}
+
+void PendingRegion::resetTopLeftRadius() {
+	this->mCornerOverrides &= ~TopLeft;
+	emit this->topLeftRadiusChanged();
+}
+
+qint32 PendingRegion::topRightRadius() const {
+	return (this->mCornerOverrides & TopRight) ? this->mTopRightRadius : this->mRadius;
+}
+
+void PendingRegion::setTopRightRadius(qint32 radius) {
+	this->mTopRightRadius = radius;
+	this->mCornerOverrides |= TopRight;
+	emit this->topRightRadiusChanged();
+}
+
+void PendingRegion::resetTopRightRadius() {
+	this->mCornerOverrides &= ~TopRight;
+	emit this->topRightRadiusChanged();
+}
+
+qint32 PendingRegion::bottomLeftRadius() const {
+	return (this->mCornerOverrides & BottomLeft) ? this->mBottomLeftRadius : this->mRadius;
+}
+
+void PendingRegion::setBottomLeftRadius(qint32 radius) {
+	this->mBottomLeftRadius = radius;
+	this->mCornerOverrides |= BottomLeft;
+	emit this->bottomLeftRadiusChanged();
+}
+
+void PendingRegion::resetBottomLeftRadius() {
+	this->mCornerOverrides &= ~BottomLeft;
+	emit this->bottomLeftRadiusChanged();
+}
+
+qint32 PendingRegion::bottomRightRadius() const {
+	return (this->mCornerOverrides & BottomRight) ? this->mBottomRightRadius : this->mRadius;
+}
+
+void PendingRegion::setBottomRightRadius(qint32 radius) {
+	this->mBottomRightRadius = radius;
+	this->mCornerOverrides |= BottomRight;
+	emit this->bottomRightRadiusChanged();
+}
+
+void PendingRegion::resetBottomRightRadius() {
+	this->mCornerOverrides &= ~BottomRight;
+	emit this->bottomRightRadiusChanged();
+}
 
 QQmlListProperty<PendingRegion> PendingRegion::regions() {
 	return QQmlListProperty<PendingRegion>(
@@ -88,6 +167,60 @@ QRegion PendingRegion::build() const {
 		);
 	} else {
 		region = QRegion(this->mX, this->mY, this->mWidth, this->mHeight, type);
+	}
+
+	if (this->mShape == RegionShape::Rect && !region.isEmpty()) {
+		auto tl = std::max(this->topLeftRadius(), 0);
+		auto tr = std::max(this->topRightRadius(), 0);
+		auto bl = std::max(this->bottomLeftRadius(), 0);
+		auto br = std::max(this->bottomRightRadius(), 0);
+
+		if (tl > 0 || tr > 0 || bl > 0 || br > 0) {
+			auto rect = region.boundingRect();
+			auto x = rect.x();
+			auto y = rect.y();
+			auto w = rect.width();
+			auto h = rect.height();
+
+			// Normalize so adjacent corners don't exceed their shared edge.
+			// Each corner is scaled by the tightest constraint of its two edges.
+			auto topScale = tl + tr > w ? static_cast<double>(w) / (tl + tr) : 1.0;
+			auto bottomScale = bl + br > w ? static_cast<double>(w) / (bl + br) : 1.0;
+			auto leftScale = tl + bl > h ? static_cast<double>(h) / (tl + bl) : 1.0;
+			auto rightScale = tr + br > h ? static_cast<double>(h) / (tr + br) : 1.0;
+
+			tl = static_cast<qint32>(tl * std::min(topScale, leftScale));
+			tr = static_cast<qint32>(tr * std::min(topScale, rightScale));
+			bl = static_cast<qint32>(bl * std::min(bottomScale, leftScale));
+			br = static_cast<qint32>(br * std::min(bottomScale, rightScale));
+
+			// Unlock each corner: subtract (cornerBox - quarterEllipse) from the
+			// full rect. Each corner only modifies pixels inside its own box,
+			// so no diagonal overlap is possible.
+			if (tl > 0) {
+				auto box = QRegion(x, y, tl, tl);
+				auto ellipse = QRegion(x, y, tl * 2, tl * 2, QRegion::Ellipse);
+				region -= box - (ellipse & box);
+			}
+
+			if (tr > 0) {
+				auto box = QRegion(x + w - tr, y, tr, tr);
+				auto ellipse = QRegion(x + w - tr * 2, y, tr * 2, tr * 2, QRegion::Ellipse);
+				region -= box - (ellipse & box);
+			}
+
+			if (bl > 0) {
+				auto box = QRegion(x, y + h - bl, bl, bl);
+				auto ellipse = QRegion(x, y + h - bl * 2, bl * 2, bl * 2, QRegion::Ellipse);
+				region -= box - (ellipse & box);
+			}
+
+			if (br > 0) {
+				auto box = QRegion(x + w - br, y + h - br, br, br);
+				auto ellipse = QRegion(x + w - br * 2, y + h - br * 2, br * 2, br * 2, QRegion::Ellipse);
+				region -= box - (ellipse & box);
+			}
+		}
 	}
 
 	for (const auto& childRegion: this->mRegions) {

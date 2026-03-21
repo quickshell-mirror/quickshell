@@ -9,7 +9,7 @@
 #include <qqmlinfo.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 
 #include "../core/logcat.hpp"
 

@@ -96,15 +96,13 @@ private slots:
 	void onGrabActivated();
 	void onGrabCleared();
 	void onProxyConnected();
+	void onObjectDestroyed(QObject* object);
 
 private:
 	void tryActivate();
-	void syncWindows();
 
 	bool targetActive = false;
 	QObjectList windowObjects;
-	QList<ProxyWindowBase*> trackedProxies;
-	QList<QWindow*> trackedWindows;
 
 	focus_grab::FocusGrab* grab = nullptr;
 };

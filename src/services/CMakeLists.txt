@@ -14,6 +14,10 @@ if (SERVICE_PAM)
 	add_subdirectory(pam)
 endif()
 
+if (SERVICE_POLKIT)
+	add_subdirectory(polkit)
+endif()
+
 if (SERVICE_GREETD)
 	add_subdirectory(greetd)
 endif()

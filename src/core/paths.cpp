@@ -27,12 +27,19 @@ QsPaths* QsPaths::instance() {
 	return instance;
 }
 
-void QsPaths::init(QString shellId, QString pathId, QString dataOverride, QString stateOverride) {
+void QsPaths::init(
+    QString shellId,
+    QString pathId,
+    QString dataOverride,
+    QString stateOverride,
+    QString cacheOverride
+) {
 	auto* instance = QsPaths::instance();
 	instance->shellId = std::move(shellId);
 	instance->pathId = std::move(pathId);
 	instance->shellDataOverride = std::move(dataOverride);
 	instance->shellStateOverride = std::move(stateOverride);
+	instance->shellCacheOverride = std::move(cacheOverride);
 }
 
 QDir QsPaths::crashDir(const QString& id) {
@@ -168,7 +175,8 @@ void QsPaths::linkRunDir() {
 		auto* shellDir = this->shellRunDir();
 
 		if (!shellDir) {
-			qCCritical(logPaths
+			qCCritical(
+			    logPaths
 			) << "Could not create by-id symlink as the shell runtime path could not be created.";
 		} else {
 			auto shellPath = shellDir->filePath(runDir->dirName());
@@ -316,9 +324,16 @@ QDir QsPaths::shellStateDir() {
 
 QDir QsPaths::shellCacheDir() {
 	if (this->shellCacheState == DirState::Unknown) {
-		auto dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
-		dir = QDir(dir.filePath("by-shell"));
-		dir = QDir(dir.filePath(this->shellId));
+		QDir dir;
+		if (this->shellCacheOverride.isEmpty()) {
+			dir = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+			dir = QDir(dir.filePath("by-shell"));
+			dir = QDir(dir.filePath(this->shellId));
+		} else {
+			auto basedir = QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation);
+			dir = QDir(this->shellCacheOverride.replace("$BASE", basedir));
+		}
+
 		this->mShellCacheDir = dir;
 
 		qCDebug(logPaths) << "Initialized cache path:" << dir.path();
@@ -346,7 +361,7 @@ void QsPaths::createLock() {
 			return;
 		}
 
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -364,7 +379,8 @@ void QsPaths::createLock() {
 			qCDebug(logPaths) << "Created instance lock at" << path;
 		}
 	} else {
-		qCCritical(logPaths
+		qCCritical(
+		    logPaths
 		) << "Could not create instance lock, as the instance runtime directory could not be created.";
 	}
 }
@@ -373,7 +389,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 	auto file = QFile(QDir(path).filePath("instance.lock"));
 	if (!file.open(QFile::ReadOnly)) return false;
 
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_WRLCK,
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,
@@ -397,7 +413,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 }
 
 QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
-QsPaths::collectInstances(const QString& path) {
+QsPaths::collectInstances(const QString& path, const QString& display) {
 	qCDebug(logPaths) << "Collecting instances from" << path;
 	auto liveInstances = QVector<InstanceLockInfo>();
 	auto deadInstances = QVector<InstanceLockInfo>();
@@ -410,6 +426,11 @@ QsPaths::collectInstances(const QString& path) {
 		if (QsPaths::checkLock(path, &info, true)) {
 			qCDebug(logPaths).nospace() << "Found instance " << info.instance.instanceId << " (pid "
 			                            << info.pid << ") at " << path;
+
+			if (!display.isEmpty() && info.instance.display != display) {
+				qCDebug(logPaths) << "Skipped instance with mismatched display at" << path;
+				continue;
+			}
 
 			if (info.pid == -1) {
 				deadInstances.push_back(info);
