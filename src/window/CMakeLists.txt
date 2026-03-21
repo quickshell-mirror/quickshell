@@ -20,6 +20,7 @@ add_library(quickshell-window-init OBJECT init.cpp)
 
 target_link_libraries(quickshell-window PRIVATE
 	Qt::Core Qt::Gui Qt::Quick Qt6::QuickPrivate
+	Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
 )
 
 qs_add_link_dependencies(quickshell-window quickshell-debug)

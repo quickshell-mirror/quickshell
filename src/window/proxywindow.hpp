@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qpoint.h>
 #include <qproperty.h>
+#include <qqmlintegration.h>
 #include <qqmllist.h>
 #include <qqmlparserstatus.h>
 #include <qquickitem.h>
@@ -61,6 +62,7 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
+	QML_ANONYMOUS;
 
 public:
 	explicit ProxyWindowBase(QObject* parent = nullptr);
@@ -147,6 +149,11 @@ public:
 	void setUpdatesEnabled(bool updatesEnabled);
 
 	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
+
+	/// Request a render update for this window. Useful to flush double-buffered
+	/// Wayland state (e.g. blur regions) when no animation is running to drive
+	/// the render loop.
+	Q_INVOKABLE void requestUpdate();
 
 	[[nodiscard]] QQmlListProperty<QObject> data();
 
@@ -260,6 +267,10 @@ public:
 
 	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }
 	void setProxy(ProxyWindowBase* proxy) { this->mProxy = proxy; }
+
+	/// Flush pending double-buffered Wayland state by processing polishes
+	/// and committing the surface. Callable from QML via Window.window.
+	Q_INVOKABLE void flushWaylandState();
 
 signals:
 	void exposed();

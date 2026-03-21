@@ -24,6 +24,11 @@
 #include <qvariant.h>
 #include <qwindow.h>
 
+#ifdef Q_OS_LINUX
+#include <private/qwaylandwindow_p.h>
+#include <wayland-client-protocol.h>
+#endif
+
 #include "../core/generation.hpp"
 #include "../core/qmlglobal.hpp"
 #include "../core/qmlscreen.hpp"
@@ -264,7 +269,10 @@ void ProxyWindowBase::onSceneGraphError(
 
 void ProxyWindowBase::onVisibleChanged() {
 	if (this->mVisible && !this->window->isVisible()) {
-		this->mVisible = false;
+		if (!this->deleteOnInvisible()) {
+			this->mVisible = false;
+		}
+
 		this->setVisibleDirect(false);
 		emit this->closed();
 	}
@@ -409,6 +417,10 @@ void ProxyWindowBase::setScreen(QuickshellScreenInfo* screen) {
 	if (oldScreen != qscreen) {
 		if (this->window == nullptr) {
 			emit this->screenChanged();
+
+			if (qscreen != nullptr && this->mVisible && this->reloadComplete) {
+				this->setVisibleDirect(true);
+			}
 		} else if (qscreen) {
 			auto reshow = this->isVisibleDirect();
 			if (reshow) this->setVisibleDirect(false);
@@ -497,6 +509,26 @@ void ProxyWindowBase::setUpdatesEnabled(bool updatesEnabled) {
 	}
 
 	emit this->updatesEnabledChanged();
+}
+
+void ProxyWindowBase::requestUpdate() {
+	if (this->window == nullptr) return;
+
+	// Process pending polishes so double-buffered Wayland state
+	// (blur regions, input regions) is set on the protocol objects.
+	QQuickWindowPrivate::get(this->window)->polishItems();
+
+#ifdef Q_OS_LINUX
+	// Directly commit the Wayland surface to flush double-buffered state.
+	// QQuickWindow::update() alone is insufficient: after an app launch the
+	// compositor may stop sending frame callbacks, blocking Qt's render loop.
+	auto* waylandWindow =
+	    dynamic_cast<QtWaylandClient::QWaylandWindow*>(this->window->handle());
+
+	if (waylandWindow != nullptr && waylandWindow->surface() != nullptr) {
+		wl_surface_commit(waylandWindow->surface());
+	}
+#endif
 }
 
 qreal ProxyWindowBase::devicePixelRatio() const {
@@ -622,6 +654,10 @@ bool ProxiedWindow::event(QEvent* event) {
 void ProxiedWindow::exposeEvent(QExposeEvent* event) {
 	this->QQuickWindow::exposeEvent(event);
 	emit this->exposed();
+}
+
+void ProxiedWindow::flushWaylandState() {
+	if (this->mProxy) this->mProxy->requestUpdate();
 }
 
 void ProxyWindowContentItem::updatePolish() { emit this->polished(); }
