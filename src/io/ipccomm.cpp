@@ -149,7 +149,7 @@ void StringCallCommand::exec(qs::ipc::IpcServerConnection* conn) const {
 			return;
 		}
 
-		if (func->argumentTypes.length() != this->arguments.length()) {
+		if (func->argumentTypes.length() < this->arguments.length()) {
 			resp << ArgParseFailed {
 			    .definition = func->wireDef(),
 			    .isCountMismatch = true,
