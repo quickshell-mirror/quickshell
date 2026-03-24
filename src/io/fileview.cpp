@@ -292,6 +292,13 @@ void FileViewWriter::write(
 }
 
 FileView::~FileView() {
+	// Cancel any pending async operations before destruction to prevent use-after-free
+	if (this->liveOperation) {
+		this->liveOperation->tryCancel();
+		QObject::disconnect(this->liveOperation, nullptr, this, nullptr);
+		this->liveOperation = nullptr;
+	}
+
 	if (this->mAdapter) {
 		this->mAdapter->setFileView(nullptr);
 	}
