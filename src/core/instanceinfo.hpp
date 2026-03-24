@@ -6,6 +6,14 @@
 #include <sys/types.h>
 
 struct InstanceInfo {
+	Q_GADGET
+
+	Q_PROPERTY(QString instanceId MEMBER instanceId CONSTANT)
+	Q_PROPERTY(QString shellId MEMBER shellId CONSTANT)
+	Q_PROPERTY(QString appId MEMBER appId CONSTANT)
+	Q_PROPERTY(QDateTime launchTime MEMBER launchTime CONSTANT)
+
+public:
 	QString instanceId;
 	QString configPath;
 	QString shellId;

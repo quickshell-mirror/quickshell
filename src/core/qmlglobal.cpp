@@ -154,8 +154,8 @@ qint32 QuickshellGlobal::processId() const { // NOLINT
 	return getpid();
 }
 
-QString QuickshellGlobal::instanceId() const { // NOLINT
-	return InstanceInfo::CURRENT.instanceId;
+InstanceInfo QuickshellGlobal::instanceInfo() const { // NOLINT
+	return InstanceInfo::CURRENT;
 }
 
 qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* /*unused*/) {
