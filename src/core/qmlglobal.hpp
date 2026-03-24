@@ -17,6 +17,7 @@
 
 #include "../io/processcore.hpp"
 #include "doc.hpp"
+#include "instanceinfo.hpp"
 #include "qmlscreen.hpp"
 
 ///! Accessor for some options under the Quickshell type.
@@ -83,6 +84,21 @@ class QuickshellGlobal: public QObject {
 	// clang-format off
 	/// Quickshell's process id.
 	Q_PROPERTY(qint32 processId READ processId CONSTANT);
+	/// A unique identifier for this Quickshell instance
+	Q_PROPERTY(QString instanceId READ instanceId CONSTANT)
+	/// The shell ID, used to differentiate between different shell configurations.
+	///
+	/// Defaults to a stable value derived from the config path.
+	/// Can be overridden with `//@ pragma ShellId <id>` in the root qml file.
+	Q_PROPERTY(QString shellId READ shellId CONSTANT)
+	/// The desktop application ID.
+	///
+	/// Defaults to `org.quickshell`.
+	/// Can be overridden with `//@ pragma AppId <id>` in the root qml file
+	/// or the `QS_APP_ID` environment variable.
+	Q_PROPERTY(QString appId READ appId CONSTANT)
+	/// The time at which this Quickshell instance was launched.
+	Q_PROPERTY(QDateTime launchTime READ launchTime CONSTANT)
 	/// All currently connected screens.
 	///
 	/// This property updates as connected screens change.
@@ -149,6 +165,10 @@ class QuickshellGlobal: public QObject {
 
 public:
 	[[nodiscard]] qint32 processId() const;
+	[[nodiscard]] QString instanceId() const;
+	[[nodiscard]] QString shellId() const;
+	[[nodiscard]] QString appId() const;
+	[[nodiscard]] QDateTime launchTime() const;
 
 	QQmlListProperty<QuickshellScreenInfo> screens();
 
