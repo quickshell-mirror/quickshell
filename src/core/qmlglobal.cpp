@@ -26,6 +26,7 @@
 #include "../io/processcore.hpp"
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
+#include "instanceinfo.hpp"
 #include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
@@ -151,6 +152,10 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 qint32 QuickshellGlobal::processId() const { // NOLINT
 	return getpid();
+}
+
+QString QuickshellGlobal::instanceId() const { // NOLINT
+	return InstanceInfo::CURRENT.instanceId;
 }
 
 qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* /*unused*/) {
