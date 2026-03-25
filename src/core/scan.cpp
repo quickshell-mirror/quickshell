@@ -145,10 +145,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 	QString overrideText;
 	bool isOverridden = false;
 
-	auto pragmaEngine = QJSEngine();
-	pragmaEngine.globalObject().setPrototype(
-	    pragmaEngine.newQObject(new qs::scan::env::PreprocEnv())
-	);
+	auto& pragmaEngine = *QmlScanner::preprocEngine();
 
 	auto postError = [&, this](QString error) {
 		this->scanErrors.append({.file = path, .message = std::move(error), .line = lineNum});
@@ -369,4 +366,14 @@ QPair<QString, QString> QmlScanner::jsonToQml(const QJsonValue& value, int inden
 	} else {
 		return qMakePair(QStringLiteral("var"), "null");
 	}
+}
+
+QJSEngine* QmlScanner::preprocEngine() {
+	static auto* engine = [] {
+		auto* engine = new QJSEngine();
+		engine->globalObject().setPrototype(engine->newQObject(new qs::scan::env::PreprocEnv()));
+		return engine;
+	}();
+
+	return engine;
 }
