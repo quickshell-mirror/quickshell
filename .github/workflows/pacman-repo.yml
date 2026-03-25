@@ -1,12 +1,31 @@
-name: Build Pacman Package
+name: Sync & Build
 
 on:
-  push:
-    branches: [master]
+  schedule:
+    - cron: '0 * * * *'  # Every hour
   workflow_dispatch:
 
 jobs:
-  check-and-build:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with upstream
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: master
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_repo: quickshell-mirror/quickshell
+          upstream_sync_branch: master
+
+  build:
+    needs: sync
     runs-on: archlinux
     container: archlinux
     permissions:
@@ -16,35 +35,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Add upstream remote
-        run: git remote add upstream https://github.com/quickshell-mirror/quickshell.git
-
-      - name: Check for merge conflicts
-        id: check_conflicts
-        run: |
-          git fetch upstream master
-          MERGE_BASE=$(git merge-base HEAD upstream/master)
-          CONFLICTS=$(git merge-tree --no-commit "$MERGE_BASE" HEAD upstream/master 2>&1)
-          if echo "$CONFLICTS" | grep -q "conflict"; then
-            echo "has_conflicts=true" >> $GITHUB_OUTPUT
-            echo "Conflicts detected, skipping build"
-          else
-            echo "has_conflicts=false" >> $GITHUB_OUTPUT
-            echo "No conflicts, will merge and build"
-          fi
-
-      - name: Merge from upstream
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
-        run: |
-          git merge upstream/master --no-edit
-
       - name: Install dependencies
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
         run: |
           pacman --noconfirm --noprogressbar -Syyu
           pacman --noconfirm --noprogressbar -Sy \
@@ -80,7 +71,6 @@ jobs:
             git
 
       - name: Build
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
         run: |
           cmake -GNinja -B build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -88,7 +78,6 @@ jobs:
           cmake --build build -j$(nproc)
 
       - name: Create package
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
         run: |
           cd build
           DESTDIR=./pkgdir ninja install
@@ -96,22 +85,18 @@ jobs:
           mkdir -p pkg
           cd pkg
 
-          # Create dummy files for packaging
           mkdir -p usr/bin
           mkdir -p usr/share/applications
           mkdir -p usr/share/icons/hicolor/scalable/apps
 
-          # Copy built files
           cp -r ../pkgdir/usr/bin/* usr/bin/ 2>/dev/null || true
           cp -r ../pkgdir/usr/share/* usr/share/ 2>/dev/null || true
 
-          # Create .PKGINFO
           cat > .PKGINFO << EOF
           pkgname = quickshell-git
           pkgbase = quickshell-git
           pkgver = 0.2.1.r$(git rev-parse --short HEAD)
           pkgrel = 1
-          epoch = 
           pkgdesc = Flexible toolkit for making desktop shells with QtQuick
           arch = x86_64
           license = LGPL3
@@ -141,70 +126,27 @@ jobs:
           maintainer = GitHub Actions <actions@github.com>
           EOF
 
-          # Create .MTREE
           tar --create --file - . | gzip -9n > .MTREE
 
-          # Create the package
           tar --create --file ../quickshell-git-0.2.1.r$(git rev-parse --short HEAD)-1-x86_64.pkg.tar.zst -C .. pkg
 
-      - name: Upload artifact
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: quickshell-package
-          path: build/quickshell-git-*.pkg.tar.zst
-
       - name: Setup gh-pages
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./repo
         continue-on-error: true
 
-      - name: Create/Update repo
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
+      - name: Create repo
         run: |
           mkdir -p repo/x86_64
           cp build/quickshell-git-*.pkg.tar.zst repo/x86_64/
-
-          # Create repo database if doesn't exist
-          cd repo
-          if [ -f quickshell-git.db ]; then
-            rm -f quickshell-git.db quickshell-git.files quickshell-git.db.tar.zst quickseless-git.files.tar.zst
-          fi
-
-          # Use repo-add if available, otherwise create basic db
-          which repo-add || echo "repo-add not available, using basic setup"
-
-          # Create simple repo database
-          tar --create --file - x86_64 | gzip -9 > x86_64.tar.gz
-          mv x86_64.tar.gz quickshell-git.db.tar.gz
-
-          # Create repo.conf for users
-          cat > repo.conf << EOF
-          # Add this to /etc/pacman.conf:
-          #
-          # [quickshell]
-          # Server = https://${{ github.repository_owner }}.github.io/quickshell-repo/\$arch
-          #
-          EOF
-
-      - name: Push to gh-pages
-        if: steps.check_conflicts.outputs.has_conflicts == 'false'
-        run: |
-          git checkout gh-pages || git checkout -b gh-pages
-          rm -rf x86_64 repo.conf *.tar.* 2>/dev/null || true
-          mkdir -p x86_64
-          cp build/quickshell-git-*.pkg.tar.zst x86_64/
           
-          # Create repo database
+          cd repo
           cd x86_64
           tar --create --file - *.zst | gzip -9 > ../quickshell-git.db.tar.gz
-          tar --create --file - *.zst | xz > ../quickshell-git.db.tar.xz
           cd ..
           
-          # Create index
           cat > index.html << 'EOF'
           <!DOCTYPE html>
           <html>
@@ -214,12 +156,38 @@ jobs:
           <p>Add to /etc/pacman.conf:</p>
           <pre>
           [quickshell]
-          Server = https://{{ github.repository_owner }}.github.io/quickshell-repo/$arch
+          Server = https://rust-frog.github.io/quickshell/$arch
+          </pre>
+          </body>
+          </html>
+          EOF
+
+      - name: Push to gh-pages
+        run: |
+          git checkout gh-pages || git checkout -b gh-pages
+          rm -rf x86_64 *.tar.* index.html 2>/dev/null || true
+          mkdir -p x86_64
+          cp ../build/quickshell-git-*.pkg.tar.zst x86_64/
+          
+          cd x86_64
+          tar --create --file - *.zst | gzip -9 > ../quickshell-git.db.tar.gz
+          cd ..
+          
+          cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head><title>Quickshell Repo</title></head>
+          <body>
+          <h1>Quickshell Custom Repository</h1>
+          <p>Add to /etc/pacman.conf:</p>
+          <pre>
+          [quickshell]
+          Server = https://rust-frog.github.io/quickshell/$arch
           </pre>
           </body>
           </html>
           EOF
           
           git add -A
-          git commit -m "Update quickshell-git package" || echo "No changes to commit"
+          git commit -m "Update quickshell-git package" || echo "No changes"
           git push -f origin gh-pages
