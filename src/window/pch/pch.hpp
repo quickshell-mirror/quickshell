@@ -1,0 +1,13 @@
+#include <qlogging.h>
+#include <qqmlengine.h>
+#include <qqmlinfo.h>
+#include <qquickitem.h>
+#include "../core/qmlscreen.hpp"
+#include "proxywindow.hpp"
+#include <qnamespace.h>
+#include <qqmllist.h>
+#include <qtmetamacros.h>
+#include <qwindow.h>
+#include <qobject.h>
+#include <qtypes.h>
+#include "windowinterface.hpp"

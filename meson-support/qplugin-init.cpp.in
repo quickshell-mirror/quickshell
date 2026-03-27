@@ -1,0 +1,2 @@
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(@NAME@Plugin)

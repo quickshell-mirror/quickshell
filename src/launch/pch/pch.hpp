@@ -1,0 +1,12 @@
+#include <qcryptographichash.h>
+#include <qdatetime.h>
+#include <qdir.h>
+#include <qguiapplication.h>
+#include <qlist.h>
+#include <qnamespace.h>
+#include <utility>
+#include <qcoreapplication.h>
+#include <qdebug.h>
+#include <qlogging.h>
+#include <qtenvironmentvariables.h>
+#include "launch_p.hpp"

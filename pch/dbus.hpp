@@ -1,0 +1,11 @@
+#include <qdbusconnection.h>
+#include <qdbusmessage.h>
+#include <qdbusmetatype.h>
+#include <qobject.h>
+#include <qtmetamacros.h>
+#include <qvariant.h>
+#include <qcontainerfwd.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qloggingcategory.h>
+#include <qlogging.h>

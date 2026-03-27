@@ -1,0 +1,17 @@
+#include <qdebug.h>
+#include "qml.hpp"
+#include "device.hpp"
+#include "link.hpp"
+#include <qstringview.h>
+#include "connection.hpp"
+#include <qcontainerfwd.h>
+#include "core.hpp"
+#include "node.hpp"
+#include <pipewire/core.h>
+#include "registry.hpp"
+#include <qtypes.h>
+#include <qtmetamacros.h>
+#include "../../core/logcat.hpp"
+#include <qloggingcategory.h>
+#include <qlogging.h>
+#include <qobject.h>
