@@ -312,7 +312,16 @@ void MprisPlayer::onMetadataChanged() {
 		this->pPosition.requestUpdate();
 	}
 
-	this->bMetadata = this->bpMetadata.value();
+	// Some players (e.g. Firefox) intermittently omit mpris:artUrl from metadata
+	// updates for the same track. Preserve the old artUrl when this happens.
+	auto newMetadata = this->bpMetadata.value();
+	if (!trackChanged && !newMetadata.contains("mpris:artUrl")) {
+		auto oldArtUrl = this->bMetadata.value().value("mpris:artUrl");
+		if (oldArtUrl.isValid()) {
+			newMetadata.insert("mpris:artUrl", oldArtUrl);
+		}
+	}
+	this->bMetadata = newMetadata;
 
 	Qt::endPropertyUpdateGroup();
 
