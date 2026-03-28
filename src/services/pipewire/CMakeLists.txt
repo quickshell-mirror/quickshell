@@ -12,6 +12,7 @@ qt_add_library(quickshell-service-pipewire STATIC
 	link.cpp
 	device.cpp
 	defaults.cpp
+	audiochannel.hpp
 )
 
 qt_add_qml_module(quickshell-service-pipewire

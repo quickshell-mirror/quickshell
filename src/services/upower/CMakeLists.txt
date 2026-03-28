@@ -5,7 +5,7 @@ set_source_files_properties(org.freedesktop.UPower.xml PROPERTIES
 
 qt_add_dbus_interface(DBUS_INTERFACES
 	org.freedesktop.UPower.xml
-	dbus_service
+	dbus_upower_service
 )
 
 set_source_files_properties(org.freedesktop.UPower.Device.xml PROPERTIES
@@ -15,7 +15,7 @@ set_source_files_properties(org.freedesktop.UPower.Device.xml PROPERTIES
 
 qt_add_dbus_interface(DBUS_INTERFACES
 	org.freedesktop.UPower.Device.xml
-	dbus_device
+	dbus_upower_device
 )
 
 qt_add_library(quickshell-service-upower STATIC

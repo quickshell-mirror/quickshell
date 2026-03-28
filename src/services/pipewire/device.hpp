@@ -8,10 +8,13 @@
 #include <qcontainerfwd.h>
 #include <qhash.h>
 #include <qtmetamacros.h>
+#include <qqmlintegration.h>
 #include <qtypes.h>
 #include <spa/pod/builder.h>
 
 #include "core.hpp"
+#include "audiochannel.hpp"
+#include "volumeprops.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {

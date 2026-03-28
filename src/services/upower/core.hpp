@@ -11,7 +11,7 @@
 #include "../../core/doc.hpp"
 #include "../../core/model.hpp"
 #include "../../dbus/properties.hpp"
-#include "dbus_service.h"
+#include "dbus_upower_service.h"
 #include "device.hpp"
 
 namespace qs::service::upower {
