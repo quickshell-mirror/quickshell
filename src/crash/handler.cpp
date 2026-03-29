@@ -5,9 +5,11 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 
 #include <cpptrace/basic.hpp>
 #include <cpptrace/forward.hpp>
+#include <cpptrace/utils.hpp>
 #include <qdatastream.h>
 #include <qfile.h>
 #include <qlogging.h>
@@ -156,6 +158,21 @@ void signalHandler(
 	}
 }
 
+void handleCppTerminate() {
+	if (auto ptr = std::current_exception()) {
+		try {
+			std::rethrow_exception(ptr);
+		} catch (std::exception& e) {
+			qFatal().nospace() << "Terminate called with C++ exception ("
+			                   << cpptrace::demangle(typeid(e).name()).data() << "): " << e.what();
+		} catch (...) {
+			qFatal() << "Terminate called with non exception object";
+		}
+	}
+
+	qFatal() << "Terminate called without active C++ exception";
+}
+
 } // namespace
 
 void CrashHandler::init() {
@@ -203,6 +220,8 @@ void CrashHandler::init() {
 	sigaction(SIGTRAP, &sa, nullptr);
 
 	// NOLINTEND (misc-include-cleaner)
+
+	std::set_terminate(&handleCppTerminate);
 
 	qCInfo(logCrashHandler) << "Crash handler initialized.";
 }
