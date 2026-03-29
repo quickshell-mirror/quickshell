@@ -58,6 +58,12 @@ void signalHandler(
     siginfo_t* /*info*/, // NOLINT (misc-include-cleaner)
     void*                /*context*/
 ) {
+	// NOLINTBEGIN (misc-include-cleaner)
+	sigset_t set;
+	sigfillset(&set);
+	sigprocmask(SIG_UNBLOCK, &set, nullptr);
+	// NOLINTEND
+
 	if (CrashInfo::INSTANCE.traceFd != -1) {
 		auto traceBuffer = std::array<cpptrace::frame_ptr, 1024>();
 		auto frameCount = cpptrace::safe_generate_raw_trace(traceBuffer.data(), traceBuffer.size(), 1);
@@ -79,13 +85,9 @@ void signalHandler(
 	fail:;
 	}
 
+	// TODO: coredump fork and crash reporter remain as zombies, fix
 	auto coredumpPid = fork();
 	if (coredumpPid == 0) {
-		// NOLINTBEGIN (misc-include-cleaner)
-		sigset_t set;
-		sigfillset(&set);
-		sigprocmask(SIG_UNBLOCK, &set, nullptr);
-		// NOLINTEND
 		raise(sig);
 		_exit(-1);
 	}
@@ -131,7 +133,6 @@ void signalHandler(
 		perror("Failed to fork and launch crash reporter.\n");
 		_exit(-1);
 	} else if (pid == 0) {
-
 		// dup to remove CLOEXEC
 		auto dumpFdStr = std::array<char, 48>();
 		auto logFdStr = std::array<char, 48>();
