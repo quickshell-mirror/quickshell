@@ -8,10 +8,10 @@
 #include <qhash.h>
 #include <qlist.h>
 #include <qlogging.h>
-#include <qnamespace.h>
 #include <qprocess.h>
 #include <qqmldebug.h>
 #include <qquickwindow.h>
+#include <qstandardpaths.h>
 #include <qstring.h>
 #include <qtenvironmentvariables.h>
 #include <qtextstream.h>
@@ -194,23 +194,12 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	// Some programs place icons in the pixmaps folder instead of the icons folder.
 	// This seems to be controlled by the QPA and qt6ct does not provide it.
 	{
-		QList<QString> dataPaths;
-
-		if (qEnvironmentVariableIsSet("XDG_DATA_DIRS")) {
-			auto var = qEnvironmentVariable("XDG_DATA_DIRS");
-			dataPaths = var.split(u':', Qt::SkipEmptyParts);
-		} else {
-			dataPaths.push_back("/usr/local/share");
-			dataPaths.push_back("/usr/share");
-		}
-
 		auto fallbackPaths = QIcon::fallbackSearchPaths();
 
-		for (auto& path: dataPaths) {
-			auto newPath = QDir(path).filePath("pixmaps");
-
-			if (!fallbackPaths.contains(newPath)) {
-				fallbackPaths.push_back(newPath);
+		for (const auto& dir: QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+			for (const auto& suffix: {"/icons", "/pixmaps"}) {
+				const QString path = dir + suffix;
+				if (!fallbackPaths.contains(path)) fallbackPaths.append(path);
 			}
 		}
 
