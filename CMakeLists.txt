@@ -87,8 +87,9 @@ include(cmake/util.cmake)
 
 add_compile_options(-Wall -Wextra -Wno-vla-cxx-extension)
 
-# pipewire defines this, breaking PCH
+# pipewire defines these, breaking PCH
 add_compile_definitions(_REENTRANT)
+add_compile_options(-fno-strict-overflow)
 
 if (FRAME_POINTERS)
 	add_compile_options(-fno-omit-frame-pointer)
