@@ -4,6 +4,7 @@ headers = [
 	"network.hpp",
 	"device.hpp",
 	"wifi.hpp",
+	"wired.hpp",
 	"enums.hpp",
 	"nm/settings.hpp",
 ]

@@ -37,6 +37,7 @@ NMSettings::NMSettings(const QString& path, QObject* parent): QObject(parent) {
 	qDBusRegisterMetaType<QList<NMIPv6Address>>();
 	qDBusRegisterMetaType<NMIPv6Route>();
 	qDBusRegisterMetaType<QList<NMIPv6Route>>();
+	qDBusRegisterMetaType<QMap<QString, QString>>();
 
 	this->proxy = new DBusNMConnectionSettingsProxy(
 	    "org.freedesktop.NetworkManager",

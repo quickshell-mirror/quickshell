@@ -8,7 +8,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../network.hpp"
+#include "../qml.hpp"
 #include "dbus_nm_backend.h"
 #include "dbus_types.hpp"
 #include "device.hpp"
@@ -70,11 +70,8 @@ private:
 	void init();
 	void registerDevices();
 	void registerDevice(const QString& path);
-	void registerFrontendDevice(NMDeviceType::Enum type, NMDevice* dev);
-	void removeFrontendDevice(NMDevice* dev);
 
 	QHash<QString, NMDevice*> mDevices;
-	QHash<QString, NetworkDevice*> mFrontendDevices;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiEnabled, &NetworkManager::wifiEnabledChanged);

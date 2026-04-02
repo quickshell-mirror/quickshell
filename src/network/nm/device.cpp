@@ -14,9 +14,13 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../device.hpp"
+#include "../enums.hpp"
 #include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "dbus_types.hpp"
 #include "enums.hpp"
+#include "network.hpp"
 #include "settings.hpp"
 
 namespace qs::network {
@@ -49,12 +53,51 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	this->deviceProperties.updateAllViaGetAll();
 }
 
+void NMDevice::bindFrontend(NetworkDevice* frontend) {
+	auto translateState = [this]() {
+		switch (this->state()) {
+		case 0 ... 20: return ConnectionState::Unknown;
+		case 30: return ConnectionState::Disconnected;
+		case 40 ... 90: return ConnectionState::Connecting;
+		case 100: return ConnectionState::Connected;
+		case 110 ... 120: return ConnectionState::Disconnecting;
+		}
+	};
+	// clang-format off
+	frontend->bindableName().setBinding([this]() { return this->interface(); });
+	frontend->bindableAddress().setBinding([this]() { return this->hwAddress(); });
+	frontend->bindableState().setBinding(translateState);
+	frontend->bindableAutoconnect().setBinding([this]() { return this->autoconnect(); });
+	frontend->bindableNmManaged().setBinding([this]() { return this->managed(); });
+	QObject::connect(frontend, &NetworkDevice::requestDisconnect, this, &NMDevice::disconnect);
+	QObject::connect(frontend, &NetworkDevice::requestSetAutoconnect, this, &NMDevice::setAutoconnect);
+	QObject::connect(frontend, &NetworkDevice::requestSetNmManaged, this, &NMDevice::setManaged);
+	QObject::connect(this, &NMDevice::networkAdded, frontend, &NetworkDevice::networkAdded);
+	QObject::connect(this, &NMDevice::networkRemoved, frontend, &NetworkDevice::networkRemoved);
+}
+
 void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 reason) {
 	auto enumReason = static_cast<NMDeviceStateReason::Enum>(reason);
 	auto enumNewState = static_cast<NMDeviceState::Enum>(newState);
 	if (enumNewState == NMDeviceState::Failed) this->bLastFailReason = enumReason;
 	if (this->bStateReason == enumReason) return;
 	this->bStateReason = enumReason;
+}
+
+void NMDevice::bindNetwork(NMNetwork* net) {
+	net->bindableDeviceFailReason().setBinding([this]() { return this->lastFailReason(); });
+	QObject::connect(net, &NMNetwork::requestDisconnect, this, &NMDevice::disconnect);
+	QObject::connect(net, &NMNetwork::requestActivateConnection, this, [this](const QString& settingsPath){
+		emit this->activateConnection(QDBusObjectPath(settingsPath), QDBusObjectPath(this->path()));	
+	});
+	QObject::connect(net, &NMNetwork::requestAddAndActivateConnection, this, [this](const NMSettingsMap& settingsMap, const QString& specificObject){
+		emit this->addAndActivateConnection(settingsMap, QDBusObjectPath(this->path()), QDBusObjectPath(specificObject));	
+	});
+	QObject::connect(net, &NMNetwork::visibilityChanged, this, [this, net](bool visible) {
+		if (visible) emit this->networkAdded(net->frontend());
+		else emit this->networkRemoved(net->frontend());
+	});
+	if (net->visible()) emit this->networkAdded(net->frontend());
 }
 
 void NMDevice::onActiveConnectionPathChanged(const QDBusObjectPath& path) {
@@ -158,6 +201,11 @@ namespace qs::dbus {
 DBusResult<qs::network::NMDeviceState::Enum>
 DBusDataTransform<qs::network::NMDeviceState::Enum>::fromWire(quint32 wire) {
 	return DBusResult(static_cast<qs::network::NMDeviceState::Enum>(wire));
+}
+
+DBusResult<qs::network::NMDeviceInterfaceFlags::Enum>
+DBusDataTransform<qs::network::NMDeviceInterfaceFlags::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMDeviceInterfaceFlags::Enum>(wire));
 }
 
 } // namespace qs::dbus

@@ -7,12 +7,14 @@
 #include <qtypes.h>
 
 #include "../core/doc.hpp"
+#include "../core/model.hpp"
 #include "enums.hpp"
+#include "network.hpp"
 
 namespace qs::network {
 
 ///! A network device.
-/// The @@type property may be used to determine if this device is a @@WifiDevice.
+/// The @@type property may be used to determine if this device is a @@WifiDevice or @@WiredDevice.
 class NetworkDevice: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
@@ -20,11 +22,17 @@ class NetworkDevice: public QObject {
 	// clang-format off
 	/// The device type.
 	///
-	/// When the device type is `Wifi`, the device object is a @@WifiDevice which exposes wifi network
+	/// When the device type is `Wifi`, the device object is a @@WifiDevice.
+	/// When the device type is `Wired`, the device object is a @@WiredDevice.
 	/// connection and scanning.
 	Q_PROPERTY(DeviceType::Enum type READ type CONSTANT);
 	/// The name of the device's control interface.
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
+	/// A list of available or connected networks for this device.
+	///
+	/// When the device type is 'Wifi', this model will only contain @@WifiNetwork.
+	QSDOC_TYPE_OVERRIDE(ObjectModel<Network>*);
+	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
 	/// The hardware address of the device in the XX:XX:XX:XX:XX:XX format.
 	Q_PROPERTY(QString address READ default NOTIFY addressChanged BINDABLE bindableAddress);
 	/// True if the device is connected.
@@ -45,6 +53,10 @@ public:
 	/// Disconnects the device and prevents it from automatically activating further connections.
 	Q_INVOKABLE void disconnect();
 
+	virtual void networkAdded(Network* net);
+	virtual void networkRemoved(Network* net);
+
+	[[nodiscard]] ObjectModel<Network>* networks() { return &this->mNetworks; }
 	[[nodiscard]] DeviceType::Enum type() const { return this->mType; }
 	QBindable<QString> bindableName() { return &this->bName; }
 	[[nodiscard]] QString name() const { return this->bName; }
@@ -68,6 +80,9 @@ signals:
 	void stateChanged();
 	void nmManagedChanged();
 	void autoconnectChanged();
+
+protected:
+	ObjectModel<Network> mNetworks {this};
 
 private:
 	DeviceType::Enum mType;

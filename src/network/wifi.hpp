@@ -7,7 +7,6 @@
 #include <qtypes.h>
 
 #include "../core/doc.hpp"
-#include "../core/model.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
@@ -27,7 +26,7 @@ class WifiNetwork: public Network {
 	// clang-format on
 
 public:
-	explicit WifiNetwork(QString ssid, QObject* parent = nullptr);
+	explicit WifiNetwork(QString ssid, NetworkDevice* device, QObject* parent = nullptr);
 	/// Attempt to connect to the network with the given PSK. If the PSK is wrong,
 	/// a @@Network.connectionFailed(s) signal will be emitted with `NoSecrets`.
 	///
@@ -61,9 +60,6 @@ class WifiDevice: public NetworkDevice {
 	QML_UNCREATABLE("");
 
 	// clang-format off
-	/// A list of this available or connected wifi networks.
-	QSDOC_TYPE_OVERRIDE(ObjectModel<WifiNetwork>*);
-	Q_PROPERTY(UntypedObjectModel* networks READ networks CONSTANT);
 	/// True when currently scanning for networks.
 	/// When enabled, the scanner populates the device with an active list of available wifi networks.
 	Q_PROPERTY(bool scannerEnabled READ scannerEnabled WRITE setScannerEnabled NOTIFY scannerEnabledChanged BINDABLE bindableScannerEnabled);
@@ -74,10 +70,6 @@ class WifiDevice: public NetworkDevice {
 public:
 	explicit WifiDevice(QObject* parent = nullptr);
 
-	void networkAdded(WifiNetwork* net);
-	void networkRemoved(WifiNetwork* net);
-
-	[[nodiscard]] ObjectModel<WifiNetwork>* networks() { return &this->mNetworks; }
 	QBindable<bool> bindableScannerEnabled() { return &this->bScannerEnabled; }
 	[[nodiscard]] bool scannerEnabled() const { return this->bScannerEnabled; }
 	void setScannerEnabled(bool enabled);
@@ -88,12 +80,11 @@ signals:
 	void scannerEnabledChanged(bool enabled);
 
 private:
-	ObjectModel<WifiNetwork> mNetworks {this};
 	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, bool, bScannerEnabled, &WifiDevice::scannerEnabledChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiDevice, WifiDeviceMode::Enum, bMode, &WifiDevice::modeChanged);
 };
 
-}; // namespace qs::network
+} // namespace qs::network
 
 QDebug operator<<(QDebug debug, const qs::network::WifiNetwork* network);
 QDebug operator<<(QDebug debug, const qs::network::WifiDevice* device);
