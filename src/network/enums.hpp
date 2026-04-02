@@ -98,6 +98,7 @@ public:
 	enum Enum : quint8 {
 		None = 0,
 		Wifi = 1,
+		Wired = 2,
 	};
 	Q_ENUM(Enum);
 	Q_INVOKABLE static QString toString(DeviceType::Enum type);

@@ -73,6 +73,241 @@ Scope {
         }
     }
 
+    Component {
+        id: deviceDelegate
+        WrapperRectangle {
+            width: parent.width
+            color: "transparent"
+            border.color: palette.button
+            border.width: 1
+            margin: 5
+
+            ColumnLayout {
+                RowLayout {
+                    Label {
+                        text: modelData.name
+                        font.bold: true
+                    }
+                    Label {
+                        text: modelData.address
+                    }
+                    Label {
+                        text: `(Type: ${DeviceType.toString(modelData.type)})`
+                    }
+                    CheckBox {
+                        text: `Managed`
+                        checked: modelData.nmManaged
+                        onClicked: modelData.nmManaged = !modelData.nmManaged
+                    }
+                }
+                RowLayout {
+                    Label {
+                        text: ConnectionState.toString(modelData.state)
+                        color: modelData.connected ? palette.link : palette.placeholderText
+                    }
+                    Button {
+                        visible: modelData.state == ConnectionState.Connected
+                        text: "Disconnect"
+                        onClicked: modelData.disconnect()
+                    }
+                    CheckBox {
+                        text: "Autoconnect"
+                        checked: modelData.autoconnect
+                        onClicked: modelData.autoconnect = !modelData.autoconnect
+                    }
+                    RowLayout {
+                        visible: modelData.type === DeviceType.Wired
+                        CheckBox {
+                            text: "Link connected"
+                            checked: modelData.hasLink
+                            enabled: false
+                        }
+                        Label {
+                            text: `Link max speed: ${modelData.linkSpeed} Mbps`
+                        }
+                    }
+                    RowLayout {
+                        visible: modelData.type === DeviceType.Wifi
+                        Label {
+                            text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}`
+                            visible: modelData.type == DeviceType.Wifi
+                        }
+                        CheckBox {
+                            text: "Scanner"
+                            checked: modelData.scannerEnabled
+                            onClicked: modelData.scannerEnabled = !modelData.scannerEnabled
+                            visible: modelData.type === DeviceType.Wifi
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: ScriptModel {
+                        values: [...modelData.networks.values].sort((a, b) => {
+                            if (a.connected !== b.connected) {
+                                return b.connected - a.connected;
+                            }
+                            if (modelData.device?.type === DeviceType.Wifi) {
+                                return b.signalStrength - a.signalStrength;
+                            }
+                        })
+                    }
+
+                    WrapperRectangle {
+                        id: ethernetNetwork
+                        property var chosenSettings: {
+                            const settings = modelData.nmSettings;
+                            if (!settings || settings.length === 0) {
+                                return null;
+                            }
+                            if (settings.length === 1) {
+                                return settings[0];
+                            }
+                            return settings[settingsComboBox.currentIndex];
+                        }
+
+                        Connections {
+                            target: modelData
+                            function onConnectionFailed(reason) {
+                                failLoader.sourceComponent = failComponent;
+                                failLoader.item.failReason = reason;
+                            }
+                            function onStateChanged() {
+                                if (modelData.state == ConnectionState.Connecting) {
+                                    failLoader.sourceComponent = null;
+                                }
+                            }
+                        }
+
+                        Component {
+                            id: failComponent
+                            RowLayout {
+                                property var failReason
+                                Label {
+                                    text: ConnectionFailReason.toString(failReason)
+                                }
+                                RowLayout {
+                                    TextField {
+                                        id: pskField
+                                        placeholderText: "PSK"
+                                    }
+                                    Button {
+                                        text: "Set"
+                                        visible: pskField.visible
+                                        onClicked: {
+                                            modelData.connectWithPsk(pskField.text);
+                                            failLoader.sourceComponent = null;
+                                        }
+                                    }
+                                    visible: modelData.security === WifiSecurityType.WpaPsk || modelData.security === WifiSecurityType.Wpa2Psk || modelData.security === WifiSecurityType.Sae
+                                }
+                                Button {
+                                    text: "Close"
+                                    onClicked: failLoader.sourceComponent = null
+                                }
+                            }
+                        }
+
+                        Layout.fillWidth: true
+                        color: modelData.connected ? palette.highlight : palette.button
+                        border.color: palette.mid
+                        border.width: 1
+                        margin: 5
+
+                        RowLayout {
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                RowLayout {
+                                    Label {
+                                        text: modelData.name
+                                        font.bold: true
+                                    }
+                                    Label {
+                                        text: modelData.known ? "Known" : ""
+                                        color: palette.placeholderText
+                                    }
+                                }
+                                RowLayout {
+                                    visible: modelData.device?.type === DeviceType.Wifi
+                                    Label {
+                                        text: `Security: ${WifiSecurityType.toString(modelData.security)}`
+                                        color: palette.placeholderText
+                                    }
+                                    Label {
+                                        text: `| Signal strength: ${Math.round(modelData.signalStrength * 100)}%`
+                                        color: palette.placeholderText
+                                    }
+                                }
+                            }
+                            ColumnLayout {
+                                Layout.alignment: Qt.AlignRight
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignRight
+                                    BusyIndicator {
+                                        implicitHeight: 30
+                                        implicitWidth: 30
+                                        running: modelData.stateChanging
+                                        visible: modelData.stateChanging
+                                    }
+                                    Label {
+                                        text: ConnectionState.toString(modelData.state)
+                                        color: modelData.connected ? palette.link : palette.placeholderText
+                                    }
+                                    RowLayout {
+                                        Label {
+                                            text: "Choose settings:"
+                                        }
+                                        ComboBox {
+                                            id: settingsComboBox
+                                            model: modelData.nmSettings.map(s => s?.read()?.connection?.id)
+                                            currentIndex: 0
+                                        }
+                                        visible: modelData.nmSettings.length > 1
+                                    }
+                                    Button {
+                                        text: "Connect"
+                                        onClicked: {
+                                            if (ethernetNetwork.chosenSettings)
+                                                modelData.connectWithSettings(ethernetNetwork.chosenSettings);
+                                            else
+                                                modelData.connect();
+                                        }
+                                        visible: !modelData.connected
+                                    }
+                                    Button {
+                                        text: "Disconnect"
+                                        onClicked: modelData.disconnect()
+                                        visible: modelData.connected
+                                    }
+                                    Button {
+                                        text: "Forget"
+                                        onClicked: modelData.forget()
+                                        visible: modelData.known
+                                    }
+                                    Button {
+                                        text: "Edit"
+                                        visible: modelData.known
+                                        onClicked: {
+                                            if (ethernetNetwork.chosenSettings)
+                                                editorComponent.createObject(null, {
+                                                    nmSettings: chosenSettings
+                                                });
+                                        }
+                                    }
+                                }
+                                Loader {
+                                    id: failLoader
+                                    Layout.alignment: Qt.AlignRight
+                                    visible: sourceComponent !== null
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     FloatingWindow {
         color: contentItem.palette.window
 
@@ -139,219 +374,11 @@ Scope {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 model: Networking.devices
-
-                delegate: WrapperRectangle {
-                    width: parent.width
-                    color: "transparent"
-                    border.color: palette.button
-                    border.width: 1
-                    margin: 5
-
-                    ColumnLayout {
-                        RowLayout {
-                            Label {
-                                text: modelData.name
-                                font.bold: true
-                            }
-                            Label {
-                                text: modelData.address
-                            }
-                            Label {
-                                text: `(Type: ${DeviceType.toString(modelData.type)})`
-                            }
-                            CheckBox {
-                                text: `Managed`
-                                checked: modelData.nmManaged
-                                onClicked: modelData.nmManaged = !modelData.nmManaged
-                            }
-                        }
-                        RowLayout {
-                            Label {
-                                text: ConnectionState.toString(modelData.state)
-                                color: modelData.connected ? palette.link : palette.placeholderText
-                            }
-                            Button {
-                                visible: modelData.state == ConnectionState.Connected
-                                text: "Disconnect"
-                                onClicked: modelData.disconnect()
-                            }
-                            CheckBox {
-                                text: "Autoconnect"
-                                checked: modelData.autoconnect
-                                onClicked: modelData.autoconnect = !modelData.autoconnect
-                            }
-                            Label {
-                                text: `Mode: ${WifiDeviceMode.toString(modelData.mode)}`
-                                visible: modelData.type == DeviceType.Wifi
-                            }
-                            CheckBox {
-                                text: "Scanner"
-                                checked: modelData.scannerEnabled
-                                onClicked: modelData.scannerEnabled = !modelData.scannerEnabled
-                                visible: modelData.type === DeviceType.Wifi
-                            }
-                        }
-
-                        Repeater {
-                            Layout.fillWidth: true
-                            model: ScriptModel {
-                                values: [...modelData.networks.values].sort((a, b) => {
-                                    if (a.connected !== b.connected) {
-                                        return b.connected - a.connected;
-                                    }
-                                    return b.signalStrength - a.signalStrength;
-                                })
-                            }
-
-                            WrapperRectangle {
-                                property var chosenSettings: {
-                                    const settings = modelData.nmSettings;
-                                    if (!settings || settings.length === 0) {
-                                        return null;
-                                    }
-                                    if (settings.length === 1) {
-                                        return settings[0];
-                                    }
-                                    return settings[settingsComboBox.currentIndex];
-                                }
-
-                                Connections {
-                                    target: modelData
-                                    function onConnectionFailed(reason) {
-                                        failLoader.sourceComponent = failComponent;
-                                        failLoader.item.failReason = reason;
-                                    }
-                                    function onStateChanged() {
-                                        if (modelData.state == ConnectionState.Connecting) {
-                                            failLoader.sourceComponent = null;
-                                        }
-                                    }
-                                }
-
-                                Component {
-                                    id: failComponent
-                                    RowLayout {
-                                        property var failReason
-                                        Label {
-                                            text: ConnectionFailReason.toString(failReason)
-                                        }
-                                        RowLayout {
-                                            TextField {
-                                                id: pskField
-                                                placeholderText: "PSK"
-                                            }
-                                            Button {
-                                                text: "Set"
-                                                visible: pskField.visible
-                                                onClicked: {
-                                                    modelData.connectWithPsk(pskField.text);
-                                                    failLoader.sourceComponent = null;
-                                                }
-                                            }
-                                            visible: modelData.security === WifiSecurityType.WpaPsk || modelData.security === WifiSecurityType.Wpa2Psk || modelData.security === WifiSecurityType.Sae
-                                        }
-                                        Button {
-                                            text: "Close"
-                                            onClicked: failLoader.sourceComponent = null
-                                        }
-                                    }
-                                }
-
-                                Layout.fillWidth: true
-                                color: modelData.connected ? palette.highlight : palette.button
-                                border.color: palette.mid
-                                border.width: 1
-                                margin: 5
-
-                                RowLayout {
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        RowLayout {
-                                            Label {
-                                                text: modelData.name
-                                                font.bold: true
-                                            }
-                                            Label {
-                                                text: modelData.known ? "Known" : ""
-                                                color: palette.placeholderText
-                                            }
-                                        }
-                                        RowLayout {
-                                            Label {
-                                                text: `Security: ${WifiSecurityType.toString(modelData.security)}`
-                                                color: palette.placeholderText
-                                            }
-                                            Label {
-                                                text: `| Signal strength: ${Math.round(modelData.signalStrength * 100)}%`
-                                                color: palette.placeholderText
-                                            }
-                                        }
-                                    }
-                                    ColumnLayout {
-                                        Layout.alignment: Qt.AlignRight
-                                        RowLayout {
-                                            Layout.alignment: Qt.AlignRight
-                                            BusyIndicator {
-                                                implicitHeight: 30
-                                                implicitWidth: 30
-                                                running: modelData.stateChanging
-                                                visible: modelData.stateChanging
-                                            }
-                                            Label {
-                                                text: ConnectionState.toString(modelData.state)
-                                                color: modelData.connected ? palette.link : palette.placeholderText
-                                            }
-                                            RowLayout {
-                                                Label {
-                                                    text: "Choose settings:"
-                                                }
-                                                ComboBox {
-                                                    id: settingsComboBox
-                                                    model: modelData.nmSettings.map(s => s?.read()?.connection?.id)
-                                                    currentIndex: 0
-                                                }
-                                                visible: modelData.nmSettings.length > 1
-                                            }
-                                            Button {
-                                                text: "Connect"
-                                                onClicked: {
-                                                    if (chosenSettings)
-                                                        modelData.connectWithSettings(chosenSettings);
-                                                    else
-                                                        modelData.connect();
-                                                }
-                                                visible: !modelData.connected
-                                            }
-                                            Button {
-                                                text: "Disconnect"
-                                                onClicked: modelData.disconnect()
-                                                visible: modelData.connected
-                                            }
-                                            Button {
-                                                text: "Forget"
-                                                onClicked: modelData.forget()
-                                                visible: modelData.known
-                                            }
-                                            Button {
-                                                text: "Edit"
-                                                visible: modelData.known
-                                                onClicked: {
-                                                    if (chosenSettings)
-                                                        editorComponent.createObject(null, {
-                                                            nmSettings: chosenSettings
-                                                        });
-                                                }
-                                            }
-                                        }
-                                        Loader {
-                                            id: failLoader
-                                            Layout.alignment: Qt.AlignRight
-                                            visible: sourceComponent !== null
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                delegate: Component {
+                    Loader {
+                        required property var modelData
+                        width: ListView.view.width
+                        sourceComponent: deviceDelegate
                     }
                 }
             }

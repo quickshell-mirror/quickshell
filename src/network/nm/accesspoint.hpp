@@ -7,7 +7,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "../wifi.hpp"
+#include "../enums.hpp"
 #include "dbus_nm_accesspoint.h"
 #include "enums.hpp"
 

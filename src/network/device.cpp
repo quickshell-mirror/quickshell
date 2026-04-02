@@ -9,6 +9,7 @@
 
 #include "../core/logcat.hpp"
 #include "enums.hpp"
+#include "network.hpp"
 
 namespace qs::network {
 
@@ -44,5 +45,8 @@ void NetworkDevice::disconnect() {
 	qCDebug(logNetworkDevice) << "Disconnecting from device" << this;
 	this->requestDisconnect();
 }
+
+void NetworkDevice::networkAdded(Network* net) { this->mNetworks.insertObject(net); }
+void NetworkDevice::networkRemoved(Network* net) { this->mNetworks.removeObject(net); }
 
 } // namespace qs::network
