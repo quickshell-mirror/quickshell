@@ -12,6 +12,7 @@
 #include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -438,7 +439,7 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 	    [this, net](const QString& psk) {
 		    NMSettingsMap settings;
 		    settings["802-11-wireless-security"]["psk"] = psk;
-		    if (auto* ref = net->referenceSettings()) {
+		    if (const QPointer<NMSettings> ref = net->referenceSettings()) {
 			    auto* call = ref->updateSettings(settings);
 			    QObject::connect(
 			        call,
@@ -451,10 +452,15 @@ void NMWirelessDevice::registerFrontendNetwork(NMWirelessNetwork* net) {
 					        qCInfo(logNetworkManager)
 					            << "Failed to write PSK for" << this->path() + ":" << reply.error().message();
 				        } else {
-					        emit this->activateConnection(
-					            QDBusObjectPath(ref->path()),
-					            QDBusObjectPath(this->path())
-					        );
+					        if (!ref) {
+						        qCInfo(logNetworkManager) << "Failed to connectWithPsk to"
+						                                  << this->path() + ": The settings disappeared.";
+					        } else {
+						        emit this->activateConnection(
+						            QDBusObjectPath(ref->path()),
+						            QDBusObjectPath(this->path())
+						        );
+					        }
 				        }
 				        delete call;
 			        }
