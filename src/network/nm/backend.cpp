@@ -1,5 +1,6 @@
 #include "backend.hpp"
 
+#include <qbytearray.h>
 #include <qdbusconnection.h>
 #include <qdbusextratypes.h>
 #include <qdbusmetatype.h>
@@ -15,6 +16,7 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../device.hpp"
+#include "../enums.hpp"
 #include "../network.hpp"
 #include "../wifi.hpp"
 #include "dbus_nm_backend.h"
@@ -31,7 +33,8 @@ QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWa
 }
 
 NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
-	qDBusRegisterMetaType<ConnectionSettingsMap>();
+	qCDebug(logNetworkManager) << "Connecting to NetworkManager";
+	qDBusRegisterMetaType<NMSettingsMap>();
 
 	auto bus = QDBusConnection::systemBus();
 	if (!bus.isConnected()) {
@@ -67,6 +70,23 @@ void NetworkManager::init() {
 	this->dbusProperties.updateAllViaGetAll();
 
 	this->registerDevices();
+}
+
+void NetworkManager::checkConnectivity() {
+	auto pending = this->proxy->CheckConnectivity();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [](QDBusPendingCallWatcher* call) {
+		const QDBusPendingReply<quint32> reply = *call;
+
+		if (reply.isError()) {
+			qCInfo(logNetworkManager) << "Failed to check connectivity: " << reply.error().message();
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
 void NetworkManager::registerDevices() {
@@ -117,23 +137,21 @@ void NetworkManager::registerDevice(const QString& path) {
 			}
 
 			if (dev) {
+				qCDebug(logNetworkManager) << "Device added:" << path;
 				if (!dev->isValid()) {
 					qCWarning(logNetworkManager) << "Ignoring invalid registration of" << path;
 					delete dev;
 				} else {
 					this->mDevices[path] = dev;
-					// Only register a frontend device while it's managed by NM.
-					auto onManagedChanged = [this, dev, type](bool managed) {
-						managed ? this->registerFrontendDevice(type, dev) : this->removeFrontendDevice(dev);
-					};
 					// clang-format off
 					QObject::connect(dev, &NMDevice::addAndActivateConnection, this, &NetworkManager::addAndActivateConnection);
 					QObject::connect(dev, &NMDevice::activateConnection, this, &NetworkManager::activateConnection);
-					QObject::connect(dev, &NMDevice::managedChanged, this, onManagedChanged);
 					// clang-format on
 
-					if (dev->managed()) this->registerFrontendDevice(type, dev);
+					this->registerFrontendDevice(type, dev);
 				}
+			} else {
+				qCDebug(logNetworkManager) << "Ignoring registration of unsupported device:" << path;
 			}
 			temp->deleteLater();
 		}
@@ -173,21 +191,22 @@ void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* d
 	// Bind generic NetworkDevice properties
 	auto translateState = [dev]() {
 		switch (dev->state()) {
-		case 0 ... 20: return DeviceConnectionState::Unknown;
-		case 30: return DeviceConnectionState::Disconnected;
-		case 40 ... 90: return DeviceConnectionState::Connecting;
-		case 100: return DeviceConnectionState::Connected;
-		case 110 ... 120: return DeviceConnectionState::Disconnecting;
+		case 0 ... 20: return ConnectionState::Unknown;
+		case 30: return ConnectionState::Disconnected;
+		case 40 ... 90: return ConnectionState::Connecting;
+		case 100: return ConnectionState::Connected;
+		case 110 ... 120: return ConnectionState::Disconnecting;
 		}
 	};
 	// clang-format off
 	frontendDev->bindableName().setBinding([dev]() { return dev->interface(); });
 	frontendDev->bindableAddress().setBinding([dev]() { return dev->hwAddress(); });
-	frontendDev->bindableNmState().setBinding([dev]() { return dev->state(); });
 	frontendDev->bindableState().setBinding(translateState);
 	frontendDev->bindableAutoconnect().setBinding([dev]() { return dev->autoconnect(); });
+	frontendDev->bindableNmManaged().setBinding([dev]() { return dev->managed(); });
 	QObject::connect(frontendDev, &WifiDevice::requestDisconnect, dev, &NMDevice::disconnect);
 	QObject::connect(frontendDev, &NetworkDevice::requestSetAutoconnect, dev, &NMDevice::setAutoconnect);
+	QObject::connect(frontendDev, &NetworkDevice::requestSetNmManaged, dev, &NMDevice::setManaged);
 	// clang-format on
 
 	this->mFrontendDevices.insert(dev->path(), frontendDev);
@@ -215,6 +234,7 @@ void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
 		auto* dev = iter.value();
 		this->mDevices.erase(iter);
 		if (dev) {
+			qCDebug(logNetworkManager) << "Device removed:" << path.path();
 			this->removeFrontendDevice(dev);
 			delete dev;
 		}
@@ -240,7 +260,7 @@ void NetworkManager::activateConnection(
 }
 
 void NetworkManager::addAndActivateConnection(
-    const ConnectionSettingsMap& settings,
+    const NMSettingsMap& settings,
     const QDBusObjectPath& devPath,
     const QDBusObjectPath& specificObjectPath
 ) {
@@ -259,6 +279,12 @@ void NetworkManager::addAndActivateConnection(
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
+void NetworkManager::setConnectivityCheckEnabled(bool enabled) {
+	if (enabled == this->bConnectivityCheckEnabled) return;
+	this->bConnectivityCheckEnabled = enabled;
+	this->pConnectivityCheckEnabled.write();
+}
+
 void NetworkManager::setWifiEnabled(bool enabled) {
 	if (enabled == this->bWifiEnabled) return;
 	this->bWifiEnabled = enabled;
@@ -268,3 +294,12 @@ void NetworkManager::setWifiEnabled(bool enabled) {
 bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); };
 
 } // namespace qs::network
+
+namespace qs::dbus {
+
+DBusResult<qs::network::NMConnectivityState::Enum>
+DBusDataTransform<qs::network::NMConnectivityState::Enum>::fromWire(quint32 wire) {
+	return DBusResult(static_cast<qs::network::NMConnectivityState::Enum>(wire));
+}
+
+} // namespace qs::dbus

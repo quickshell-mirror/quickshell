@@ -177,6 +177,8 @@ void QmlToolingSupport::updateToolingFs(
 		auto fileInfo = QFileInfo(path);
 		if (!fileInfo.isFile()) continue;
 
+		if (scanner.fileIntercepts.contains(path)) continue;
+
 		auto spath = linkDir.filePath(name);
 		auto sFileInfo = QFileInfo(spath);
 
@@ -205,8 +207,10 @@ void QmlToolingSupport::updateToolingFs(
 		}
 
 		auto spath = linkDir.filePath(name);
+		QFile::remove(spath);
+
 		auto file = QFile(spath);
-		if (!file.open(QFile::ReadWrite | QFile::Text)) {
+		if (!file.open(QFile::ReadWrite | QFile::Text | QFile::NewOnly)) {
 			qCCritical(logTooling) << "Failed to open injected file" << spath;
 			continue;
 		}

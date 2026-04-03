@@ -48,14 +48,14 @@ public:
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
-	[[nodiscard]] QByteArray ssid() const { return this->bSsid; };
-	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; };
-	[[nodiscard]] NM80211ApFlags::Enum flags() const { return this->bFlags; };
-	[[nodiscard]] NM80211ApSecurityFlags::Enum wpaFlags() const { return this->bWpaFlags; };
-	[[nodiscard]] NM80211ApSecurityFlags::Enum rsnFlags() const { return this->bRsnFlags; };
-	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; };
-	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; };
-	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; };
+	[[nodiscard]] QByteArray ssid() const { return this->bSsid; }
+	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; }
+	[[nodiscard]] NM80211ApFlags::Enum flags() const { return this->bFlags; }
+	[[nodiscard]] NM80211ApSecurityFlags::Enum wpaFlags() const { return this->bWpaFlags; }
+	[[nodiscard]] NM80211ApSecurityFlags::Enum rsnFlags() const { return this->bRsnFlags; }
+	[[nodiscard]] NM80211Mode::Enum mode() const { return this->bMode; }
+	[[nodiscard]] QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
+	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; }
 
 signals:
 	void loaded();

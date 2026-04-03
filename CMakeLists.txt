@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(quickshell VERSION "0.2.1" LANGUAGES CXX C)
 
-set(UNRELEASED_FEATURES)
+set(UNRELEASED_FEATURES
+	"network.2"
+	"colorquant-imagerect"
+)
 
 set(QT_MIN_VERSION "6.6.0")
 set(CMAKE_CXX_STANDARD 20)

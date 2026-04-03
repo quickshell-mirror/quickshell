@@ -33,6 +33,7 @@ public:
 
 	void syncSwapchain(const WlBufferSwapchain& swapchain);
 	void setRect(const QRectF& rect);
+	void setFiltering(QSGTexture::Filtering filtering);
 
 private:
 	QQuickWindow* window;

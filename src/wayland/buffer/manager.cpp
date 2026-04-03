@@ -123,6 +123,10 @@ void WlBufferQSGDisplayNode::setRect(const QRectF& rect) {
 	this->setMatrix(matrix);
 }
 
+void WlBufferQSGDisplayNode::setFiltering(QSGTexture::Filtering filtering) {
+	this->imageNode->setFiltering(filtering);
+}
+
 void WlBufferQSGDisplayNode::syncSwapchain(const WlBufferSwapchain& swapchain) {
 	auto* buffer = swapchain.frontbuffer();
 	auto& texture = swapchain.presentSecondBuffer ? this->buffer2 : this->buffer1;
