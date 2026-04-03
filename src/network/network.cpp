@@ -11,8 +11,13 @@
 #include "../core/logcat.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+
+#ifdef __FreeBSD__
+#include "freebsd/backend.hpp"
+#elif __linux__
 #include "nm/backend.hpp"
 #include "nm/settings.hpp"
+#endif
 
 namespace qs::network {
 
@@ -21,6 +26,38 @@ QS_LOGGING_CATEGORY(logNetwork, "quickshell.network", QtWarningMsg);
 } // namespace
 
 Networking::Networking(QObject* parent): QObject(parent) {
+	// clang-format off
+	#ifdef __FreeBSD__
+	// clang-format on
+
+	// Try to create the FreeBSD network backend and bind to it.
+	auto* freebsd = new FreeBSDBackend(this);
+	if (freebsd->isAvailable()) {
+		QObject::connect(freebsd, &FreeBSDBackend::deviceAdded, this, &Networking::deviceAdded);
+		QObject::connect(freebsd, &FreeBSDBackend::deviceRemoved, this, &Networking::deviceRemoved);
+		QObject::connect(
+		    this,
+		    &Networking::requestSetWifiEnabled,
+		    freebsd,
+		    &FreeBSDBackend::setWifiEnabled
+		);
+
+		this->bindableWifiEnabled().setBinding([freebsd]() { return freebsd->wifiEnabled(); });
+		this->bindableWifiHardwareEnabled().setBinding([freebsd]() {
+			return freebsd->wifiHardwareEnabled();
+		});
+
+		this->mBackend = freebsd;
+		this->mBackendType = NetworkBackendType::FreeBSD;
+		qCInfo(logNetwork) << "Using FreeBSD network backend";
+		return;
+	} else {
+		delete freebsd;
+	}
+	// clang-format off
+	#else
+	// clang-format on
+
 	// Try to create the NetworkManager backend and bind to it.
 	auto* nm = new NetworkManager(this);
 	if (nm->isAvailable()) {
@@ -39,10 +76,15 @@ Networking::Networking(QObject* parent): QObject(parent) {
 
 		this->mBackend = nm;
 		this->mBackendType = NetworkBackendType::NetworkManager;
+		qCInfo(logNetwork) << "Using NetworkManager backend";
 		return;
 	} else {
 		delete nm;
 	}
+	// clang-format off
+	#endif
+	// clang-format on
+
 	qCCritical(logNetwork) << "Network will not work. Could not find an available backend.";
 }
 
@@ -96,6 +138,7 @@ void Network::connect() {
 	this->requestConnect();
 }
 
+#ifdef __linux__
 void Network::connectWithSettings(NMSettings* settings) {
 	if (this->bConnected) {
 		qCCritical(logNetwork) << this << "is already connected.";
@@ -104,6 +147,7 @@ void Network::connectWithSettings(NMSettings* settings) {
 	if (this->bNmSettings.value().indexOf(settings) == -1) return;
 	this->requestConnectWithSettings(settings);
 }
+#endif
 
 void Network::disconnect() {
 	if (!this->bConnected) {
@@ -115,6 +159,7 @@ void Network::disconnect() {
 
 void Network::forget() { this->requestForget(); }
 
+#ifdef __linux__
 void Network::settingsAdded(NMSettings* settings) {
 	auto list = this->bNmSettings.value();
 	if (list.contains(settings)) return;
@@ -127,5 +172,6 @@ void Network::settingsRemoved(NMSettings* settings) {
 	list.removeOne(settings);
 	this->bNmSettings = list;
 }
+#endif
 
 } // namespace qs::network

@@ -1,4 +1,8 @@
-add_subdirectory(nm)
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	add_subdirectory(freebsd)
+else()
+	add_subdirectory(nm)
+endif()
 
 qt_add_library(quickshell-network STATIC
 	network.cpp
@@ -7,7 +11,7 @@ qt_add_library(quickshell-network STATIC
 	enums.cpp
 )
 
-target_include_directories(quickshell-network PRIVATE 
+target_include_directories(quickshell-network PRIVATE
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -17,9 +21,14 @@ qt_add_qml_module(quickshell-network
 	DEPENDENCIES QtQml
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+	target_link_libraries(quickshell-network PRIVATE quickshell-network-freebsd Qt::Qml)
+else()
+	target_link_libraries(quickshell-network PRIVATE quickshell-network-nm Qt::Qml Qt::DBus)
+endif()
+
 qs_add_module_deps_light(quickshell-network Quickshell)
 install_qml_module(quickshell-network)
-target_link_libraries(quickshell-network PRIVATE quickshell-network-nm Qt::Qml Qt::DBus)
 qs_add_link_dependencies(quickshell-network quickshell-dbus)
 target_link_libraries(quickshell PRIVATE quickshell-networkplugin)
 qs_module_pch(quickshell-network SET dbus)
