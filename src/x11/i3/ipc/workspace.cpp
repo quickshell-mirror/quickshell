@@ -55,7 +55,7 @@ void I3Workspace::updateFromObject(const QVariantMap& obj) {
 }
 
 void I3Workspace::activate() {
-	this->ipc->dispatch(QString("workspace number %1").arg(this->bNumber.value()));
+	this->ipc->dispatch(QString("workspace %1").arg(this->bName.value()));
 }
 
 } // namespace qs::i3::ipc
