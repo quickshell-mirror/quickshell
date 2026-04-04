@@ -7,6 +7,7 @@
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
 #include <qjsvalue.h>
+#include <qmetacontainer.h>
 #include <qmetaobject.h>
 #include <qnamespace.h>
 #include <qobject.h>
@@ -260,12 +261,35 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 				}
 			} else {
 				auto variant = jval.toVariant();
+				auto convVariant = variant;
 
-				if (variant.convert(prop.metaType())) {
-					prop.write(obj, variant);
+				if (convVariant.convert(prop.metaType())) {
+					prop.write(obj, convVariant);
 				} else {
-					qmlWarning(this) << "Failed to deserialize property " << prop.name() << ": expected "
-					                 << prop.metaType().name() << " but got " << jval.toVariant().typeName();
+					auto pval = prop.read(obj);
+					if (variant.canConvert<QSequentialIterable>() && pval.canView<QSequentialIterable>()) {
+						auto targetv = QVariant(pval.metaType());
+						auto target = targetv.view<QSequentialIterable>().metaContainer();
+						auto valueType = target.valueMetaType();
+						auto i = 0;
+
+						for (QVariant item: variant.value<QSequentialIterable>()) {
+							if (item.convert(valueType)) {
+								target.addValueAtEnd(targetv.data(), item.constData());
+							} else {
+								qmlWarning(this) << "Failed to deserialize list member " << i << " of property "
+								                 << prop.name() << ": expected " << valueType.name() << " but got "
+								                 << item.typeName();
+							}
+
+							++i;
+						}
+						prop.write(obj, targetv);
+					} else {
+						qmlWarning(this) << "Failed to deserialize property " << prop.name() << ": expected "
+						                 << prop.metaType().name() << " but got "
+						                 << jval.toVariant().typeName();
+					}
 				}
 			}
 		}
