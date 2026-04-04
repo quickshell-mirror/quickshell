@@ -1,5 +1,6 @@
 #include "jsonadapter.hpp"
 
+#include <qassociativeiterable.h>
 #include <qcontainerfwd.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
@@ -14,6 +15,7 @@
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
 #include <qqmllist.h>
+#include <qsequentialiterable.h>
 #include <qstringview.h>
 #include <qvariant.h>
 
@@ -131,13 +133,16 @@ QJsonObject JsonAdapter::serializeRec(const QObject* obj, const QMetaObject* bas
 				}
 
 				json.insert(prop.name(), array);
-			} else if (val.canConvert<QJSValue>()) {
-				auto variant = val.value<QJSValue>().toVariant();
-				auto jv = QJsonValue::fromVariant(variant);
-				json.insert(prop.name(), jv);
 			} else {
-				auto jv = QJsonValue::fromVariant(val);
-				json.insert(prop.name(), jv);
+				if (val.canConvert<QJSValue>()) val = val.value<QJSValue>().toVariant();
+
+				if (val.canConvert<QAssociativeIterable>()) {
+					val.convert(QMetaType::fromType<QVariantMap>());
+				} else if (val.canConvert<QSequentialIterable>()) {
+					val.convert(QMetaType::fromType<QVariantList>());
+				}
+
+				json.insert(prop.name(), QJsonValue::fromVariant(val));
 			}
 		}
 	}

@@ -69,6 +69,7 @@ set shell id.
 - Fixed ScreencopyView pixelation when scaled.
 - Fixed JsonAdapter crashing and providing bad data on read when using JsonObject.
 - Fixed JsonAdapter sending unnecessary property changes for primitive values.
+- Fixed JsonAdapter serialization for lists.
 
 ## Packaging Changes
 
