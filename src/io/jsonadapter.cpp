@@ -155,13 +155,13 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 
 			if (prop.metaType() == QMetaType::fromType<QVariant>()) {
 				auto variant = jval.toVariant();
-				auto oldValue = prop.read(this).value<QJSValue>();
+				auto oldValue = prop.read(obj).value<QJSValue>();
 
 				// Calling prop.write with a new QJSValue will cause a property update
 				// even if content is identical.
 				if (jval.toVariant() != oldValue.toVariant()) {
 					auto jsValue = qmlEngine(this)->fromVariant<QJSValue>(jval.toVariant());
-					prop.write(this, QVariant::fromValue(jsValue));
+					prop.write(obj, QVariant::fromValue(jsValue));
 				}
 			} else if (QMetaType::canView(prop.metaType(), QMetaType::fromType<JsonObject*>())) {
 				// FIXME: This doesn't support creating descendants of JsonObject, as QMetaType.metaObject()
@@ -196,7 +196,7 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 			               QMetaType::fromType<QQmlListProperty<JsonObject>>()
 			           ))
 			{
-				auto pval = prop.read(this);
+				auto pval = prop.read(obj);
 
 				if (pval.canConvert<QQmlListProperty<JsonObject>>()) {
 					auto lp = pval.value<QQmlListProperty<JsonObject>>();

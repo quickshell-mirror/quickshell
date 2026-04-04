@@ -66,6 +66,7 @@ set shell id.
 - Worked around Qt bug causing crashes when plugging and unplugging monitors.
 - Fixed HyprlandFocusGrab crashing if windows were destroyed after being passed to it.
 - Fixed ScreencopyView pixelation when scaled.
+- Fixed JsonAdapter crashing and providing bad data on read when using JsonObject.
 
 ## Packaging Changes
 
