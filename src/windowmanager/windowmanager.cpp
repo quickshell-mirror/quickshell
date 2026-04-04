@@ -21,6 +21,8 @@ WindowManager* WindowManager::instance() {
 }
 
 ScreenProjection* WindowManager::screenProjection(QuickshellScreenInfo* screen) {
+	if (!screen) return nullptr;
+
 	auto* qscreen = screen->screen;
 	auto it = this->mScreenProjections.find(qscreen);
 	if (it != this->mScreenProjections.end()) {
