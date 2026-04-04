@@ -136,13 +136,19 @@ QJsonObject JsonAdapter::serializeRec(const QObject* obj, const QMetaObject* bas
 			} else {
 				if (val.canConvert<QJSValue>()) val = val.value<QJSValue>().toVariant();
 
-				if (val.canConvert<QAssociativeIterable>()) {
-					val.convert(QMetaType::fromType<QVariantMap>());
-				} else if (val.canConvert<QSequentialIterable>()) {
-					val.convert(QMetaType::fromType<QVariantList>());
+				auto jsonVal = QJsonValue::fromVariant(val);
+
+				if (jsonVal.isNull() && !val.isNull() && val.isValid()) {
+					if (val.canConvert<QAssociativeIterable>()) {
+						val.convert(QMetaType::fromType<QVariantMap>());
+					} else if (val.canConvert<QSequentialIterable>()) {
+						val.convert(QMetaType::fromType<QVariantList>());
+					}
+
+					jsonVal = QJsonValue::fromVariant(val);
 				}
 
-				json.insert(prop.name(), QJsonValue::fromVariant(val));
+				json.insert(prop.name(), jsonVal);
 			}
 		}
 	}
