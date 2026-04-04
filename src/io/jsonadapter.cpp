@@ -154,13 +154,15 @@ void JsonAdapter::deserializeRec(const QJsonObject& json, QObject* obj, const QM
 			auto jval = json.value(prop.name());
 
 			if (prop.metaType() == QMetaType::fromType<QVariant>()) {
-				auto variant = jval.toVariant();
-				auto oldValue = prop.read(obj).value<QJSValue>();
+				auto newVariant = jval.toVariant();
+				auto oldValue = prop.read(obj);
+				auto oldVariant =
+				    oldValue.canConvert<QJSValue>() ? oldValue.value<QJSValue>().toVariant() : oldValue;
 
 				// Calling prop.write with a new QJSValue will cause a property update
 				// even if content is identical.
-				if (jval.toVariant() != oldValue.toVariant()) {
-					auto jsValue = qmlEngine(this)->fromVariant<QJSValue>(jval.toVariant());
+				if (newVariant != oldVariant) {
+					auto jsValue = qmlEngine(this)->fromVariant<QJSValue>(newVariant);
 					prop.write(obj, QVariant::fromValue(jsValue));
 				}
 			} else if (QMetaType::canView(prop.metaType(), QMetaType::fromType<JsonObject*>())) {

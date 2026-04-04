@@ -67,6 +67,7 @@ set shell id.
 - Fixed HyprlandFocusGrab crashing if windows were destroyed after being passed to it.
 - Fixed ScreencopyView pixelation when scaled.
 - Fixed JsonAdapter crashing and providing bad data on read when using JsonObject.
+- Fixed JsonAdapter sending unnecessary property changes for primitive values.
 
 ## Packaging Changes
 
