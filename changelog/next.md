@@ -70,6 +70,7 @@ set shell id.
 - Fixed JsonAdapter crashing and providing bad data on read when using JsonObject.
 - Fixed JsonAdapter sending unnecessary property changes for primitive values.
 - Fixed JsonAdapter serialization for lists.
+- Fixed pipewire crashes after hotplugging devices and changing default outputs.
 
 ## Packaging Changes
 
