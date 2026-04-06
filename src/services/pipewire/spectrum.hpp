@@ -5,6 +5,7 @@
 
 #include <qlist.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qqmlintegration.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
@@ -120,7 +121,7 @@ private:
 	void computeBandBins();
 
 	// QML state
-	PwNodeIface* mNode = nullptr;
+	QPointer<PwNodeIface> mNode;
 	PwBindableRef<PwNode> mNodeRef;
 	bool mEnabled = false;
 	int mBandCount = 32;

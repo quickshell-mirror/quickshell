@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qqmlintegration.h>
 #include <qqmllist.h>
 #include <qtclasshelpermacros.h>
@@ -209,7 +210,7 @@ private:
 
 	void updateLinks();
 
-	PwNodeIface* mNode = nullptr;
+	QPointer<PwNodeIface> mNode;
 	QVector<PwLinkGroupIface*> mLinkGroups;
 };
 
