@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qpointer.h>
 #include <qqmlintegration.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
@@ -75,7 +76,7 @@ private:
 	void clearPeaks();
 	void rebuildStream();
 
-	PwNodeIface* mNode = nullptr;
+	QPointer<PwNodeIface> mNode;
 	PwBindableRef<PwNode> mNodeRef;
 	bool mEnabled = true;
 	QVector<float> mPeaks;
