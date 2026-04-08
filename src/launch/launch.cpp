@@ -77,6 +77,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
 		QString appId = qEnvironmentVariable("QS_APP_ID");
+		bool dropExpensiveFonts = false;
 		QString dataDir;
 		QString stateDir;
 		QString cacheDir;
@@ -92,6 +93,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
 			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
+			else if (pragma == "DropExpensiveFonts") pragmas.dropExpensiveFonts = true;
 			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
 			else if (pragma.startsWith("Env ")) {
 				auto envPragma = pragma.sliced(4);
@@ -116,8 +118,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			} else if (pragma.startsWith("CacheDir ")) {
 				pragmas.cacheDir = pragma.sliced(9).trimmed();
 			} else {
-				qCritical() << "Unrecognized pragma" << pragma;
-				return -1;
+				qWarning() << "Unrecognized pragma" << pragma;
 			}
 		} else if (line.startsWith("import")) break;
 	}
@@ -167,6 +168,46 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	LogManager::initFs();
 
 	Common::INITIAL_ENVIRONMENT = QProcessEnvironment::systemEnvironment();
+
+	if (pragmas.dropExpensiveFonts) {
+		if (auto* runDir = QsPaths::instance()->instanceRunDir()) {
+			auto baseConfigPath = qEnvironmentVariable("FONTCONFIG_FILE");
+			if (baseConfigPath.isEmpty()) baseConfigPath = "/etc/fonts/fonts.conf";
+
+			auto filterPath = runDir->filePath("fonts-override.conf");
+			auto filterFile = QFile(filterPath);
+			if (filterFile.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+				auto filterTemplate = QStringLiteral(R"(<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+	<include ignore_missing="no">%1</include>
+	<selectfont>
+		<rejectfont>
+			<pattern>
+				<patelt name="fontwrapper">
+					<string>woff</string>
+				</patelt>
+			</pattern>
+			<pattern>
+				<patelt name="fontwrapper">
+					<string>woff2</string>
+				</patelt>
+			</pattern>
+		</rejectfont>
+	</selectfont>
+</fontconfig>
+)");
+
+				QTextStream(&filterFile) << filterTemplate.arg(baseConfigPath);
+				filterFile.close();
+				qputenv("FONTCONFIG_FILE", filterPath.toUtf8());
+			} else {
+				qCritical() << "Could not write fontconfig filter to" << filterPath;
+			}
+		} else {
+			qCritical() << "Could not create fontconfig filter: instance run directory unavailable";
+		}
+	}
 
 	if (!pragmas.useSystemStyle) {
 		qunsetenv("QT_STYLE_OVERRIDE");
