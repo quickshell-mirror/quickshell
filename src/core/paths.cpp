@@ -64,7 +64,7 @@ QDir* QsPaths::baseRunDir() {
 	if (this->baseRunState == DirState::Unknown) {
 		auto runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
 		if (runtimeDir.isEmpty()) {
-			runtimeDir = QString("/run/user/$1").arg(getuid());
+			runtimeDir = QString("/run/user/%1").arg(getuid());
 			qCInfo(logPaths) << "XDG_RUNTIME_DIR was not set, defaulting to" << runtimeDir;
 		}
 

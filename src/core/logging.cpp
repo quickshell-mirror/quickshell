@@ -310,9 +310,14 @@ void LogManager::init(
 		instance->rules->append(parser.rules());
 	}
 
-	qInstallMessageHandler(&LogManager::messageHandler);
-
 	instance->lastCategoryFilter = QLoggingCategory::installFilter(&LogManager::filterCategory);
+
+	if (instance->lastCategoryFilter == &LogManager::filterCategory) {
+		qCFatal(logLogging) << "Quickshell's log filter has been installed twice. This is a bug.";
+		instance->lastCategoryFilter = nullptr;
+	}
+
+	qInstallMessageHandler(&LogManager::messageHandler);
 
 	qCDebug(logLogging) << "Creating offthread logger...";
 	auto* thread = new QThread();
