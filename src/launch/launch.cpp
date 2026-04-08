@@ -169,6 +169,17 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 
 	Common::INITIAL_ENVIRONMENT = QProcessEnvironment::systemEnvironment();
 
+	if (!pragmas.useSystemStyle) {
+		qunsetenv("QT_STYLE_OVERRIDE");
+		qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+	}
+
+	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
+		qputenv(var.toUtf8(), val.toUtf8());
+	}
+
+	pragmas.dropExpensiveFonts |= qEnvironmentVariableIntValue("QS_DROP_EXPENSIVE_FONTS") == 1;
+
 	if (pragmas.dropExpensiveFonts) {
 		if (auto* runDir = QsPaths::instance()->instanceRunDir()) {
 			auto baseConfigPath = qEnvironmentVariable("FONTCONFIG_FILE");
@@ -207,15 +218,6 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		} else {
 			qCritical() << "Could not create fontconfig filter: instance run directory unavailable";
 		}
-	}
-
-	if (!pragmas.useSystemStyle) {
-		qunsetenv("QT_STYLE_OVERRIDE");
-		qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
-	}
-
-	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
-		qputenv(var.toUtf8(), val.toUtf8());
 	}
 
 	// The qml engine currently refuses to cache non file (qsintercept) paths.
