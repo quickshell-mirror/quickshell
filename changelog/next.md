@@ -73,6 +73,7 @@ set shell id.
 - Fixed JsonAdapter sending unnecessary property changes for primitive values.
 - Fixed JsonAdapter serialization for lists.
 - Fixed pipewire crashes after hotplugging devices and changing default outputs.
+- Fixed launches failing for `--daemonize` on some systems.
 
 ## Packaging Changes
 
