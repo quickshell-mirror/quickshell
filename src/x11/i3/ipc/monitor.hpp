@@ -55,7 +55,7 @@ public:
 	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
 
-	[[nodiscard]] QBindable<I3Workspace*> bindableActiveWorkspace() {
+	[[nodiscard]] QBindable<I3Workspace*> bindableActiveWorkspace() const {
 		return &this->bActiveWorkspace;
 	}
 
@@ -64,7 +64,7 @@ public:
 	void updateFromObject(const QVariantMap& obj);
 	void updateInitial(const QString& name);
 
-	void setFocusedWorkspace(I3Workspace* workspace);
+	void setActiveWorkspace(I3Workspace* workspace);
 
 signals:
 	void idChanged();
@@ -78,6 +78,9 @@ signals:
 	void scaleChanged();
 	void lastIpcObjectChanged();
 	void focusedChanged();
+
+private slots:
+	void onActiveWorkspaceDestroyed();
 
 private:
 	I3IpcController* ipc;

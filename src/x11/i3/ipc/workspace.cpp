@@ -43,13 +43,16 @@ void I3Workspace::updateFromObject(const QVariantMap& obj) {
 
 	auto monitorName = obj.value("output").value<QString>();
 
-	if (!this->bMonitor || monitorName != this->bMonitor->bindableName().value()) {
+	auto* monitor = this->bMonitor.value();
+	if (!monitor || monitorName != monitor->bindableName().value()) {
 		if (monitorName.isEmpty()) {
-			this->bMonitor = nullptr;
+			monitor = nullptr;
 		} else {
-			this->bMonitor = this->ipc->findMonitorByName(monitorName, true);
+			monitor = this->ipc->findMonitorByName(monitorName, true);
 		}
 	}
+
+	this->setMonitor(monitor);
 
 	Qt::endPropertyUpdateGroup();
 }
@@ -57,5 +60,22 @@ void I3Workspace::updateFromObject(const QVariantMap& obj) {
 void I3Workspace::activate() {
 	this->ipc->dispatch(QString("workspace number %1").arg(this->bNumber.value()));
 }
+
+void I3Workspace::setMonitor(I3Monitor* monitor) {
+	auto* oldMonitor = this->bMonitor.value();
+	if (oldMonitor == monitor) return;
+
+	if (oldMonitor) {
+		QObject::disconnect(oldMonitor, nullptr, this, nullptr);
+	}
+
+	if (monitor) {
+		QObject::connect(monitor, &QObject::destroyed, this, &I3Workspace::onMonitorDestroyed);
+	}
+
+	this->bMonitor = monitor;
+}
+
+void I3Workspace::onMonitorDestroyed() { this->bMonitor = nullptr; }
 
 } // namespace qs::i3::ipc
