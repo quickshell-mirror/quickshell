@@ -74,6 +74,7 @@ set shell id.
 - Fixed JsonAdapter serialization for lists.
 - Fixed pipewire crashes after hotplugging devices and changing default outputs.
 - Fixed launches failing for `--daemonize` on some systems.
+- Fixed screencopy crashing when used across GPUs.
 
 ## Packaging Changes
 
