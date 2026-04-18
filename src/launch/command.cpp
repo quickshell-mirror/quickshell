@@ -12,7 +12,6 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
-#include <qguiapplication.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -547,16 +546,17 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 }
 
 QString getDisplayConnection() {
-	auto platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+	// Doesn't actually have to match what qt picks, but will 99% of the time.
+	// Running quickshell under wayland in x11 mode doesn't really make any sense.
 	auto wlDisplay = qEnvironmentVariable("WAYLAND_DISPLAY");
 	auto xDisplay = qEnvironmentVariable("DISPLAY");
 
-	if (platform == "wayland" || (platform.isEmpty() && !wlDisplay.isEmpty())) {
-		return "wayland," + wlDisplay;
-	} else if (platform == "xcb" || (platform.isEmpty() && !xDisplay.isEmpty())) {
-		return "x11," + xDisplay;
+	if (!wlDisplay.isEmpty()) {
+		return "wayland/" + wlDisplay;
+	} else if (!xDisplay.isEmpty()) {
+		return "x11/" + xDisplay;
 	} else {
-		return "unk," + QGuiApplication::platformName();
+		return "unk";
 	}
 }
 
