@@ -4,11 +4,18 @@ on:
   push:
     branches:
       - master
+    workflow_run:
+      workflows: ["update flake"]
+      types:
+        - completed
+      branches:
+        - main
   workflow_dispatch:
 
 jobs:
   cache:
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'noctalia-dev/noctalia-qs' }}
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
