@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qobject.h>
+#include <qpointer.h>
 #include <qtmetamacros.h>
 
 #include "registry.hpp"
@@ -67,16 +68,16 @@ private:
 	PwRegistry* registry;
 	PwBindableRef<PwMetadata> defaultsMetadata;
 
-	PwNode* mDefaultSink = nullptr;
+	QPointer<PwNode> mDefaultSink = nullptr;
 	QString mDefaultSinkName;
 
-	PwNode* mDefaultSource = nullptr;
+	QPointer<PwNode> mDefaultSource = nullptr;
 	QString mDefaultSourceName;
 
-	PwNode* mDefaultConfiguredSink = nullptr;
+	QPointer<PwNode> mDefaultConfiguredSink = nullptr;
 	QString mDefaultConfiguredSinkName;
 
-	PwNode* mDefaultConfiguredSource = nullptr;
+	QPointer<PwNode> mDefaultConfiguredSource = nullptr;
 	QString mDefaultConfiguredSourceName;
 };
 
