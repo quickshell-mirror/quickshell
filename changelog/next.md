@@ -76,6 +76,7 @@ set shell id.
 - Fixed pipewire crashes after hotplugging devices and changing default outputs.
 - Fixed launches failing for `--daemonize` on some systems.
 - Fixed screencopy crashing when used across GPUs.
+- Fixed pipewire volumes not working for some pw-pulse clients.
 
 ## Packaging Changes
 
