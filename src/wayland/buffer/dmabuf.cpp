@@ -1,6 +1,7 @@
 #include "dmabuf.hpp"
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -9,6 +10,7 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <EGL/eglplatform.h>
 #include <GL/gl.h>
 #include <fcntl.h>
 #include <gbm.h>
@@ -17,6 +19,7 @@
 #include <private/qrhivulkan_p.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
+#include <qdir.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -24,7 +27,7 @@
 #include <qopenglcontext_platform.h>
 #include <qpair.h>
 #include <qquickwindow.h>
-#include <qscopedpointer.h>
+#include <qscopeguard.h>
 #include <qsgrendererinterface.h>
 #include <qsgtexture_platform.h>
 #include <qtypes.h>
@@ -33,6 +36,8 @@
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vulkan/vulkan_core.h>
@@ -54,23 +59,33 @@ QS_LOGGING_CATEGORY(logDmabuf, "quickshell.wayland.buffer.dmabuf", QtWarningMsg)
 
 LinuxDmabufManager* MANAGER = nullptr; // NOLINT
 
+struct SupportedDrmFormat {
+	uint32_t drmFormat;
+	VkFormat vkFormat;
+};
+
+// XRGB/ARGB intentionally map to the same VK format.
+constexpr std::array<SupportedDrmFormat, 11> SUPPORTED_VK_FORMATS = {{
+    {.drmFormat = DRM_FORMAT_ARGB8888, .vkFormat = VK_FORMAT_B8G8R8A8_UNORM},
+    {.drmFormat = DRM_FORMAT_XRGB8888, .vkFormat = VK_FORMAT_B8G8R8A8_UNORM},
+    {.drmFormat = DRM_FORMAT_ABGR8888, .vkFormat = VK_FORMAT_R8G8B8A8_UNORM},
+    {.drmFormat = DRM_FORMAT_XBGR8888, .vkFormat = VK_FORMAT_R8G8B8A8_UNORM},
+    {.drmFormat = DRM_FORMAT_ARGB2101010, .vkFormat = VK_FORMAT_A2R10G10B10_UNORM_PACK32},
+    {.drmFormat = DRM_FORMAT_XRGB2101010, .vkFormat = VK_FORMAT_A2R10G10B10_UNORM_PACK32},
+    {.drmFormat = DRM_FORMAT_ABGR2101010, .vkFormat = VK_FORMAT_A2B10G10R10_UNORM_PACK32},
+    {.drmFormat = DRM_FORMAT_XBGR2101010, .vkFormat = VK_FORMAT_A2B10G10R10_UNORM_PACK32},
+    {.drmFormat = DRM_FORMAT_ABGR16161616F, .vkFormat = VK_FORMAT_R16G16B16A16_SFLOAT},
+    {.drmFormat = DRM_FORMAT_RGB565, .vkFormat = VK_FORMAT_R5G6B5_UNORM_PACK16},
+    {.drmFormat = DRM_FORMAT_BGR565, .vkFormat = VK_FORMAT_B5G6R5_UNORM_PACK16},
+}};
+
 VkFormat drmFormatToVkFormat(uint32_t drmFormat) {
-	// NOLINTBEGIN(bugprone-branch-clone): XRGB/ARGB intentionally map to the same VK format
-	switch (drmFormat) {
-	case DRM_FORMAT_ARGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
-	case DRM_FORMAT_XRGB8888: return VK_FORMAT_B8G8R8A8_UNORM;
-	case DRM_FORMAT_ABGR8888: return VK_FORMAT_R8G8B8A8_UNORM;
-	case DRM_FORMAT_XBGR8888: return VK_FORMAT_R8G8B8A8_UNORM;
-	case DRM_FORMAT_ARGB2101010: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
-	case DRM_FORMAT_XRGB2101010: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
-	case DRM_FORMAT_ABGR2101010: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
-	case DRM_FORMAT_XBGR2101010: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
-	case DRM_FORMAT_ABGR16161616F: return VK_FORMAT_R16G16B16A16_SFLOAT;
-	case DRM_FORMAT_RGB565: return VK_FORMAT_R5G6B5_UNORM_PACK16;
-	case DRM_FORMAT_BGR565: return VK_FORMAT_B5G6R5_UNORM_PACK16;
-	default: return VK_FORMAT_UNDEFINED;
-	}
-	// NOLINTEND(bugprone-branch-clone)
+	const auto* it = std::ranges::find_if(SUPPORTED_VK_FORMATS, [&](const SupportedDrmFormat& f) {
+		return f.drmFormat == drmFormat;
+	});
+
+	if (it == SUPPORTED_VK_FORMATS.end()) return VK_FORMAT_UNDEFINED;
+	return it->vkFormat;
 }
 
 bool drmFormatHasAlpha(uint32_t drmFormat) {
@@ -82,6 +97,13 @@ bool drmFormatHasAlpha(uint32_t drmFormat) {
 	case DRM_FORMAT_ABGR16161616F: return true;
 	default: return false;
 	}
+}
+
+template <typename T>
+T eglProc(const char* name) {
+	auto* proc = reinterpret_cast<T>(eglGetProcAddress(name));
+	if (!proc) qCCritical(logDmabuf) << "Failed to look up EGL proc:" << name;
+	return proc;
 }
 
 } // namespace
@@ -111,10 +133,13 @@ QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer) {
 	return debug;
 }
 
-GbmDeviceHandle::~GbmDeviceHandle() {
-	if (this->device) {
-		MANAGER->unrefGbmDevice(this->device);
-	}
+GbmDevice::~GbmDevice() {
+	qCDebug(logDmabuf) << "Destroying GBM device on render node" << this->renderNode.c_str();
+	auto fd = gbm_device_get_fd(this->device);
+	gbm_device_destroy(this->device);
+	close(fd);
+
+	MANAGER->gbmDevices.removeIf([](const std::weak_ptr<GbmDevice>& d) { return d.expired(); });
 }
 
 // Prefer ARGB over XRGB: XRGB has undefined alpha bytes which cause
@@ -291,106 +316,329 @@ LinuxDmabufManager::LinuxDmabufManager(WlBufferManagerPrivate* manager)
 	}
 }
 
-void LinuxDmabufManager::feedbackDone() { this->manager->dmabufReady(); }
+bool LinuxDmabufManager::initRenderFormats(QQuickWindow* window) {
+	auto* ri = window->rendererInterface();
+	if (ri->graphicsApi() == QSGRendererInterface::Vulkan) {
+		return this->initRenderFormatsVk(window);
+	} else {
+		return this->initRenderFormatsGl(window);
+	}
+}
 
-GbmDeviceHandle LinuxDmabufManager::getGbmDevice(dev_t handle) {
-	struct DrmFree {
-		static void cleanup(drmDevice* d) { drmFreeDevice(&d); }
+bool LinuxDmabufManager::initRenderFormatsGl(QQuickWindow* window) {
+	auto* ri = window->rendererInterface();
+	auto* context = static_cast<QOpenGLContext*>(
+	    ri->getResource(window, QSGRendererInterface::OpenGLContextResource)
+	);
+
+	if (!context) {
+		qCCritical(logDmabuf) << "Failed to query render formats: No GL context.";
+		return false;
+	}
+
+	auto* qEglContext = context->nativeInterface<QNativeInterface::QEGLContext>();
+	if (!qEglContext) {
+		qCCritical(logDmabuf) << "Failed to query render formats: No EGL context.";
+		return false;
+	}
+
+	auto* display = qEglContext->display();
+
+	static auto* eglQueryDisplayAttribEXT =
+	    eglProc<PFNEGLQUERYDISPLAYATTRIBEXTPROC>("eglQueryDisplayAttribEXT");
+	static auto* eglQueryDeviceStringEXT =
+	    eglProc<PFNEGLQUERYDEVICESTRINGEXTPROC>("eglQueryDeviceStringEXT");
+	static auto* eglQueryDmaBufFormatsEXT =
+	    eglProc<PFNEGLQUERYDMABUFFORMATSEXTPROC>("eglQueryDmaBufFormatsEXT");
+	static auto* eglQueryDmaBufModifiersEXT =
+	    eglProc<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>("eglQueryDmaBufModifiersEXT");
+
+	if (!eglQueryDisplayAttribEXT || !eglQueryDeviceStringEXT || !eglQueryDmaBufFormatsEXT
+	    || !eglQueryDmaBufModifiersEXT)
+	{
+		return false;
+	}
+
+	EGLAttrib deviceAttrib = 0;
+	if (!eglQueryDisplayAttribEXT(display, EGL_DEVICE_EXT, &deviceAttrib)) {
+		qCCritical(logDmabuf) << "Failed to find render device: device display attrib missing.";
+		return false;
+	}
+
+	auto* dev = reinterpret_cast<EGLDeviceEXT>(deviceAttrib); // NOLINT
+
+	if (const auto* renderNode = eglQueryDeviceStringEXT(dev, EGL_DRM_RENDER_NODE_FILE_EXT)) {
+		this->renderNode = renderNode;
+	} else if (const auto* primaryNode = eglQueryDeviceStringEXT(dev, EGL_DRM_DEVICE_FILE_EXT)) {
+		this->renderNode = primaryNode;
+	} else {
+		qCCritical(logDmabuf) << "Failed to find render device: no render or primary node found.";
+		return false;
+	}
+
+	qCDebug(logDmabuf) << "Found render node:" << this->renderNode;
+
+	EGLint numFormats = 0;
+	if (!eglQueryDmaBufFormatsEXT(display, 0, nullptr, &numFormats)) {
+		qCCritical(logDmabuf) << "Failed to query render formats: eglQueryDmaBufFormatsEXT failed.";
+		return false;
+	}
+
+	if (numFormats == 0) {
+		qCCritical(logDmabuf) << "Failed to query render formats: zero formats.";
+		return false;
+	}
+
+	auto formats = std::vector<EGLint>(numFormats);
+	if (!eglQueryDmaBufFormatsEXT(display, numFormats, formats.data(), &numFormats)) {
+		qCCritical(logDmabuf) << "Failed to query render formats: eglQueryDmaBufFormatsEXT failed.";
+		return false;
+	}
+
+	qCDebug(logDmabuf) << "Render formats:";
+	for (auto format: formats) {
+		qCDebug(logDmabuf) << "  Format" << FourCCStr(format);
+		qCDebug(logDmabuf) << "    Implicit Modifier";
+
+		EGLint numModifiers = 0;
+		if (!eglQueryDmaBufModifiersEXT(display, format, 0, nullptr, nullptr, &numModifiers)) {
+			qCCritical(logDmabuf) << "Failed to query render formats: eglQueryDmaBufModifiersEXT failed.";
+			return false;
+		}
+
+		auto modifiers = std::vector<EGLuint64KHR>(numModifiers);
+		auto externalOnly = std::vector<EGLBoolean>(numModifiers);
+		if (!eglQueryDmaBufModifiersEXT(
+		        display,
+		        format,
+		        numModifiers,
+		        modifiers.data(),
+		        externalOnly.data(),
+		        &numModifiers
+		    ))
+		{
+			qCCritical(logDmabuf) << "Failed to query render formats: eglQueryDmaBufModifiersEXT failed.";
+			return false;
+		}
+
+		LinuxDmabufModifiers mods;
+		for (size_t i = 0; i != modifiers.size(); ++i) {
+			// External-only modifiers are required for some MGPU cases (usually involving nvidia).
+			// The work has not been done to support importing these, so they'll fall back to SHM.
+			auto external = externalOnly[i] == EGL_TRUE;
+			auto modifier = modifiers[i];
+
+			if (external) {
+				qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(modifier)
+				                   << "(external / skipped)";
+			} else {
+				qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(modifier);
+				mods.modifiers.push(modifier);
+			}
+		}
+
+		// It seems like EGL always supports implicit modifiers, however they don't work across GPUs so
+		// renderdev must be checked to match the tranche.
+		mods.implicit = true;
+
+		this->renderFormats.formats.push(qMakePair(format, mods));
+	}
+
+	return true;
+}
+
+bool LinuxDmabufManager::initRenderFormatsVk(QQuickWindow* window) {
+	auto* ri = window->rendererInterface();
+	auto* vkInst = window->vulkanInstance();
+
+	if (!vkInst) {
+		qCCritical(logDmabuf) << "Failed to query render formats: no QVulkanInstance.";
+		return false;
+	}
+
+	auto* vkDevicePtr =
+	    static_cast<VkDevice*>(ri->getResource(window, QSGRendererInterface::DeviceResource));
+	auto* vkPhysDevicePtr = static_cast<VkPhysicalDevice*>(
+	    ri->getResource(window, QSGRendererInterface::PhysicalDeviceResource)
+	);
+
+	if (!vkDevicePtr || !vkPhysDevicePtr) {
+		qCCritical(logDmabuf) << "Failed to query render formats: could not get Vulkan device.";
+		return false;
+	}
+
+	auto* physDevice = *vkPhysDevicePtr;
+	auto* instFuncs = vkInst->functions();
+
+	auto drmProps = VkPhysicalDeviceDrmPropertiesEXT {};
+	drmProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+
+	auto props2 = VkPhysicalDeviceProperties2 {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+	    .pNext = &drmProps,
+	    .properties = {}
 	};
 
+	instFuncs->vkGetPhysicalDeviceProperties2(physDevice, &props2);
+
+	auto devDri = QDir("/dev/dri");
+	auto entries = devDri.entryList(QDir::System);
+	auto findNode = [&](uint32_t maj, uint32_t min) -> QString {
+		for (const QString& file: entries) {
+			auto path = devDri.filePath(file);
+			struct stat st = {};
+			if (::stat(path.toLocal8Bit().constData(), &st) != 0) continue;
+			if (major(st.st_rdev) == maj && minor(st.st_rdev) == min) {
+				return path;
+			}
+		}
+		return {};
+	};
+
+	QString node;
+	if (drmProps.hasRender) node = findNode(drmProps.renderMajor, drmProps.renderMinor);
+	else if (drmProps.hasPrimary) {
+		node = findNode(drmProps.primaryMajor, drmProps.primaryMinor);
+	}
+
+	if (!node.isEmpty()) {
+		this->renderNode = node.toLocal8Bit();
+		qCDebug(logDmabuf) << "Found render node:" << this->renderNode;
+	}
+
+	qCDebug(logDmabuf) << "Render formats:";
+	for (const auto& format: SUPPORTED_VK_FORMATS) {
+		auto modList = VkDrmFormatModifierPropertiesListEXT {
+		    .sType = VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT,
+		    .pNext = nullptr,
+		    .drmFormatModifierCount = 0,
+		    .pDrmFormatModifierProperties = nullptr,
+		};
+
+		auto props2 = VkFormatProperties2 {
+		    .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+		    .pNext = &modList,
+		    .formatProperties = {},
+		};
+
+		instFuncs->vkGetPhysicalDeviceFormatProperties2(physDevice, format.vkFormat, &props2);
+		if (modList.drmFormatModifierCount == 0) continue;
+
+		auto vkMods = std::vector<VkDrmFormatModifierPropertiesEXT>(modList.drmFormatModifierCount);
+		modList.pDrmFormatModifierProperties = vkMods.data();
+
+		instFuncs->vkGetPhysicalDeviceFormatProperties2(physDevice, format.vkFormat, &props2);
+
+		qCDebug(logDmabuf) << "  Format" << FourCCStr(format.drmFormat);
+
+		LinuxDmabufModifiers mods;
+		for (const auto& m: vkMods) {
+			auto modInfo = VkPhysicalDeviceImageDrmFormatModifierInfoEXT {
+			    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT,
+			    .pNext = nullptr,
+			    .drmFormatModifier = m.drmFormatModifier,
+			    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			    .queueFamilyIndexCount = 0,
+			    .pQueueFamilyIndices = nullptr,
+			};
+
+			auto info = VkPhysicalDeviceImageFormatInfo2 {
+			    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+			    .pNext = &modInfo,
+			    .format = format.vkFormat,
+			    .type = VK_IMAGE_TYPE_2D,
+			    .tiling = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT,
+			    .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+			    .flags = {},
+			};
+
+			auto props = VkImageFormatProperties2 {
+			    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+			    .pNext = nullptr,
+			    .imageFormatProperties = {},
+			};
+
+			auto r = instFuncs->vkGetPhysicalDeviceImageFormatProperties2(physDevice, &info, &props);
+			if (r == VK_SUCCESS) {
+				qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(m.drmFormatModifier);
+				mods.modifiers.push(m.drmFormatModifier);
+			} else if (r == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+				qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(m.drmFormatModifier)
+				                   << "(not usable)";
+			} else {
+				qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(m.drmFormatModifier)
+				                   << "(unknown error)";
+			}
+		}
+
+		if (mods.modifiers.isEmpty()) continue;
+
+		// We don't enable implicit modifiers because they seem to be broken in our current impl.
+		this->renderFormats.formats.push(qMakePair(format.drmFormat, mods));
+	}
+
+	return true;
+}
+
+void LinuxDmabufManager::feedbackDone() { this->manager->dmabufReady(); }
+
+std::shared_ptr<GbmDevice> LinuxDmabufManager::getGbmDevice(dev_t handle) {
+	for (const auto& weak: this->gbmDevices) {
+		auto shared = weak.lock();
+		if (shared->handle == handle) {
+			qCDebug(logDmabuf) << "Used existing GBM device on render node" << shared->renderNode.c_str();
+			return shared;
+		}
+	}
+
+	drmDevice* drmDev = nullptr;
+	if (auto error = drmGetDeviceFromDevId(handle, 0, &drmDev); error != 0) {
+		qCWarning(logDmabuf) << "Failed to get drm device information from handle:"
+		                     << qt_error_string(error);
+		return nullptr;
+	}
+
+	auto freeDrmDev = qScopeGuard([&] { drmFreeDevice(&drmDev); });
+
 	std::string renderNodeStorage;
-	std::string* renderNode = nullptr;
-
-	auto sharedDevice = std::ranges::find_if(this->gbmDevices, [&](const SharedGbmDevice& d) {
-		return d.handle == handle;
-	});
-
-	if (sharedDevice != this->gbmDevices.end()) {
-		renderNode = &sharedDevice->renderNode;
-	} else {
-		drmDevice* drmDevPtr = nullptr;
-		if (auto error = drmGetDeviceFromDevId(handle, 0, &drmDevPtr); error != 0) {
-			qCWarning(logDmabuf) << "Failed to get drm device information from handle:"
-			                     << qt_error_string(error);
-			return nullptr;
-		}
-
-		auto drmDev = QScopedPointer<drmDevice, DrmFree>(drmDevPtr);
-
-		if (!(drmDev->available_nodes & (1 << DRM_NODE_RENDER))) {
-			qCDebug(logDmabuf) << "Cannot create GBM device: DRM device does not have render node.";
-			return nullptr;
-		}
-
+	if (drmDev->available_nodes & (1 << DRM_NODE_RENDER)) {
 		renderNodeStorage = drmDev->nodes[DRM_NODE_RENDER]; // NOLINT
-		renderNode = &renderNodeStorage;
-		sharedDevice = std::ranges::find_if(this->gbmDevices, [&](const SharedGbmDevice& d) {
-			return d.renderNode == renderNodeStorage;
-		});
-	}
-
-	if (sharedDevice != this->gbmDevices.end()) {
-		qCDebug(logDmabuf) << "Used existing GBM device on render node" << *renderNode;
-		++sharedDevice->refcount;
-		return sharedDevice->device;
+	} else if (drmDev->available_nodes & (1 << DRM_NODE_PRIMARY)) {
+		renderNodeStorage = drmDev->nodes[DRM_NODE_PRIMARY]; // NOLINT
 	} else {
-		auto fd = open(renderNode->c_str(), O_RDWR | O_CLOEXEC);
-		if (fd < 0) {
-			qCDebug(logDmabuf) << "Could not open render node" << *renderNode << ":"
-			                   << qt_error_string(fd);
-			return nullptr;
-		}
-
-		auto* device = gbm_create_device(fd);
-
-		if (!device) {
-			qCDebug(logDmabuf) << "Failed to create GBM device from render node" << *renderNode;
-			close(fd);
-			return nullptr;
-		}
-
-		qCDebug(logDmabuf) << "Created GBM device on render node" << *renderNode;
-
-		this->gbmDevices.push_back({
-		    .handle = handle,
-		    .renderNode = std::move(renderNodeStorage),
-		    .device = device,
-		    .refcount = 1,
-		});
-
-		return device;
+		qCDebug(logDmabuf) << "Cannot create GBM device: DRM device does not have render node.";
+		return nullptr;
 	}
-}
 
-void LinuxDmabufManager::unrefGbmDevice(gbm_device* device) {
-	auto iter = std::ranges::find_if(this->gbmDevices, [device](const SharedGbmDevice& d) {
-		return d.device == device;
-	});
-	if (iter == this->gbmDevices.end()) return;
+	for (const auto& weak: this->gbmDevices) {
+		auto shared = weak.lock();
+		if (shared->renderNode == renderNodeStorage) {
+			qCDebug(logDmabuf) << "Used existing GBM device on render node" << renderNodeStorage.c_str();
+			return shared;
+		}
+	}
 
-	qCDebug(logDmabuf) << "Lost reference to GBM device" << device;
+	auto fd = open(renderNodeStorage.c_str(), O_RDWR | O_CLOEXEC);
+	if (fd < 0) {
+		qCDebug(logDmabuf) << "Could not open render node" << renderNodeStorage.c_str() << ":"
+		                   << qt_error_string(fd);
+		return nullptr;
+	}
 
-	if (--iter->refcount == 0) {
-		auto fd = gbm_device_get_fd(iter->device);
-		gbm_device_destroy(iter->device);
+	auto* device = gbm_create_device(fd);
+
+	if (!device) {
+		qCDebug(logDmabuf) << "Failed to create GBM device from render node"
+		                   << renderNodeStorage.c_str();
 		close(fd);
-
-		this->gbmDevices.erase(iter);
-		qCDebug(logDmabuf) << "Destroyed GBM device" << device;
+		return nullptr;
 	}
-}
 
-GbmDeviceHandle LinuxDmabufManager::dupHandle(const GbmDeviceHandle& handle) {
-	if (!handle) return GbmDeviceHandle();
+	qCDebug(logDmabuf) << "Created GBM device on render node" << renderNodeStorage.c_str();
 
-	auto iter = std::ranges::find_if(this->gbmDevices, [&handle](const SharedGbmDevice& d) {
-		return d.device == *handle;
-	});
-	if (iter == this->gbmDevices.end()) return GbmDeviceHandle();
-
-	qCDebug(logDmabuf) << "Duplicated GBM device handle" << *handle;
-	++iter->refcount;
-	return GbmDeviceHandle(*handle);
+	auto shared = std::make_shared<GbmDevice>(handle, std::move(renderNodeStorage), device);
+	this->gbmDevices.push_back(shared);
+	return shared;
 }
 
 WlBuffer* LinuxDmabufManager::createDmabuf(const WlBufferRequest& request) {
@@ -400,16 +648,67 @@ WlBuffer* LinuxDmabufManager::createDmabuf(const WlBufferRequest& request) {
 		}
 
 		LinuxDmabufFormatSelection formats;
-		for (const auto& format: request.dmabuf.formats) {
-			if (!format.modifiers.isEmpty()) {
-				formats.formats.push(
-				    qMakePair(format.format, LinuxDmabufModifiers {.modifiers = format.modifiers})
-				);
-			} else {
-				for (const auto& trancheFormat: tranche.formats.formats) {
-					if (trancheFormat.first == format.format) {
-						formats.formats.push(trancheFormat);
+		for (const auto& requestFormat: request.dmabuf.formats) {
+			for (const auto& [renderFormat, renderFormatModifiers]: this->renderFormats.formats) {
+				if (renderFormat != requestFormat.format) continue;
+
+				if (!requestFormat.modifiers.isEmpty()) {
+					LinuxDmabufModifiers mods;
+					mods.implicit = requestFormat.implicit && renderFormatModifiers.implicit;
+
+					for (auto mod: requestFormat.modifiers) {
+						for (auto renderMod: renderFormatModifiers.modifiers) {
+							if (mod != renderMod) continue;
+							mods.modifiers.push(mod);
+							break;
+						}
 					}
+
+					if (mods.implicit || !mods.modifiers.isEmpty()) {
+						formats.formats.push(qMakePair(requestFormat.format, mods));
+					}
+				} else {
+					for (const auto& [trancheFormat, trancheMods]: tranche.formats.formats) {
+						if (trancheFormat != requestFormat.format) continue;
+
+						LinuxDmabufModifiers mods;
+						mods.implicit = trancheMods.implicit && renderFormatModifiers.implicit;
+
+						for (auto mod: trancheMods.modifiers) {
+							for (auto renderMod: renderFormatModifiers.modifiers) {
+								if (mod != renderMod) continue;
+								mods.modifiers.push(mod);
+								break;
+							}
+						}
+
+						if (mods.implicit || !mods.modifiers.isEmpty()) {
+							formats.formats.push(qMakePair(trancheFormat, mods));
+						}
+
+						break;
+					}
+				}
+
+				break;
+			}
+		}
+
+		if (logDmabuf().isDebugEnabled()) {
+			qCDebug(logDmabuf) << "Usable formats on device" << tranche.device;
+
+			// will be sorted on first use otherwise
+			formats.ensureSorted();
+
+			for (auto& [format, modifiers]: formats.formats) {
+				qCDebug(logDmabuf) << "  Format" << FourCCStr(format);
+
+				if (modifiers.implicit) {
+					qCDebug(logDmabuf) << "    Implicit Modifier";
+				}
+
+				for (const auto& modifier: modifiers.modifiers) {
+					qCDebug(logDmabuf) << "    Explicit Modifier" << FourCCModStr(modifier);
 				}
 			}
 		}
@@ -438,7 +737,7 @@ WlBuffer* LinuxDmabufManager::createDmabuf(const WlBufferRequest& request) {
 }
 
 WlBuffer* LinuxDmabufManager::createDmabuf(
-    GbmDeviceHandle& device,
+    const std::shared_ptr<GbmDevice>& device,
     uint32_t format,
     const LinuxDmabufModifiers& modifiers,
     uint32_t width,
@@ -457,15 +756,22 @@ WlBuffer* LinuxDmabufManager::createDmabuf(
 			return nullptr;
 		}
 
+		if (device->renderNode != this->renderNode) {
+			qCritical(logDmabuf) << "Failed to create gbm_bo: format supports only implicit modifier "
+			                        "which does not work across GPUs.";
+			return nullptr;
+		}
+
 		qCDebug(logDmabuf) << "Creating gbm_bo without modifiers...";
-		bo = gbm_bo_create(*device, width, height, format, flags);
+		buffer->usedImplicitModifier = true;
+		bo = gbm_bo_create(device->device, width, height, format, flags);
 	} else {
 		qCDebug(logDmabuf) << "Creating gbm_bo with modifiers...";
 
 		STACKLIST_VLA_VIEW(uint64_t, modifiers.modifiers, modifiersData);
 
 		bo = gbm_bo_create_with_modifiers2(
-		    *device,
+		    device->device,
 		    width,
 		    height,
 		    format,
@@ -514,7 +820,7 @@ WlBuffer* LinuxDmabufManager::createDmabuf(
 	    params.create_immed(static_cast<int32_t>(width), static_cast<int32_t>(height), format, 0);
 	params.destroy();
 
-	buffer->device = this->dupHandle(device);
+	buffer->device = device;
 	buffer->width = width;
 	buffer->height = height;
 	buffer->format = format;
@@ -561,8 +867,9 @@ bool WlDmaBuffer::isCompatible(const WlBufferRequest& request) const {
 	if (request.width != this->width || request.height != this->height) return false;
 
 	auto matchingFormat = std::ranges::find_if(request.dmabuf.formats, [this](const auto& format) {
+		if (format.format != this->format) return false;
 		return format.format == this->format
-		    && (format.modifiers.isEmpty()
+		    && (format.modifiers.isEmpty() || (format.implicit && this->usedImplicitModifier)
 		        || std::ranges::find(format.modifiers, this->modifier) != format.modifiers.end());
 	});
 

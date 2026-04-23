@@ -276,7 +276,7 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 
 		if (newWorkspace->bindableMonitor().value()) {
 			auto* monitor = newWorkspace->bindableMonitor().value();
-			monitor->setFocusedWorkspace(newWorkspace);
+			monitor->setActiveWorkspace(newWorkspace);
 			this->bFocusedMonitor = monitor;
 		}
 	} else if (change == "empty") {
@@ -286,13 +286,7 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 
 		if (oldWorkspace != nullptr) {
 			qCInfo(logI3Ipc) << "Deleting" << oldWorkspace->bindableId().value() << name;
-
-			if (this->bFocusedWorkspace == oldWorkspace) {
-				this->bFocusedMonitor->setFocusedWorkspace(nullptr);
-			}
-
 			this->workspaces()->removeObject(oldWorkspace);
-
 			delete oldWorkspace;
 		} else {
 			qCInfo(logI3Ipc) << "Workspace" << name << "has already been deleted";

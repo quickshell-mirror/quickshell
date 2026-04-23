@@ -183,6 +183,23 @@ public:
 	Q_ENUM(Enum);
 };
 
+// Flags for a network interface.
+// In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceInterfaceFlags.
+class NMDeviceInterfaceFlags: public QObject {
+	Q_OBJECT;
+
+public:
+	enum Enum : quint32 {
+		None = 0x0,
+		Up = 0x1,
+		LowerUp = 0x2,
+		Promisc = 0x4,
+		Carrier = 0x10000,
+		LldpClientEnabled = 0x20000,
+	};
+	Q_ENUM(Enum);
+};
+
 // 802.11 specific device encryption and authentication capabilities.
 // In sync with https://networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceWifiCapabilities.
 class NMWirelessCapabilities: public QObject {

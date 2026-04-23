@@ -3,8 +3,10 @@ add_subdirectory(nm)
 qt_add_library(quickshell-network STATIC
 	network.cpp
 	device.cpp
+	wired.cpp
 	wifi.cpp
 	enums.cpp
+	qml.cpp
 )
 
 target_include_directories(quickshell-network PRIVATE 

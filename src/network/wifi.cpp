@@ -19,7 +19,8 @@ namespace {
 QS_LOGGING_CATEGORY(logWifiNetwork, "quickshell.wifinetwork", QtWarningMsg);
 }
 
-WifiNetwork::WifiNetwork(QString ssid, QObject* parent): Network(std::move(ssid), parent) {};
+WifiNetwork::WifiNetwork(QString ssid, NetworkDevice* device, QObject* parent)
+    : Network(std::move(ssid), device, parent) {};
 
 void WifiNetwork::connectWithPsk(const QString& psk) {
 	if (this->bConnected) {
@@ -41,9 +42,6 @@ void WifiDevice::setScannerEnabled(bool enabled) {
 	if (this->bScannerEnabled == enabled) return;
 	this->bScannerEnabled = enabled;
 }
-
-void WifiDevice::networkAdded(WifiNetwork* net) { this->mNetworks.insertObject(net); }
-void WifiDevice::networkRemoved(WifiNetwork* net) { this->mNetworks.removeObject(net); }
 
 } // namespace qs::network
 

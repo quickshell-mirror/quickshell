@@ -595,6 +595,45 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 		}
 	}
 
+	if (props.channels.isEmpty()) {
+		// See spa/param/audio/layout.h and pw utils.
+		using C = PwAudioChannel;
+		// clang-format off
+		switch (props.volumes.length()) {
+		case 1: props.channels = {C::Mono}; break;
+		case 2: props.channels = {C::FrontLeft, C::FrontRight}; break;
+		case 3: props.channels = {C::FrontLeft, C::FrontRight, C::LowFrequencyEffects}; break;
+		case 4: props.channels = {C::FrontLeft, C::FrontRight, C::RearLeft, C::RearRight}; break;
+		case 5:
+			props.channels = {C::FrontLeft, C::FrontRight, C::FrontCenter, C::SideLeft, C::SideRight};
+			break;
+		case 6:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::LowFrequencyEffects,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		case 7:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::RearLeft, C::RearRight,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		case 8:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::LowFrequencyEffects,
+					C::RearLeft, C::RearRight,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		default: break;
+		}
+		// clang-format on
+	}
+
 	if (muteProp) {
 		spa_pod_get_bool(&muteProp->value, &props.mute);
 	}

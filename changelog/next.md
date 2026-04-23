@@ -44,6 +44,7 @@ set shell id.
 - Added `QS_CRASHREPORT_URL` environment variable to allow overriding the crash reporter link.
 - Added `AppId` pragma and `QS_APP_ID` environment variable to allow overriding the desktop application ID.
 - Added `DropExpensiveFonts` pragma and `QS_DROP_EXPENSIVE_FONTS` environment variable which avoids loading fonts which may cause lag and excessive memory usage if many variants are used.
+- Added `DefaultEnv` pragma which sets an environment variable if not already set.
 - Unrecognized pragmas are no longer a hard error for future backward compatibility.
 
 ## Bug Fixes
@@ -73,6 +74,9 @@ set shell id.
 - Fixed JsonAdapter sending unnecessary property changes for primitive values.
 - Fixed JsonAdapter serialization for lists.
 - Fixed pipewire crashes after hotplugging devices and changing default outputs.
+- Fixed launches failing for `--daemonize` on some systems.
+- Fixed screencopy crashing when used across GPUs.
+- Fixed pipewire volumes not working for some pw-pulse clients.
 
 ## Packaging Changes
 

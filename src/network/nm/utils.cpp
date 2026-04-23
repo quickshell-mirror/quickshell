@@ -273,6 +273,7 @@ void manualSettingDemarshall(NMSettingsMap& map) {
 		if (signature == "aa{sv}") return QVariant::fromValue(qdbus_cast<QList<QVariantMap>>(arg));
 		if (signature == "a(ayuay)") return QVariant::fromValue(qdbus_cast<QList<NMIPv6Address>>(arg));
 		if (signature == "a(ayuayu)") return QVariant::fromValue(qdbus_cast<QList<NMIPv6Route>>(arg));
+		if (signature == "a{ss}") return QVariant::fromValue(qdbus_cast<QMap<QString, QString>>(arg));
 
 		return value;
 	};
@@ -291,7 +292,8 @@ QVariant settingTypeFromQml(const QString& group, const QString& key, const QVar
 	if (s == "802-1x.ca-cert" || s == "802-1x.client-cert" || s == "802-1x.private-key"
 	    || s == "802-1x.password-raw" || s == "802-1x.phase2-ca-cert"
 	    || s == "802-1x.phase2-client-cert" || s == "802-1x.phase2-private-key"
-	    || s == "802-11-wireless.ssid")
+	    || s == "802-11-wireless.ssid" || s == "802-3-ethernet.cloned-mac-address"
+	    || s == "802-3-ethernet.mac-address")
 	{
 		if (value.typeId() == QMetaType::QString) {
 			return value.toString().toUtf8();
@@ -423,7 +425,8 @@ QVariant settingTypeFromQml(const QString& group, const QString& key, const QVar
 
 	// QVariantList -> QStringList
 	if (s == "connection.permissions" || s == "ipv4.dns-search" || s == "ipv6.dns-search"
-	    || s == "802-11-wireless.seen-bssids")
+	    || s == "802-11-wireless.seen-bssids" || s == "802-3-ethernet.mac-address-blacklist"
+	    || s == "802-3-ethernet.mac-address-denylist" || s == "802-3-ethernet.s390-subchannels")
 	{
 		if (value.typeId() == QMetaType::QVariantList) {
 			QStringList stringList;
@@ -431,6 +434,18 @@ QVariant settingTypeFromQml(const QString& group, const QString& key, const QVar
 				stringList.append(item.toString());
 			}
 			return stringList;
+		}
+		return QVariant();
+	}
+
+	// QVariantMap -> QMap<QString, QString>
+	if (s == "802-3-ethernet.s390-options") {
+		if (value.canConvert<QVariantMap>()) {
+			QMap<QString, QString> r;
+			for (const auto& [key, val]: value.toMap().asKeyValueRange()) {
+				r.insert(key, val.toString());
+			}
+			return QVariant::fromValue(r);
 		}
 		return QVariant();
 	}
@@ -494,6 +509,15 @@ QVariant settingTypeToQml(const QVariant& value) {
 			        }
 			    )
 			);
+		}
+		return out;
+	}
+
+	// QMap<QString, QString> -> QVariantMap
+	if (value.userType() == qMetaTypeId<QMap<QString, QString>>()) {
+		QVariantMap out;
+		for (const auto& [key, val]: value.value<QMap<QString, QString>>().asKeyValueRange()) {
+			out.insert(key, val);
 		}
 		return out;
 	}

@@ -12,7 +12,6 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
-#include <qguiapplication.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -179,10 +178,14 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto [liveInstances, deadInstances] =
+		auto [liveInstances, mismatchedInstances, deadInstances] =
 		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		liveInstances.removeIf([&](const InstanceLockInfo& info) {
+			return !info.instance.instanceId.startsWith(*cmd.instance.id);
+		});
+
+		mismatchedInstances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
 		});
 
@@ -193,6 +196,18 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		auto instances = liveInstances.isEmpty() && deadFallback ? deadInstances : liveInstances;
 
 		if (instances.isEmpty()) {
+			if (!mismatchedInstances.isEmpty()) {
+				qCInfo(logBare) << "No running instances on the current display" << getDisplayConnection()
+				                << "start with" << *cmd.instance.id;
+
+				qCInfo(logBare) << "Some instances on other displays match:";
+
+				for (auto& instance: mismatchedInstances) {
+					qCInfo(logBare).noquote().nospace()
+					    << " - " << instance.instance.instanceId << " (" << instance.instance.display << ')';
+				}
+			}
+
 			if (deadFallback) {
 				qCInfo(logBare) << "No instances start with" << *cmd.instance.id;
 			} else {
@@ -213,7 +228,7 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 			for (auto& instance: instances) {
 				qCInfo(logBare).noquote() << " -" << instance.instance.instanceId
-				                          << (instance.pid == -1 ? " (dead)" : "");
+				                          << (instance.pid == -1 ? "(dead)" : "");
 			}
 
 			return -1;
@@ -230,7 +245,7 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto [liveInstances, deadInstances] =
+		auto [liveInstances, mismatchedInstances, deadInstances] =
 		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		auto instances = liveInstances;
@@ -250,6 +265,16 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 				sortInstances(deadInstances, cmd.config.newest);
 				for (auto& instance: deadInstances) {
 					qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+				}
+			} else if (!mismatchedInstances.isEmpty()) {
+				qCInfo(logBare) << "No running instances for" << configFilePath
+				                << " present on the current display" << getDisplayConnection();
+
+				qCInfo(logBare) << "Some instances on other displays match:";
+
+				for (auto& instance: mismatchedInstances) {
+					qCInfo(logBare).noquote().nospace()
+					    << " - " << instance.instance.instanceId << " (" << instance.instance.display << ')';
 				}
 			} else {
 				qCInfo(logBare) << "No running instances for" << configFilePath;
@@ -314,7 +339,7 @@ int listInstances(CommandState& cmd) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	auto [liveInstances, deadInstances] = QsPaths::collectInstances(
+	auto [liveInstances, mismatchedInstances, deadInstances] = QsPaths::collectInstances(
 	    path,
 	    cmd.config.anyDisplay || cmd.instance.all ? "" : getDisplayConnection()
 	);
@@ -547,16 +572,17 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 }
 
 QString getDisplayConnection() {
-	auto platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+	// Doesn't actually have to match what qt picks, but will 99% of the time.
+	// Running quickshell under wayland in x11 mode doesn't really make any sense.
 	auto wlDisplay = qEnvironmentVariable("WAYLAND_DISPLAY");
 	auto xDisplay = qEnvironmentVariable("DISPLAY");
 
-	if (platform == "wayland" || (platform.isEmpty() && !wlDisplay.isEmpty())) {
-		return "wayland," + wlDisplay;
-	} else if (platform == "xcb" || (platform.isEmpty() && !xDisplay.isEmpty())) {
-		return "x11," + xDisplay;
+	if (!wlDisplay.isEmpty()) {
+		return "wayland/" + wlDisplay;
+	} else if (!xDisplay.isEmpty()) {
+		return "x11/" + xDisplay;
 	} else {
-		return "unk," + QGuiApplication::platformName();
+		return "unk";
 	}
 }
 

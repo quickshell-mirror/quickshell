@@ -141,6 +141,8 @@ void ScreencopyView::componentComplete() {
 		    this,
 		    &ScreencopyView::onBuffersReady
 		);
+
+		bufManager->initWindow(this->window());
 	} else {
 		this->onBuffersReady();
 	}

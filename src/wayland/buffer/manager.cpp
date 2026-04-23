@@ -1,5 +1,8 @@
-#include "manager.hpp"
 
+#include "manager.hpp"
+#include <cstdint>
+
+#include <drm_fourcc.h>
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -11,6 +14,7 @@
 #include <qvectornd.h>
 
 #include "../../core/logcat.hpp"
+#include "../../window/proxywindow.hpp"
 #include "dmabuf.hpp"
 #include "manager_p.hpp"
 #include "qsg.hpp"
@@ -22,12 +26,25 @@ namespace {
 QS_LOGGING_CATEGORY(logBuffer, "quickshell.wayland.buffer", QtWarningMsg);
 }
 
+void WlBufferRequest::DmaFormat::pushMod(uint64_t mod) {
+	if (mod == DRM_FORMAT_MOD_INVALID) {
+		this->implicit = true;
+	} else {
+		this->modifiers.push(mod);
+	}
+}
+
+bool WlBufferRequest::DmaFormat::modsDefined() const {
+	return this->implicit || !this->modifiers.isEmpty();
+}
+
 void WlBufferRequest::reset() { *this = WlBufferRequest(); }
 
 WlBuffer* WlBufferSwapchain::createBackbuffer(const WlBufferRequest& request, bool* newBuffer) {
+	static const bool noReuse = qEnvironmentVariableIsSet("QS_NO_BUFFER_REUSE");
 	auto& buffer = this->presentSecondBuffer ? this->buffer1 : this->buffer2;
 
-	if (!buffer || !buffer->isCompatible(request)) {
+	if (!buffer || !buffer->isCompatible(request) || noReuse) {
 		buffer.reset(WlBufferManager::instance()->createBuffer(request));
 		if (newBuffer) *newBuffer = true;
 	}
@@ -44,7 +61,34 @@ WlBufferManager* WlBufferManager::instance() {
 	return instance;
 }
 
-bool WlBufferManager::isReady() const { return this->p->mReady; }
+void WlBufferManager::initWindow(QQuickWindow* window) {
+	if (this->p->mRenderFormatsReady) return;
+	qCDebug(logBuffer) << "Initializing buffer manager";
+
+	static bool initWaiting = false;
+	if (!window || !window->isSceneGraphInitialized()) {
+		if (initWaiting) return;
+		initWaiting = true;
+		qCDebug(logBuffer) << "Waiting for scene graph to come online";
+		ProxiedWindow::callOnScenegraphInit([this](QQuickWindow* w) { this->initWindow(w); });
+		return;
+	}
+
+	qCDebug(logBuffer) << "Initializing render formats";
+	auto success = this->p->dmabuf.initRenderFormats(window);
+
+	if (!success) {
+		qCWarning(logBuffer) << "Render format initialization failed. All buffers will fall back to SHM.";
+		this->p->mRenderFormatsFailed = true;
+	}
+
+	this->p->mRenderFormatsReady = true;
+	if (this->p->mDmabufFormatsReady) emit this->ready();
+}
+
+bool WlBufferManager::isReady() const {
+	return this->p->mDmabufFormatsReady && this->p->mRenderFormatsReady;
+}
 
 [[nodiscard]] WlBuffer* WlBufferManager::createBuffer(const WlBufferRequest& request) {
 	static const bool dmabufDisabled = qEnvironmentVariableIsSet("QS_DISABLE_DMABUF");
@@ -54,11 +98,16 @@ bool WlBufferManager::isReady() const { return this->p->mReady; }
 	qCDebug(logBuffer).nospace() << "  Dmabuf requests on device " << request.dmabuf.device
 	                             << " (disabled: " << dmabufDisabled << ')';
 
-	for (const auto& [format, modifiers]: request.dmabuf.formats) {
-		qCDebug(logBuffer).nospace() << "    Format " << dmabuf::FourCCStr(format)
-		                             << (modifiers.length() == 0 ? " (No modifiers specified)" : "");
+	for (const auto& format: request.dmabuf.formats) {
+		qCDebug(logBuffer).nospace() << "    Format " << dmabuf::FourCCStr(format.format)
+		                             << (format.modifiers.length() == 0 ? " (No modifiers specified)"
+		                                                                : "");
 
-		for (const auto& modifier: modifiers) {
+		if (format.implicit) {
+			qCDebug(logBuffer) << "      Implicit Modifier";
+		}
+
+		for (const auto& modifier: format.modifiers) {
 			qCDebug(logBuffer) << "      Explicit Modifier" << dmabuf::FourCCModStr(modifier);
 		}
 	}
@@ -74,7 +123,7 @@ bool WlBufferManager::isReady() const { return this->p->mReady; }
 		return nullptr;
 	}
 
-	if (!dmabufDisabled) {
+	if (!dmabufDisabled && !this->p->mRenderFormatsFailed) {
 		if (auto* buf = this->p->dmabuf.createDmabuf(request)) return buf;
 		qCWarning(logBuffer) << "DMA buffer creation failed, falling back to SHM.";
 	}
@@ -87,8 +136,8 @@ WlBufferManagerPrivate::WlBufferManagerPrivate(WlBufferManager* manager)
     , dmabuf(this) {}
 
 void WlBufferManagerPrivate::dmabufReady() {
-	this->mReady = true;
-	emit this->manager->ready();
+	this->mDmabufFormatsReady = true;
+	if (this->mRenderFormatsReady) emit this->manager->ready();
 }
 
 WlBufferQSGDisplayNode::WlBufferQSGDisplayNode(QQuickWindow* window)

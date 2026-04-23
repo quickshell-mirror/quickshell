@@ -1,4 +1,5 @@
 #include "proxywindow.hpp"
+#include <functional>
 
 #include <private/qquickwindow_p.h>
 #include <qcontainerfwd.h>
@@ -609,6 +610,33 @@ void ProxyWindowAttached::setWindow(ProxyWindowBase* window) {
 	auto* parentInterface = window ? qobject_cast<WindowInterface*>(window->parent()) : nullptr;
 	this->mWindowInterface = parentInterface ? static_cast<QObject*>(parentInterface) : window;
 	emit this->windowChanged();
+}
+
+ProxiedWindow::ProxiedWindow(ProxyWindowBase* proxy, QWindow* parent)
+    : QQuickWindow(parent)
+    , mProxy(proxy) {
+	QObject::connect(
+	    this,
+	    &QQuickWindow::sceneGraphInitialized,
+	    this,
+	    &ProxiedWindow::onSceneGraphInitialized
+	);
+}
+
+namespace {
+QList<std::function<void(QQuickWindow*)>> SCENEGRAPH_INIT_CALLBACKS; // NOLINT
+}
+
+void ProxiedWindow::callOnScenegraphInit(std::function<void(QQuickWindow*)> cb) { // NOLINT
+	SCENEGRAPH_INIT_CALLBACKS.emplaceBack(cb);
+}
+
+void ProxiedWindow::onSceneGraphInitialized() {
+	for (auto& cb: SCENEGRAPH_INIT_CALLBACKS) {
+		cb(this);
+	}
+
+	SCENEGRAPH_INIT_CALLBACKS.clear();
 }
 
 bool ProxiedWindow::event(QEvent* event) {
