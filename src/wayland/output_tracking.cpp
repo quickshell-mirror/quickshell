@@ -11,6 +11,15 @@
 
 namespace qs::wayland {
 
+WlOutputTracker::WlOutputTracker() {
+	QObject::connect(
+	    static_cast<QGuiApplication*>(QGuiApplication::instance()), // NOLINT
+	    &QGuiApplication::screenRemoved,
+	    this,
+	    &WlOutputTracker::onQScreenRemoved
+	);
+}
+
 void WlOutputTracker::addOutput(::wl_output* output) {
 	auto* display = QtWaylandClient::QWaylandIntegration::instance()->display();
 
@@ -68,6 +77,13 @@ void WlOutputTracker::onQScreenAdded(QScreen* screen) {
 			}
 		}
 	}
+}
+
+void WlOutputTracker::onQScreenRemoved(QScreen* screen) {
+	// FIXME: this cannot catch wl_output removals before full initialization.
+	// This isn't a correctness problem because the screen is never made available to users
+	// or dereferenced but it does leave an extra dangling pointer in the list.
+	if (this->mScreens.removeOne(screen)) emit this->screenRemoved(screen);
 }
 
 } // namespace qs::wayland

@@ -77,6 +77,7 @@ set shell id.
 - Fixed launches failing for `--daemonize` on some systems.
 - Fixed screencopy crashing when used across GPUs.
 - Fixed pipewire volumes not working for some pw-pulse clients.
+- Fixed nulls in Toplevel.screens after unplugging a monitor.
 
 ## Packaging Changes
 
