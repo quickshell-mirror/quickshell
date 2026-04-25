@@ -78,6 +78,7 @@ set shell id.
 - Fixed screencopy crashing when used across GPUs.
 - Fixed pipewire volumes not working for some pw-pulse clients.
 - Fixed nulls in Toplevel.screens after unplugging a monitor.
+- Fixed some DbusMenu updates being dropped from apps.
 
 ## Packaging Changes
 
