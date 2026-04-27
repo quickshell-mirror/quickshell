@@ -74,10 +74,23 @@ HyprlandIpc::HyprlandIpc() {
 
 	// clang-format on
 
-	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
-	this->refreshMonitors(true);
-	this->refreshWorkspaces(true);
-	this->refreshToplevels();
+	this->makeRequest("j/status", [&, this](bool success, QByteArray resp) {
+		if (success) {
+			this->bUsingLua = [&]() {
+				if (resp == "unknown request") return false;
+				auto json = QJsonDocument::fromJson(resp).object();
+				auto provider = json.value("configProvider");
+				return provider == "lua";
+			}();
+		} else {
+			qCWarning(logHyprlandIpc) << "Hyprland ipc status request failed.";
+		}
+
+		this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
+		this->refreshMonitors(true);
+		this->refreshWorkspaces(true);
+		this->refreshToplevels();
+	});
 }
 
 QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath; }

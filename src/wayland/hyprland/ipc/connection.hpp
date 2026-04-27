@@ -81,6 +81,8 @@ public:
 
 	[[nodiscard]] HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
 
+	[[nodiscard]] QBindable<bool> bindableUsingLua() const { return &this->bUsingLua; }
+
 	[[nodiscard]] QBindable<HyprlandMonitor*> bindableFocusedMonitor() const {
 		return &this->bFocusedMonitor;
 	}
@@ -116,6 +118,7 @@ signals:
 	void connected();
 	void rawEvent(HyprlandIpcEvent* event);
 
+	void usingLuaChanged();
 	void focusedMonitorChanged();
 	void focusedWorkspaceChanged();
 	void activeToplevelChanged();
@@ -154,6 +157,8 @@ private:
 	ObjectModel<HyprlandToplevel> mToplevels {this};
 
 	HyprlandIpcEvent event {this};
+
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandIpc, bool, bUsingLua, &HyprlandIpc::usingLuaChanged);
 
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    HyprlandIpc,

@@ -151,7 +151,20 @@ void HyprlandWorkspace::clearUrgent() {
 }
 
 void HyprlandWorkspace::activate() {
-	this->ipc->dispatch(QString("workspace %1").arg(this->bName.value()));
+	if (this->ipc->bindableUsingLua().value()) {
+		QString name;
+		for (const auto c: this->bName.value()) {
+			switch (c.toLatin1()) {
+			case '"': name.append("\\\""); break;
+			case '\\': name.append("\\\\"); break;
+			default: name.append(c); break;
+			}
+		}
+
+		this->ipc->dispatch(QString("hl.dsp.focus({ workspace = \"%1\" })").arg(name));
+	} else {
+		this->ipc->dispatch(QString("workspace %1").arg(this->bName.value()));
+	}
 }
 
 } // namespace qs::hyprland::ipc

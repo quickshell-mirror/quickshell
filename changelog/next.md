@@ -31,6 +31,7 @@ set shell id.
 - Added per-corner radius support to Region.
 - Added ColorQuantizer region selection.
 - Added dialog window support to FloatingWindow.
+- Added lua config support to Hyprland module.
 
 ## Other Changes
 
