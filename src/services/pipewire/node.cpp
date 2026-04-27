@@ -193,7 +193,7 @@ void PwNode::initProps(const spa_dict* props) {
 				qCCritical(
 				    logNode
 				) << this
-				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
+				  << "has a device.id property that does not correspond to a device object. Id:" << id;
 			}
 		}
 	}
@@ -580,7 +580,7 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 		const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
 		spa_pod* iter = nullptr;
 		SPA_POD_ARRAY_FOREACH(volumes, iter) {
-			// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
+			// Cubing behavior found in MPD source, and appears to correspond to everyone else's measurements correctly.
 			auto linear = *reinterpret_cast<float*>(iter);
 			auto visual = std::cbrt(linear);
 			props.volumes.push_back(visual);

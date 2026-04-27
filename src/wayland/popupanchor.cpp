@@ -21,7 +21,7 @@ void WaylandPopupPositioner::reposition(PopupAnchor* anchor, QWindow* window, bo
 
 	anchor->updateAnchor();
 
-	// If a popup becomes invisble after creation ensure the _q properties will
+	// If a popup becomes invisible after creation ensure the _q properties will
 	// be set and not ignored because the rest is the same.
 	anchor->updatePlacement({popupRole != nullptr, 0}, window->size());
 

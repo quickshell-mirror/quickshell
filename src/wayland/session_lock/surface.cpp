@@ -31,7 +31,7 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 	if (waylandScreen != nullptr && !waylandScreen->isPlaceholder() && waylandScreen->output()) {
 		output = waylandScreen->output();
 	} else {
-		qFatal() << "Session lock screen does not corrospond to a real screen. Force closing window";
+		qFatal() << "Session lock screen does not correspond to a real screen. Force closing window";
 	}
 
 	this->init(this->ext->lock->get_lock_surface(window->waylandSurface()->object(), output));
@@ -146,7 +146,7 @@ void QSWaylandSessionLockSurface::initVisible() {
 #include <qtclasshelpermacros.h>
 #include <qtdeprecationdefinitions.h>
 
-// As of Qt 6.9, a null buffer is unconditionally comitted to the surface. To avoid this, we
+// As of Qt 6.9, a null buffer is unconditionally committed to the surface. To avoid this, we
 // cast the window to a subclass with access to mSurface, then swap mSurface during
 // QWaylandWindow::initWindow to avoid the null commit.
 

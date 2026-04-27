@@ -16,7 +16,7 @@ class I3Monitor: public QObject {
 	Q_PROPERTY(qint32 id READ default NOTIFY idChanged BINDABLE bindableId);
 	/// The name of this monitor
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
-	/// Wether this monitor is turned on or not
+	/// Whether this monitor is turned on or not
 	Q_PROPERTY(bool power READ default NOTIFY powerChanged BINDABLE bindablePower);
 	/// The currently active workspace on this monitor, May be null.
 	Q_PROPERTY(qs::i3::ipc::I3Workspace* activeWorkspace READ default NOTIFY activeWorkspaceChanged BINDABLE bindableActiveWorkspace);

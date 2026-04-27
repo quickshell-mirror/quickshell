@@ -32,11 +32,11 @@ public:
 
 signals:
 	// This signal is sent once the compositor considers the session to be fully locked.
-	// This corrosponds to the ext_session_lock_v1::locked event.
+	// This corresponds to the ext_session_lock_v1::locked event.
 	void locked();
 
 	// This signal is sent once the compositor considers the session to be unlocked.
-	// This corrosponds to the ext_session_lock_v1::finished event.
+	// This corresponds to the ext_session_lock_v1::finished event.
 	//
 	// The session lock will end in one of three cases.
 	// 1. unlock() is called.

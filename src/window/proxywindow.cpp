@@ -243,7 +243,7 @@ void ProxyWindowBase::completeWindow() {
 	this->mContentItem->setWidth(this->width());
 	this->mContentItem->setHeight(this->height());
 
-	// without this the dangling screen pointer wont be updated to a real screen
+	// without this the dangling screen pointer won't be updated to a real screen
 	emit this->screenChanged();
 }
 

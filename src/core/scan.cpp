@@ -89,7 +89,7 @@ void QmlScanner::scanDir(const QDir& dir) {
 		QString qmldir;
 		auto stream = QTextStream(&qmldir);
 
-		// cant derive a module name if not in shell path
+		// can't derive a module name if not in shell path
 		if (path.startsWith(this->rootPath.path())) {
 			auto end = path.sliced(this->rootPath.path().length());
 
@@ -160,7 +160,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			if (!singleton && line == "pragma Singleton") {
 				singleton = true;
 			} else if (line.startsWith("import")) {
-				// we dont care about "import qs" as we always load the root folder
+				// we don't care about "import qs" as we always load the root folder
 				if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
 					importCursor += 4;
 					QString path;
@@ -211,7 +211,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 				mask = false;
 			}
 			if (!sourceMasked && mask) hideMask = true;
-			mask = sourceMasked || mask; // cant unmask if a nested if passes
+			mask = sourceMasked || mask; // can't unmask if a nested if passes
 			ifScopes.append(mask);
 			if (mask) isOverridden = true;
 			sourceMasked = mask;

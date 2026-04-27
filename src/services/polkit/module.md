@@ -41,7 +41,7 @@ A conversation can take multiple turns, for example if second factors are involv
 If authentication fails, we automatically create a fresh session so the user can try again.
 The @@Quickshell.Services.Polkit.AuthFlow.authenticationFailed signal is emitted in this case.
 
-If authentication is successful, you receive the @@Quickshell.Services.Polkit.AuthFlow.authenticationSucceeeded signal. At this point, the dialog can be closed.
+If authentication is successful, you receive the @@Quickshell.Services.Polkit.AuthFlow.authenticationSucceeded signal. At this point, the dialog can be closed.
 If additional requests are queued, you will receive the @@Quickshell.Services.Polkit.PolkitAgent.authenticationRequestStarted signal again.
 
 #### Cancelled requests

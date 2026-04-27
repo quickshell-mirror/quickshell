@@ -78,7 +78,9 @@ void WlBufferManager::initWindow(QQuickWindow* window) {
 	auto success = this->p->dmabuf.initRenderFormats(window);
 
 	if (!success) {
-		qCWarning(logBuffer) << "Render format initialization failed. All buffers will fall back to SHM.";
+		qCWarning(
+		    logBuffer
+		) << "Render format initialization failed. All buffers will fall back to SHM.";
 		this->p->mRenderFormatsFailed = true;
 	}
 

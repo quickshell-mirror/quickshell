@@ -530,7 +530,7 @@ void ThreadLogging::initFs() {
 	    Qt::QueuedConnection
 	);
 
-	qCDebug(logLogging) << "Switched threaded logger to queued eventloop connection.";
+	qCDebug(logLogging) << "Switched threaded logger to queued event loop connection.";
 }
 
 void ThreadLogging::onMessage(const LogMessage& msg, bool showInSparse) {

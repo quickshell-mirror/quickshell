@@ -89,7 +89,7 @@ class ColorQuantizer
 
 	/// The size to rescale the image to, when rescaleSize is 0 then no scaling will be done.
 	/// > [!NOTE] Results from color quantization doesn't suffer much when rescaling, it's
-	/// > reccommended to rescale, otherwise the quantization process will take much longer.
+	/// > recommended to rescale, otherwise the quantization process will take much longer.
 	Q_PROPERTY(qreal rescaleSize READ rescaleSize WRITE setRescaleSize NOTIFY rescaleSizeChanged);
 
 public:

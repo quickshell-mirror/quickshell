@@ -224,13 +224,13 @@ void I3IpcController::handleRunCommand(I3IpcEvent* event) {
 
 		if (!success) {
 			const QString error = obj["error"].toString();
-			qCWarning(logI3Ipc) << "Error occured while running command:" << error;
+			qCWarning(logI3Ipc) << "Error occurred while running command:" << error;
 		}
 	}
 }
 
 void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
-	// If a workspace doesn't exist, and is being switch to, no focus change event is emited,
+	// If a workspace doesn't exist, and is being switch to, no focus change event is emitted,
 	// only the init one, which does not contain the previously focused workspace
 	auto change = event->mData["change"];
 

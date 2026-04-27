@@ -139,7 +139,7 @@ void NMWirelessDevice::onSettingsLoaded(NMSettings* settings) {
 }
 
 void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	// Find an exisiting network with connection settings that matches the active
+	// Find an existing network with connection settings that matches the active
 	const QString activeConnPath = active->connection().path();
 	for (const auto& net: this->mNetworks.values()) {
 		for (auto* settings: net->settings()) {

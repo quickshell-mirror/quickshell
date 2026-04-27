@@ -119,7 +119,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 					return -1;
 				}
 			} else {
-				qCCritical(logBare) << "Could not open maifest at path" << *cmd.config.manifest;
+				qCCritical(logBare) << "Could not open manifest at path" << *cmd.config.manifest;
 				return -1;
 			}
 		} else {

@@ -233,7 +233,7 @@ class PwNodeAudioIface: public QObject {
 	///
 	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
 	Q_PROPERTY(QVector<qs::service::pipewire::PwAudioChannel::Enum> channels READ channels NOTIFY channelsChanged);
-	/// The volumes of each audio channel individually. Each entry corrosponds to
+	/// The volumes of each audio channel individually. Each entry corresponds to
 	/// the volume of the channel at the same index in @@channels. @@volumes and @@channels
 	/// will always be the same length.
 	///
@@ -274,13 +274,13 @@ class PwNodeIface: public PwObjectIface {
 	/// Mainly useful for debugging. You can inspect the node directly
 	/// with `pw-cli i <id>`.
 	Q_PROPERTY(quint32 id READ id CONSTANT);
-	/// The node's name, corrosponding to the object's `node.name` property.
+	/// The node's name, corresponding to the object's `node.name` property.
 	Q_PROPERTY(QString name READ name CONSTANT);
-	/// The node's description, corrosponding to the object's `node.description` property.
+	/// The node's description, corresponding to the object's `node.description` property.
 	///
 	/// May be empty. Generally more human readable than @@name.
 	Q_PROPERTY(QString description READ description CONSTANT);
-	/// The node's nickname, corrosponding to the object's `node.nickname` property.
+	/// The node's nickname, corresponding to the object's `node.nickname` property.
 	///
 	/// May be empty. Generally but not always more human readable than @@description.
 	Q_PROPERTY(QString nickname READ nickname CONSTANT);

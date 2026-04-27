@@ -28,7 +28,7 @@ class Network: public QObject {
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// The device this network belongs to.
 	Q_PROPERTY(NetworkDevice* device READ device CONSTANT);
-	/// A list of NetworkManager connnection settings profiles for this network.
+	/// A list of NetworkManager connection settings profiles for this network.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend. 
 	Q_PROPERTY(QList<NMSettings*> nmSettings READ default NOTIFY nmSettingsChanged BINDABLE bindableNmSettings);

@@ -15,7 +15,7 @@
 /// Monitor object useful for setting the monitor for a @@QsWindow
 /// or querying information about the monitor.
 ///
-/// > [!WARNING] If the monitor is disconnected than any stored copies of its ShellMonitor will
+/// > [!WARNING] If the monitor is disconnected, then any stored copies of its ShellMonitor will
 /// > be marked as dangling and all properties will return default values.
 /// > Reconnecting the monitor will not reconnect it to the ShellMonitor object.
 ///

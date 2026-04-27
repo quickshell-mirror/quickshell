@@ -1121,7 +1121,7 @@ WlBufferQSGTexture* WlDmaBuffer::createQsgTextureVulkan(QQuickWindow* window) co
 	VkDeviceMemory memory = VK_NULL_HANDLE;
 
 	// dup() is required because vkAllocateMemory with VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
-	// takes ownership of the fd on succcess. Without dup, WlDmaBuffer would double-close.
+	// takes ownership of the fd on success. Without dup, WlDmaBuffer would double-close.
 	const int dupFd =
 	    dup(this->planes[0].fd); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 	if (dupFd < 0) {
