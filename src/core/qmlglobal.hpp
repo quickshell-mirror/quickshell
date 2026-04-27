@@ -244,7 +244,7 @@ public:
 	/// it is assumed that all unreleased features are present. The unreleased feature list
 	/// may be omitted.
 	///
-	/// > [!NOTE] You can feature gate code blocks using Quickshell's preprocessor which
+	/// > [!NOTE] You can version gate code blocks using Quickshell's preprocessor which
 	/// > has the same function available.
 	/// >
 	/// > ```qml
@@ -254,6 +254,17 @@ public:
 	/// > ```
 	Q_INVOKABLE static bool hasVersion(qint32 major, qint32 minor, const QStringList& features);
 	Q_INVOKABLE static bool hasVersion(qint32 major, qint32 minor);
+	/// Check if Qt's version is at least `major.minor`.
+	///
+	/// > [!NOTE] You can version gate code blocks using Quickshell's preprocessor which
+	/// > has the same function available.
+	/// >
+	/// > ```qml
+	/// > //@ if hasVersion(6, 10)
+	/// > ...
+	/// > //@ endif
+	/// > ```
+	Q_INVOKABLE static bool hasQtVersion(qint32 major, qint32 minor);
 
 	void clearReloadPopupInhibit() { this->mInhibitReloadPopup = false; }
 	[[nodiscard]] bool isReloadPopupInhibited() const { return this->mInhibitReloadPopup; }

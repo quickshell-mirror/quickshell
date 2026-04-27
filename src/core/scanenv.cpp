@@ -2,6 +2,8 @@
 
 #include <qcontainerfwd.h>
 #include <qtenvironmentvariables.h>
+#include <qtversion.h>
+#include <qversionnumber.h>
 
 #include "build.hpp"
 
@@ -18,6 +20,12 @@ bool PreprocEnv::hasVersion(int major, int minor, const QStringList& features) {
 	}
 
 	return QS_VERSION_MAJOR == major && QS_VERSION_MINOR == minor;
+}
+
+bool PreprocEnv::hasQtVersion(int major, int minor) {
+	auto qtVersion = QVersionNumber::fromString(qVersion());
+	auto requiredVersion = QVersionNumber(major, minor);
+	return qtVersion >= requiredVersion;
 }
 
 QString PreprocEnv::env(const QString& variable) {
