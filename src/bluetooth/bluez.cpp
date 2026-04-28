@@ -1,18 +1,11 @@
 #include "bluez.hpp"
 
-#include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qdbusextratypes.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qobject.h>
-#include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
-#include "../dbus/dbus_objectmanager_types.hpp"
-#include "../dbus/objectmanager.hpp"
-#include "adapter.hpp"
-#include "device.hpp"
 
 namespace qs::bluetooth {
 

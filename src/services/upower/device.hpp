@@ -8,7 +8,7 @@
 
 #include "../../core/doc.hpp"
 #include "../../dbus/properties.hpp"
-#include "dbus_device.h"
+#include "dbus_upower_device.h"
 
 namespace qs::service::upower {
 

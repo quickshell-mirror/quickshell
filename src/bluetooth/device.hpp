@@ -6,6 +6,8 @@
 #include <qtypes.h>
 
 #include "../dbus/properties.hpp"
+#include "adapter.hpp"
+#include "bluez.hpp"
 #include "dbus_device.h"
 
 namespace qs::bluetooth {

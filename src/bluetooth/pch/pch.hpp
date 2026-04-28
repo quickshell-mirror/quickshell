@@ -1,0 +1,10 @@
+#include <qcontainerfwd.h>
+#include <qdbusextratypes.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qdebug.h>
+#include <qstring.h>
+#include "../core/logcat.hpp"
+#include <qdbusconnection.h>
+#include <qloggingcategory.h>
+#include <qlogging.h>

@@ -2,7 +2,6 @@
 #include <algorithm>
 
 #include <qatomic.h>
-#include <qcolor.h>
 #include <qdatetime.h>
 #include <qimage.h>
 #include <qlist.h>

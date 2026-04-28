@@ -10,7 +10,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
-#include "dbus_device.h"
+#include "dbus_upower_device.h"
 
 using namespace qs::dbus;
 

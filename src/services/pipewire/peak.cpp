@@ -32,7 +32,7 @@
 #include "qml.hpp"
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-designated-field-initializers"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 namespace qs::service::pipewire {
 

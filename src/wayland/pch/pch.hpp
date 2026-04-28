@@ -1,0 +1,16 @@
+#include <private/qwaylandinputdevice_p.h>
+#include <private/qwaylandscreen_p.h>
+#include <qdebug.h>
+#include <qguiapplication.h>
+#include <qquickwindow.h>
+#include <qsize.h>
+#include <algorithm>
+#include <private/qwaylandshellsurface_p.h>
+#include <qlist.h>
+#include <qnamespace.h>
+#include <qwindow.h>
+#include <private/qwaylandintegration_p.h>
+#include <qcontainerfwd.h>
+#include <qtypes.h>
+#include <private/qwaylanddisplay_p.h>
+#include <qwaylandclientextension.h>

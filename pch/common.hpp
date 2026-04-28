@@ -1,0 +1,10 @@
+#include <chrono>
+#include <memory>
+#include <vector>
+#include <qdebug.h>
+#include <qobject.h>
+#include <qmetatype.h>
+#include <qstring.h>
+#include <qchar.h>
+#include <qlist.h>
+#include <qabstractitemmodel.h>

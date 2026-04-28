@@ -8,14 +8,8 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qstring.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
 
 #include "../core/logcat.hpp"
-#include "../dbus/properties.hpp"
-#include "adapter.hpp"
-#include "bluez.hpp"
-#include "dbus_device.h"
 
 namespace qs::bluetooth {
 

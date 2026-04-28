@@ -10,6 +10,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qurl.h>
+#include <qcolor.h>
 
 class ColorQuantizerOperation
     : public QObject

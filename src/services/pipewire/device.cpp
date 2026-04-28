@@ -1,28 +1,21 @@
 #include "device.hpp"
 #include <array>
 #include <cstdint>
-#include <functional>
 #include <utility>
 
-#include <pipewire/device.h>
 #include <qcontainerfwd.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
 #include <spa/param/param.h>
 #include <spa/param/props.h>
 #include <spa/param/route.h>
-#include <spa/pod/builder.h>
 #include <spa/pod/parser.h>
 #include <spa/pod/pod.h>
 #include <spa/pod/vararg.h>
 #include <spa/utils/type.h>
 
 #include "../../core/logcat.hpp"
-#include "core.hpp"
-#include "node.hpp"
 
 namespace qs::service::pipewire {
 

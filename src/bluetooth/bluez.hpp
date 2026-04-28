@@ -11,6 +11,8 @@
 #include "../core/model.hpp"
 #include "../dbus/dbus_objectmanager_types.hpp"
 #include "../dbus/objectmanager.hpp"
+#include "adapter.hpp"
+#include "device.hpp"
 
 namespace qs::bluetooth {
 

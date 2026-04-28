@@ -1,0 +1,32 @@
+qs_p += {
+	'Quickshell.Services.Pipewire': {
+		'sources': files(
+			'connection.cpp',
+			'core.cpp',
+			'defaults.cpp',
+			'device.cpp',
+			'link.cpp',
+			'metadata.cpp',
+			'node.cpp',
+			'peak.cpp',
+			'qml.cpp',
+			'registry.cpp',
+		),
+		'moc_headers': files(
+			'audiochannel.hpp',
+			'connection.hpp',
+			'core.hpp',
+			'defaults.hpp',
+			'device.hpp',
+			'link.hpp',
+			'metadata.hpp',
+			'node.hpp',
+			'peak.hpp',
+			'qml.hpp',
+			'registry.hpp',
+		),
+		'dependencies': deps,
+		'include_directories': [include_directories('.')],
+		'cpp_pch': files('pch/pch.hpp')[0].full_path(),
+	},
+}

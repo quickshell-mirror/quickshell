@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="@prefix@">
+    <file alias="@path@">@file@</file>
+  </qresource>
+</RCC>
