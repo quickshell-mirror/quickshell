@@ -257,9 +257,21 @@ void LogManager::filterCategory(QLoggingCategory* category) {
 		filter.warn = filter.info || instance->mDefaultLevel == QtWarningMsg || defaultLevel == QtWarningMsg;
 		filter.critical = filter.warn || instance->mDefaultLevel == QtCriticalMsg || defaultLevel == QtCriticalMsg;
 		// clang-format on
-	} else if (instance->lastCategoryFilter) {
-		instance->lastCategoryFilter(category);
-		filter = CategoryFilter(category);
+	} else {
+		if (instance->lastCategoryFilter) {
+			instance->lastCategoryFilter(category);
+			filter = CategoryFilter(category);
+		}
+
+		// Hides virtual/override property warnings.
+		// Getting rid of this is blocked by https://qt-project.atlassian.net/browse/QTBUG-145977
+		// for internal Quickshell types, and may still be desired for shells that want to maintain
+		// compatibility with Qt versions prior to 6.11.
+		if (categoryName == QLatin1StringView("qt.qml.propertyCache.append")
+		    && !qEnvironmentVariableIsSet("QS_NO_FILTER_QT_LOGS"))
+		{
+			filter.warn = false;
+		}
 	}
 
 	for (const auto& rule: *instance->rules) {
