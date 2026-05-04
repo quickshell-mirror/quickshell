@@ -1,4 +1,6 @@
 #include "item.hpp"
+#include <algorithm>
+#include <initializer_list>
 
 #include <qdbuserror.h>
 #include <qdbusextratypes.h>
@@ -37,6 +39,60 @@ using namespace qs::menu::platform;
 QS_LOGGING_CATEGORY(logStatusNotifierItem, "quickshell.service.sni.item", QtWarningMsg);
 
 namespace qs::service::sni {
+namespace {
+
+const DBusSniIconPixmap* closestPixmap(const QSize& size, const DBusSniIconPixmapList& pixmaps) {
+	const DBusSniIconPixmap* ret = nullptr;
+
+	for (const auto& pixmap: pixmaps) {
+		if (pixmap.width <= 0 || pixmap.height <= 0 || pixmap.data.isEmpty()) continue;
+
+		if (ret == nullptr) {
+			ret = &pixmap;
+			continue;
+		}
+
+		auto existingAdequate = ret->width >= size.width() && ret->height >= size.height();
+		auto pixmapAdequate = pixmap.width >= size.width() && pixmap.height >= size.height();
+		auto existingArea = qint64(ret->width) * ret->height;
+		auto pixmapArea = qint64(pixmap.width) * pixmap.height;
+
+		if ((pixmapAdequate && !existingAdequate)
+		    || (pixmapAdequate == existingAdequate
+		        && ((pixmapAdequate && pixmapArea < existingArea)
+		            || (!pixmapAdequate && pixmapArea > existingArea))))
+		{
+			ret = &pixmap;
+		}
+	}
+
+	return ret;
+}
+
+QPixmap pixmapFromSniPixmaps(const QSize& size, const DBusSniIconPixmapList& pixmaps) {
+	const auto* icon = closestPixmap(size, pixmaps);
+	if (icon == nullptr) return QPixmap();
+
+	const auto image =
+	    icon->createImage().scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+	return QPixmap::fromImage(image);
+}
+
+QPixmap pixmapFromIconName(const QString& name, const QString& themePath, const QSize& size) {
+	if (name.isEmpty()) return QPixmap();
+
+	return IconImageProvider::requestPixmapForIcon(name, themePath, QString(), size);
+}
+
+QPixmap firstValidPixmap(std::initializer_list<QPixmap> pixmaps) {
+	for (const auto& pixmap: pixmaps) {
+		if (!pixmap.isNull()) return pixmap;
+	}
+
+	return QPixmap();
+}
+
+} // namespace
 
 StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
     : QObject(parent)
@@ -132,80 +188,36 @@ bool StatusNotifierItem::isReady() const { return this->mReady; }
 
 QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 	auto needsAttention = this->bStatus.value() == Status::NeedsAttention;
-
-	auto closestPixmap = [](const QSize& size, const DBusSniIconPixmapList& pixmaps) {
-		const DBusSniIconPixmap* ret = nullptr;
-
-		for (const auto& pixmap: pixmaps) {
-			if (ret == nullptr) {
-				ret = &pixmap;
-				continue;
-			}
-
-			auto existingAdequate = ret->width >= size.width() && ret->height >= size.height();
-			auto newAdequite = pixmap.width >= size.width() && pixmap.height >= size.height();
-			auto newSmaller = pixmap.width < ret->width || pixmap.height < ret->height;
-
-			if ((existingAdequate && newAdequite && newSmaller) || (!existingAdequate && !newSmaller)) {
-				ret = &pixmap;
-			}
-		}
-
-		return ret;
-	};
+	auto themePath = this->bIconThemePath.value();
+	auto targetSize = size.isValid() ? size : QSize(100, 100);
+	if (targetSize.width() == 0 || targetSize.height() == 0) targetSize = QSize(2, 2);
 
 	QPixmap pixmap;
 	if (needsAttention) {
-		if (!this->bAttentionIconName.value().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->bAttentionIconName.value());
-			pixmap = icon.pixmap(size.width(), size.height());
-		} else {
-			const auto* icon = closestPixmap(size, this->bAttentionIconPixmaps.value());
-
-			if (icon == nullptr) {
-				icon = closestPixmap(size, this->bIconPixmaps.value());
-			}
-
-			if (icon != nullptr) {
-				const auto image =
-				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
-				pixmap = QPixmap::fromImage(image);
-			}
-		}
+		pixmap = firstValidPixmap({
+		    pixmapFromIconName(this->bAttentionIconName.value(), themePath, targetSize),
+		    pixmapFromSniPixmaps(targetSize, this->bAttentionIconPixmaps.value()),
+		    pixmapFromIconName(this->bIconName.value(), themePath, targetSize),
+		    pixmapFromSniPixmaps(targetSize, this->bIconPixmaps.value()),
+		});
 	} else {
-		if (!this->bIconName.value().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->bIconName.value());
-			pixmap = icon.pixmap(size.width(), size.height());
-		} else {
-			const auto* icon = closestPixmap(size, this->bIconPixmaps.value());
-
-			if (icon != nullptr) {
-				const auto image =
-				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
-				pixmap = QPixmap::fromImage(image);
-			}
-		}
+		pixmap = firstValidPixmap({
+		    pixmapFromIconName(this->bIconName.value(), themePath, targetSize),
+		    pixmapFromSniPixmaps(targetSize, this->bIconPixmaps.value()),
+		});
 
 		QPixmap overlay;
-		if (!this->bOverlayIconName.value().isEmpty()) {
-			auto icon = QIcon::fromTheme(this->bOverlayIconName.value());
-			overlay = icon.pixmap(pixmap.width(), pixmap.height());
-		} else {
-			const auto* icon = closestPixmap(pixmap.size(), this->bOverlayIconPixmaps.value());
+		auto overlaySize =
+		    QSize(std::max(1, targetSize.width() * 2 / 5), std::max(1, targetSize.height() * 2 / 5));
 
-			if (icon != nullptr) {
-				const auto image =
-				    icon->createImage().scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+		overlay = firstValidPixmap({
+		    pixmapFromIconName(this->bOverlayIconName.value(), themePath, overlaySize),
+		    pixmapFromSniPixmaps(overlaySize, this->bOverlayIconPixmaps.value()),
+		});
 
-				overlay = QPixmap::fromImage(image);
-			}
-		}
-
-		if (!overlay.isNull()) {
+		if (!pixmap.isNull() && !overlay.isNull()) {
 			auto painter = QPainter(&pixmap);
-			painter.drawPixmap(QRect(0, 0, pixmap.width(), pixmap.height()), overlay);
+			painter.drawPixmap(QRect(0, 0, overlay.width(), overlay.height()), overlay);
 			painter.end();
 		}
 	}

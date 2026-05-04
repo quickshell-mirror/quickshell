@@ -10,6 +10,12 @@ public:
 	QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override;
 
 	static QPixmap missingPixmap(const QSize& size);
+	static QPixmap requestPixmapForIcon(
+	    const QString& icon,
+	    const QString& path,
+	    const QString& fallback,
+	    const QSize& requestedSize
+	);
 
 	static QString requestString(
 	    const QString& icon,
