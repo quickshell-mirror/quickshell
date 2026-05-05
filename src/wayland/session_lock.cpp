@@ -273,7 +273,10 @@ void WlSessionLockSurface::show() {
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
 
-bool WlSessionLockSurface::isVisible() const { return this->window->isVisible(); }
+bool WlSessionLockSurface::isVisible() const {
+	if (this->window == nullptr) return false;
+	return this->window->isVisible();
+}
 
 qint32 WlSessionLockSurface::width() const {
 	if (this->window == nullptr) return 0;
