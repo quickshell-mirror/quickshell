@@ -715,6 +715,7 @@ void HyprlandIpc::refreshToplevels() {
 		auto json = QJsonDocument::fromJson(resp).array();
 
 		const auto& mList = this->mToplevels.valueList();
+		HyprlandToplevel* focusedToplevel = nullptr;
 
 		for (auto entry: json) {
 			auto object = entry.toObject().toVariantMap();
@@ -743,6 +744,17 @@ void HyprlandIpc::refreshToplevels() {
 
 			auto* workspace = toplevel->bindableWorkspace().value();
 			if (workspace) workspace->insertToplevel(toplevel);
+
+			// focusHistoryID == 0 marks the currently focused window. Hyprland's
+			// event socket only emits activewindowv2 on focus changes, so without
+			// this seed activeToplevel stays null until the user switches focus.
+			if (object.value("focusHistoryID").toInt() == 0) {
+				focusedToplevel = toplevel;
+			}
+		}
+
+		if (focusedToplevel && this->bActiveToplevel.value() == nullptr) {
+			this->bActiveToplevel = focusedToplevel;
 		}
 	});
 }
