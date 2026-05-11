@@ -132,6 +132,9 @@ public:
 	void startDiscovery();
 	void stopDiscovery();
 
+private slots:
+	void onStateChanged();
+
 signals:
 	void nameChanged();
 	void enabledChanged();
@@ -143,8 +146,11 @@ signals:
 	void pairableTimeoutChanged();
 
 private:
+	static bool tryRfkillUnblock();
+
 	DBusBluezAdapterInterface* mInterface = nullptr;
 	ObjectModel<BluetoothDevice> mDevices {this};
+	bool mPendingEnable = false;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothAdapter, QString, bName, &BluetoothAdapter::nameChanged);
