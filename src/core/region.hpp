@@ -177,6 +177,9 @@ private:
 	static void
 	regionsReplace(QQmlListProperty<PendingRegion>* prop, qsizetype i, PendingRegion* region);
 
+	void connectParentChain(QQuickItem* item);
+	void disconnectParentChain();
+
 	enum CornerOverride : quint8 {
 		TopLeft = 0b1,
 		TopRight = 0b10,
@@ -198,4 +201,5 @@ private:
 	quint8 mCornerOverrides = 0;
 
 	QList<PendingRegion*> mRegions;
+	QList<QMetaObject::Connection> mParentConnections;
 };
