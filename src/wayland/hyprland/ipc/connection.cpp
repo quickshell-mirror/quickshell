@@ -24,7 +24,7 @@
 #include "../../../core/logcat.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "hyprland_toplevel.hpp"
 #include "monitor.hpp"
 #include "toplevel_mapping.hpp"
@@ -139,11 +139,10 @@ void HyprlandIpc::eventSocketReady() {
 }
 
 void HyprlandIpc::toplevelAddressed(
-    wayland::toplevel_management::impl::ToplevelHandle* handle,
+    wayland::toplevel::wlr::ToplevelHandle* handle,
     quint64 address
 ) {
-	auto* waylandToplevel =
-	    wayland::toplevel_management::ToplevelManager::instance()->forImpl(handle);
+	auto* waylandToplevel = wayland::toplevel::ToplevelManager::instance()->forImpl(handle);
 
 	if (!waylandToplevel) return;
 

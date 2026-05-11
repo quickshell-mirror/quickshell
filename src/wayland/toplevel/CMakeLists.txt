@@ -1,6 +1,5 @@
 qt_add_library(quickshell-wayland-toplevel-management STATIC
-	manager.cpp
-	handle.cpp
+	wlr_toplevel.cpp
 	qml.cpp
 )
 

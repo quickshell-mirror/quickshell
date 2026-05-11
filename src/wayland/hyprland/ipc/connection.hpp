@@ -15,7 +15,7 @@
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "../../../core/streamreader.hpp"
-#include "../../../wayland/toplevel_management/handle.hpp"
+#include "../../../wayland/toplevel/wlr_toplevel.hpp"
 
 namespace qs::hyprland::ipc {
 
@@ -128,10 +128,7 @@ private slots:
 	void eventSocketStateChanged(QLocalSocket::LocalSocketState state);
 	void eventSocketReady();
 
-	void toplevelAddressed(
-	    qs::wayland::toplevel_management::impl::ToplevelHandle* handle,
-	    quint64 address
-	);
+	void toplevelAddressed(qs::wayland::toplevel::wlr::ToplevelHandle* handle, quint64 address);
 
 	void onFocusedMonitorDestroyed();
 

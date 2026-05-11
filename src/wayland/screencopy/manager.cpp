@@ -17,7 +17,7 @@
 #endif
 
 #if SCREENCOPY_HYPRLAND_TOPLEVEL
-#include "../toplevel_management/qml.hpp"
+#include "../toplevel/qml.hpp"
 #include "hyprland_screencopy/hyprland_screencopy.hpp"
 #endif
 
@@ -42,7 +42,7 @@ ScreencopyContext* ScreencopyManager::createContext(QObject* object, bool paintC
 		}
 #endif
 #if SCREENCOPY_HYPRLAND_TOPLEVEL
-	} else if (auto* toplevel = qobject_cast<toplevel_management::Toplevel*>(object)) {
+	} else if (auto* toplevel = qobject_cast<toplevel::Toplevel*>(object)) {
 		auto* manager = hyprland::HyprlandScreencopyManager::instance();
 		if (manager->isActive()) {
 			return manager->captureToplevel(toplevel->implHandle(), paintCursors);

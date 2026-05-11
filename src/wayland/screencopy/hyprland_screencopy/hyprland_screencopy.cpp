@@ -9,7 +9,7 @@
 #include <wayland-hyprland-toplevel-export-v1-client-protocol.h>
 
 #include "../../../core/logcat.hpp"
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "../manager.hpp"
 #include "hyprland_screencopy_p.hpp"
 
@@ -29,7 +29,7 @@ HyprlandScreencopyManager* HyprlandScreencopyManager::instance() {
 }
 
 ScreencopyContext* HyprlandScreencopyManager::captureToplevel(
-    toplevel_management::impl::ToplevelHandle* handle,
+    toplevel::wlr::ToplevelHandle* handle,
     bool paintCursors
 ) {
 	return new HyprlandScreencopyContext(this, handle, paintCursors);
@@ -37,7 +37,7 @@ ScreencopyContext* HyprlandScreencopyManager::captureToplevel(
 
 HyprlandScreencopyContext::HyprlandScreencopyContext(
     HyprlandScreencopyManager* manager,
-    toplevel_management::impl::ToplevelHandle* handle,
+    toplevel::wlr::ToplevelHandle* handle,
     bool paintCursors
 )
     : manager(manager)
