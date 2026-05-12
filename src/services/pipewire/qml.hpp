@@ -14,6 +14,12 @@
 #include "node.hpp"
 #include "registry.hpp"
 
+#if defined(__GNUC__) || defined(__clang__)
+#define QS_PIPEWIRE_EXPORT [[gnu::visibility("default")]]
+#else
+#define QS_PIPEWIRE_EXPORT
+#endif
+
 namespace qs::service::pipewire {
 
 class PwNodeIface;
@@ -30,7 +36,7 @@ public:
 	virtual void unref() = 0;
 };
 
-class PwObjectIface
+class QS_PIPEWIRE_EXPORT PwObjectIface
     : public QObject
     , public PwObjectRefIface {
 	Q_OBJECT;
@@ -53,7 +59,7 @@ private:
 };
 
 ///! Contains links to all pipewire objects.
-class Pipewire: public QObject {
+class QS_PIPEWIRE_EXPORT Pipewire: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// All nodes present in pipewire.
@@ -172,7 +178,7 @@ private:
 };
 
 ///! Tracks non-monitor link connections to a given node.
-class PwNodeLinkTracker: public QObject {
+class QS_PIPEWIRE_EXPORT PwNodeLinkTracker: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The node to track connections to.
@@ -217,7 +223,7 @@ private:
 /// Extra properties of a @@PwNode if the node is an audio node.
 ///
 /// See @@PwNode.audio.
-class PwNodeAudioIface: public QObject {
+class QS_PIPEWIRE_EXPORT PwNodeAudioIface: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// If the node is currently muted. Setting this property changes the mute state.
@@ -267,7 +273,7 @@ private:
 };
 
 ///! A node in the pipewire connection graph.
-class PwNodeIface: public PwObjectIface {
+class QS_PIPEWIRE_EXPORT PwNodeIface: public PwObjectIface {
 	Q_OBJECT;
 	/// The pipewire object id of the node.
 	///
@@ -347,7 +353,7 @@ private:
 ///! A connection between pipewire nodes.
 /// Note that there is one link per *channel* of a connection between nodes.
 /// You usually want @@PwLinkGroup.
-class PwLinkIface: public PwObjectIface {
+class QS_PIPEWIRE_EXPORT PwLinkIface: public PwObjectIface {
 	Q_OBJECT;
 	/// The pipewire object id of the link.
 	///
@@ -385,7 +391,7 @@ private:
 
 ///! A group of connections between pipewire nodes.
 /// A group of connections between pipewire nodes, one per source->target pair.
-class PwLinkGroupIface
+class QS_PIPEWIRE_EXPORT PwLinkGroupIface
     : public QObject
     , public PwObjectRefIface {
 	Q_OBJECT;
@@ -434,7 +440,7 @@ private:
 /// Properties that require their object be bound to use are clearly marked. You do not
 /// need to bind the object unless mentioned in the description of the property you
 /// want to use.
-class PwObjectTracker: public QObject {
+class QS_PIPEWIRE_EXPORT PwObjectTracker: public QObject {
 	Q_OBJECT;
 	/// The list of objects to bind. May contain nulls.
 	Q_PROPERTY(QList<QObject*> objects READ objects WRITE setObjects NOTIFY objectsChanged);
