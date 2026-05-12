@@ -8,15 +8,13 @@
 #include <qvector.h>
 
 #include "node.hpp"
+#include "qml.hpp"
 
 namespace qs::service::pipewire {
 
-class PwNodeIface;
 class PwPeakStream;
 
 } // namespace qs::service::pipewire
-
-Q_DECLARE_OPAQUE_POINTER(qs::service::pipewire::PwNodeIface*);
 
 namespace qs::service::pipewire {
 
@@ -24,7 +22,7 @@ namespace qs::service::pipewire {
 /// Tracks volume peaks for a node across all its channels.
 ///
 /// The peak monitor binds nodes similarly to @@PwObjectTracker when enabled.
-class PwNodePeakMonitor: public QObject {
+class QS_PIPEWIRE_EXPORT PwNodePeakMonitor: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// The node to monitor. Must be an audio node.
