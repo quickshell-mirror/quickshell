@@ -486,8 +486,8 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 			                << "via device";
 			this->waitingVolumes = realVolumes;
 		} else {
+			auto significantChange = this->mServerVolumes.isEmpty() || this->volumeStep == -1;
 			if (this->volumeStep != -1) {
-				auto significantChange = this->mServerVolumes.isEmpty();
 				for (auto i = 0; i < this->mServerVolumes.length(); i++) {
 					auto serverVolume = this->mServerVolumes.value(i);
 					auto targetVolume = realVolumes.value(i);
@@ -496,25 +496,25 @@ void PwNodeBoundAudio::setVolumes(const QVector<float>& volumes) {
 						break;
 					}
 				}
+			}
 
-				if (significantChange) {
-					qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
-					                << "via device";
-					if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
-						return;
-					}
-
-					this->mDeviceVolumes = realVolumes;
-					this->node->device->waitForDevice();
-				} else {
-					// Insignificant changes won't cause an info event on the device, leaving qs hung in the
-					// "waiting for acknowledgement" state forever.
-					qCInfo(logNode).nospace()
-					    << "Ignoring volume change for " << this->node << " to " << realVolumes << " from "
-					    << this->mServerVolumes
-					    << " as it is a device node and the change is too small (min step: "
-					    << this->volumeStep << ").";
+			if (significantChange) {
+				qCInfo(logNode) << "Changing volumes of" << this->node << "to" << realVolumes
+				                << "via device";
+				if (!this->node->device->setVolumes(this->node->routeDevice, realVolumes)) {
+					return;
 				}
+
+				this->mDeviceVolumes = realVolumes;
+				this->node->device->waitForDevice();
+			} else {
+				// Insignificant changes won't cause an info event on the device, leaving qs hung in the
+				// "waiting for acknowledgement" state forever.
+				qCInfo(logNode).nospace()
+				    << "Ignoring volume change for " << this->node << " to " << realVolumes << " from "
+				    << this->mServerVolumes
+				    << " as it is a device node and the change is too small (min step: " << this->volumeStep
+				    << ").";
 			}
 		}
 	} else {

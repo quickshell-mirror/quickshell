@@ -10,3 +10,4 @@
 - Fixed accessibility information not being provided for Quickshell windows.
 - Fixed `WlSessionLockSurface.screen` being null and never updating with a real screen on monitor plug.
 - Fixed `NotificationAction.text` not accepting text updates.
+- Fixed PipeWire route volume writes for devices without a reported volume step.
