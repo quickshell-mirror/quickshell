@@ -291,7 +291,19 @@ void I3IpcController::handleWorkspaceEvent(I3IpcEvent* event) {
 		} else {
 			qCInfo(logI3Ipc) << "Workspace" << name << "has already been deleted";
 		}
-	} else if (change == "move" || change == "rename" || change == "urgent") {
+	} else if (change == "rename") {
+		auto id = event->mData["current"]["id"].toInt(-1);
+
+		auto* workspace = this->findWorkspaceByID(id);
+
+		if (workspace != nullptr) {
+			auto data = event->mData["current"].toObject().toVariantMap();
+
+			workspace->updateFromObject(data);
+		} else {
+			qCWarning(logI3Ipc) << "Workspace with id" << id << "doesn't exist";
+		}
+	} else if (change == "move" || change == "urgent") {
 		auto name = event->mData["current"]["name"].toString();
 
 		auto* workspace = this->findWorkspaceByName(name);
