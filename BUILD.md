@@ -39,6 +39,9 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `pkg-config` (build-time)
 - `cli11` (static library)
 
+Quickshell relies on private Qt APIs and **MUST** be rebuilt against the each Qt release
+or crashes via ABI mismatches will occur.
+
 Build time dependencies and static libraries don't have to exist at runtime,
 however build time dependencies must be compiled for the architecture of
 the builder, while static libraries must be compiled for the architecture
@@ -96,13 +99,6 @@ To disable: `-DSOCKETS=OFF`
 
 ### Wayland
 This feature enables wayland support. Subfeatures exist for each particular wayland integration.
-
-WARNING: Wayland integration relies on features that are not part of the public Qt API and which
-may break in minor releases. Updating quickshell's dependencies without ensuring without ensuring
-that the current Qt version is supported WILL result in quickshell failing to build or misbehaving
-at runtime.
-
-Currently supported Qt versions: `6.6`, `6.7`.
 
 To disable: `-DWAYLAND=OFF`
 
