@@ -1,22 +1,21 @@
 #pragma once
+
 #include <qobject.h>
+#include <qstring.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qwindow.h>
 
 class QSWaylandSessionLock;
 class QSWaylandSessionLockSurface;
 class QSWaylandSessionLockIntegration;
 
-namespace qs::dbus {
-class SessionLockAdaptor;
-}
-
 class SessionLockManager: public QObject {
 	Q_OBJECT
 
 public:
-	explicit SessionLockManager(bool exposeDbus, QObject* parent = nullptr);
+	explicit SessionLockManager(bool logindLockedHint, QObject* parent = nullptr);
 
 	[[nodiscard]] static bool lockAvailable();
 
@@ -33,8 +32,13 @@ signals:
 	void unlocked();
 
 private:
+	void updateLogindLockedHint(bool locked);
+	void updateLogindLockedHint(const QString& sessionPath, bool locked, quint64 generation);
+
 	QSWaylandSessionLock* mLock = nullptr;
-	qs::dbus::SessionLockAdaptor* mDbusAdaptor = nullptr;
+	QString mLogindSessionPath;
+	quint64 mLogindLockedHintGeneration = 0;
+	bool mLogindLockedHint = false;
 
 	friend class LockWindowExtension;
 };

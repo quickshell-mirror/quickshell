@@ -6,7 +6,7 @@
 
 #include "lock.hpp"
 
-class QSWaylandSessionLockManager
+class QSWaylandSessionLockManager // NOLINT(misc-multiple-inheritance)
     : public QWaylandClientExtensionTemplate<QSWaylandSessionLockManager>
     , public QtWayland::ext_session_lock_manager_v1 {
 public:

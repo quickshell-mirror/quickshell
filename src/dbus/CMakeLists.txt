@@ -7,11 +7,6 @@ set_source_files_properties(org.freedesktop.DBus.ObjectManager.xml PROPERTIES
 	INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/dbus_objectmanager_types.hpp
 )
 
-set_source_files_properties(org.quickshell.SessionLock.xml PROPERTIES
-	CLASSNAME SessionLockAdaptor
-	INCLUDE session_lock_dbus.hpp
-)
-
 qt_add_dbus_interface(DBUS_INTERFACES
 	org.freedesktop.DBus.Properties.xml
 	dbus_properties
@@ -22,17 +17,10 @@ qt_add_dbus_interface(DBUS_INTERFACES
 	dbus_objectmanager
 )
 
-qt_add_dbus_adaptor(DBUS_INTERFACES
-	org.quickshell.SessionLock.xml
-	${CMAKE_CURRENT_SOURCE_DIR}/session_lock_dbus.hpp
-	qs::dbus::SessionLockAdaptor
-)
-
 qt_add_library(quickshell-dbus STATIC
 	properties.cpp
 	objectmanager.cpp
 	bus.cpp
-	session_lock_dbus.cpp
 	${DBUS_INTERFACES}
 )
 

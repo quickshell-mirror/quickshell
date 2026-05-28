@@ -1,18 +1,28 @@
 #include "session_lock.hpp"
 
 #include <private/qwaylanddisplay_p.h>
+#include <qdbusconnection.h>
+#include <qdbuserror.h>
+#include <qdbusextratypes.h>
+#include <qdbusmessage.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
+#include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qwindow.h>
 
-#include "../../dbus/session_lock_dbus.hpp"
+#include "../../core/logcat.hpp"
 #include "lock.hpp"
 #include "manager.hpp"
 #include "shell_integration.hpp"
 #include "surface.hpp"
 
 namespace {
+QS_LOGGING_CATEGORY(logSessionLock, "quickshell.wayland.sessionlock", QtWarningMsg);
 
 QSWaylandSessionLockManager* manager() {
 	static QSWaylandSessionLockManager* manager = nullptr; // NOLINT
@@ -26,12 +36,9 @@ QSWaylandSessionLockManager* manager() {
 
 } // namespace
 
-SessionLockManager::SessionLockManager(bool exposeDbus, QObject* parent)
-    : QObject(parent) {
-	if (exposeDbus) {
-		this->mDbusAdaptor = new qs::dbus::SessionLockAdaptor(this);
-	}
-}
+SessionLockManager::SessionLockManager(bool logindLockedHint, QObject* parent)
+    : QObject(parent)
+    , mLogindLockedHint(logindLockedHint) {}
 
 bool SessionLockManager::lockAvailable() { return manager()->isActive(); }
 
@@ -41,23 +48,14 @@ bool SessionLockManager::lock() {
 	this->mLock = manager()->acquireLock();
 	this->mLock->setParent(this);
 
-	// Notify DBus that we're attempting to lock
-	if (this->mDbusAdaptor) {
-		this->mDbusAdaptor->setLocked(true);
-		this->mDbusAdaptor->setSecure(false);
-	}
-
-	// clang-format off	
+	// clang-format off
 	QObject::connect(this->mLock, &QSWaylandSessionLock::compositorLocked, this, [this]() {
-		if (this->mDbusAdaptor) this->mDbusAdaptor->setSecure(true);
+		this->updateLogindLockedHint(true);
 		emit this->locked();
 	});
 
 	QObject::connect(this->mLock, &QSWaylandSessionLock::unlocked, this, [this]() {
-		if (this->mDbusAdaptor) {
-			this->mDbusAdaptor->setLocked(false);
-			this->mDbusAdaptor->setSecure(false);
-		}
+		this->updateLogindLockedHint(false);
 		emit this->unlocked();
 	});
 	// clang-format on
@@ -82,6 +80,92 @@ bool SessionLockManager::isLocked() const { return this->mLock != nullptr; }
 bool SessionLockManager::sessionLocked() { return manager()->isLocked(); }
 
 bool SessionLockManager::isSecure() { return manager()->isSecure(); }
+
+void SessionLockManager::updateLogindLockedHint(bool locked) {
+	if (!this->mLogindLockedHint) return;
+
+	auto generation = ++this->mLogindLockedHintGeneration;
+
+	if (!this->mLogindSessionPath.isEmpty()) {
+		this->updateLogindLockedHint(this->mLogindSessionPath, locked, generation);
+		return;
+	}
+
+	auto sessionId = qEnvironmentVariable("XDG_SESSION_ID");
+	if (sessionId.isEmpty()) {
+		qCWarning(logSessionLock) << "Cannot set logind LockedHint: XDG_SESSION_ID is unset.";
+		return;
+	}
+
+	auto bus = QDBusConnection::systemBus();
+	if (!bus.isConnected()) {
+		qCWarning(logSessionLock) << "Cannot set logind LockedHint: system bus is not connected.";
+		return;
+	}
+
+	auto message = QDBusMessage::createMethodCall(
+	    "org.freedesktop.login1",
+	    "/org/freedesktop/login1",
+	    "org.freedesktop.login1.Manager",
+	    "GetSession"
+	);
+
+	message << sessionId;
+
+	auto* call = new QDBusPendingCallWatcher(bus.asyncCall(message), this);
+	QObject::connect(
+	    call,
+	    &QDBusPendingCallWatcher::finished,
+	    this,
+	    [this, locked, generation](QDBusPendingCallWatcher* call) {
+		    const QDBusPendingReply<QDBusObjectPath> reply = *call;
+		    if (reply.isError()) {
+			    qCWarning(logSessionLock)
+			        << "Failed to resolve logind session:" << reply.error().message();
+		    } else if (generation == this->mLogindLockedHintGeneration) {
+			    this->mLogindSessionPath = reply.value().path();
+			    this->updateLogindLockedHint(this->mLogindSessionPath, locked, generation);
+		    }
+
+		    delete call;
+	    }
+	);
+}
+
+void SessionLockManager::updateLogindLockedHint(
+    const QString& sessionPath,
+    bool locked,
+    quint64 generation
+) {
+	if (generation != this->mLogindLockedHintGeneration) return;
+
+	auto message = QDBusMessage::createMethodCall(
+	    "org.freedesktop.login1",
+	    sessionPath,
+	    "org.freedesktop.login1.Session",
+	    "SetLockedHint"
+	);
+
+	message << locked;
+
+	auto* call = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(message), this);
+	QObject::connect(
+	    call,
+	    &QDBusPendingCallWatcher::finished,
+	    this,
+	    [locked](QDBusPendingCallWatcher* call) {
+		    const QDBusPendingReply<> reply = *call;
+		    if (reply.isError()) {
+			    qCWarning(logSessionLock)
+			        << "Failed to set logind LockedHint to" << locked << ':' << reply.error().message();
+		    } else {
+			    qCDebug(logSessionLock) << "Set logind LockedHint to" << locked;
+		    }
+
+		    delete call;
+	    }
+	);
+}
 
 LockWindowExtension::~LockWindowExtension() {
 	if (this->surface != nullptr) {
