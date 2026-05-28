@@ -12,7 +12,7 @@ qt_add_qml_module(quickshell-service-greetd
 install_qml_module(quickshell-service-greetd)
 
 # can't be Qt::Qml because generation.hpp pulls in gui types
-target_link_libraries(quickshell-service-greetd PRIVATE Qt::Quick)
+target_link_libraries(quickshell-service-greetd PRIVATE Qt::Quick quickshell-core)
 
 qs_module_pch(quickshell-service-greetd)
 

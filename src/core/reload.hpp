@@ -21,7 +21,7 @@ class Reloadable
 	/// previous state.
 	///
 	/// Simply keeping a stable identifier across config versions (saves) is
-	/// enough to help the reloader figure out which object in the old revision corrosponds to
+	/// enough to help the reloader figure out which object in the old revision corresponds to
 	/// this object in the current revision, and facilitate smoother reloading.
 	///
 	/// Note that identifiers are scoped, and will try to do the right thing in context.

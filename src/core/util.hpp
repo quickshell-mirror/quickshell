@@ -251,37 +251,6 @@ public:
 	GuardedEmitBlocker block() { return GuardedEmitBlocker(&this->blocked); }
 };
 
-template <auto member, auto destroyedSlot, auto changedSignal>
-class SimpleObjectHandleOps {
-	using Traits = MemberPointerTraits<decltype(member)>;
-
-public:
-	static bool setObject(Traits::Class* parent, Traits::Type value) {
-		if (value == parent->*member) return false;
-
-		if (parent->*member != nullptr) {
-			QObject::disconnect(parent->*member, &QObject::destroyed, parent, destroyedSlot);
-		}
-
-		parent->*member = value;
-
-		if (value != nullptr) {
-			QObject::connect(parent->*member, &QObject::destroyed, parent, destroyedSlot);
-		}
-
-		if constexpr (changedSignal != nullptr) {
-			emit(parent->*changedSignal)();
-		}
-
-		return true;
-	}
-};
-
-template <auto member, auto destroyedSlot, auto changedSignal = nullptr>
-bool setSimpleObjectHandle(auto* parent, auto* value) {
-	return SimpleObjectHandleOps<member, destroyedSlot, changedSignal>::setObject(parent, value);
-}
-
 template <auto methodPtr>
 class MethodFunctor {
 	using PtrMeta = MemberPointerTraits<decltype(methodPtr)>;

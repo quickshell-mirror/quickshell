@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <qcolor.h>
 #include <qcontainerfwd.h>
 #include <qevent.h>
@@ -57,6 +59,7 @@ class ProxyWindowBase: public Reloadable {
 	Q_PROPERTY(QObject* windowTransform READ windowTransform NOTIFY windowTransformChanged);
 	Q_PROPERTY(bool backingWindowVisible READ isVisibleDirect NOTIFY backerVisibilityChanged);
 	Q_PROPERTY(QsSurfaceFormat surfaceFormat READ surfaceFormat WRITE setSurfaceFormat NOTIFY surfaceFormatChanged);
+	Q_PROPERTY(bool updatesEnabled READ updatesEnabled WRITE setUpdatesEnabled NOTIFY updatesEnabledChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on
 	Q_CLASSINFO("DefaultProperty", "data");
@@ -64,6 +67,8 @@ class ProxyWindowBase: public Reloadable {
 public:
 	explicit ProxyWindowBase(QObject* parent = nullptr);
 	~ProxyWindowBase() override;
+
+	static ProxyWindowBase* forObject(QObject* obj);
 
 	ProxyWindowBase(ProxyWindowBase&) = delete;
 	ProxyWindowBase(ProxyWindowBase&&) = delete;
@@ -101,6 +106,10 @@ public:
 	virtual void setVisible(bool visible);
 	virtual void setVisibleDirect(bool visible);
 
+	[[nodiscard]] QBindable<bool> bindableBackerVisibility() const {
+		return &this->bBackerVisibility;
+	}
+
 	void schedulePolish();
 
 	[[nodiscard]] virtual qint32 x() const;
@@ -136,6 +145,9 @@ public:
 	[[nodiscard]] QsSurfaceFormat surfaceFormat() const { return this->qsSurfaceFormat; }
 	void setSurfaceFormat(QsSurfaceFormat format);
 
+	[[nodiscard]] bool updatesEnabled() const;
+	void setUpdatesEnabled(bool updatesEnabled);
+
 	[[nodiscard]] QObject* windowTransform() const { return nullptr; } // NOLINT
 
 	[[nodiscard]] QQmlListProperty<QObject> data();
@@ -159,6 +171,7 @@ signals:
 	void colorChanged();
 	void maskChanged();
 	void surfaceFormatChanged();
+	void updatesEnabledChanged();
 	void polished();
 
 protected slots:
@@ -183,6 +196,7 @@ protected:
 	ProxyWindowContentItem* mContentItem = nullptr;
 	bool reloadComplete = false;
 	bool ranLints = false;
+	bool mUpdatesEnabled = true;
 	QsSurfaceFormat qsSurfaceFormat;
 	QSurfaceFormat mSurfaceFormat;
 
@@ -204,6 +218,13 @@ protected:
 	    bImplicitHeight,
 	    100,
 	    &ProxyWindowBase::implicitHeightChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    ProxyWindowBase,
+	    bool,
+	    bBackerVisibility,
+	    &ProxyWindowBase::backerVisibilityChanged
 	);
 
 private:
@@ -231,12 +252,24 @@ private:
 	void setWindow(ProxyWindowBase* window);
 };
 
-class ProxiedWindow: public QQuickWindow {
+class QsQuickWindowBase: public QQuickWindow {
+	Q_OBJECT;
+
+public:
+	explicit QsQuickWindowBase(QWindow* parent = nullptr);
+
+	static void callOnScenegraphInit(std::function<void(QQuickWindow*)> cb);
+
+private slots:
+	void onSceneGraphInitialized();
+};
+
+class ProxiedWindow: public QsQuickWindowBase {
 	Q_OBJECT;
 
 public:
 	explicit ProxiedWindow(ProxyWindowBase* proxy, QWindow* parent = nullptr)
-	    : QQuickWindow(parent)
+	    : QsQuickWindowBase(parent)
 	    , mProxy(proxy) {}
 
 	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }

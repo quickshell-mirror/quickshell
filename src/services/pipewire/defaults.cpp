@@ -12,7 +12,6 @@
 #include <spa/utils/json.h>
 
 #include "../../core/logcat.hpp"
-#include "../../core/util.hpp"
 #include "metadata.hpp"
 #include "node.hpp"
 #include "registry.hpp"
@@ -29,6 +28,22 @@ QS_LOGGING_CATEGORY(logDefaults, "quickshell.service.pipewire.defaults", QtWarni
 PwDefaultTracker::PwDefaultTracker(PwRegistry* registry): registry(registry) {
 	QObject::connect(registry, &PwRegistry::metadataAdded, this, &PwDefaultTracker::onMetadataAdded);
 	QObject::connect(registry, &PwRegistry::nodeAdded, this, &PwDefaultTracker::onNodeAdded);
+}
+
+void PwDefaultTracker::reset() {
+	if (auto* meta = this->defaultsMetadata.object()) {
+		QObject::disconnect(meta, nullptr, this, nullptr);
+	}
+
+	this->defaultsMetadata.setObject(nullptr);
+	this->setDefaultSink(nullptr);
+	this->setDefaultSinkName(QString());
+	this->setDefaultSource(nullptr);
+	this->setDefaultSourceName(QString());
+	this->setDefaultConfiguredSink(nullptr);
+	this->setDefaultConfiguredSinkName(QString());
+	this->setDefaultConfiguredSource(nullptr);
+	this->setDefaultConfiguredSourceName(QString());
 }
 
 void PwDefaultTracker::onMetadataAdded(PwMetadata* metadata) {
@@ -122,32 +137,6 @@ void PwDefaultTracker::onNodeAdded(PwNode* node) {
 	}
 }
 
-void PwDefaultTracker::onNodeDestroyed(QObject* node) {
-	if (node == this->mDefaultSink) {
-		qCInfo(logDefaults) << "Default sink destroyed.";
-		this->mDefaultSink = nullptr;
-		emit this->defaultSinkChanged();
-	}
-
-	if (node == this->mDefaultSource) {
-		qCInfo(logDefaults) << "Default source destroyed.";
-		this->mDefaultSource = nullptr;
-		emit this->defaultSourceChanged();
-	}
-
-	if (node == this->mDefaultConfiguredSink) {
-		qCInfo(logDefaults) << "Default configured sink destroyed.";
-		this->mDefaultConfiguredSink = nullptr;
-		emit this->defaultConfiguredSinkChanged();
-	}
-
-	if (node == this->mDefaultConfiguredSource) {
-		qCInfo(logDefaults) << "Default configured source destroyed.";
-		this->mDefaultConfiguredSource = nullptr;
-		emit this->defaultConfiguredSourceChanged();
-	}
-}
-
 void PwDefaultTracker::changeConfiguredSink(PwNode* node) {
 	if (node != nullptr) {
 		if (!node->type.testFlags(PwNodeType::AudioSink)) {
@@ -224,10 +213,34 @@ void PwDefaultTracker::setDefaultSink(PwNode* node) {
 	if (node == this->mDefaultSink) return;
 	qCInfo(logDefaults) << "Default sink changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultSink,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultSinkChanged>(this, node);
+	if (this->mDefaultSink != nullptr) {
+		// Targeted disconnect is used because this can also be the default configured sink.
+		QObject::disconnect(
+		    this->mDefaultSink,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSinkDestroyed
+		);
+	}
+
+	this->mDefaultSink = node;
+
+	if (node != nullptr) {
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSinkDestroyed
+		);
+	}
+
+	emit this->defaultSinkChanged();
+}
+
+void PwDefaultTracker::onDefaultSinkDestroyed() {
+	qCInfo(logDefaults) << "Default sink destroyed.";
+	this->mDefaultSink = nullptr;
+	emit this->defaultSinkChanged();
 }
 
 void PwDefaultTracker::setDefaultSinkName(const QString& name) {
@@ -241,10 +254,34 @@ void PwDefaultTracker::setDefaultSource(PwNode* node) {
 	if (node == this->mDefaultSource) return;
 	qCInfo(logDefaults) << "Default source changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultSource,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultSourceChanged>(this, node);
+	if (this->mDefaultSource != nullptr) {
+		// Targeted disconnect is used because this can also be the default configured source.
+		QObject::disconnect(
+		    this->mDefaultSource,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSourceDestroyed
+		);
+	}
+
+	this->mDefaultSource = node;
+
+	if (node != nullptr) {
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSourceDestroyed
+		);
+	}
+
+	emit this->defaultSourceChanged();
+}
+
+void PwDefaultTracker::onDefaultSourceDestroyed() {
+	qCInfo(logDefaults) << "Default source destroyed.";
+	this->mDefaultSource = nullptr;
+	emit this->defaultSourceChanged();
 }
 
 void PwDefaultTracker::setDefaultSourceName(const QString& name) {
@@ -258,10 +295,34 @@ void PwDefaultTracker::setDefaultConfiguredSink(PwNode* node) {
 	if (node == this->mDefaultConfiguredSink) return;
 	qCInfo(logDefaults) << "Default configured sink changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultConfiguredSink,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultConfiguredSinkChanged>(this, node);
+	if (this->mDefaultConfiguredSink != nullptr) {
+		// Targeted disconnect is used because this can also be the default sink.
+		QObject::disconnect(
+		    this->mDefaultConfiguredSink,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSinkDestroyed
+		);
+	}
+
+	this->mDefaultConfiguredSink = node;
+
+	if (node != nullptr) {
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSinkDestroyed
+		);
+	}
+
+	emit this->defaultConfiguredSinkChanged();
+}
+
+void PwDefaultTracker::onDefaultConfiguredSinkDestroyed() {
+	qCInfo(logDefaults) << "Default configured sink destroyed.";
+	this->mDefaultConfiguredSink = nullptr;
+	emit this->defaultConfiguredSinkChanged();
 }
 
 void PwDefaultTracker::setDefaultConfiguredSinkName(const QString& name) {
@@ -275,10 +336,34 @@ void PwDefaultTracker::setDefaultConfiguredSource(PwNode* node) {
 	if (node == this->mDefaultConfiguredSource) return;
 	qCInfo(logDefaults) << "Default configured source changed to" << node;
 
-	setSimpleObjectHandle<
-	    &PwDefaultTracker::mDefaultConfiguredSource,
-	    &PwDefaultTracker::onNodeDestroyed,
-	    &PwDefaultTracker::defaultConfiguredSourceChanged>(this, node);
+	if (this->mDefaultConfiguredSource != nullptr) {
+		// Targeted disconnect is used because this can also be the default source.
+		QObject::disconnect(
+		    this->mDefaultConfiguredSource,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSourceDestroyed
+		);
+	}
+
+	this->mDefaultConfiguredSource = node;
+
+	if (node != nullptr) {
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSourceDestroyed
+		);
+	}
+
+	emit this->defaultConfiguredSourceChanged();
+}
+
+void PwDefaultTracker::onDefaultConfiguredSourceDestroyed() {
+	qCInfo(logDefaults) << "Default configured source destroyed.";
+	this->mDefaultConfiguredSource = nullptr;
+	emit this->defaultConfiguredSourceChanged();
 }
 
 void PwDefaultTracker::setDefaultConfiguredSourceName(const QString& name) {

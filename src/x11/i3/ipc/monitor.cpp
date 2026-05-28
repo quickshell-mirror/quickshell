@@ -40,21 +40,37 @@ void I3Monitor::updateFromObject(const QVariantMap& obj) {
 	this->bHeight = rect.value("height").value<qint32>();
 	this->bScale = obj.value("scale").value<qreal>();
 
-	if (!this->bActiveWorkspace
-	    || activeWorkspaceName != this->bActiveWorkspace->bindableName().value())
-	{
+	auto* activeWorkspace = this->bActiveWorkspace.value();
+	if (!activeWorkspace || activeWorkspaceName != activeWorkspace->bindableName().value()) {
 		if (activeWorkspaceName.isEmpty()) {
-			this->bActiveWorkspace = nullptr;
+			activeWorkspace = nullptr;
 		} else {
-			this->bActiveWorkspace = this->ipc->findWorkspaceByName(activeWorkspaceName);
+			activeWorkspace = this->ipc->findWorkspaceByName(activeWorkspaceName);
 		}
 	};
+
+	this->setActiveWorkspace(activeWorkspace);
 
 	Qt::endPropertyUpdateGroup();
 }
 
 void I3Monitor::updateInitial(const QString& name) { this->bName = name; }
 
-void I3Monitor::setFocusedWorkspace(I3Workspace* workspace) { this->bActiveWorkspace = workspace; };
+void I3Monitor::setActiveWorkspace(I3Workspace* workspace) {
+	auto* oldWorkspace = this->bActiveWorkspace.value();
+	if (oldWorkspace == workspace) return;
+
+	if (oldWorkspace) {
+		QObject::disconnect(oldWorkspace, nullptr, this, nullptr);
+	}
+
+	if (workspace) {
+		QObject::connect(workspace, &QObject::destroyed, this, &I3Monitor::onActiveWorkspaceDestroyed);
+	}
+
+	this->bActiveWorkspace = workspace;
+}
+
+void I3Monitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
 
 } // namespace qs::i3::ipc

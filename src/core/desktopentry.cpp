@@ -107,7 +107,10 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	auto groupName = QString();
 	auto entries = QHash<QString, QPair<Locale, QString>>();
 
-	auto finishCategory = [&data, &groupName, &entries]() {
+	auto actionOrder = QStringList();
+	auto pendingActions = QHash<QString, DesktopActionData>();
+
+	auto finishCategory = [&data, &groupName, &entries, &actionOrder, &pendingActions]() {
 		if (groupName == "Desktop Entry") {
 			if (entries.value("Type").second != "Application") return;
 
@@ -129,9 +132,10 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				else if (key == "Terminal") data.terminal = value == "true";
 				else if (key == "Categories") data.categories = value.split(u';', Qt::SkipEmptyParts);
 				else if (key == "Keywords") data.keywords = value.split(u';', Qt::SkipEmptyParts);
+				else if (key == "Actions") actionOrder = value.split(u';', Qt::SkipEmptyParts);
 			}
 		} else if (groupName.startsWith("Desktop Action ")) {
-			auto actionName = groupName.sliced(16);
+			auto actionName = groupName.sliced(15);
 			DesktopActionData action;
 			action.id = actionName;
 
@@ -147,7 +151,7 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 				}
 			}
 
-			data.actions.insert(actionName, action);
+			pendingActions.insert(actionName, action);
 		}
 
 		entries.clear();
@@ -193,6 +197,13 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	}
 
 	finishCategory();
+
+	for (const auto& actionId: actionOrder) {
+		if (pendingActions.contains(actionId)) {
+			data.actions.append(pendingActions.value(actionId));
+		}
+	}
+
 	return data;
 }
 
@@ -216,17 +227,18 @@ void DesktopEntry::updateState(const ParsedDesktopEntryData& newState) {
 	this->updateActions(newState.actions);
 }
 
-void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newActions) {
+void DesktopEntry::updateActions(const QVector<DesktopActionData>& newActions) {
 	auto old = this->mActions;
+	this->mActions.clear();
 
-	for (const auto& [key, d]: newActions.asKeyValueRange()) {
+	for (const auto& d: newActions) {
 		DesktopAction* act = nullptr;
-		if (auto found = old.find(key); found != old.end()) {
-			act = found.value();
+		auto found = std::ranges::find(old, d.id, &DesktopAction::mId);
+		if (found != old.end()) {
+			act = *found;
 			old.erase(found);
 		} else {
 			act = new DesktopAction(d.id, this);
-			this->mActions.insert(key, act);
 		}
 
 		Qt::beginPropertyUpdateGroup();
@@ -237,6 +249,7 @@ void DesktopEntry::updateActions(const QHash<QString, DesktopActionData>& newAct
 		Qt::endPropertyUpdateGroup();
 
 		act->mEntries = d.entries;
+		this->mActions.append(act);
 	}
 
 	for (auto* leftover: old) {
@@ -250,7 +263,7 @@ void DesktopEntry::execute() const {
 
 bool DesktopEntry::isValid() const { return !this->bName.value().isEmpty(); }
 
-QVector<DesktopAction*> DesktopEntry::actions() const { return this->mActions.values(); }
+QVector<DesktopAction*> DesktopEntry::actions() const { return this->mActions; }
 
 QVector<QString> DesktopEntry::parseExecString(const QString& execString) {
 	QVector<QString> arguments;

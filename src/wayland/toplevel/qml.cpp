@@ -9,25 +9,23 @@
 #include "../../core/qmlscreen.hpp"
 #include "../../core/util.hpp"
 #include "../../window/proxywindow.hpp"
-#include "../../window/windowinterface.hpp"
 #include "../output_tracking.hpp"
-#include "handle.hpp"
-#include "manager.hpp"
+#include "wlr_toplevel.hpp"
 
-namespace qs::wayland::toplevel_management {
+namespace qs::wayland::toplevel {
 
-Toplevel::Toplevel(impl::ToplevelHandle* handle, QObject* parent): QObject(parent), handle(handle) {
+Toplevel::Toplevel(wlr::ToplevelHandle* handle, QObject* parent): QObject(parent), handle(handle) {
 	// clang-format off
-	QObject::connect(handle, &impl::ToplevelHandle::closed, this, &Toplevel::onClosed);
-	QObject::connect(handle, &impl::ToplevelHandle::appIdChanged, this, &Toplevel::appIdChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::titleChanged, this, &Toplevel::titleChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::parentChanged, this, &Toplevel::parentChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::activatedChanged, this, &Toplevel::activatedChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::closed, this, &Toplevel::onClosed);
+	QObject::connect(handle, &wlr::ToplevelHandle::appIdChanged, this, &Toplevel::appIdChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::titleChanged, this, &Toplevel::titleChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::parentChanged, this, &Toplevel::parentChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::activatedChanged, this, &Toplevel::activatedChanged);
 	QObject::connect(&handle->visibleScreens, &WlOutputTracker::screenAdded, this, &Toplevel::screensChanged);
 	QObject::connect(&handle->visibleScreens, &WlOutputTracker::screenRemoved, this, &Toplevel::screensChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::maximizedChanged, this, &Toplevel::maximizedChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::minimizedChanged, this, &Toplevel::minimizedChanged);
-	QObject::connect(handle, &impl::ToplevelHandle::fullscreenChanged, this, &Toplevel::fullscreenChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::maximizedChanged, this, &Toplevel::maximizedChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::minimizedChanged, this, &Toplevel::minimizedChanged);
+	QObject::connect(handle, &wlr::ToplevelHandle::fullscreenChanged, this, &Toplevel::fullscreenChanged);
 	// clang-format on
 }
 
@@ -73,13 +71,7 @@ void Toplevel::fullscreenOn(QuickshellScreenInfo* screen) {
 }
 
 void Toplevel::setRectangle(QObject* window, QRect rect) {
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(window);
-
-	if (proxyWindow == nullptr) {
-		if (auto* iface = qobject_cast<WindowInterface*>(window)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
+	auto* proxyWindow = ProxyWindowBase::forObject(window);
 
 	if (proxyWindow != this->rectWindow) {
 		if (this->rectWindow != nullptr) {
@@ -121,11 +113,11 @@ void Toplevel::onRectangleProxyDestroyed() {
 }
 
 ToplevelManager::ToplevelManager() {
-	auto* manager = impl::ToplevelManager::instance();
+	auto* manager = wlr::ToplevelManager::instance();
 
 	QObject::connect(
 	    manager,
-	    &impl::ToplevelManager::toplevelReady,
+	    &wlr::ToplevelManager::toplevelReady,
 	    this,
 	    &ToplevelManager::onToplevelReady
 	);
@@ -135,7 +127,7 @@ ToplevelManager::ToplevelManager() {
 	}
 }
 
-Toplevel* ToplevelManager::forImpl(impl::ToplevelHandle* impl) const {
+Toplevel* ToplevelManager::forImpl(wlr::ToplevelHandle* impl) const {
 	if (impl == nullptr) return nullptr;
 
 	for (auto* toplevel: this->mToplevels.valueList()) {
@@ -147,7 +139,7 @@ Toplevel* ToplevelManager::forImpl(impl::ToplevelHandle* impl) const {
 
 ObjectModel<Toplevel>* ToplevelManager::toplevels() { return &this->mToplevels; }
 
-void ToplevelManager::onToplevelReady(impl::ToplevelHandle* handle) {
+void ToplevelManager::onToplevelReady(wlr::ToplevelHandle* handle) {
 	auto* toplevel = new Toplevel(handle, this);
 
 	// clang-format off
@@ -161,7 +153,11 @@ void ToplevelManager::onToplevelReady(impl::ToplevelHandle* handle) {
 
 void ToplevelManager::onToplevelActiveChanged() {
 	auto* toplevel = qobject_cast<Toplevel*>(this->sender());
-	if (toplevel->activated()) this->setActiveToplevel(toplevel);
+	if (toplevel->activated()) {
+		this->setActiveToplevel(toplevel);
+	} else if (toplevel == this->mActiveToplevel) {
+		this->setActiveToplevel(nullptr);
+	}
 }
 
 void ToplevelManager::onToplevelClosed() {
@@ -194,4 +190,4 @@ Toplevel* ToplevelManagerQml::activeToplevel() {
 	return ToplevelManager::instance()->activeToplevel();
 }
 
-} // namespace qs::wayland::toplevel_management
+} // namespace qs::wayland::toplevel

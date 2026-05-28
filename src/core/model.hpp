@@ -138,6 +138,10 @@ public:
 		qsizetype oi = 0;
 		for (auto* object: newValues) {
 			if (this->mValuesList.length() == oi || this->mValuesList.at(oi) != object) {
+				// object may already be present further down (reorder case);
+				// drop the old row first so the same pointer is not inserted twice.
+				auto old = this->mValuesList.indexOf(object, oi);
+				if (old != -1) this->removeAt(old);
 				this->insertObject(object, oi);
 			}
 

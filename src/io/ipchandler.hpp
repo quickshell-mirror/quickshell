@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <vector>
 
+#include <qcolor.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qhash.h>
@@ -67,6 +69,54 @@ public:
 	const IpcType* type = nullptr;
 };
 
+class IpcSignalListener: public QObject {
+	Q_OBJECT;
+
+public:
+	IpcSignalListener(QString signal): signal(std::move(signal)) {}
+
+	static const int SLOT_VOID;
+	static const int SLOT_STRING;
+	static const int SLOT_INT;
+	static const int SLOT_BOOL;
+	static const int SLOT_REAL;
+	static const int SLOT_COLOR;
+
+signals:
+	void triggered(const QString& signal, const QString& value);
+
+private slots:
+	void invokeVoid() { this->triggered(this->signal, "void"); }
+	void invokeString(const QString& value) { this->triggered(this->signal, value); }
+	void invokeInt(int value) { this->triggered(this->signal, QString::number(value)); }
+	void invokeBool(bool value) { this->triggered(this->signal, value ? "true" : "false"); }
+	void invokeReal(double value) { this->triggered(this->signal, QString::number(value)); }
+	void invokeColor(QColor value) { this->triggered(this->signal, value.name(QColor::HexArgb)); }
+
+private:
+	QString signal;
+};
+
+class IpcHandler;
+
+class IpcSignal {
+public:
+	explicit IpcSignal(QMetaMethod signal): signal(signal) {}
+
+	bool resolve(QString& error);
+
+	[[nodiscard]] WireSignalDefinition wireDef() const;
+
+	QMetaMethod signal;
+	int targetSlot = -1;
+
+	void connectListener(IpcHandler* handler);
+
+private:
+	void connectListener(QObject* handler, IpcSignalListener* listener) const;
+	std::shared_ptr<IpcSignalListener> listener;
+};
+
 class IpcHandlerRegistry;
 
 ///! Handler for IPC message calls.
@@ -100,6 +150,11 @@ class IpcHandlerRegistry;
 /// - `real` will be converted to a string and returned.
 /// - `color` will be converted to a hex string in the form `#AARRGGBB` and returned.
 ///
+/// #### Signals
+/// IPC handler signals can be observed remotely using `qs ipc wait` (one call)
+/// and `qs ipc listen` (many calls). IPC signals may have zero or one argument, where
+/// the argument is one of the types listed above, or no arguments for void.
+///
 /// #### Example
 /// The following example creates ipc functions to control and retrieve the appearance
 /// of a Rectangle.
@@ -119,10 +174,18 @@ class IpcHandlerRegistry;
 ///
 ///     function setColor(color: color): void { rect.color = color; }
 ///     function getColor(): color { return rect.color; }
+///
 ///     function setAngle(angle: real): void { rect.rotation = angle; }
 ///     function getAngle(): real { return rect.rotation; }
-///     function setRadius(radius: int): void { rect.radius = radius; }
+///
+///     function setRadius(radius: int): void {
+///       rect.radius = radius;
+///       this.radiusChanged(radius);
+///     }
+///
 ///     function getRadius(): int { return rect.radius; }
+///
+/// 		signal radiusChanged(newRadius: int);
 ///   }
 /// }
 /// ```
@@ -136,6 +199,7 @@ class IpcHandlerRegistry;
 ///   function getAngle(): real
 ///   function setRadius(radius: int): void
 ///   function getRadius(): int
+///   signal radiusChanged(newRadius: int)
 /// ```
 ///
 /// and then invoked using `qs ipc call`.
@@ -179,14 +243,15 @@ public:
 	QString listMembers(qsizetype indent);
 	[[nodiscard]] IpcFunction* findFunction(const QString& name);
 	[[nodiscard]] IpcProperty* findProperty(const QString& name);
+	[[nodiscard]] IpcSignal* findSignal(const QString& name);
 	[[nodiscard]] WireTargetDefinition wireDef() const;
 
 signals:
 	void enabledChanged();
 	void targetChanged();
 
-private slots:
-	//void handleIpcPropertyChange();
+public slots:
+	void onSignalTriggered(const QString& signal, const QString& value) const;
 
 private:
 	void updateRegistration(bool destroying = false);
@@ -204,6 +269,7 @@ private:
 
 	QHash<QString, IpcFunction> functionMap;
 	QHash<QString, IpcProperty> propertyMap;
+	QHash<QString, IpcSignal> signalMap;
 
 	friend class IpcHandlerRegistry;
 };
@@ -225,6 +291,16 @@ public:
 private:
 	QHash<QString, IpcHandler*> handlers;
 	QHash<QString, QVector<IpcHandler*>> knownHandlers;
+};
+
+class IpcSignalRemoteListener: public QObject {
+	Q_OBJECT;
+
+public:
+	static IpcSignalRemoteListener* instance();
+
+signals:
+	void triggered(const QString& target, const QString& signal, const QString& value);
 };
 
 } // namespace qs::io::ipc

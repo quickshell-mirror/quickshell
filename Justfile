@@ -13,7 +13,7 @@ lint-changed:
 	git diff --name-only HEAD | grep "^.*\.cpp\$" |  parallel -j$(nproc) --no-notice --will-cite --tty --bar clang-tidy --load={{ env_var("TIDYFOX") }}
 
 lint-staged:
-	git diff --staged --name-only HEAD | grep "^.*\.cpp\$" |  parallel -j$(nproc) --no-notice --will-cite --tty --bar clang-tidy --load={{ env_var("TIDYFOX") }}
+	git diff --staged --name-only --diff-filter=d HEAD | grep "^.*\.cpp\$" |  parallel -j$(nproc) --no-notice --will-cite --tty --bar clang-tidy --load={{ env_var("TIDYFOX") }}
 
 configure target='debug' *FLAGS='':
 	cmake -GNinja -B {{builddir}} \

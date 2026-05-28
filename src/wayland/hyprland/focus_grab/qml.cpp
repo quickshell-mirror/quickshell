@@ -9,7 +9,6 @@
 #include <qwindow.h>
 
 #include "../../../window/proxywindow.hpp"
-#include "../../../window/windowinterface.hpp"
 #include "grab.hpp"
 #include "manager.hpp"
 
@@ -38,8 +37,51 @@ QObjectList HyprlandFocusGrab::windows() const { return this->windowObjects; }
 
 void HyprlandFocusGrab::setWindows(QObjectList windows) {
 	if (windows == this->windowObjects) return;
+	if (this->grab) this->grab->startTransaction();
+
+	for (auto* obj: this->windowObjects) {
+		if (windows.contains(obj)) continue;
+		QObject::disconnect(obj, nullptr, this, nullptr);
+
+		auto* proxy = ProxyWindowBase::forObject(obj);
+		if (!proxy) continue;
+
+		QObject::disconnect(proxy, nullptr, this, nullptr);
+
+		if (this->grab && proxy->backingWindow()) {
+			this->grab->removeWindow(proxy->backingWindow());
+		}
+	}
+
+	for (auto it = windows.begin(); it != windows.end();) {
+		auto* proxy = ProxyWindowBase::forObject(*it);
+		if (!proxy) {
+			it = windows.erase(it);
+			continue;
+		}
+
+		if (this->windowObjects.contains(*it)) {
+			++it;
+			continue;
+		}
+
+		QObject::connect(*it, &QObject::destroyed, this, &HyprlandFocusGrab::onObjectDestroyed);
+		QObject::connect(
+		    proxy,
+		    &ProxyWindowBase::windowConnected,
+		    this,
+		    &HyprlandFocusGrab::onProxyConnected
+		);
+
+		if (this->grab && proxy->backingWindow()) {
+			this->grab->addWindow(proxy->backingWindow());
+		}
+
+		++it;
+	}
+
+	if (this->grab) this->grab->completeTransaction();
 	this->windowObjects = std::move(windows);
-	this->syncWindows();
 	emit this->windowsChanged();
 }
 
@@ -75,59 +117,18 @@ void HyprlandFocusGrab::tryActivate() {
 	QObject::connect(this->grab, &FocusGrab::cleared, this, &HyprlandFocusGrab::onGrabCleared);
 
 	this->grab->startTransaction();
-	for (auto* proxy: this->trackedProxies) {
-		if (proxy->backingWindow() != nullptr) {
+	for (auto* obj: this->windowObjects) {
+		auto* proxy = ProxyWindowBase::forObject(obj);
+		if (proxy && proxy->backingWindow()) {
 			this->grab->addWindow(proxy->backingWindow());
 		}
 	}
 	this->grab->completeTransaction();
 }
 
-void HyprlandFocusGrab::syncWindows() {
-	auto newProxy = QList<ProxyWindowBase*>();
-	for (auto* windowObject: this->windowObjects) {
-		auto* proxyWindow = qobject_cast<ProxyWindowBase*>(windowObject);
-
-		if (proxyWindow == nullptr) {
-			if (auto* iface = qobject_cast<WindowInterface*>(windowObject)) {
-				proxyWindow = iface->proxyWindow();
-			}
-		}
-
-		if (proxyWindow != nullptr) {
-			newProxy.push_back(proxyWindow);
-		}
-	}
-
-	if (this->grab) this->grab->startTransaction();
-
-	for (auto* oldWindow: this->trackedProxies) {
-		if (!newProxy.contains(oldWindow)) {
-			QObject::disconnect(oldWindow, nullptr, this, nullptr);
-
-			if (this->grab != nullptr && oldWindow->backingWindow() != nullptr) {
-				this->grab->removeWindow(oldWindow->backingWindow());
-			}
-		}
-	}
-
-	for (auto* newProxy: newProxy) {
-		if (!this->trackedProxies.contains(newProxy)) {
-			QObject::connect(
-			    newProxy,
-			    &ProxyWindowBase::windowConnected,
-			    this,
-			    &HyprlandFocusGrab::onProxyConnected
-			);
-
-			if (this->grab != nullptr && newProxy->backingWindow() != nullptr) {
-				this->grab->addWindow(newProxy->backingWindow());
-			}
-		}
-	}
-
-	this->trackedProxies = newProxy;
-	if (this->grab) this->grab->completeTransaction();
+void HyprlandFocusGrab::onObjectDestroyed(QObject* object) {
+	this->windowObjects.removeOne(object);
+	emit this->windowsChanged();
 }
 
 } // namespace qs::hyprland

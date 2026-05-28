@@ -1,0 +1,8 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Connection.Active">
+    <signal name="StateChanged">
+			<arg name="state" type="u"/>
+			<arg name="reason" type="u"/>
+		</signal>
+  </interface>
+</node>

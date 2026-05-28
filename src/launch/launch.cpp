@@ -27,7 +27,7 @@
 #include "build.hpp"
 #include "launch_p.hpp"
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 #include "../crash/handler.hpp"
 #endif
 
@@ -76,6 +76,9 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		bool useSystemStyle = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
 		QHash<QString, QString> envOverrides;
+		QHash<QString, QString> defaultEnv;
+		QString appId = qEnvironmentVariable("QS_APP_ID");
+		bool dropExpensiveFonts = false;
 		QString dataDir;
 		QString stateDir;
 		QString cacheDir;
@@ -87,23 +90,31 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		if (line.startsWith("//@ pragma ")) {
 			auto pragma = line.sliced(11).trimmed();
 
-			if (pragma == "UseQApplication") pragmas.useQApplication = true;
-			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
-			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
-			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
-			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
-			else if (pragma.startsWith("Env ")) {
-				auto envPragma = pragma.sliced(4);
-				auto splitIdx = envPragma.indexOf('=');
+			auto isEnv = pragma.startsWith("Env ");
+			auto isDefaultEnv = pragma.startsWith("DefaultEnv ");
+
+			if (isEnv || isDefaultEnv) {
+				auto content = pragma.sliced(isDefaultEnv ? 11 : 4);
+				auto splitIdx = content.indexOf('=');
 
 				if (splitIdx == -1) {
 					qCritical() << "Env pragma" << pragma << "not in the form 'VAR = VALUE'";
 					return -1;
 				}
 
-				auto var = envPragma.sliced(0, splitIdx).trimmed();
-				auto val = envPragma.sliced(splitIdx + 1).trimmed();
-				pragmas.envOverrides.insert(var, val);
+				auto var = content.sliced(0, splitIdx).trimmed();
+				auto val = content.sliced(splitIdx + 1).trimmed();
+
+				if (isDefaultEnv) pragmas.defaultEnv.insert(var, val);
+				else pragmas.envOverrides.insert(var, val);
+			} else if (pragma == "UseQApplication") pragmas.useQApplication = true;
+			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
+			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
+			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
+			else if (pragma == "DropExpensiveFonts") pragmas.dropExpensiveFonts = true;
+			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
+			else if (pragma.startsWith("AppId ")) {
+				pragmas.appId = pragma.sliced(6).trimmed();
 			} else if (pragma.startsWith("ShellId ")) {
 				shellId = pragma.sliced(8).trimmed();
 			} else if (pragma.startsWith("DataDir ")) {
@@ -113,8 +124,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 			} else if (pragma.startsWith("CacheDir ")) {
 				pragmas.cacheDir = pragma.sliced(9).trimmed();
 			} else {
-				qCritical() << "Unrecognized pragma" << pragma;
-				return -1;
+				qWarning() << "Unrecognized pragma" << pragma;
 			}
 		} else if (line.startsWith("import")) break;
 	}
@@ -128,22 +138,26 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	qInfo() << "Shell ID:" << shellId << "Path ID" << pathId;
 
 	auto launchTime = qs::Common::LAUNCH_TIME.toSecsSinceEpoch();
+	auto appId = pragmas.appId.isEmpty() ? QStringLiteral("org.quickshell") : pragmas.appId;
+
 	InstanceInfo::CURRENT = InstanceInfo {
 	    .instanceId = base36Encode(getpid()) + base36Encode(launchTime),
 	    .configPath = args.configPath,
 	    .shellId = shellId,
+	    .appId = appId,
 	    .launchTime = qs::Common::LAUNCH_TIME,
 	    .pid = getpid(),
 	    .display = getDisplayConnection(),
 	};
 
-#if CRASH_REPORTER
-	auto crashHandler = crash::CrashHandler();
-	crashHandler.init();
+#if CRASH_HANDLER
+	if (qEnvironmentVariableIsSet("QS_DISABLE_CRASH_HANDLER")) {
+		qInfo() << "Crash handling disabled.";
+	} else {
+		crash::CrashHandler::init();
 
-	{
 		auto* log = LogManager::instance();
-		crashHandler.setRelaunchInfo({
+		crash::CrashHandler::setRelaunchInfo({
 		    .instance = InstanceInfo::CURRENT,
 		    .noColor = !log->colorLogs,
 		    .timestamp = log->timestampLogs,
@@ -166,8 +180,54 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
 	}
 
+	for (auto [var, val]: pragmas.defaultEnv.asKeyValueRange()) {
+		if (!qEnvironmentVariableIsSet(var.toUtf8())) qputenv(var.toUtf8(), val.toUtf8());
+	}
+
 	for (auto [var, val]: pragmas.envOverrides.asKeyValueRange()) {
 		qputenv(var.toUtf8(), val.toUtf8());
+	}
+
+	pragmas.dropExpensiveFonts |= qEnvironmentVariableIntValue("QS_DROP_EXPENSIVE_FONTS") == 1;
+
+	if (pragmas.dropExpensiveFonts) {
+		if (auto* runDir = QsPaths::instance()->instanceRunDir()) {
+			auto baseConfigPath = qEnvironmentVariable("FONTCONFIG_FILE");
+			if (baseConfigPath.isEmpty()) baseConfigPath = "/etc/fonts/fonts.conf";
+
+			auto filterPath = runDir->filePath("fonts-override.conf");
+			auto filterFile = QFile(filterPath);
+			if (filterFile.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+				auto filterTemplate = QStringLiteral(R"(<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+	<include ignore_missing="no">%1</include>
+	<selectfont>
+		<rejectfont>
+			<pattern>
+				<patelt name="fontwrapper">
+					<string>woff</string>
+				</patelt>
+			</pattern>
+			<pattern>
+				<patelt name="fontwrapper">
+					<string>woff2</string>
+				</patelt>
+			</pattern>
+		</rejectfont>
+	</selectfont>
+</fontconfig>
+)");
+
+				QTextStream(&filterFile) << filterTemplate.arg(baseConfigPath);
+				filterFile.close();
+				qputenv("FONTCONFIG_FILE", filterPath.toUtf8());
+			} else {
+				qCritical() << "Could not write fontconfig filter to" << filterPath;
+			}
+		} else {
+			qCritical() << "Could not create fontconfig filter: instance run directory unavailable";
+		}
 	}
 
 	// The qml engine currently refuses to cache non file (qsintercept) paths.
@@ -230,7 +290,7 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		app = new QGuiApplication(qArgC, argv);
 	}
 
-	QGuiApplication::setDesktopFileName("org.quickshell");
+	QGuiApplication::setDesktopFileName(appId);
 
 	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);

@@ -13,7 +13,7 @@ namespace qs::io::process {
 
 class ProcessContext {
 	Q_PROPERTY(QList<QString> command MEMBER command WRITE setCommand);
-	Q_PROPERTY(QHash<QString, QVariant> environment MEMBER environment WRITE setEnvironment);
+	Q_PROPERTY(QVariantHash environment MEMBER environment WRITE setEnvironment);
 	Q_PROPERTY(bool clearEnvironment MEMBER clearEnvironment WRITE setClearEnvironment);
 	Q_PROPERTY(QString workingDirectory MEMBER workingDirectory WRITE setWorkingDirectory);
 	Q_PROPERTY(bool unbindStdout MEMBER unbindStdout WRITE setUnbindStdout);

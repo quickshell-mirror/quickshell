@@ -20,6 +20,7 @@ Checks: >
   -cppcoreguidelines-avoid-do-while,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-pro-type-union-access,
   -cppcoreguidelines-use-enum-class,
   google-global-names-in-headers,
   google-readability-casting,

@@ -9,7 +9,6 @@
 #include <qwindow.h>
 
 #include "../../window/proxywindow.hpp"
-#include "../../window/windowinterface.hpp"
 #include "proto.hpp"
 
 namespace qs::wayland::shortcuts_inhibit {
@@ -48,14 +47,7 @@ ShortcutInhibitor::~ShortcutInhibitor() {
 
 void ShortcutInhibitor::onBoundWindowChanged() {
 	auto* window = this->bBoundWindow.value();
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(window);
-
-	if (!proxyWindow) {
-		if (auto* iface = qobject_cast<WindowInterface*>(window)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
-
+	auto* proxyWindow = ProxyWindowBase::forObject(window);
 	if (proxyWindow == this->proxyWindow) return;
 
 	if (this->proxyWindow) {

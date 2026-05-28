@@ -15,7 +15,7 @@ qs_add_module_deps_light(quickshell-hyprland-ipc Quickshell)
 
 install_qml_module(quickshell-hyprland-ipc)
 
-target_link_libraries(quickshell-hyprland-ipc PRIVATE Qt::Quick)
+target_link_libraries(quickshell-hyprland-ipc PRIVATE Qt::Quick quickshell-core)
 
 if (WAYLAND_TOPLEVEL_MANAGEMENT)
 	target_sources(quickshell-hyprland-ipc PRIVATE

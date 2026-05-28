@@ -51,6 +51,10 @@ void HyprlandIpcQml::refreshToplevels() { HyprlandIpc::instance()->refreshToplev
 QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->requestSocketPath(); }
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 
+QBindable<bool> HyprlandIpcQml::bindableUsingLua() {
+	return HyprlandIpc::instance()->bindableUsingLua();
+}
+
 QBindable<HyprlandMonitor*> HyprlandIpcQml::bindableFocusedMonitor() {
 	return HyprlandIpc::instance()->bindableFocusedMonitor();
 }

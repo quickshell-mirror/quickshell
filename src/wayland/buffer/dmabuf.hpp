@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <memory>
 
 #include <EGL/egl.h>
 #include <gbm.h>
@@ -12,9 +14,11 @@
 #include <qsize.h>
 #include <qtclasshelpermacros.h>
 #include <qtypes.h>
+#include <qvulkanfunctions.h>
 #include <qwayland-linux-dmabuf-v1.h>
 #include <qwaylandclientextension.h>
 #include <sys/types.h>
+#include <vulkan/vulkan_core.h>
 #include <wayland-linux-dmabuf-v1-client-protocol.h>
 #include <wayland-util.h>
 #include <xf86drm.h>
@@ -69,28 +73,16 @@ private:
 QDebug& operator<<(QDebug& debug, const FourCCStr& fourcc);
 QDebug& operator<<(QDebug& debug, const FourCCModStr& fourcc);
 
-class GbmDeviceHandle {
-public:
-	GbmDeviceHandle() = default;
-	GbmDeviceHandle(gbm_device* device): device(device) {}
+struct GbmDevice {
+	GbmDevice(dev_t handle, std::string renderNode, gbm_device* device)
+	    : handle(handle)
+	    , renderNode(std::move(renderNode))
+	    , device(device) {}
+	~GbmDevice();
+	Q_DISABLE_COPY_MOVE(GbmDevice);
 
-	GbmDeviceHandle(GbmDeviceHandle&& other) noexcept: device(other.device) {
-		other.device = nullptr;
-	}
-
-	~GbmDeviceHandle();
-	Q_DISABLE_COPY(GbmDeviceHandle);
-
-	GbmDeviceHandle& operator=(GbmDeviceHandle&& other) noexcept {
-		this->device = other.device;
-		other.device = nullptr;
-		return *this;
-	}
-
-	[[nodiscard]] gbm_device* operator*() const { return this->device; }
-	[[nodiscard]] operator bool() const { return this->device; }
-
-private:
+	dev_t handle = 0;
+	std::string renderNode;
 	gbm_device* device = nullptr;
 };
 
@@ -110,6 +102,36 @@ private:
 	EGLImage eglImage;
 	GLuint glTexture;
 	QSGTexture* qsgTexture;
+
+	friend class WlDmaBuffer;
+};
+
+class WlDmaBufferVulkanQSGTexture: public WlBufferQSGTexture {
+public:
+	~WlDmaBufferVulkanQSGTexture() override;
+	Q_DISABLE_COPY_MOVE(WlDmaBufferVulkanQSGTexture);
+
+	[[nodiscard]] QSGTexture* texture() const override { return this->qsgTexture; }
+
+private:
+	WlDmaBufferVulkanQSGTexture(
+	    QVulkanDeviceFunctions* devFuncs,
+	    VkDevice device,
+	    VkImage image,
+	    VkDeviceMemory memory,
+	    QSGTexture* qsgTexture
+	)
+	    : devFuncs(devFuncs)
+	    , device(device)
+	    , image(image)
+	    , memory(memory)
+	    , qsgTexture(qsgTexture) {}
+
+	QVulkanDeviceFunctions* devFuncs = nullptr;
+	VkDevice device = VK_NULL_HANDLE;
+	VkImage image = VK_NULL_HANDLE;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
+	QSGTexture* qsgTexture = nullptr;
 
 	friend class WlDmaBuffer;
 };
@@ -139,7 +161,7 @@ private:
 		uint32_t stride = 0;
 	};
 
-	GbmDeviceHandle device;
+	std::shared_ptr<GbmDevice> device;
 	gbm_bo* bo = nullptr;
 	wl_buffer* mBuffer = nullptr;
 	int planeCount = 0;
@@ -148,9 +170,13 @@ private:
 	uint64_t modifier = 0;
 	uint32_t width = 0;
 	uint32_t height = 0;
+	bool usedImplicitModifier = false;
 
 	friend class LinuxDmabufManager;
 	friend QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
+
+	[[nodiscard]] WlBufferQSGTexture* createQsgTextureGl(QQuickWindow* window) const;
+	[[nodiscard]] WlBufferQSGTexture* createQsgTextureVulkan(QQuickWindow* window) const;
 };
 
 QDebug& operator<<(QDebug& debug, const WlDmaBuffer* buffer);
@@ -203,33 +229,31 @@ public:
 	[[nodiscard]] WlBuffer* createDmabuf(const WlBufferRequest& request);
 
 	[[nodiscard]] WlBuffer* createDmabuf(
-	    GbmDeviceHandle& device,
+	    const std::shared_ptr<GbmDevice>& device,
 	    uint32_t format,
 	    const LinuxDmabufModifiers& modifiers,
 	    uint32_t width,
 	    uint32_t height
 	);
 
+	bool initRenderFormats(QQuickWindow* window);
+
 private:
-	struct SharedGbmDevice {
-		dev_t handle = 0;
-		std::string renderNode;
-		gbm_device* device = nullptr;
-		qsizetype refcount = 0;
-	};
+	bool initRenderFormatsGl(QQuickWindow* window);
+	bool initRenderFormatsVk(QQuickWindow* window);
 
 	void feedbackDone();
 
-	GbmDeviceHandle getGbmDevice(dev_t handle);
-	void unrefGbmDevice(gbm_device* device);
-	GbmDeviceHandle dupHandle(const GbmDeviceHandle& handle);
+	std::shared_ptr<GbmDevice> getGbmDevice(dev_t handle);
 
+	LinuxDmabufFormatSelection renderFormats;
+	std::string renderNode;
 	QList<LinuxDmabufTranche> tranches;
-	QList<SharedGbmDevice> gbmDevices;
+	QList<std::weak_ptr<GbmDevice>> gbmDevices;
 	WlBufferManagerPrivate* manager;
 
 	friend class LinuxDmabufFeedback;
-	friend class GbmDeviceHandle;
+	friend struct GbmDevice;
 };
 
 } // namespace qs::wayland::buffer::dmabuf

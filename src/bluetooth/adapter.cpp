@@ -9,7 +9,6 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qstring.h>
-#include <qstringliteral.h>
 #include <qtypes.h>
 
 #include "../core/logcat.hpp"

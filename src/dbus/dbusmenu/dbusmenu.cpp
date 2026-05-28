@@ -301,6 +301,13 @@ DBusMenu::DBusMenu(const QString& service, const QString& path, QObject* parent)
 	    &DBusMenu::onLayoutUpdated
 	);
 
+	QObject::connect(
+	    this->interface,
+	    &DBusMenuInterface::ItemsPropertiesUpdated,
+	    this,
+	    &DBusMenu::onItemPropertiesUpdated
+	);
+
 	this->properties.setInterface(this->interface);
 	this->properties.updateAllViaGetAll();
 }

@@ -116,7 +116,7 @@ QObject* Reloadable::getChildByReloadId(QObject* parent, const QString& reloadId
 		auto* reloadable = qobject_cast<Reloadable*>(child);
 		if (reloadable != nullptr) {
 			if (reloadable->mReloadableId == reloadId) return reloadable;
-			// if not then don't check its children as thats a seperate reload scope.
+			// if not then don't check its children as that's a separate reload scope.
 		} else {
 			auto* reloadable = Reloadable::getChildByReloadId(child, reloadId);
 			if (reloadable != nullptr) return reloadable;

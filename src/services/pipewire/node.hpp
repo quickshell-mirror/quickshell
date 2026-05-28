@@ -15,6 +15,7 @@
 #include <spa/pod/pod.h>
 
 #include "core.hpp"
+#include "device.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
@@ -139,7 +140,7 @@ public:
 		// This is equivalent to the media class `Video/Source` and is composed
 		// of the @@PwNodeType.Video and @@PwNodeType.Source flags.
 		VideoSource = Video | Source,
-		// A consumer of video, such as a program that is recieving a video stream.
+		// A consumer of video, such as a program that is receiving a video stream.
 		//
 		// This is equivalent to the media class `Video/Sink` and is composed of the
 		// @@PwNodeType.Video and @@PwNodeType.Sink flags.
@@ -199,6 +200,8 @@ public:
 	[[nodiscard]] QVector<float> volumes() const;
 	void setVolumes(const QVector<float>& volumes);
 
+	[[nodiscard]] QVector<float> server() const;
+
 signals:
 	void volumesChanged();
 	void channelsChanged();
@@ -233,6 +236,8 @@ public:
 	QString description;
 	QString nick;
 	QMap<QString, QString> properties;
+	quint64 objectSerial = 0;
+	bool isMonitor = false;
 
 	PwNodeType::Flags type = PwNodeType::Untracked;
 
@@ -244,7 +249,11 @@ public:
 	qint32 routeDevice = -1;
 	bool proAudio = false;
 
-	[[nodiscard]] bool shouldUseDevice() const { return this->device && !this->proAudio; }
+	[[nodiscard]] bool shouldUseDevice() const {
+		if (!this->device || this->proAudio || this->routeDevice == -1) return false;
+		// Only use device control if the device actually has route indexes for this routeDevice
+		return this->device->hasRouteDevice(this->routeDevice);
+	}
 
 signals:
 	void propertiesChanged();

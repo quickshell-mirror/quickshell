@@ -6,12 +6,12 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../toplevel_management/qml.hpp"
+#include "../../toplevel/qml.hpp"
 #include "connection.hpp"
 #include "toplevel_mapping.hpp"
 #include "workspace.hpp"
 
-using namespace qs::wayland::toplevel_management;
+using namespace qs::wayland::toplevel;
 
 namespace qs::hyprland::ipc {
 
@@ -72,20 +72,16 @@ void HyprlandToplevel::updateFromObject(const QVariantMap& object) {
 	Qt::beginPropertyUpdateGroup();
 	bool ok = false;
 	auto address = addressStr.toULongLong(&ok, 16);
-	if (!ok || !address) {
-		return;
-	}
+	if (ok && address) this->setAddress(address);
 
-	this->setAddress(address);
 	this->bTitle = title;
 
 	auto workspaceMap = object.value("workspace").toMap();
 	auto workspaceName = workspaceMap.value("name").toString();
 
-	auto* workspace = this->ipc->findWorkspaceByName(workspaceName, false);
-	if (!workspace) return;
+	auto* workspace = this->ipc->findWorkspaceByName(workspaceName, true);
+	if (workspace) this->setWorkspace(workspace);
 
-	this->setWorkspace(workspace);
 	this->bLastIpcObject = object;
 	Qt::endPropertyUpdateGroup();
 }
@@ -116,7 +112,7 @@ Toplevel* HyprlandToplevel::waylandHandle() {
 	return ToplevelManager::instance()->forImpl(this->mWaylandHandle);
 }
 
-void HyprlandToplevel::setWaylandHandle(impl::ToplevelHandle* handle) {
+void HyprlandToplevel::setWaylandHandle(wlr::ToplevelHandle* handle) {
 	if (this->mWaylandHandle == handle) return;
 	if (this->mWaylandHandle) {
 		QObject::disconnect(this->mWaylandHandle, nullptr, this, nullptr);

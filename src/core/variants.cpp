@@ -145,7 +145,7 @@ void Variants::updateVariants() {
 
 		{
 			if (this->mInstances.contains(variant)) {
-				continue; // we dont need to recreate this one
+				continue; // we don't need to recreate this one
 			}
 
 			auto variantMap = QVariantMap();

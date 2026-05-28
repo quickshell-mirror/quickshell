@@ -190,6 +190,14 @@ QString WirePropertyDefinition::toString() const {
 	return "property " % this->name % ": " % this->type;
 }
 
+QString WireSignalDefinition::toString() const {
+	if (this->rettype.isEmpty()) {
+		return "signal " % this->name % "()";
+	} else {
+		return "signal " % this->name % "(" % this->retname % ": " % this->rettype % ')';
+	}
+}
+
 QString WireTargetDefinition::toString() const {
 	QString accum = "target " % this->name;
 
@@ -199,6 +207,10 @@ QString WireTargetDefinition::toString() const {
 
 	for (const auto& prop: this->properties) {
 		accum += "\n  " % prop.toString();
+	}
+
+	for (const auto& sig: this->signalFunctions) {
+		accum += "\n  " % sig.toString();
 	}
 
 	return accum;

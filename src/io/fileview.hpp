@@ -29,9 +29,9 @@ class FileViewError: public QObject {
 
 public:
 	enum Enum : quint8 {
-		/// No error occured.
+		/// No error occurred.
 		Success = 0,
-		/// An unknown error occured. Check the logs for details.
+		/// An unknown error occurred. Check the logs for details.
 		Unknown = 1,
 		/// The file to read does not exist.
 		FileNotFound = 2,

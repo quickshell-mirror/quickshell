@@ -3,7 +3,7 @@
 #include <qtclasshelpermacros.h>
 #include <qwayland-hyprland-toplevel-export-v1.h>
 
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "../manager.hpp"
 
 namespace qs::wayland::screencopy::hyprland {
@@ -16,7 +16,7 @@ class HyprlandScreencopyContext
 public:
 	explicit HyprlandScreencopyContext(
 	    HyprlandScreencopyManager* manager,
-	    toplevel_management::impl::ToplevelHandle* handle,
+	    toplevel::wlr::ToplevelHandle* handle,
 	    bool paintCursors
 	);
 
@@ -43,7 +43,7 @@ private:
 	buffer::WlBufferRequest request;
 	bool copiedFirstFrame = false;
 
-	toplevel_management::impl::ToplevelHandle* handle;
+	toplevel::wlr::ToplevelHandle* handle;
 	bool paintCursors;
 };
 

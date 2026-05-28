@@ -28,7 +28,19 @@ public:
 	static bool isSecure();
 
 signals:
+	// This signal is sent once the compositor considers the session to be fully locked.
+	// This corresponds to the ext_session_lock_v1::locked event.
 	void locked();
+
+	// This signal is sent once the compositor considers the session to be unlocked.
+	// This corresponds to the ext_session_lock_v1::finished event.
+	//
+	// The session lock will end in one of three cases.
+	// 1. unlock() is called.
+	// 2. The SessionLockManager is destroyed.
+	// 3. The compositor forcibly unlocks the session.
+	//
+	// After receiving this event the caller should destroy all of its lock surfaces.
 	void unlocked();
 
 private:

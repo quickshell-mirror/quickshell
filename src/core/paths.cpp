@@ -1,6 +1,7 @@
 #include "paths.hpp"
 #include <cerrno>
 #include <cstdio>
+#include <tuple>
 #include <utility>
 
 #include <fcntl.h>
@@ -9,7 +10,6 @@
 #include <qdir.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
-#include <qpair.h>
 #include <qstandardpaths.h>
 #include <qtenvironmentvariables.h>
 #include <qtversionchecks.h>
@@ -64,7 +64,7 @@ QDir* QsPaths::baseRunDir() {
 	if (this->baseRunState == DirState::Unknown) {
 		auto runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
 		if (runtimeDir.isEmpty()) {
-			runtimeDir = QString("/run/user/$1").arg(getuid());
+			runtimeDir = QString("/run/user/%1").arg(getuid());
 			qCInfo(logPaths) << "XDG_RUNTIME_DIR was not set, defaulting to" << runtimeDir;
 		}
 
@@ -361,7 +361,7 @@ void QsPaths::createLock() {
 			return;
 		}
 
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -389,7 +389,7 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 	auto file = QFile(QDir(path).filePath("instance.lock"));
 	if (!file.open(QFile::ReadOnly)) return false;
 
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_WRLCK,
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,
@@ -412,10 +412,11 @@ bool QsPaths::checkLock(const QString& path, InstanceLockInfo* info, bool allowD
 	return true;
 }
 
-QPair<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
+std::tuple<QVector<InstanceLockInfo>, QVector<InstanceLockInfo>, QVector<InstanceLockInfo>>
 QsPaths::collectInstances(const QString& path, const QString& display) {
 	qCDebug(logPaths) << "Collecting instances from" << path;
 	auto liveInstances = QVector<InstanceLockInfo>();
+	auto mismatchedInstances = QVector<InstanceLockInfo>();
 	auto deadInstances = QVector<InstanceLockInfo>();
 	auto dir = QDir(path);
 
@@ -427,20 +428,22 @@ QsPaths::collectInstances(const QString& path, const QString& display) {
 			qCDebug(logPaths).nospace() << "Found instance " << info.instance.instanceId << " (pid "
 			                            << info.pid << ") at " << path;
 
-			if (!display.isEmpty() && info.instance.display != display) {
-				qCDebug(logPaths) << "Skipped instance with mismatched display at" << path;
+			if (info.pid == -1) {
+				deadInstances.push_back(info);
 				continue;
 			}
 
-			if (info.pid == -1) {
-				deadInstances.push_back(info);
-			} else {
-				liveInstances.push_back(info);
+			if (!display.isEmpty() && info.instance.display != display) {
+				qCDebug(logPaths) << "Skipped instance with mismatched display at" << path;
+				mismatchedInstances.push_back(info);
+				continue;
 			}
+
+			liveInstances.push_back(info);
 		} else {
 			qCDebug(logPaths) << "Skipped potential instance at" << path;
 		}
 	}
 
-	return qMakePair(liveInstances, deadInstances);
+	return {liveInstances, mismatchedInstances, deadInstances};
 }

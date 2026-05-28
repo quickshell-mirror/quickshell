@@ -1,13 +1,36 @@
 #include "floatingwindow.hpp"
 
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlengine.h>
-#include <qqmllist.h>
+#include <qqmlinfo.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qwindow.h>
 
 #include "proxywindow.hpp"
 #include "windowinterface.hpp"
+
+ProxyFloatingWindow::ProxyFloatingWindow(QObject* parent): ProxyWindowBase(parent) {
+	this->bTargetVisible.setBinding([this] {
+		if (!this->bWantsVisible) return false;
+		auto* parent = this->bParentProxyWindow.value();
+		if (!parent) return true;
+		return parent->bindableBackerVisibility().value();
+	});
+}
+
+void ProxyFloatingWindow::targetVisibleChanged() {
+	if (this->window && this->bParentProxyWindow) {
+		auto* bw = this->bParentProxyWindow.value()->backingWindow();
+
+		if (bw != this->window->transientParent()) {
+			this->window->setTransientParent(bw);
+		}
+	}
+
+	this->ProxyWindowBase::setVisible(this->bTargetVisible);
+}
 
 void ProxyFloatingWindow::connectWindow() {
 	this->ProxyWindowBase::connectWindow();
@@ -16,6 +39,25 @@ void ProxyFloatingWindow::connectWindow() {
 	this->window->setMinimumSize(this->bMinimumSize);
 	this->window->setMaximumSize(this->bMaximumSize);
 }
+
+void ProxyFloatingWindow::completeWindow() {
+	this->ProxyWindowBase::completeWindow();
+
+	auto* parent = this->bParentProxyWindow.value();
+	this->window->setTransientParent(parent ? parent->backingWindow() : nullptr);
+}
+
+void ProxyFloatingWindow::postCompleteWindow() {
+	this->ProxyWindowBase::setVisible(this->bTargetVisible);
+}
+
+void ProxyFloatingWindow::onParentDestroyed() {
+	this->mParentWindow = nullptr;
+	this->bParentProxyWindow = nullptr;
+	emit this->parentWindowChanged();
+}
+
+void ProxyFloatingWindow::setVisible(bool visible) { this->bWantsVisible = visible; }
 
 void ProxyFloatingWindow::trySetWidth(qint32 implicitWidth) {
 	if (!this->window->isVisible()) {
@@ -44,6 +86,42 @@ void ProxyFloatingWindow::onMaximumSizeChanged() {
 	emit this->maximumSizeChanged();
 }
 
+QObject* ProxyFloatingWindow::parentWindow() const { return this->mParentWindow; }
+
+void ProxyFloatingWindow::setParentWindow(QObject* window) {
+	if (window == this->mParentWindow) return;
+
+	if (this->window && this->window->isVisible()) {
+		qmlWarning(this) << "parentWindow cannot be changed after the window is visible.";
+		return;
+	}
+
+	if (this->bParentProxyWindow) {
+		QObject::disconnect(this->bParentProxyWindow, nullptr, this, nullptr);
+	}
+
+	if (this->mParentWindow) {
+		QObject::disconnect(this->mParentWindow, nullptr, this, nullptr);
+	}
+
+	this->mParentWindow = nullptr;
+	this->bParentProxyWindow = nullptr;
+
+	if (auto* proxy = ProxyWindowBase::forObject(window)) {
+		this->mParentWindow = window;
+		this->bParentProxyWindow = proxy;
+
+		QObject::connect(
+		    this->mParentWindow,
+		    &QObject::destroyed,
+		    this,
+		    &ProxyFloatingWindow::onParentDestroyed
+		);
+	}
+
+	emit this->parentWindowChanged();
+}
+
 // FloatingWindowInterface
 
 FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
@@ -55,6 +133,8 @@ FloatingWindowInterface::FloatingWindowInterface(QObject* parent)
 	QObject::connect(this->window, &ProxyFloatingWindow::titleChanged, this, &FloatingWindowInterface::titleChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::minimumSizeChanged, this, &FloatingWindowInterface::minimumSizeChanged);
 	QObject::connect(this->window, &ProxyFloatingWindow::maximumSizeChanged, this, &FloatingWindowInterface::maximumSizeChanged);
+	QObject::connect(this->window, &ProxyFloatingWindow::parentWindowChanged, this, &FloatingWindowInterface::parentWindowChanged);
+	QObject::connect(this->window, &ProxyWindowBase::windowConnected, this, &FloatingWindowInterface::onWindowConnected);
 	// clang-format on
 }
 
@@ -66,3 +146,109 @@ void FloatingWindowInterface::onReload(QObject* oldInstance) {
 }
 
 ProxyWindowBase* FloatingWindowInterface::proxyWindow() const { return this->window; }
+
+void FloatingWindowInterface::onWindowConnected() {
+	auto* qw = this->window->backingWindow();
+	if (qw) {
+		QObject::connect(
+		    qw,
+		    &QWindow::windowStateChanged,
+		    this,
+		    &FloatingWindowInterface::onWindowStateChanged
+		);
+		this->setMinimized(this->mMinimized);
+		this->setMaximized(this->mMaximized);
+		this->setFullscreen(this->mFullscreen);
+		this->onWindowStateChanged();
+	}
+}
+
+void FloatingWindowInterface::onWindowStateChanged() {
+	auto* qw = this->window->backingWindow();
+	auto states = qw ? qw->windowStates() : Qt::WindowStates();
+
+	auto minimized = states.testFlag(Qt::WindowMinimized);
+	auto maximized = states.testFlag(Qt::WindowMaximized);
+	auto fullscreen = states.testFlag(Qt::WindowFullScreen);
+
+	if (minimized != this->mWasMinimized) {
+		this->mWasMinimized = minimized;
+		emit this->minimizedChanged();
+	}
+
+	if (maximized != this->mWasMaximized) {
+		this->mWasMaximized = maximized;
+		emit this->maximizedChanged();
+	}
+
+	if (fullscreen != this->mWasFullscreen) {
+		this->mWasFullscreen = fullscreen;
+		emit this->fullscreenChanged();
+	}
+}
+
+bool FloatingWindowInterface::isMinimized() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mWasMinimized;
+	return qw->windowStates().testFlag(Qt::WindowMinimized);
+}
+
+void FloatingWindowInterface::setMinimized(bool minimized) {
+	this->mMinimized = minimized;
+
+	if (auto* qw = this->window->backingWindow()) {
+		auto states = qw->windowStates();
+		states.setFlag(Qt::WindowMinimized, minimized);
+		qw->setWindowStates(states);
+	}
+}
+
+bool FloatingWindowInterface::isMaximized() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mWasMaximized;
+	return qw->windowStates().testFlag(Qt::WindowMaximized);
+}
+
+void FloatingWindowInterface::setMaximized(bool maximized) {
+	this->mMaximized = maximized;
+
+	if (auto* qw = this->window->backingWindow()) {
+		auto states = qw->windowStates();
+		states.setFlag(Qt::WindowMaximized, maximized);
+		qw->setWindowStates(states);
+	}
+}
+
+bool FloatingWindowInterface::isFullscreen() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return this->mWasFullscreen;
+	return qw->windowStates().testFlag(Qt::WindowFullScreen);
+}
+
+void FloatingWindowInterface::setFullscreen(bool fullscreen) {
+	this->mFullscreen = fullscreen;
+
+	if (auto* qw = this->window->backingWindow()) {
+		auto states = qw->windowStates();
+		states.setFlag(Qt::WindowFullScreen, fullscreen);
+		qw->setWindowStates(states);
+	}
+}
+
+bool FloatingWindowInterface::startSystemMove() const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return false;
+	return qw->startSystemMove();
+}
+
+bool FloatingWindowInterface::startSystemResize(Qt::Edges edges) const {
+	auto* qw = this->window->backingWindow();
+	if (!qw) return false;
+	return qw->startSystemResize(edges);
+}
+
+QObject* FloatingWindowInterface::parentWindow() const { return this->window->parentWindow(); }
+
+void FloatingWindowInterface::setParentWindow(QObject* window) {
+	this->window->setParentWindow(window);
+}

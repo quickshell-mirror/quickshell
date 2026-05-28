@@ -9,6 +9,7 @@
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
+#include <qquickgraphicsconfiguration.h>
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
@@ -18,6 +19,7 @@
 #include "../core/qmlglobal.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
+#include "../window/proxywindow.hpp"
 #include "session_lock/session_lock.hpp"
 
 bool WlSessionLock::exposeDbus() const { return this->mExposeDbus; }
@@ -240,7 +242,16 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	}
 
 	if (this->window == nullptr) {
-		this->window = new QQuickWindow();
+		this->window = new QsQuickWindowBase();
+
+		// needed for vulkan dmabuf import, qt ignores these if not applicable
+		auto graphicsConfig = this->window->graphicsConfiguration();
+		graphicsConfig.setDeviceExtensions({
+		    "VK_KHR_external_memory_fd",
+		    "VK_EXT_external_memory_dma_buf",
+		    "VK_EXT_image_drm_format_modifier",
+		});
+		this->window->setGraphicsConfiguration(graphicsConfig);
 	}
 
 	this->mContentItem->setParentItem(this->window->contentItem());
@@ -288,7 +299,10 @@ void WlSessionLockSurface::show() {
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
 
-bool WlSessionLockSurface::isVisible() const { return this->window->isVisible(); }
+bool WlSessionLockSurface::isVisible() const {
+	if (this->window == nullptr) return false;
+	return this->window->isVisible();
+}
 
 qint32 WlSessionLockSurface::width() const {
 	if (this->window == nullptr) return 0;

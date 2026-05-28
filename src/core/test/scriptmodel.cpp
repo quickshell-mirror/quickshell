@@ -90,7 +90,7 @@ void TestScriptModel::unique_data() {
 	QTest::addRow("move_overlapping")
 	    << "ABCDEFG" << "ABDEFCG" << OpList({{ModelOperation::Move, 3, 3, 2}});
 
-	// Ensure iterators arent skipping anything at the end of operations by performing
+	// Ensure iterators aren't skipping anything at the end of operations by performing
 	// multiple back to back.
 
 	QTest::addRow("insert_state_ok") << "ABCDEFG" << "ABXXEFG"

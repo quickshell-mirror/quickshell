@@ -9,6 +9,7 @@ struct InstanceInfo {
 	QString instanceId;
 	QString configPath;
 	QString shellId;
+	QString appId;
 	QDateTime launchTime;
 	pid_t pid = -1;
 	QString display;
@@ -35,6 +36,8 @@ namespace qs::crash {
 
 struct CrashInfo {
 	int logFd = -1;
+	int traceFd = -1;
+	int infoFd = -1;
 
 	static CrashInfo INSTANCE; // NOLINT
 };

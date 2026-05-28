@@ -43,7 +43,7 @@ class Variants: public Reloadable {
 	Q_OBJECT;
 	/// The component to create instances of.
 	///
-	/// The delegate should define a `modelData` property that will be popuplated with a value
+	/// The delegate should define a `modelData` property that will be populated with a value
 	/// from the @@model.
 	Q_PROPERTY(QQmlComponent* delegate MEMBER mDelegate);
 	/// The list of sets of properties to create instances with.

@@ -14,7 +14,7 @@
 
 #include "generation.hpp"
 
-// QMenu re-calls pixmap() every time the mouse moves so its important to cache it.
+// QMenu re-calls pixmap() every time the mouse moves so it's important to cache it.
 class PixmapCacheIconEngine: public QIconEngine {
 	void paint(
 	    QPainter* /*unused*/,

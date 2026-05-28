@@ -11,7 +11,7 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
-#include <qstringliteral.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <spa/node/keys.h>
@@ -161,6 +161,24 @@ void PwNode::initProps(const spa_dict* props) {
 		this->nick = nodeNick;
 	}
 
+	if (const auto* nodeCategory = spa_dict_lookup(props, PW_KEY_MEDIA_CATEGORY)) {
+		if (strcmp(nodeCategory, "Monitor") == 0 || strcmp(nodeCategory, "Manager") == 0) {
+			this->isMonitor = true;
+		}
+	}
+
+	if (const auto* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL)) {
+		auto ok = false;
+		auto value = QString::fromUtf8(serial).toULongLong(&ok);
+		if (!ok) {
+			qCWarning(logNode) << this
+			                   << "has an object.serial property but the value is not valid. Value:"
+			                   << serial;
+		} else {
+			this->objectSerial = value;
+		}
+	}
+
 	if (const auto* deviceId = spa_dict_lookup(props, PW_KEY_DEVICE_ID)) {
 		auto ok = false;
 		auto id = QString::fromUtf8(deviceId).toInt(&ok);
@@ -175,7 +193,7 @@ void PwNode::initProps(const spa_dict* props) {
 				qCCritical(
 				    logNode
 				) << this
-				  << "has a device.id property that does not corrospond to a device object. Id:" << id;
+				  << "has a device.id property that does not correspond to a device object. Id:" << id;
 			}
 		}
 	}
@@ -222,8 +240,11 @@ void PwNode::onInfo(void* data, const pw_node_info* info) {
 				self->routeDevice = id;
 				if (self->boundData) self->boundData->onDeviceChanged();
 			} else {
-				qCCritical(logNode) << self << "has attached device" << self->device
-				                    << "but no card.profile.device property.";
+				qCDebug(
+				    logNode
+				) << self
+				  << "has attached device" << self->device
+				  << "but no card.profile.device property. Node volume control will be used.";
 			}
 		}
 
@@ -408,6 +429,10 @@ void PwNodeBoundAudio::setMuted(bool muted) {
 }
 
 float PwNodeBoundAudio::averageVolume() const {
+	if (this->mVolumes.isEmpty()) {
+		return 0.0f;
+	}
+
 	float total = 0;
 
 	for (auto volume: this->mVolumes) {
@@ -551,22 +576,67 @@ PwVolumeProps PwVolumeProps::parseSpaPod(const spa_pod* param) {
 	const auto* muteProp = spa_pod_find_prop(param, nullptr, SPA_PROP_mute);
 	const auto* volumeStepProp = spa_pod_find_prop(param, nullptr, SPA_PROP_volumeStep);
 
-	const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
-	const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
-
-	spa_pod* iter = nullptr;
-	SPA_POD_ARRAY_FOREACH(volumes, iter) {
-		// Cubing behavior found in MPD source, and appears to corrospond to everyone else's measurements correctly.
-		auto linear = *reinterpret_cast<float*>(iter);
-		auto visual = std::cbrt(linear);
-		props.volumes.push_back(visual);
+	if (volumesProp) {
+		const auto* volumes = reinterpret_cast<const spa_pod_array*>(&volumesProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(volumes, iter) {
+			// Cubing behavior found in MPD source, and appears to correspond to everyone else's measurements correctly.
+			auto linear = *reinterpret_cast<float*>(iter);
+			auto visual = std::cbrt(linear);
+			props.volumes.push_back(visual);
+		}
 	}
 
-	SPA_POD_ARRAY_FOREACH(channels, iter) {
-		props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+	if (channelsProp) {
+		const auto* channels = reinterpret_cast<const spa_pod_array*>(&channelsProp->value);
+		spa_pod* iter = nullptr;
+		SPA_POD_ARRAY_FOREACH(channels, iter) {
+			props.channels.push_back(*reinterpret_cast<PwAudioChannel::Enum*>(iter));
+		}
 	}
 
-	spa_pod_get_bool(&muteProp->value, &props.mute);
+	if (props.channels.isEmpty()) {
+		// See spa/param/audio/layout.h and pw utils.
+		using C = PwAudioChannel;
+		// clang-format off
+		switch (props.volumes.length()) {
+		case 1: props.channels = {C::Mono}; break;
+		case 2: props.channels = {C::FrontLeft, C::FrontRight}; break;
+		case 3: props.channels = {C::FrontLeft, C::FrontRight, C::LowFrequencyEffects}; break;
+		case 4: props.channels = {C::FrontLeft, C::FrontRight, C::RearLeft, C::RearRight}; break;
+		case 5:
+			props.channels = {C::FrontLeft, C::FrontRight, C::FrontCenter, C::SideLeft, C::SideRight};
+			break;
+		case 6:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::LowFrequencyEffects,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		case 7:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::RearLeft, C::RearRight,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		case 8:
+			props.channels = {
+					C::FrontLeft, C::FrontRight, C::FrontCenter,
+					C::LowFrequencyEffects,
+					C::RearLeft, C::RearRight,
+					C::SideLeft, C::SideRight
+			};
+			break;
+		default: break;
+		}
+		// clang-format on
+	}
+
+	if (muteProp) {
+		spa_pod_get_bool(&muteProp->value, &props.mute);
+	}
 
 	if (volumeStepProp) {
 		spa_pod_get_float(&volumeStepProp->value, &props.volumeStep);

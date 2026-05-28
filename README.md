@@ -7,7 +7,9 @@ This repo is hosted at:
 - https://github.com/quickshell-mirror/quickshell
 
 # Contributing / Development
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+- [HACKING.md](HACKING.md) - Development instructions and policy.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution policy.
+- [BUILD.md](BUILD.md) - Packaging and build instructions.
 
 #### License
 

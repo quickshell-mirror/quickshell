@@ -18,17 +18,21 @@
 #include <qscreen.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
+#include <qtversion.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <qversionnumber.h>
 #include <qwindowdefs.h>
 #include <unistd.h>
 
 #include "../io/processcore.hpp"
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
+#include "instanceinfo.hpp"
 #include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
+#include "scanenv.hpp"
 
 QuickshellSettings::QuickshellSettings() {
 	QObject::connect(
@@ -59,7 +63,9 @@ void QuickshellSettings::setWorkingDirectory(QString workingDirectory) { // NOLI
 	emit this->workingDirectoryChanged();
 }
 
-bool QuickshellSettings::watchFiles() const { return this->mWatchFiles; }
+bool QuickshellSettings::watchFiles() const {
+	return this->mWatchFiles && qEnvironmentVariableIsEmpty("QS_DISABLE_FILE_WATCHER");
+}
 
 void QuickshellSettings::setWatchFiles(bool watchFiles) {
 	if (watchFiles == this->mWatchFiles) return;
@@ -148,6 +154,22 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 qint32 QuickshellGlobal::processId() const { // NOLINT
 	return getpid();
+}
+
+QString QuickshellGlobal::instanceId() const { // NOLINT
+	return InstanceInfo::CURRENT.instanceId;
+}
+
+QString QuickshellGlobal::shellId() const { // NOLINT
+	return InstanceInfo::CURRENT.shellId;
+}
+
+QString QuickshellGlobal::appId() const { // NOLINT
+	return InstanceInfo::CURRENT.appId;
+}
+
+QDateTime QuickshellGlobal::launchTime() const { // NOLINT
+	return InstanceInfo::CURRENT.launchTime;
 }
 
 qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* /*unused*/) {
@@ -311,6 +333,22 @@ QString QuickshellGlobal::iconPath(const QString& icon, bool check) {
 
 QString QuickshellGlobal::iconPath(const QString& icon, const QString& fallback) {
 	return IconImageProvider::requestString(icon, "", fallback);
+}
+
+bool QuickshellGlobal::hasThemeIcon(const QString& icon) { return QIcon::hasThemeIcon(icon); }
+
+bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor, const QStringList& features) {
+	return qs::scan::env::PreprocEnv::hasVersion(major, minor, features);
+}
+
+bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor) {
+	return QuickshellGlobal::hasVersion(major, minor, QStringList());
+}
+
+bool QuickshellGlobal::hasQtVersion(int major, int minor) {
+	auto qtVersion = QVersionNumber::fromString(qVersion());
+	auto requiredVersion = QVersionNumber(major, minor);
+	return qtVersion >= requiredVersion;
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {

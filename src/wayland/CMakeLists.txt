@@ -68,17 +68,23 @@ function (wl_proto target name dir)
 	target_include_directories(${target} INTERFACE ${PROTO_BUILD_PATH})
 	target_link_libraries(${target} wl-proto-${name}-wl Qt6::WaylandClient Qt6::WaylandClientPrivate)
 	qs_pch(${target} SET wayland-protocol)
+	target_compile_options(wl-proto-${name}-wl PRIVATE ${wayland_CFLAGS})
 endfunction()
 
 # -----
 
 qt_add_library(quickshell-wayland STATIC
+	wl_proxy_safe_deref.cpp
 	platformmenu.cpp
 	popupanchor.cpp
 	xdgshell.cpp
 	util.cpp
 	output_tracking.cpp
 )
+
+# required for wl_proxy_safe_deref
+target_link_libraries(quickshell-wayland PRIVATE ${CMAKE_DL_LIBS})
+target_link_options(quickshell PRIVATE "LINKER:--export-dynamic-symbol=wl_proxy_get_listener")
 
 # required to make sure the constructor is linked
 add_library(quickshell-wayland-init OBJECT init.cpp)
@@ -99,7 +105,7 @@ if (WAYLAND_SESSION_LOCK)
 endif()
 
 if (WAYLAND_TOPLEVEL_MANAGEMENT)
-	add_subdirectory(toplevel_management)
+	add_subdirectory(toplevel)
 	list(APPEND WAYLAND_MODULES Quickshell.Wayland._ToplevelManagement)
 endif()
 
@@ -114,6 +120,9 @@ if (HYPRLAND)
 	add_subdirectory(hyprland)
 endif()
 
+add_subdirectory(background_effect)
+list(APPEND WAYLAND_MODULES Quickshell.Wayland._BackgroundEffect)
+
 add_subdirectory(idle_inhibit)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleInhibitor)
 
@@ -122,6 +131,8 @@ list(APPEND WAYLAND_MODULES Quickshell.Wayland._IdleNotify)
 
 add_subdirectory(shortcuts_inhibit)
 list(APPEND WAYLAND_MODULES Quickshell.Wayland._ShortcutsInhibitor)
+
+add_subdirectory(windowmanager)
 
 # widgets for qmenu
 target_link_libraries(quickshell-wayland PRIVATE

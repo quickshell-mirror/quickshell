@@ -65,7 +65,7 @@ enum Enum : quint8 {
 	Ignore = 1,
 	/// Decide the exclusion zone based on the window dimensions and anchors.
 	///
-	/// Will attempt to reseve exactly enough space for the window and its margins if
+	/// Will attempt to reserve exactly enough space for the window and its margins if
 	/// exactly 3 anchors are connected.
 	Auto = 2,
 };
@@ -99,7 +99,7 @@ class PanelWindowInterface: public WindowInterface {
 	/// Anchors attach a shell window to the sides of the screen.
 	/// By default all anchors are disabled to avoid blocking the entire screen due to a misconfiguration.
 	///
-	/// > [!INFO] When two opposite anchors are attached at the same time, the corrosponding dimension
+	/// > [!INFO] When two opposite anchors are attached at the same time, the corresponding dimension
 	/// > (width or height) will be forced to equal the screen width/height.
 	/// > Margins can be used to create anchored windows that are also disconnected from the monitor sides.
 	Q_PROPERTY(Anchors anchors READ anchors WRITE setAnchors NOTIFY anchorsChanged);
@@ -116,11 +116,11 @@ class PanelWindowInterface: public WindowInterface {
 	Q_PROPERTY(ExclusionMode::Enum exclusionMode READ exclusionMode WRITE setExclusionMode NOTIFY exclusionModeChanged);
 	/// If the panel should render above standard windows. Defaults to true.
 	///
-	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.layer.
+	/// Note: On Wayland this property corresponds to @@Quickshell.Wayland.WlrLayershell.layer.
 	Q_PROPERTY(bool aboveWindows READ aboveWindows WRITE setAboveWindows NOTIFY aboveWindowsChanged);
 	/// If the panel should accept keyboard focus. Defaults to false.
 	///
-	/// Note: On Wayland this property corrosponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
+	/// Note: On Wayland this property corresponds to @@Quickshell.Wayland.WlrLayershell.keyboardFocus.
 	Q_PROPERTY(bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(PanelWindow);

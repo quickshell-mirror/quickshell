@@ -16,6 +16,10 @@ namespace qs::hyprland::ipc {
 class HyprlandIpcQml: public QObject {
 	Q_OBJECT;
 	// clang-format off
+	/// True if Hyprland is running in lua mode. Dispatcher syntax changes when using lua.
+	///
+	/// This property will be false until the Hyprland module is initialized.
+	Q_PROPERTY(bool usingLua READ default NOTIFY usingLuaChanged BINDABLE bindableUsingLua);
 	/// Path to the request socket (.socket.sock)
 	Q_PROPERTY(QString requestSocketPath READ requestSocketPath CONSTANT);
 	/// Path to the event socket (.socket2.sock)
@@ -47,7 +51,7 @@ public:
 	/// Execute a hyprland [dispatcher](https://wiki.hyprland.org/Configuring/Dispatchers).
 	Q_INVOKABLE static void dispatch(const QString& request);
 
-	/// Get the HyprlandMonitor object that corrosponds to a quickshell screen.
+	/// Get the HyprlandMonitor object that corresponds to a quickshell screen.
 	Q_INVOKABLE static HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
 
 	/// Refresh monitor information.
@@ -70,6 +74,7 @@ public:
 
 	[[nodiscard]] static QString requestSocketPath();
 	[[nodiscard]] static QString eventSocketPath();
+	[[nodiscard]] static QBindable<bool> bindableUsingLua();
 	[[nodiscard]] static QBindable<HyprlandMonitor*> bindableFocusedMonitor();
 	[[nodiscard]] static QBindable<HyprlandWorkspace*> bindableFocusedWorkspace();
 	[[nodiscard]] static QBindable<HyprlandToplevel*> bindableActiveToplevel();
@@ -83,6 +88,7 @@ signals:
 	/// See [Hyprland Wiki: IPC](https://wiki.hyprland.org/IPC/) for a list of events.
 	void rawEvent(qs::hyprland::ipc::HyprlandIpcEvent* event);
 
+	void usingLuaChanged();
 	void focusedMonitorChanged();
 	void focusedWorkspaceChanged();
 	void activeToplevelChanged();

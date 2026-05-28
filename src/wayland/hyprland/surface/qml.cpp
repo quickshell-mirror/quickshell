@@ -14,7 +14,6 @@
 
 #include "../../../core/region.hpp"
 #include "../../../window/proxywindow.hpp"
-#include "../../../window/windowinterface.hpp"
 #include "manager.hpp"
 #include "surface.hpp"
 
@@ -23,13 +22,7 @@ using QtWaylandClient::QWaylandWindow;
 namespace qs::hyprland::surface {
 
 HyprlandWindow* HyprlandWindow::qmlAttachedProperties(QObject* object) {
-	auto* proxyWindow = qobject_cast<ProxyWindowBase*>(object);
-
-	if (!proxyWindow) {
-		if (auto* iface = qobject_cast<WindowInterface*>(object)) {
-			proxyWindow = iface->proxyWindow();
-		}
-	}
+	auto* proxyWindow = ProxyWindowBase::forObject(object);
 
 	if (!proxyWindow) return nullptr;
 	return new HyprlandWindow(proxyWindow);

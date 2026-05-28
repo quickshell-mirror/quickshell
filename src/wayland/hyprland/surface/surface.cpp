@@ -1,5 +1,4 @@
 #include "surface.hpp"
-#include <cmath>
 
 #include <private/qwaylanddisplay_p.h>
 #include <private/qwaylandintegration_p.h>

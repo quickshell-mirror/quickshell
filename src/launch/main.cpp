@@ -16,7 +16,7 @@
 #include "build.hpp"
 #include "launch_p.hpp"
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 #include "../crash/main.hpp"
 #endif
 
@@ -25,7 +25,7 @@ namespace qs::launch {
 namespace {
 
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
 
 	if (!lastInfoFdStr.isEmpty()) {
@@ -84,27 +84,35 @@ void exitDaemon(int code) {
 
 	close(DAEMON_PIPE);
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	if (open("/dev/null", O_RDONLY) != STDIN_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdin";
+	auto fd = open("/dev/null", O_RDWR);
+	if (fd == -1) {
+		qCritical().nospace() << "Failed to open /dev/null for daemon stdio" << errno << ": "
+		                      << qt_error_string();
+		return;
 	}
 
-	if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdout";
+	if (dup2(fd, STDIN_FILENO) != STDIN_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stdin to /dev/null" << errno << ": "
+		                      << qt_error_string();
 	}
 
-	if (open("/dev/null", O_WRONLY) != STDERR_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stderr";
+	if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stdout to /dev/null" << errno << ": "
+		                      << qt_error_string();
 	}
+
+	if (dup2(fd, STDERR_FILENO) != STDERR_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stderr to /dev/null" << errno << ": "
+		                      << qt_error_string();
+	}
+
+	close(fd);
 }
 
 int main(int argc, char** argv) {
 	QCoreApplication::setApplicationName("quickshell");
 
-#if CRASH_REPORTER
+#if CRASH_HANDLER
 	qsCheckCrash(argc, argv);
 #endif
 

@@ -46,7 +46,7 @@ Item {
 	/// exposed by IconImage.
 	property /*Image*/alias backer: image
 
-	/// The suggested size of the image. This is used as a defualt
+	/// The suggested size of the image. This is used as a default
 	/// for @@QtQuick.Item.implicitWidth and @@QtQuick.Item.implicitHeight.
 	property real implicitSize: 0
 

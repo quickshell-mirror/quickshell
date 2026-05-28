@@ -134,6 +134,46 @@ void PwRegistry::init(PwCore& core) {
 	this->coreSyncSeq = this->core->sync(PW_ID_CORE);
 }
 
+void PwRegistry::reset() {
+	if (this->core != nullptr) {
+		QObject::disconnect(this->core, nullptr, this, nullptr);
+	}
+
+	this->listener.remove();
+
+	if (this->object != nullptr) {
+		pw_proxy_destroy(reinterpret_cast<pw_proxy*>(this->object));
+		this->object = nullptr;
+	}
+
+	for (auto* meta: this->metadata.values()) {
+		meta->safeDestroy();
+	}
+	this->metadata.clear();
+
+	for (auto* link: this->links.values()) {
+		link->safeDestroy();
+	}
+	this->links.clear();
+
+	for (auto* node: this->nodes.values()) {
+		node->safeDestroy();
+	}
+	this->nodes.clear();
+
+	for (auto* device: this->devices.values()) {
+		device->safeDestroy();
+	}
+	this->devices.clear();
+
+	this->linkGroups.clear();
+	this->initState = InitState::SendingObjects;
+	this->coreSyncSeq = 0;
+	this->core = nullptr;
+
+	emit this->cleared();
+}
+
 void PwRegistry::onCoreSync(quint32 id, qint32 seq) {
 	if (id != PW_ID_CORE || seq != this->coreSyncSeq) return;
 

@@ -6,7 +6,7 @@ jobs:
     name: Nix
     strategy:
       matrix:
-        qtver: [qt6.10.0, qt6.9.2, qt6.9.1, qt6.9.0, qt6.8.3, qt6.8.2, qt6.8.1, qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
+        qtver: [qt6.10.1, qt6.10.0, qt6.9.2, qt6.9.1, qt6.9.0, qt6.8.3, qt6.8.2, qt6.8.1, qt6.8.0, qt6.7.3, qt6.7.2, qt6.7.1, qt6.7.0, qt6.6.3, qt6.6.2, qt6.6.1, qt6.6.0]
         compiler: [clang, gcc]
     runs-on: ubuntu-latest
     permissions:
@@ -50,14 +50,16 @@ jobs:
             wayland-protocols \
             wayland \
             libdrm \
+            vulkan-headers \
             libxcb \
             libpipewire \
             cli11 \
             polkit \
-            jemalloc
+            jemalloc \
+            libunwind \
+            git # for cpptrace clone
 
       - name: Build
-        # breakpad is annoying to build in ci due to makepkg not running as root
         run: |
-          cmake -GNinja -B build -DCRASH_REPORTER=OFF
+          cmake -GNinja -B build -DVENDOR_CPPTRACE=ON
           cmake --build build

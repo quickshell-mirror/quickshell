@@ -49,7 +49,8 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	this->engine->addImportPath("qs:@/");
 
 	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
-	this->engine->setIncubationController(&this->delayedIncubationController);
+	this->incubationController.initLoop();
+	this->engine->setIncubationController(&this->incubationController);
 
 	this->engine->addImageProvider("icon", new IconImageProvider());
 	this->engine->addImageProvider("qsimage", new QsImageProvider());
@@ -134,7 +135,7 @@ void EngineGeneration::onReload(EngineGeneration* old) {
 		// new generation acquires it then incubators will hang intermittently
 		qCDebug(logIncubator) << "Locking incubation controllers of old generation" << old;
 		old->incubationControllersLocked = true;
-		old->assignIncubationController();
+		old->updateIncubationMode();
 	}
 
 	QObject::connect(this->engine, &QQmlEngine::quit, this, &EngineGeneration::quit);
@@ -208,6 +209,8 @@ bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
 	for (const auto& file: files) {
 		if (!this->scanner.scannedFiles.contains(file)) {
 			this->extraWatchedFiles.append(file);
+			QByteArray data;
+			this->scanner.readAndHashFile(file, data);
 		}
 	}
 
@@ -228,6 +231,11 @@ void EngineGeneration::onFileChanged(const QString& name) {
 		auto fileInfo = QFileInfo(name);
 		if (fileInfo.isFile() && fileInfo.size() == 0) return;
 
+		if (!this->scanner.hasFileContentChanged(name)) {
+			qCDebug(logQmlScanner) << "Ignoring file change with unchanged content:" << name;
+			return;
+		}
+
 		emit this->filesChanged();
 	}
 }
@@ -236,6 +244,11 @@ void EngineGeneration::onDirectoryChanged() {
 	// try to find any files that were just deleted from a replace operation
 	for (auto& file: this->deletedWatchedFiles) {
 		if (QFileInfo(file).exists()) {
+			if (!this->scanner.hasFileContentChanged(file)) {
+				qCDebug(logQmlScanner) << "Ignoring restored file with unchanged content:" << file;
+				continue;
+			}
+
 			emit this->filesChanged();
 			break;
 		}
@@ -288,29 +301,18 @@ void EngineGeneration::trackWindowIncubationController(QQuickWindow* window) {
 
 	QObject::connect(window, &QObject::destroyed, this, &EngineGeneration::onTrackedWindowDestroyed);
 	this->trackedWindows.append(window);
-	this->assignIncubationController();
+	this->updateIncubationMode();
 }
 
 void EngineGeneration::onTrackedWindowDestroyed(QObject* object) {
 	this->trackedWindows.removeAll(static_cast<QQuickWindow*>(object)); // NOLINT
-	this->assignIncubationController();
+	this->updateIncubationMode();
 }
 
-void EngineGeneration::assignIncubationController() {
-	QQmlIncubationController* controller = &this->delayedIncubationController;
-
-	for (auto* window: this->trackedWindows) {
-		if (auto* wctl = window->incubationController()) {
-			controller = wctl;
-			break;
-		}
-	}
-
-	qCDebug(logIncubator) << "Assigning incubation controller" << controller << "to generation"
-	                      << this
-	                      << "fallback:" << (controller == &this->delayedIncubationController);
-
-	this->engine->setIncubationController(controller);
+void EngineGeneration::updateIncubationMode() {
+	// If we're in a situation with only hidden but tracked windows this might be wrong,
+	// but it seems to at least work.
+	this->incubationController.setIncubationMode(!this->trackedWindows.empty());
 }
 
 EngineGeneration* EngineGeneration::currentGeneration() {

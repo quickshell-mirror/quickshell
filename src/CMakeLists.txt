@@ -11,8 +11,9 @@ add_subdirectory(window)
 add_subdirectory(io)
 add_subdirectory(widgets)
 add_subdirectory(ui)
+add_subdirectory(windowmanager)
 
-if (CRASH_REPORTER)
+if (CRASH_HANDLER)
 	add_subdirectory(crash)
 endif()
 
@@ -32,4 +33,8 @@ add_subdirectory(services)
 
 if (BLUETOOTH)
 	add_subdirectory(bluetooth)
+endif()
+
+if (NETWORK)
+	add_subdirectory(network)
 endif()

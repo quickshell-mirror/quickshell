@@ -12,12 +12,14 @@
 #include <spa/pod/builder.h>
 
 #include "core.hpp"
-#include "node.hpp"
 #include "registry.hpp"
 
 namespace qs::service::pipewire {
 
 class PwDevice;
+
+// Forward declare to avoid circular dependency with node.hpp
+struct PwVolumeProps;
 
 class PwDevice: public PwBindable<pw_device, PW_TYPE_INTERFACE_Device, PW_VERSION_DEVICE> {
 	Q_OBJECT;
@@ -33,6 +35,7 @@ public:
 	[[nodiscard]] bool waitingForDevice() const;
 
 	[[nodiscard]] bool tryLoadVolumeProps(qint32 routeDevice, PwVolumeProps& volumeProps);
+	[[nodiscard]] bool hasRouteDevice(qint32 routeDevice) const;
 
 signals:
 	void deviceReady();

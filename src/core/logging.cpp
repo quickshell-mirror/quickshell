@@ -14,6 +14,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qmutex.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
@@ -27,7 +28,13 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <sys/mman.h>
+#ifdef __linux__
 #include <sys/sendfile.h>
+#include <sys/types.h>
+#endif
+#ifdef __FreeBSD__
+#include <unistd.h>
+#endif
 
 #include "instanceinfo.hpp"
 #include "logcat.hpp"
@@ -42,6 +49,57 @@ namespace qs::log {
 using namespace qt_logging_registry;
 
 QS_LOGGING_CATEGORY(logLogging, "quickshell.logging", QtWarningMsg);
+
+namespace {
+bool copyFileData(int sourceFd, int destFd, qint64 size) {
+	auto usize = static_cast<size_t>(size);
+
+#ifdef __linux__
+	off_t offset = 0;
+	auto remaining = usize;
+
+	while (remaining > 0) {
+		auto r = sendfile(destFd, sourceFd, &offset, remaining);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+		remaining -= static_cast<size_t>(r);
+	}
+
+	return true;
+#else
+	std::array<char, 64 * 1024> buffer = {};
+	auto remaining = usize;
+
+	while (remaining > 0) {
+		auto chunk = std::min(remaining, buffer.size());
+		auto r = ::read(sourceFd, buffer.data(), chunk);
+		if (r == -1) {
+			if (errno == EINTR) continue;
+			return false;
+		}
+		if (r == 0) break;
+
+		auto readBytes = static_cast<size_t>(r);
+		size_t written = 0;
+		while (written < readBytes) {
+			auto w = ::write(destFd, buffer.data() + written, readBytes - written);
+			if (w == -1) {
+				if (errno == EINTR) continue;
+				return false;
+			}
+			written += static_cast<size_t>(w);
+		}
+
+		remaining -= readBytes;
+	}
+
+	return true;
+#endif
+}
+} // namespace
 
 bool LogMessage::operator==(const LogMessage& other) const {
 	// note: not including time
@@ -163,6 +221,7 @@ void LogManager::messageHandler(
 	}
 
 	if (display) {
+		auto locker = QMutexLocker(&self->stdoutMutex);
 		LogMessage::formatMessage(
 		    self->stdoutStream,
 		    message,
@@ -198,9 +257,21 @@ void LogManager::filterCategory(QLoggingCategory* category) {
 		filter.warn = filter.info || instance->mDefaultLevel == QtWarningMsg || defaultLevel == QtWarningMsg;
 		filter.critical = filter.warn || instance->mDefaultLevel == QtCriticalMsg || defaultLevel == QtCriticalMsg;
 		// clang-format on
-	} else if (instance->lastCategoryFilter) {
-		instance->lastCategoryFilter(category);
-		filter = CategoryFilter(category);
+	} else {
+		if (instance->lastCategoryFilter) {
+			instance->lastCategoryFilter(category);
+			filter = CategoryFilter(category);
+		}
+
+		// Hides virtual/override property warnings.
+		// Getting rid of this is blocked by https://qt-project.atlassian.net/browse/QTBUG-145977
+		// for internal Quickshell types, and may still be desired for shells that want to maintain
+		// compatibility with Qt versions prior to 6.11.
+		if (categoryName == QLatin1StringView("qt.qml.propertyCache.append")
+		    && !qEnvironmentVariableIsSet("QS_NO_FILTER_QT_LOGS"))
+		{
+			filter.warn = false;
+		}
 	}
 
 	for (const auto& rule: *instance->rules) {
@@ -251,9 +322,14 @@ void LogManager::init(
 		instance->rules->append(parser.rules());
 	}
 
-	qInstallMessageHandler(&LogManager::messageHandler);
-
 	instance->lastCategoryFilter = QLoggingCategory::installFilter(&LogManager::filterCategory);
+
+	if (instance->lastCategoryFilter == &LogManager::filterCategory) {
+		qCFatal(logLogging) << "Quickshell's log filter has been installed twice. This is a bug.";
+		instance->lastCategoryFilter = nullptr;
+	}
+
+	qInstallMessageHandler(&LogManager::messageHandler);
 
 	qCDebug(logLogging) << "Creating offthread logger...";
 	auto* thread = new QThread();
@@ -392,7 +468,7 @@ void ThreadLogging::initFs() {
 		delete detailedFile;
 		detailedFile = nullptr;
 	} else {
-		auto lock = flock {
+		struct flock lock = {
 		    .l_type = F_WRLCK,
 		    .l_whence = SEEK_SET,
 		    .l_start = 0,
@@ -414,7 +490,11 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->file;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(file->handle(), oldFile->handle(), nullptr, oldFile->size());
+
+			if (!copyFileData(oldFile->handle(), file->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		this->file = file;
@@ -426,7 +506,10 @@ void ThreadLogging::initFs() {
 		auto* oldFile = this->detailedFile;
 		if (oldFile) {
 			oldFile->seek(0);
-			sendfile(detailedFile->handle(), oldFile->handle(), nullptr, oldFile->size());
+			if (!copyFileData(oldFile->handle(), detailedFile->handle(), oldFile->size())) {
+				qCritical(logLogging) << "Failed to copy detailed log from memfd with error code " << errno
+				                      << qt_error_string(errno);
+			}
 		}
 
 		crash::CrashInfo::INSTANCE.logFd = detailedFile->handle();
@@ -459,7 +542,7 @@ void ThreadLogging::initFs() {
 	    Qt::QueuedConnection
 	);
 
-	qCDebug(logLogging) << "Switched threaded logger to queued eventloop connection.";
+	qCDebug(logLogging) << "Switched threaded logger to queued event loop connection.";
 }
 
 void ThreadLogging::onMessage(const LogMessage& msg, bool showInSparse) {
@@ -889,7 +972,7 @@ bool LogReader::continueReading() {
 }
 
 void LogFollower::FcntlWaitThread::run() {
-	auto lock = flock {
+	struct flock lock = {
 	    .l_type = F_RDLCK, // won't block other read locks when we take it
 	    .l_whence = SEEK_SET,
 	    .l_start = 0,

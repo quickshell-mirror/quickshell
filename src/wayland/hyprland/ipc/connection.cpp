@@ -24,7 +24,7 @@
 #include "../../../core/logcat.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "hyprland_toplevel.hpp"
 #include "monitor.hpp"
 #include "toplevel_mapping.hpp"
@@ -74,10 +74,23 @@ HyprlandIpc::HyprlandIpc() {
 
 	// clang-format on
 
-	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
-	this->refreshMonitors(true);
-	this->refreshWorkspaces(true);
-	this->refreshToplevels();
+	this->makeRequest("j/status", [&, this](bool success, QByteArray resp) {
+		if (success) {
+			this->bUsingLua = [&]() {
+				if (resp == "unknown request") return false;
+				auto json = QJsonDocument::fromJson(resp).object();
+				auto provider = json.value("configProvider");
+				return provider == "lua";
+			}();
+		} else {
+			qCWarning(logHyprlandIpc) << "Hyprland ipc status request failed.";
+		}
+
+		this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
+		this->refreshMonitors(true);
+		this->refreshWorkspaces(true);
+		this->refreshToplevels();
+	});
 }
 
 QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath; }
@@ -93,6 +106,7 @@ void HyprlandIpc::eventSocketError(QLocalSocket::LocalSocketError error) const {
 
 void HyprlandIpc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) {
 	if (state == QLocalSocket::ConnectedState) {
+		this->eventReader.setDevice(&this->eventSocket);
 		qCInfo(logHyprlandIpc) << "Hyprland event socket connected.";
 		emit this->connected();
 	} else if (state == QLocalSocket::UnconnectedState && this->valid) {
@@ -104,11 +118,11 @@ void HyprlandIpc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) 
 
 void HyprlandIpc::eventSocketReady() {
 	while (true) {
-		auto rawEvent = this->eventSocket.readLine();
-		if (rawEvent.isEmpty()) break;
+		this->eventReader.startTransaction();
+		auto rawEvent = this->eventReader.readUntil('\n');
+		if (!this->eventReader.commitTransaction()) return;
 
-		// remove trailing \n
-		rawEvent.truncate(rawEvent.length() - 1);
+		rawEvent.chop(1); // remove trailing \n
 		auto splitIdx = rawEvent.indexOf(">>");
 		auto event = QByteArrayView(rawEvent.data(), splitIdx);
 		auto data = QByteArrayView(
@@ -125,11 +139,10 @@ void HyprlandIpc::eventSocketReady() {
 }
 
 void HyprlandIpc::toplevelAddressed(
-    wayland::toplevel_management::impl::ToplevelHandle* handle,
+    wayland::toplevel::wlr::ToplevelHandle* handle,
     quint64 address
 ) {
-	auto* waylandToplevel =
-	    wayland::toplevel_management::ToplevelManager::instance()->forImpl(handle);
+	auto* waylandToplevel = wayland::toplevel::ToplevelManager::instance()->forImpl(handle);
 
 	if (!waylandToplevel) return;
 
@@ -728,7 +741,7 @@ void HyprlandIpc::refreshToplevels() {
 			}
 
 			auto* workspace = toplevel->bindableWorkspace().value();
-			workspace->insertToplevel(toplevel);
+			if (workspace) workspace->insertToplevel(toplevel);
 		}
 	});
 }
