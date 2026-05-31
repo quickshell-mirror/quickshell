@@ -612,6 +612,39 @@ const QStringList& DesktopEntryManager::desktopPaths() {
 	return paths;
 }
 
+const QStringList& DesktopEntryManager::terminalConfigPaths() {
+	static const auto paths = []() {
+		auto configDirs = QStringList();
+
+		auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
+		if (configHome.isEmpty() && qEnvironmentVariableIsSet("HOME"))
+			configHome = qEnvironmentVariable("HOME") + "/.config";
+		if (!configHome.isEmpty()) configDirs.append(configHome);
+
+		auto configDirsStr = qEnvironmentVariable("XDG_CONFIG_DIRS");
+		if (configDirsStr.isEmpty()) configDirsStr = "/etc/xdg";
+		for (const auto& dir: configDirsStr.split(':', Qt::SkipEmptyParts)) configDirs.append(dir);
+
+		auto dataDirs = qEnvironmentVariable("XDG_DATA_DIRS");
+		if (dataDirs.isEmpty()) dataDirs = "/usr/local/share:/usr/share";
+		for (const auto& dir: dataDirs.split(':', Qt::SkipEmptyParts))
+			configDirs.append(dir + "/xdg-terminal-exec");
+
+		auto configPaths = QStringList();
+		auto desktopNames = qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(':', Qt::SkipEmptyParts);
+		for (const auto& dir: configDirs) {
+			for (const auto& name: desktopNames) {
+				configPaths.append(dir + "/" + name.toLower() + "-xdg-terminals.list");
+			}
+			configPaths.append(dir + "/xdg-terminals.list");
+		}
+
+		return configPaths;
+	}();
+
+	return paths;
+}
+
 void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& scanResults) {
 	auto guard = qScopeGuard([this] {
 		this->scanInProgress = false;
@@ -728,24 +761,6 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 		auto excludedIds = QSet<QString>();
 		auto seenFallbackDirectiveIds = QSet<QString>();
 
-		// Collect config dirs in priority order.
-		auto configDirs = QStringList();
-		{
-			auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
-			if (configHome.isEmpty() && qEnvironmentVariableIsSet("HOME"))
-				configHome = qEnvironmentVariable("HOME") + "/.config";
-			if (!configHome.isEmpty()) configDirs.append(configHome);
-
-			auto configDirsStr = qEnvironmentVariable("XDG_CONFIG_DIRS");
-			if (configDirsStr.isEmpty()) configDirsStr = "/etc/xdg";
-			for (const auto& dir: configDirsStr.split(':', Qt::SkipEmptyParts)) configDirs.append(dir);
-
-			auto dataDirs = qEnvironmentVariable("XDG_DATA_DIRS");
-			if (dataDirs.isEmpty()) dataDirs = "/usr/local/share:/usr/share";
-			for (const auto& dir: dataDirs.split(':', Qt::SkipEmptyParts))
-				configDirs.append(dir + "/xdg-terminal-exec");
-		}
-
 		auto parseConfigFile = [&](const QString& path) {
 			auto isValidConfigEntryId = [](const QString& id) {
 				if (!id.endsWith(".desktop") || id == ".desktop") return false;
@@ -817,11 +832,7 @@ void DesktopEntryManager::onScanCompleted(const QList<ParsedDesktopEntryData>& s
 			}
 		};
 
-		for (const auto& dir: configDirs) {
-			for (const auto& name: desktopNames)
-				parseConfigFile(dir + "/" + name.toLower() + "-xdg-terminals.list");
-			parseConfigFile(dir + "/xdg-terminals.list");
-		}
+		for (const auto& path: DesktopEntryManager::terminalConfigPaths()) parseConfigFile(path);
 
 		// Expand escape sequences in X-TerminalArg* values (\s \n \t \r \\).
 		auto expandEscapes = [](const QString& value) {

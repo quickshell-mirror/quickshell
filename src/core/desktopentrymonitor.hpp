@@ -20,11 +20,11 @@ signals:
 	void desktopEntriesChanged();
 
 private slots:
-	void onDirectoryChanged(const QString& path);
+	void onWatchedPathChanged(const QString& path);
 	void processChanges();
 
 private:
-	void startMonitoring();
+	void updateWatchedPaths();
 	void scanAndWatch(const QString& dirPath);
 
 	QFileSystemWatcher watcher;

@@ -306,6 +306,7 @@ public:
 	static DesktopEntryManager* instance();
 
 	static const QStringList& desktopPaths();
+	static const QStringList& terminalConfigPaths();
 
 signals:
 	void applicationsChanged();
