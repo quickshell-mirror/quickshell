@@ -50,7 +50,7 @@ class MarginWrapperManager: public WrapperManager {
 	Q_PROPERTY(qreal margin READ default WRITE default BINDABLE bindableMargin NOTIFY marginChanged FINAL);
 	/// An extra margin applied in addition to @@topMargin, @@bottomMargin,
   /// @@leftMargin, and @@rightMargin. Defaults to 0.
-	Q_PROPERTY(qreal extraMargin READ default WRITE default BINDABLE bindableExtraMargin NOTIFY baseMarginChanged FINAL);
+	Q_PROPERTY(qreal extraMargin READ default WRITE default BINDABLE bindableExtraMargin NOTIFY extraMarginChanged FINAL);
 	/// The requested top margin of the content item, not counting @@extraMargin.
 	///
 	/// Defaults to @@margin, and may be reset by assigning `undefined`.
@@ -149,7 +149,7 @@ public:
 
 signals:
 	void marginChanged();
-	void baseMarginChanged();
+	void extraMarginChanged();
 	void topMarginChanged();
 	void bottomMarginChanged();
 	void leftMarginChanged();
@@ -170,9 +170,9 @@ protected:
 
 private:
 	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MarginWrapperManager, bool, bResizeChild, true);
+	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(MarginWrapperManager, bool, bResizeChild, true, &MarginWrapperManager::resizeChildChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bMargin, &MarginWrapperManager::marginChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bExtraMargin, &MarginWrapperManager::baseMarginChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bExtraMargin, &MarginWrapperManager::extraMarginChanged);
 
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, OverrideFlags, bOverrides);
 	Q_OBJECT_BINDABLE_PROPERTY(MarginWrapperManager, qreal, bImplicitWidthOverride);
