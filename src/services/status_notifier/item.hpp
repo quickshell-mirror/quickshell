@@ -195,7 +195,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniIconPixmapList, bAttentionIconPixmaps);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QString, bAttentionMovieName);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, DBusSniTooltip, bTooltip);
-	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, bool, bIsMenu);
+	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, bool, bIsMenu, &StatusNotifierItem::onlyMenuChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, QDBusObjectPath, bMenuPath);
 	Q_OBJECT_BINDABLE_PROPERTY(StatusNotifierItem, bool, bHasMenu, &StatusNotifierItem::hasMenuChanged);
 
