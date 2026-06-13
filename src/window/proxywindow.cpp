@@ -495,6 +495,10 @@ void ProxyWindowBase::setUpdatesEnabled(bool updatesEnabled) {
 
 	if (this->window != nullptr) {
 		QQuickWindowPrivate::get(this->window)->updatesEnabled = updatesEnabled;
+
+		// The render loop discards expose and update requests while updates are disabled,
+		// which can leave the surface without a valid buffer. Render a frame to recover.
+		if (updatesEnabled) this->window->update();
 	}
 
 	emit this->updatesEnabledChanged();

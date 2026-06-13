@@ -5,3 +5,4 @@
 - Fixed mpris players returning `rate` for `minRate` and `maxRate`.
 - Fixed missing/wrong change signals on various properties.
 - Fixed session lock crashes on sleep, wake, DPMS, and unlocking.
+- QsWindow.updatesEnabled makes sure windows are redrawn when set to true.
