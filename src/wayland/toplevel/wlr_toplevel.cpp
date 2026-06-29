@@ -173,7 +173,7 @@ void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_closed() {
 	qCDebug(logToplevelManagement) << this << "closed";
 	this->destroy();
 	emit this->closed();
-	delete this;
+	this->deleteLater();
 }
 
 void ToplevelHandle::zwlr_foreign_toplevel_handle_v1_app_id(const QString& appId) {

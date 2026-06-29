@@ -31,7 +31,7 @@ Toplevel::Toplevel(wlr::ToplevelHandle* handle, QObject* parent): QObject(parent
 
 void Toplevel::onClosed() {
 	emit this->closed();
-	delete this;
+	this->deleteLater();
 }
 
 void Toplevel::activate() { this->handle->activate(); }

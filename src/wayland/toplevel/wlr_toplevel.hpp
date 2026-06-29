@@ -45,7 +45,8 @@ public:
 signals:
 	// sent after the first done event.
 	void ready();
-	// sent right before delete this.
+	// sent right before this object is scheduled for deletion (via deleteLater)
+	// -- the wayland handle is already gone by this point.
 	void closed();
 
 	void appIdChanged();
