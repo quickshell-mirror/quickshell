@@ -7,3 +7,4 @@
 - Fixed session lock crashes on sleep, wake, DPMS, and unlocking.
 - QsWindow.updatesEnabled makes sure windows are redrawn when set to true.
 - Fixed potential crashes from usage of `WindowsetProjection.screens` during monitor unplug.
+- Fixed Hyprland.activeToplevel being null until the user changes focus, by seeding it from j/clients during init.
