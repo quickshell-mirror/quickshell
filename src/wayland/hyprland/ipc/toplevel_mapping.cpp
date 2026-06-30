@@ -6,9 +6,9 @@
 #include <qtypes.h>
 #include <qwaylandclientextension.h>
 
-#include "../../toplevel_management/manager.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 
-using namespace qs::wayland::toplevel_management::impl;
+using namespace qs::wayland::toplevel::wlr;
 
 namespace qs::hyprland::ipc {
 

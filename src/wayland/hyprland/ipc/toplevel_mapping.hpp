@@ -8,7 +8,7 @@
 #include <qwayland-hyprland-toplevel-mapping-v1.h>
 #include <qwaylandclientextension.h>
 
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "wayland-hyprland-toplevel-mapping-v1-client-protocol.h"
 
 namespace qs::hyprland::ipc {
@@ -16,7 +16,7 @@ namespace qs::hyprland::ipc {
 class HyprlandToplevelMappingHandle: QtWayland::hyprland_toplevel_window_mapping_handle_v1 {
 public:
 	explicit HyprlandToplevelMappingHandle(
-	    qs::wayland::toplevel_management::impl::ToplevelHandle* handle,
+	    qs::wayland::toplevel::wlr::ToplevelHandle* handle,
 	    ::hyprland_toplevel_window_mapping_handle_v1* mapping
 	)
 	    : QtWayland::hyprland_toplevel_window_mapping_handle_v1(mapping)
@@ -34,7 +34,7 @@ protected:
 	void hyprland_toplevel_window_mapping_handle_v1_failed() override;
 
 private:
-	qs::wayland::toplevel_management::impl::ToplevelHandle* handle;
+	qs::wayland::toplevel::wlr::ToplevelHandle* handle;
 };
 
 class HyprlandToplevelMappingManager
@@ -48,22 +48,18 @@ public:
 	static HyprlandToplevelMappingManager* instance();
 
 	[[nodiscard]] quint64
-	getToplevelAddress(qs::wayland::toplevel_management::impl::ToplevelHandle* handle) const;
+	getToplevelAddress(qs::wayland::toplevel::wlr::ToplevelHandle* handle) const;
 
 signals:
-	void toplevelAddressed(
-	    qs::wayland::toplevel_management::impl::ToplevelHandle* handle,
-	    quint64 address
-	);
+	void toplevelAddressed(qs::wayland::toplevel::wlr::ToplevelHandle* handle, quint64 address);
 
 private slots:
-	void onToplevelReady(qs::wayland::toplevel_management::impl::ToplevelHandle* handle);
+	void onToplevelReady(qs::wayland::toplevel::wlr::ToplevelHandle* handle);
 	void onToplevelDestroyed(QObject* object);
 
 private:
-	void
-	assignAddress(qs::wayland::toplevel_management::impl::ToplevelHandle* handle, quint64 address);
-	QHash<wayland::toplevel_management::impl::ToplevelHandle*, quint64> addresses;
+	void assignAddress(qs::wayland::toplevel::wlr::ToplevelHandle* handle, quint64 address);
+	QHash<wayland::toplevel::wlr::ToplevelHandle*, quint64> addresses;
 
 	friend class HyprlandToplevelMappingHandle;
 };

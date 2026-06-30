@@ -148,6 +148,9 @@ class WindowInterface: public Reloadable {
 	/// When set to false, the window will not re-render in response to animations
 	/// or other visual updates from other windows. This is useful for static windows
 	/// such as wallpapers that do not need to update frequently, saving GPU cycles.
+	///
+	/// When set back to true, a new frame is rendered, including any changes made
+	/// while updates were disabled.
 	Q_PROPERTY(bool updatesEnabled READ updatesEnabled WRITE setUpdatesEnabled NOTIFY updatesEnabledChanged);
 	Q_PROPERTY(QQmlListProperty<QObject> data READ data);
 	// clang-format on

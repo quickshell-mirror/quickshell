@@ -56,9 +56,12 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 	auto screens = QGuiApplication::screens();
 
 	screens.removeIf([](QScreen* screen) {
-		if (dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle()) == nullptr) {
+		auto* waylandScreen = dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle());
+		if (waylandScreen == nullptr || waylandScreen->isPlaceholder()
+		    || waylandScreen->output() == nullptr)
+		{
 			qDebug() << "Not creating lock surface for screen" << screen
-			         << "as it is not backed by a wayland screen.";
+			         << "as it is not backed by a valid wayland output.";
 
 			return true;
 		}
@@ -207,6 +210,7 @@ WlSessionLockSurface::WlSessionLockSurface(QObject* parent)
 
 WlSessionLockSurface::~WlSessionLockSurface() {
 	if (this->window != nullptr) {
+		this->window->destroy();
 		this->window->deleteLater();
 	}
 }

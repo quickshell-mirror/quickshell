@@ -38,6 +38,7 @@ QSWaylandSessionLockSurface::QSWaylandSessionLockSurface(QtWaylandClient::QWayla
 }
 
 QSWaylandSessionLockSurface::~QSWaylandSessionLockSurface() {
+	if (this->object() == nullptr) return;
 	if (this->ext != nullptr) this->ext->surface = nullptr;
 	this->destroy();
 }
