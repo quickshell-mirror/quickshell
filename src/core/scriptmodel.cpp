@@ -4,39 +4,36 @@
 
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
+#include <qjsvalue.h>
 #include <qlist.h>
 #include <qnamespace.h>
+#include <qobject.h>
 #include <qtmetamacros.h>
 #include <qtversionchecks.h>
 #include <qtypes.h>
 #include <qvariant.h>
 
-void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
+bool ScriptModel::updateValuesUnique(const QJSValueList& newValues) {
+	auto anyChanges = false;
+
 	this->hasActiveIterators = true;
 	this->mValues.reserve(newValues.size());
 
 	auto iter = this->mValues.begin();
 	auto newIter = newValues.begin();
 
-	// TODO: cache this
-	auto getCmpKey = [this](const QVariant& v) {
-		if (v.canConvert<QVariantMap>()) {
-			auto vMap = v.value<QVariantMap>();
-			if (vMap.contains(this->cmpKey)) {
-				return vMap.value(this->cmpKey);
-			}
-		}
-
-		return v;
+	auto getCmpKey = [this](const QJSValue& v) {
+		if (v.hasProperty(this->cmpKey)) return v.property(this->cmpKey);
+		else return v;
 	};
 
-	auto variantCmp = [&, this](const QVariant& a, const QVariant& b) {
-		if (!this->cmpKey.isEmpty()) return getCmpKey(a) == getCmpKey(b);
-		else return a == b;
+	auto valueCmp = [&, this](const QJSValue& a, const QJSValue& b) {
+		if (!this->cmpKey.isEmpty()) return getCmpKey(a).strictlyEquals(getCmpKey(b));
+		return a.strictlyEquals(b);
 	};
 
-	auto eqPredicate = [&](const QVariant& b) {
-		return [&](const QVariant& a) { return variantCmp(a, b); };
+	auto eqPredicate = [&](const QJSValue& b) {
+		return [&](const QJSValue& a) { return valueCmp(a, b); };
 	};
 
 	while (true) {
@@ -49,6 +46,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 			this->beginRemoveRows(QModelIndex(), startIndex, endIndex);
 			this->mValues.erase(iter, this->mValues.end());
 			this->endRemoveRows();
+			anyChanges = true;
 
 			break;
 		} else if (iter == this->mValues.end()) {
@@ -59,9 +57,10 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 			this->beginInsertRows(QModelIndex(), startIndex, endIndex);
 			this->mValues.append(newValues.sliced(startIndex));
 			this->endInsertRows();
+			anyChanges = true;
 
 			break;
-		} else if (!variantCmp(*newIter, *iter)) {
+		} else if (!valueCmp(*newIter, *iter)) {
 			auto oldIter = std::find_if(iter, this->mValues.end(), eqPredicate(*newIter));
 
 			if (oldIter != this->mValues.end()) {
@@ -81,6 +80,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 					this->beginRemoveRows(QModelIndex(), startIndex, index - 1);
 					iter = this->mValues.erase(startIter, iter);
 					this->endRemoveRows();
+					anyChanges = true;
 				} else {
 					// Advance iters to capture a whole move sequence as a single operation if possible.
 					auto oldStartIter = oldIter;
@@ -88,7 +88,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 						++oldIter;
 						++newIter;
 					} while (oldIter != this->mValues.end() && newIter != newValues.end()
-					         && variantCmp(*oldIter, *newIter));
+					         && valueCmp(*oldIter, *newIter));
 
 					auto index = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 					auto oldStartIndex =
@@ -105,6 +105,7 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 
 					iter = this->mValues.begin() + (index + len);
 					this->endMoveRows();
+					anyChanges = true;
 				}
 			} else {
 				auto startNewIter = newIter;
@@ -130,8 +131,9 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 				std::move_backward(iter, this->mValues.end() - len, this->mValues.end());
 				iter = std::copy(startNewIter, newIter, iter);
 				this->endInsertRows();
+				anyChanges = true;
 			}
-		} else if (*newIter != *iter) {
+		} else if (!newIter->strictlyEquals(*iter)) {
 			auto first = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
 			auto index = first;
 
@@ -140,13 +142,16 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 				++iter;
 				++newIter;
 				++index;
-			} while (iter != this->mValues.end() && newIter != newValues.end() && *newIter != *iter);
+			} while (iter != this->mValues.end() && newIter != newValues.end()
+			         && !newIter->strictlyEquals(*iter));
 
 			this->dataChanged(
 			    this->index(first, 0, QModelIndex()),
 			    this->index(index - 1, 0, QModelIndex()),
 			    {Qt::UserRole}
 			);
+
+			anyChanges = true;
 		} else {
 			++iter;
 			++newIter;
@@ -154,12 +159,13 @@ void ScriptModel::updateValuesUnique(const QVariantList& newValues) {
 	}
 
 	this->hasActiveIterators = false;
+
+	return anyChanges;
 }
 
-void ScriptModel::setValues(const QVariantList& newValues) {
-	if (newValues == this->mValues) return;
-	this->updateValuesUnique(newValues);
-	emit this->valuesChanged();
+void ScriptModel::setValues(const QJSValueList& newValues) {
+	auto changed = this->updateValuesUnique(newValues);
+	if (changed) emit this->valuesChanged();
 }
 
 void ScriptModel::setObjectProp(const QString& objectProp) {
@@ -176,7 +182,7 @@ qint32 ScriptModel::rowCount(const QModelIndex& parent) const {
 
 QVariant ScriptModel::data(const QModelIndex& index, qint32 role) const {
 	if (role != Qt::UserRole) return QVariant();
-	return this->mValues.at(index.row());
+	return this->mValues.at(index.row()).toVariant(QJSValue::RetainJSObjects);
 }
 
 QHash<int, QByteArray> ScriptModel::roleNames() const { return {{Qt::UserRole, "modelData"}}; }

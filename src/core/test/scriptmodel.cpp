@@ -4,10 +4,10 @@
 #include <qabstractitemmodeltester.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
+#include <qjsvalue.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
-#include <qsignalspy.h>
 #include <qstring.h>
 #include <qtest.h>
 #include <qtestcase.h>
@@ -45,20 +45,32 @@ QDebug& operator<<(QDebug& debug, const ModelOperation& op) {
 }
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-QDebug& operator<<(QDebug& debug, const QVariantList& list) {
+QDebug& operator<<(QDebug& debug, const QJSValueList& list) {
 	auto str = QString();
 
 	for (const auto& var: list) {
-		if (var.canConvert<QChar>()) {
-			str += var.value<QChar>();
+		if (var.isString()) {
+			str += var.toString();
 		} else {
-			qFatal() << "QVariantList debug overridden in test";
+			qFatal() << "QJSValueList debug overridden in test";
 		}
 	}
 
 	debug << str;
 	return debug;
 }
+
+namespace {
+bool qjsValueListsEqual(const QJSValueList& a, const QJSValueList& b) {
+	if (a.length() != b.length()) return false;
+
+	for (auto i = 0; i != a.length(); i++) {
+		if (!a.at(i).strictlyEquals(b.at(i))) return false;
+	}
+
+	return true;
+}
+} // namespace
 
 void TestScriptModel::unique_data() {
 	QTest::addColumn<QString>("oldstr");
@@ -117,18 +129,18 @@ void TestScriptModel::unique() {
 	QFETCH(const QString, newstr);
 	QFETCH(const OpList, operations);
 
-	auto strToVariantList = [](const QString& str) -> QVariantList {
-		QVariantList list;
+	auto strToJsValueList = [](const QString& str) -> QJSValueList {
+		QJSValueList list;
 
 		for (auto c: str) {
-			list.emplace_back(c);
+			list.emplace_back(QString(c));
 		}
 
 		return list;
 	};
 
-	auto oldlist = strToVariantList(oldstr);
-	auto newlist = strToVariantList(newstr);
+	auto oldlist = strToJsValueList(oldstr);
+	auto newlist = strToJsValueList(newstr);
 
 	auto model = ScriptModel();
 	auto modelTester = QAbstractItemModelTester(&model);
@@ -165,7 +177,7 @@ void TestScriptModel::unique() {
 	QObject::connect(&model, &QAbstractItemModel::rowsMoved, &model, onMove);
 
 	model.setValues(oldlist);
-	QCOMPARE_EQ(model.values(), oldlist);
+	QVERIFY(qjsValueListsEqual(model.values(), oldlist));
 	QCOMPARE_EQ(
 	    actualOperations,
 	    OpList({{ModelOperation::Insert, 0, static_cast<qint32>(oldlist.length())}})
@@ -174,7 +186,7 @@ void TestScriptModel::unique() {
 	actualOperations.clear();
 
 	model.setValues(newlist);
-	QCOMPARE_EQ(model.values(), newlist);
+	QVERIFY(qjsValueListsEqual(model.values(), newlist));
 	QCOMPARE_EQ(actualOperations, operations);
 }
 

@@ -2,9 +2,13 @@
 
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
+#include <qjsvalue.h>
+#include <qobject.h>
+#include <qobjectdefs.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 ///! QML model reflecting a javascript expression
 /// ScriptModel is a QML [Data Model] that generates model operations based on changes
@@ -66,7 +70,8 @@ class ScriptModel: public QAbstractListModel {
 	/// >   values: [...DesktopEntries.applications.values].sort(...)
 	/// > }
 	/// > ```
-	Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged);
+	// TODO: use qjsobject for gc/free checks?
+	Q_PROPERTY(QJSValueList values READ values WRITE setValues NOTIFY valuesChanged);
 	/// The property that javascript objects passed into the model will be compared with.
 	///
 	/// For example, if `objectProp` is `"myprop"` then `{ myprop: "a", other: "y" }` and
@@ -77,14 +82,14 @@ class ScriptModel: public QAbstractListModel {
 	QML_ELEMENT;
 
 public:
-	[[nodiscard]] QVariantList values() const {
+	[[nodiscard]] QJSValueList values() const {
 		auto values = this->mValues;
 		// If not detached, the QML engine will invalidate iterators in updateValuesUnique.
 		if (this->hasActiveIterators) values.detach();
 		return values;
 	}
 
-	void setValues(const QVariantList& newValues);
+	void setValues(const QJSValueList& newValues);
 
 	[[nodiscard]] QString objectProp() const { return this->cmpKey; }
 	void setObjectProp(const QString& objectProp);
@@ -98,9 +103,9 @@ signals:
 	void objectPropChanged();
 
 private:
-	QVariantList mValues;
+	QJSValueList mValues;
 	QString cmpKey;
 	bool hasActiveIterators = false;
 
-	void updateValuesUnique(const QVariantList& newValues);
+	bool updateValuesUnique(const QJSValueList& newValues);
 };
