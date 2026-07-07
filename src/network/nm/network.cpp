@@ -72,9 +72,10 @@ void NMNetwork::addSettings(NMSettings* settings) {
 
 	auto onDestroyed = [this, settings]() {
 		if (this->mSettings.take(settings->path())) {
-			emit this->settingsRemoved(settings);
 			this->updateReferenceSettings();
 			if (this->mSettings.isEmpty()) this->bKnown = false;
+			// Deletes `this`
+			emit this->settingsRemoved(settings);
 		}
 	};
 	QObject::connect(settings, &NMSettings::destroyed, this, onDestroyed);
@@ -240,8 +241,9 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 	this->mAccessPoints.insert(ap->path(), ap);
 	auto onDestroyed = [this, ap]() {
 		if (this->mAccessPoints.take(ap->path())) {
-			emit this->apRemoved(ap);
 			this->updateReferenceAp();
+			// Deletes `this`
+			emit this->apRemoved(ap);
 		}
 	};
 	// clang-format off
