@@ -71,7 +71,7 @@ class ScriptModel: public QAbstractListModel {
 	/// > }
 	/// > ```
 	// TODO: use qjsobject for gc/free checks?
-	Q_PROPERTY(QJSValueList values READ values WRITE setValues NOTIFY valuesChanged);
+	Q_PROPERTY(QList<QJSValue> values READ values WRITE setValues NOTIFY valuesChanged);
 	/// The property that javascript objects passed into the model will be compared with.
 	///
 	/// For example, if `objectProp` is `"myprop"` then `{ myprop: "a", other: "y" }` and
@@ -82,14 +82,14 @@ class ScriptModel: public QAbstractListModel {
 	QML_ELEMENT;
 
 public:
-	[[nodiscard]] QJSValueList values() const {
+	[[nodiscard]] QList<QJSValue> values() const {
 		auto values = this->mValues;
 		// If not detached, the QML engine will invalidate iterators in updateValuesUnique.
 		if (this->hasActiveIterators) values.detach();
 		return values;
 	}
 
-	void setValues(const QJSValueList& newValues);
+	void setValues(const QList<QJSValue>& newValues);
 
 	[[nodiscard]] QString objectProp() const { return this->cmpKey; }
 	void setObjectProp(const QString& objectProp);
@@ -103,9 +103,9 @@ signals:
 	void objectPropChanged();
 
 private:
-	QJSValueList mValues;
+	QList<QJSValue> mValues;
 	QString cmpKey;
 	bool hasActiveIterators = false;
 
-	bool updateValuesUnique(const QJSValueList& newValues);
+	bool updateValuesUnique(const QList<QJSValue>& newValues);
 };

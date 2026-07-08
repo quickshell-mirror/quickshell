@@ -13,7 +13,7 @@
 #include <qtypes.h>
 #include <qvariant.h>
 
-bool ScriptModel::updateValuesUnique(const QJSValueList& newValues) {
+bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 	auto anyChanges = false;
 
 	this->hasActiveIterators = true;
@@ -163,7 +163,7 @@ bool ScriptModel::updateValuesUnique(const QJSValueList& newValues) {
 	return anyChanges;
 }
 
-void ScriptModel::setValues(const QJSValueList& newValues) {
+void ScriptModel::setValues(const QList<QJSValue>& newValues) {
 	auto changed = this->updateValuesUnique(newValues);
 	if (changed) emit this->valuesChanged();
 }
