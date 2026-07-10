@@ -9,3 +9,4 @@
 - Fixed potential crashes from usage of `WindowsetProjection.screens` during monitor unplug.
 - Fixed crashes from accessing freed objects laundered through a `ScriptModel`.
 - Fixed crashes when a wifi network disappear.
+- Fixed unhandled notifications sending `NotificationClosed` out of order.
