@@ -34,9 +34,8 @@ bool IpcFunction::resolve(QString& error) {
 
 	for (auto i = 0; i < this->method.parameterCount(); i++) {
 		const auto& metaType = this->method.parameterMetaType(i);
-		const auto* type = IpcType::ipcType(metaType);
 
-		if (type == nullptr) {
+		if (!IpcValueSlot::isSupported(metaType)) {
 			error = QString("Type of argument %1 (%2: %3) cannot be used across IPC.")
 			            .arg(i + 1)
 			            .arg(this->method.parameterNames().value(i))
@@ -45,23 +44,20 @@ bool IpcFunction::resolve(QString& error) {
 			return false;
 		}
 
-		this->argumentTypes.append(type);
+		this->argumentTypes.emplaceBack(metaType);
 	}
 
-	const auto& metaType = this->method.returnMetaType();
-	const auto* type = IpcType::ipcType(metaType);
+	auto metaType = this->method.returnMetaType();
 
-	if (type == nullptr) {
-		// void and var get mixed by qml engine in return types
-		if (metaType.id() == QMetaType::QVariant) type = &VoidIpcType::INSTANCE;
+	// void and var get mixed by qml engine in return types
+	if (metaType.id() == QMetaType::QVariant) metaType = QMetaType::fromType<void>();
 
-		if (type == nullptr) {
-			error = QString("Return type (%1) cannot be used across IPC.").arg(metaType.name());
-			return false;
-		}
+	if (!IpcValueSlot::isSupported(metaType)) {
+		error = QString("Return type (%1) cannot be used across IPC.").arg(metaType.name());
+		return false;
 	}
 
-	this->returnType = type;
+	this->returnType = IpcValueSlot(metaType);
 
 	return true;
 }
@@ -92,52 +88,53 @@ QString IpcFunction::toString() const {
 	QString paramString;
 	auto paramNames = this->method.parameterNames();
 	for (auto i = 0; i < this->argumentTypes.length(); i++) {
-		paramString += paramNames.value(i) % ": " % this->argumentTypes.value(i)->name();
+		paramString += paramNames.value(i) % ": " % this->argumentTypes.value(i).name();
 
 		if (i + 1 != this->argumentTypes.length()) {
 			paramString += ", ";
 		}
 	}
 
-	return "function " % this->method.name() % '(' % paramString % "): " % this->returnType->name();
+	return "function " % this->method.name() % '(' % paramString % "): " % this->returnType.name();
 }
 
 WireFunctionDefinition IpcFunction::wireDef() const {
 	WireFunctionDefinition wire;
 	wire.name = this->method.name();
-	wire.returnType = this->returnType->name();
+	wire.returnType = this->returnType.name();
 
 	auto paramNames = this->method.parameterNames();
 	for (auto i = 0; i < this->argumentTypes.length(); i++) {
-		wire.arguments += qMakePair(paramNames.value(i), this->argumentTypes.value(i)->name());
+		wire.arguments += qMakePair(paramNames.value(i), this->argumentTypes.value(i).name());
 	}
 
 	return wire;
 }
 
 bool IpcProperty::resolve(QString& error) {
-	this->type = IpcType::ipcType(this->property.metaType());
+	const auto& metaType = this->property.metaType();
 
-	if (!this->type) {
-		error = QString("Type %1 cannot be used across IPC.").arg(this->property.metaType().name());
+	if (!IpcValueSlot::isSupported(metaType)) {
+		error = QString("Type %1 cannot be used across IPC.").arg(metaType.name());
 		return false;
 	}
 
+	this->type = metaType;
 	return true;
 }
 
-void IpcProperty::read(QObject* target, IpcTypeSlot& slot) const {
-	slot.replace(this->property.read(target));
+void IpcProperty::read(QObject* target, IpcValueSlot& slot) const {
+	slot.setValue(this->property.read(target));
 }
 
 QString IpcProperty::toString() const {
-	return QString("property ") % this->property.name() % ": " % this->type->name();
+	return QString("property ") % this->property.name() % ": " % IpcValueSlot::typeName(this->type);
 }
 
 WirePropertyDefinition IpcProperty::wireDef() const {
 	WirePropertyDefinition wire;
 	wire.name = this->property.name();
-	wire.type = this->type->name();
+	wire.type = IpcValueSlot::typeName(this->type);
 	return wire;
 }
 
@@ -217,16 +214,10 @@ IpcCallStorage::IpcCallStorage(const IpcFunction& function): returnSlot(function
 }
 
 bool IpcCallStorage::setArgumentStr(size_t i, const QString& value) {
-	auto& slot = this->argumentSlots.at(i);
-
-	auto* data = slot.type()->fromString(value);
-	slot.replace(data);
-	return data != nullptr;
+	return this->argumentSlots.at(i).setString(value);
 }
 
-QString IpcCallStorage::getReturnStr() {
-	return this->returnSlot.type()->toString(this->returnSlot.get());
-}
+QString IpcCallStorage::getReturnStr() { return this->returnSlot.toString(); }
 
 IpcHandler::~IpcHandler() {
 	if (this->registeredState.enabled) {

@@ -173,7 +173,7 @@ void StringCallCommand::exec(qs::ipc::IpcServerConnection* conn) const {
 		func->invoke(handler, storage);
 
 		resp << Completed {
-		    .isVoid = func->returnType == &VoidIpcType::INSTANCE,
+		    .isVoid = func->returnType.isVoid(),
 		    .returnValue = storage.getReturnStr(),
 		};
 	} else {
@@ -269,11 +269,11 @@ void StringPropReadCommand::exec(qs::ipc::IpcServerConnection* conn) const {
 			return;
 		}
 
-		auto slot = IpcTypeSlot(prop->type);
+		auto slot = IpcValueSlot(prop->type);
 		prop->read(handler, slot);
 
 		resp << PropertyValue {
-		    .value = slot.type()->toString(slot.get()),
+		    .value = slot.toString(),
 		};
 	} else {
 		conn->respond(StringCallResponse(NoCurrentGeneration()));
