@@ -132,7 +132,7 @@ class WindowsetProjection: public QObject {
 	QML_UNCREATABLE("");
 	// clang-format off
 	/// Screens the windowset projection spans, often a single screen or all screens.
-	Q_PROPERTY(QList<QuickshellScreenInfo*> screens READ default NOTIFY screensChanged BINDABLE bindableScreens);
+	Q_PROPERTY(QList<QuickshellScreenInfo*> screens READ screens NOTIFY screensChanged);
 	/// Windowsets that are currently present on the projection.
 	Q_PROPERTY(QList<Windowset*> windowsets READ default NOTIFY windowsetsChanged BINDABLE bindableWindowsets);
 	// clang-format on
@@ -140,9 +140,7 @@ class WindowsetProjection: public QObject {
 public:
 	explicit WindowsetProjection(QObject* parent);
 
-	[[nodiscard]] QBindable<QList<QuickshellScreenInfo*>> bindableScreens() const {
-		return &this->bScreens;
-	}
+	[[nodiscard]] QList<QuickshellScreenInfo*> screens();
 
 	[[nodiscard]] QBindable<QList<QScreen*>> bindableQScreens() const { return &this->bQScreens; }
 
@@ -155,12 +153,10 @@ signals:
 	void windowsetsChanged();
 
 protected:
-	Q_OBJECT_BINDABLE_PROPERTY(WindowsetProjection, QList<QScreen*>, bQScreens);
-
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    WindowsetProjection,
-	    QList<QuickshellScreenInfo*>,
-	    bScreens,
+	    QList<QScreen*>,
+	    bQScreens,
 	    &WindowsetProjection::screensChanged
 	);
 

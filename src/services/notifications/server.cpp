@@ -8,6 +8,8 @@
 #include <qdbusservicewatcher.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
+#include <qobjectdefs.h>
 #include <qqmlengine.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
@@ -192,19 +194,29 @@ uint NotificationServer::Notify(
 
 	notification->updateProperties(appName, appIcon, summary, body, actions, hints, expireTimeout);
 
+	auto id = notification->id();
+
 	if (!old) {
 		emit this->notification(notification);
 
 		if (!notification->isTracked()) {
-			emit this->NotificationClosed(notification->id(), notification->closeReason());
+			auto closeReason = notification->closeReason();
+
+			// Emit NotificationClosed after Notify returns
+			QMetaObject::invokeMethod(
+			    this,
+			    [this, id, closeReason]() { emit this->NotificationClosed(id, closeReason); },
+			    Qt::QueuedConnection
+			);
+
 			delete notification;
 		} else {
-			this->idMap.insert(notification->id(), notification);
+			this->idMap.insert(id, notification);
 			this->mNotifications.insertObject(notification);
 		}
 	}
 
-	return notification->id();
+	return id;
 }
 
 } // namespace qs::service::notifications

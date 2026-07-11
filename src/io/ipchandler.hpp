@@ -37,8 +37,8 @@ public:
 	[[nodiscard]] WireFunctionDefinition wireDef() const;
 
 	QMetaMethod method;
-	QVector<const IpcType*> argumentTypes;
-	const IpcType* returnType = nullptr;
+	QVector<IpcValueSlot> argumentTypes;
+	IpcValueSlot returnType;
 };
 
 class IpcCallStorage {
@@ -49,8 +49,8 @@ public:
 	[[nodiscard]] QString getReturnStr();
 
 private:
-	std::vector<IpcTypeSlot> argumentSlots;
-	IpcTypeSlot returnSlot;
+	std::vector<IpcValueSlot> argumentSlots;
+	IpcValueSlot returnSlot;
 
 	friend class IpcFunction;
 };
@@ -60,13 +60,13 @@ public:
 	explicit IpcProperty(QMetaProperty property): property(property) {}
 
 	bool resolve(QString& error);
-	void read(QObject* target, IpcTypeSlot& slot) const;
+	void read(QObject* target, IpcValueSlot& slot) const;
 
 	[[nodiscard]] QString toString() const;
 	[[nodiscard]] WirePropertyDefinition wireDef() const;
 
 	QMetaProperty property;
-	const IpcType* type = nullptr;
+	QMetaType type;
 };
 
 class IpcSignalListener: public QObject {
@@ -185,7 +185,7 @@ class IpcHandlerRegistry;
 ///
 ///     function getRadius(): int { return rect.radius; }
 ///
-/// 		signal radiusChanged(newRadius: int);
+///     signal radiusChanged(newRadius: int);
 ///   }
 /// }
 /// ```
