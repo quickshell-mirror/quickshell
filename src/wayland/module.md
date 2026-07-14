@@ -9,5 +9,6 @@ headers = [
 	"idle_notify/monitor.hpp",
 	"shortcuts_inhibit/inhibitor.hpp",
 	"background_effect/qml.hpp",
+	"wayland_window.hpp",
 ]
 -----
