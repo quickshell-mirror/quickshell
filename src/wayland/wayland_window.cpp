@@ -8,7 +8,12 @@
 #include <qqmlinfo.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
+#include <qtversionchecks.h>
 #include <qwindow.h>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+#include <qnamespace.h>
+#endif
 
 #include "../window/proxywindow.hpp"
 
@@ -63,6 +68,15 @@ void WaylandWindow::onWindowVisibleChanged() {
 		this->mWindow->create();
 	}
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+	// Qt < 6.8 has no surfaceRoleCreated signal. The shell surface is created and the
+	// default app id set after visibleChanged is emitted, so apply ours in a queued
+	// slot which runs after setVisible completes and before the toplevel is mapped.
+	if (this->mWindow->isVisible()) {
+		QMetaObject::invokeMethod(this, &WaylandWindow::onSurfaceRoleCreated, Qt::QueuedConnection);
+	}
+#endif
+
 	auto* window = dynamic_cast<QWaylandWindow*>(this->mWindow->handle());
 	if (window == this->mWaylandWindow) return;
 
@@ -80,12 +94,14 @@ void WaylandWindow::onWindowVisibleChanged() {
 	    &WaylandWindow::onWaylandWindowDestroyed
 	);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 	QObject::connect(
 	    this->mWaylandWindow,
 	    &QWaylandWindow::surfaceRoleCreated,
 	    this,
 	    &WaylandWindow::onSurfaceRoleCreated
 	);
+#endif
 
 	if (this->mWaylandWindow->shellSurface() && !this->mAppId.isEmpty()) {
 		this->applyAppId();
