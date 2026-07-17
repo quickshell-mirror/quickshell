@@ -42,10 +42,14 @@ QString NotificationCloseReason::toString(NotificationCloseReason::Enum value) {
 QString NotificationAction::identifier() const { return this->mIdentifier; }
 QString NotificationAction::text() const { return this->mText; }
 
-void NotificationAction::invoke() {
+void NotificationAction::invoke(const QString& activationToken) {
 	if (this->notification->isRetained()) {
 		qCritical() << "Cannot invoke destroyed notification" << this;
 		return;
+	}
+
+	if (!activationToken.isEmpty()) {
+		NotificationServer::instance()->ActivationToken(this->notification->id(), activationToken);
 	}
 
 	NotificationServer::instance()->ActionInvoked(this->notification->id(), this->mIdentifier);

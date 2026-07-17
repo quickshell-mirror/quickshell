@@ -258,7 +258,11 @@ public:
 	    , mText(std::move(text)) {}
 
 	/// Invoke the action. If @@Notification.resident is false it will be dismissed.
-	Q_INVOKABLE void invoke();
+	///
+	/// If `activationToken` is supplied, it is sent to the application before the action is
+	/// invoked. The application can use the token to focus the window associated with the
+	/// notification.
+	Q_INVOKABLE void invoke(const QString& activationToken = QString());
 
 	[[nodiscard]] QString identifier() const;
 	[[nodiscard]] QString text() const;

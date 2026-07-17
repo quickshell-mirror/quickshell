@@ -61,6 +61,7 @@ signals:
 	// NOLINTBEGIN
 	void NotificationClosed(quint32 id, quint32 reason);
 	void ActionInvoked(quint32 id, QString action);
+	void ActivationToken(quint32 id, QString activationToken);
 	void NotificationReplied(quint32 id, QString replyText);
 	// NOLINTEND
 

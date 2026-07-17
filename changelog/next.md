@@ -12,3 +12,5 @@
 - Fixed unhandled notifications sending `NotificationClosed` out of order.
 - Fixed `qs kill` not waiting for the process to exit.
 - Fixed IPC calls from children of a crashed and relaunched process crashing.
+- Notification actions can now provide activation tokens so applications can focus their associated
+  windows.
