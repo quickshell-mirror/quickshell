@@ -32,7 +32,7 @@ void BackgroundEffectManager::ext_background_effect_manager_v1_capabilities(uint
 
 BackgroundEffectManager* BackgroundEffectManager::instance() {
 	static auto* instance = new BackgroundEffectManager(); // NOLINT
-	return instance->isInitialized() ? instance : nullptr;
+	return instance;
 }
 
 } // namespace qs::wayland::background_effect::impl
