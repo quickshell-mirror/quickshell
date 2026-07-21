@@ -111,6 +111,7 @@ void exitDaemon(int code) {
 
 int main(int argc, char** argv) {
 	QCoreApplication::setApplicationName("quickshell");
+	QCoreApplication::setApplicationVersion(QS_VERSION);
 
 #if CRASH_HANDLER
 	qsCheckCrash(argc, argv);
