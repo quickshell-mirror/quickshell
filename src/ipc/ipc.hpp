@@ -216,7 +216,10 @@ signals:
 	void disconnected();
 
 private slots:
-	static void onError(QLocalSocket::LocalSocketError error);
+	void onError(QLocalSocket::LocalSocketError error) const;
+
+private:
+	bool waitingForDisconnect = false;
 };
 
 } // namespace qs::ipc
