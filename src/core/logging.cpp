@@ -304,6 +304,10 @@ void LogManager::init(
     const QString& rules,
     const QString& prefix
 ) {
+	static bool alreadyInitialized = false;
+	if (alreadyInitialized) return;
+	alreadyInitialized = true;
+
 	auto* instance = LogManager::instance();
 	instance->colorLogs = color;
 	instance->timestampLogs = timestamp;
