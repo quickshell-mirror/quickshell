@@ -461,6 +461,102 @@ QVariant settingTypeFromQml(const QString& group, const QString& key, const QVar
 	return value;
 }
 
+NMSettingsMap settingsMapFromQml(
+    const QVariantMap& settings,
+    NMSettingsMap& removedSettings,
+    QStringList& failedSettings
+) {
+	NMSettingsMap changedSettings;
+
+	for (auto it = settings.constBegin(); it != settings.constEnd(); ++it) {
+		if (!it.value().canConvert<QVariantMap>()) continue;
+
+		auto group = it.value().toMap();
+		QVariantMap toChange;
+		QVariantMap toRemove;
+		for (auto jt = group.constBegin(); jt != group.constEnd(); ++jt) {
+			if (jt.value().isNull()) {
+				toRemove.insert(jt.key(), QVariant());
+			} else {
+				auto converted = settingTypeFromQml(it.key(), jt.key(), jt.value());
+				if (!converted.isValid()) failedSettings.append(it.key() + "." + jt.key());
+				else toChange.insert(jt.key(), converted);
+			}
+		}
+		if (!toChange.isEmpty()) changedSettings.insert(it.key(), toChange);
+		if (!toRemove.isEmpty()) removedSettings.insert(it.key(), toRemove);
+	}
+
+	return changedSettings;
+}
+
+NMSettingsMap wifiConnectionSettings(
+    const QString& ssid,
+    WifiSecurityType::Enum security,
+    const QVariantMap& credentials,
+    bool hidden,
+    QStringList& errors
+) {
+	if (ssid.isEmpty()) {
+		errors.append("ssid is required");
+		return {};
+	}
+
+	QVariantMap wireless {{"ssid", ssid}};
+	if (hidden) wireless.insert("hidden", true);
+
+	QVariantMap qmlSettings {
+	    {"connection", QVariantMap {{"id", ssid}, {"type", "802-11-wireless"}}},
+	    {"802-11-wireless", wireless},
+	};
+
+	const auto requirePsk = [&](const char* keyMgmt) {
+		QVariantMap sec {{"key-mgmt", QString::fromLatin1(keyMgmt)}};
+		const auto psk = credentials.value("psk").toString();
+		if (psk.isEmpty()) errors.append("credentials.psk is required for this security type");
+		else sec.insert("psk", psk);
+		qmlSettings.insert("802-11-wireless-security", sec);
+	};
+
+	switch (security) {
+	case WifiSecurityType::Open:
+	case WifiSecurityType::Unknown:
+		// Open network: no security group.
+		break;
+	case WifiSecurityType::Owe:
+		qmlSettings.insert("802-11-wireless-security", QVariantMap {{"key-mgmt", "owe"}});
+		break;
+	case WifiSecurityType::WpaPsk:
+	case WifiSecurityType::Wpa2Psk: requirePsk("wpa-psk"); break;
+	case WifiSecurityType::Sae: requirePsk("sae"); break;
+	case WifiSecurityType::StaticWep: {
+		QVariantMap sec {{"key-mgmt", "none"}, {"auth-alg", "open"}};
+		const auto key = credentials.value("wepKey").toString();
+		if (key.isEmpty()) errors.append("credentials.wepKey is required for a WEP network");
+		else sec.insert("wep-key0", key);
+		qmlSettings.insert("802-11-wireless-security", sec);
+		break;
+	}
+	case WifiSecurityType::Wpa2Eap:
+	case WifiSecurityType::WpaEap:
+	case WifiSecurityType::Wpa3SuiteB192:
+	case WifiSecurityType::DynamicWep:
+	case WifiSecurityType::Leap:
+		// TODO: build the 802-1x group (eap method, identity, password, phase2, certs) from
+		// credentials once enterprise support is implemented.
+		errors.append("enterprise (802.1x) networks are not yet implemented");
+		return {};
+	}
+
+	if (!errors.isEmpty()) return {};
+
+	NMSettingsMap removedSettings; // Unused: a new connection has nothing to remove.
+	QStringList failedSettings;
+	auto settings = settingsMapFromQml(qmlSettings, removedSettings, failedSettings);
+	for (const auto& failed: failedSettings) errors.append("failed to convert " + failed);
+	return settings;
+}
+
 // Some NMSettingsMap setting types must be converted to a type that is supported by QML.
 // Although QByteArrays can be represented in QML, we convert them to strings for convenience.
 QVariant settingTypeToQml(const QVariant& value) {
