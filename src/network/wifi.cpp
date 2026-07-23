@@ -38,6 +38,15 @@ void WifiNetwork::connectWithPsk(const QString& psk) {
 
 WifiDevice::WifiDevice(QObject* parent): NetworkDevice(DeviceType::Wifi, parent) {};
 
+void WifiDevice::addNetwork(
+    const QString& ssid,
+    WifiSecurityType::Enum security,
+    const QVariantMap& credentials,
+    bool hidden
+) {
+	emit this->requestAddNetwork(ssid, security, credentials, hidden);
+}
+
 void WifiDevice::setScannerEnabled(bool enabled) {
 	if (this->bScannerEnabled == enabled) return;
 	this->bScannerEnabled = enabled;

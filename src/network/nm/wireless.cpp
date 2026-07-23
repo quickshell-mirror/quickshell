@@ -269,6 +269,29 @@ void NMWirelessDevice::bindFrontend() {
 	};
 	frontend->bindableMode().setBinding(translateMode);
 	this->bindableScanning().setBinding([frontend]() { return frontend->scannerEnabled(); });
+
+	QObject::connect(
+	    frontend,
+	    &WifiDevice::requestAddNetwork,
+	    this,
+	    &NMWirelessDevice::onAddNetworkRequested
+	);
+}
+
+void NMWirelessDevice::onAddNetworkRequested(
+    const QString& ssid,
+    WifiSecurityType::Enum security,
+    const QVariantMap& credentials,
+    bool hidden
+) {
+	QStringList errors;
+	auto settings = wifiConnectionSettings(ssid, security, credentials, hidden, errors);
+	if (!errors.isEmpty()) {
+		qCWarning(logNetworkManager) << "Failed to add network" << ssid << ":" << errors.join("; ");
+		return;
+	}
+	emit this
+	    ->addAndActivateConnection(settings, QDBusObjectPath(this->path()), QDBusObjectPath("/"));
 }
 
 bool NMWirelessDevice::isValid() const {

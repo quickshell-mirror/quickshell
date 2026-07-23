@@ -70,12 +70,59 @@ class WifiDevice: public NetworkDevice {
 public:
 	explicit WifiDevice(QObject* parent = nullptr);
 
+	/// Create a new connection profile for a Wi-Fi network and immediately activate it. This is how
+	/// to connect to a network with no pre-existing profile that isn't currently visible, such as a
+	/// hidden network or one entered by hand.
+	///
+	/// The keys required in @@credentials depend on the @@WifiSecurityType:
+	/// - `Open` / `Owe`: none - @@credentials may be omitted.
+	/// - `WpaPsk` / `Wpa2Psk` / `Sae`: `psk` - the pre-shared passphrase.
+	/// - `StaticWep`: `wepKey` - the WEP key.
+	/// - `WpaEap` / `Wpa2Eap` / `Wpa3SuiteB192` / `DynamicWep` (enterprise): `eap` - the EAP method
+	///   (`peap`, `ttls`, or `tls`) and `identity` - the username. Then, depending on the method:
+	///   `password` for `peap`/`ttls` (with optional `anonymousIdentity` and `phase2Auth`, e.g.
+	///   `mschapv2`), or `clientCert`, `privateKey`, and `privateKeyPassword` for `tls`. `caCert` is
+	///   optional for all methods. Certificate fields accept a filesystem path.
+	/// - `Leap`: `identity` and `password`.
+	///
+	/// For example, to connect to a hidden WPA2 network:
+	/// ```qml
+	/// wifiDevice.addNetwork("Example", WifiSecurityType.Wpa2Psk, { "psk": "hunter2" }, true);
+	/// ```
+	///
+	/// An open network, with no credentials:
+	/// ```qml
+	/// wifiDevice.addNetwork("Example", WifiSecurityType.Open);
+	/// ```
+	///
+	/// Or a PEAP enterprise network:
+	/// ```qml
+	/// wifiDevice.addNetwork("Example", WifiSecurityType.Wpa2Eap, {
+	///     "eap": "peap",
+	///     "identity": "user",
+	///     "password": "hunter2",
+	///     "phase2Auth": "mschapv2"
+	/// });
+	/// ```
+	Q_INVOKABLE void addNetwork(
+	    const QString& ssid,
+	    WifiSecurityType::Enum security,
+	    const QVariantMap& credentials = {},
+	    bool hidden = false
+	);
+
 	QBindable<bool> bindableScannerEnabled() { return &this->bScannerEnabled; }
 	[[nodiscard]] bool scannerEnabled() const { return this->bScannerEnabled; }
 	void setScannerEnabled(bool enabled);
 	QBindable<WifiDeviceMode::Enum> bindableMode() { return &this->bMode; }
 
 signals:
+	QSDOC_HIDE void requestAddNetwork(
+	    const QString& ssid,
+	    WifiSecurityType::Enum security,
+	    const QVariantMap& credentials,
+	    bool hidden
+	);
 	void modeChanged();
 	void scannerEnabledChanged(bool enabled);
 
