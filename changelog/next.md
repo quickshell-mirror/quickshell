@@ -11,3 +11,4 @@
 - Fixed crashes when a wifi network disappear.
 - Fixed unhandled notifications sending `NotificationClosed` out of order.
 - Fixed `qs kill` not waiting for the process to exit.
+- Fixed BackgroundEffect never applying if the compositor announces ext-background-effect-v1 after surface creation.
