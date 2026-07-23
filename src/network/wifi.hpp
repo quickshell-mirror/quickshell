@@ -78,10 +78,12 @@ public:
 	/// - `Open` / `Owe`: none - @@credentials may be omitted.
 	/// - `WpaPsk` / `Wpa2Psk` / `Sae`: `psk` - the pre-shared passphrase.
 	/// - `StaticWep`: `wepKey` - the WEP key.
-	/// - `WpaEap` / `Wpa2Eap` (enterprise): `eap` - the EAP method (`peap`, `ttls`, or `tls`) and
-	///   `identity` - the username. Then, depending on the method: `password` for `peap`/`ttls`
-	///   (with optional `anonymousIdentity` and `phase2Auth`, e.g. `mschapv2`), or `clientCert`,
-	///   `privateKey`, and `privateKeyPassword` for `tls`. `caCert` is optional for all methods.
+	/// - `WpaEap` / `Wpa2Eap` / `Wpa3SuiteB192` / `DynamicWep` (enterprise): `eap` - the EAP method
+	///   (`peap`, `ttls`, or `tls`) and `identity` - the username. Then, depending on the method:
+	///   `password` for `peap`/`ttls` (with optional `anonymousIdentity` and `phase2Auth`, e.g.
+	///   `mschapv2`), or `clientCert`, `privateKey`, and `privateKeyPassword` for `tls`. `caCert` is
+	///   optional for all methods. Certificate fields accept a filesystem path.
+	/// - `Leap`: `identity` and `password`.
 	///
 	/// For example, to connect to a hidden WPA2 network:
 	/// ```qml
