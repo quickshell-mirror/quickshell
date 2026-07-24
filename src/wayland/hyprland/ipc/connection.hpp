@@ -77,7 +77,7 @@ public:
 
 	void
 	makeRequest(const QByteArray& request, const std::function<void(bool, QByteArray)>& callback);
-	void dispatch(const QString& request);
+	void dispatch(const QString& request, bool useDispatch = true);
 
 	[[nodiscard]] HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
 

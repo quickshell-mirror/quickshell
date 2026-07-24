@@ -199,9 +199,9 @@ void HyprlandIpc::makeRequest(
 	requestSocket->connectToServer(this->mRequestSocketPath);
 }
 
-void HyprlandIpc::dispatch(const QString& request) {
+void HyprlandIpc::dispatch(const QString& request, bool useDispatch) {
 	this->makeRequest(
-	    ("dispatch " + request).toUtf8(),
+	    (useDispatch ? ("dispatch " + request) : request).toUtf8(),
 	    [request](bool success, const QByteArray& response) {
 		    if (!success) {
 			    qCWarning(logHyprlandIpc) << "Failed to request dispatch of" << request;
