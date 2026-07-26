@@ -1,6 +1,7 @@
 #include "wifi.hpp"
 #include <utility>
 
+#include <qcontainerfwd.h>
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>

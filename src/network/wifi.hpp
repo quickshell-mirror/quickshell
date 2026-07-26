@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qcontainerfwd.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
