@@ -27,20 +27,28 @@ namespace {
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 #if CRASH_HANDLER
 	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
+	auto dumpPid = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
 
 	if (!lastInfoFdStr.isEmpty()) {
 		auto lastInfoFd = lastInfoFdStr.toInt();
 
-		QFile file;
-		if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
-			qFatal() << "Failed to open crash info fd. Cannot restart.";
+		RelaunchInfo info;
+
+		{
+			QFile file;
+			if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+				qFatal() << "Failed to open crash info fd. Cannot restart.";
+			}
+
+			file.seek(0);
+
+			auto ds = QDataStream(&file);
+			ds >> info;
 		}
 
-		file.seek(0);
-
-		auto ds = QDataStream(&file);
-		RelaunchInfo info;
-		ds >> info;
+		qunsetenv("__QUICKSHELL_CRASH_INFO_FD");
+		qunsetenv("__QUICKSHELL_CRASH_DUMP_PID");
+		qunsetenv("__QUICKSHELL_CRASH_SIGNAL");
 
 		LogManager::init(
 		    !info.noColor,
@@ -50,8 +58,7 @@ void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 		    info.logRules
 		);
 
-		qCritical().nospace() << "Quickshell has crashed under pid "
-		                      << qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt()
+		qCritical().nospace() << "Quickshell has crashed under pid " << dumpPid
 		                      << " (Coredumps will be available under that pid.)";
 
 		qCritical() << "Further crash information is stored under"
