@@ -46,7 +46,7 @@ DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
 void DesktopEntryMonitor::startMonitoring() {
 	for (const auto& path: DesktopEntryManager::desktopPaths()) {
 		if (!QDir(path).exists()) continue;
-		addPathAndParents(this->watcher, path);
+		this->watcher.addPath(path);
 		this->scanAndWatch(path);
 	}
 }
