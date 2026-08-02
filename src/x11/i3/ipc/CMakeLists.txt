@@ -5,6 +5,8 @@ qt_add_library(quickshell-i3-ipc STATIC
 	monitor.cpp
 	controller.cpp
 	listener.cpp
+	scroller.cpp
+	window.cpp
 )
 
 qt_add_qml_module(quickshell-i3-ipc
