@@ -11,6 +11,7 @@
 #include <qmetaobject.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
+#include <qpointer.h>
 #include <qqmlintegration.h>
 #include <qqmlparserstatus.h>
 #include <qtclasshelpermacros.h>
@@ -254,7 +255,7 @@ public slots:
 	void onSignalTriggered(const QString& signal, const QString& value) const;
 
 private:
-	void updateRegistration(bool destroying = false);
+	void updateRegistration();
 
 	struct RegistrationState {
 		explicit RegistrationState(bool enabled = false): enabled(enabled) {}
@@ -271,10 +272,16 @@ private:
 	QHash<QString, IpcProperty> propertyMap;
 	QHash<QString, IpcSignal> signalMap;
 
+	QPointer<IpcHandlerRegistry> registry;
+
 	friend class IpcHandlerRegistry;
 };
 
-class IpcHandlerRegistry: public EngineGenerationExt {
+class IpcHandlerRegistry
+    : public QObject
+    , public EngineGenerationExt {
+	Q_OBJECT;
+
 public:
 	static IpcHandlerRegistry* forGeneration(EngineGeneration* generation);
 

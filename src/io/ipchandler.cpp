@@ -222,7 +222,7 @@ QString IpcCallStorage::getReturnStr() { return this->returnSlot.toString(); }
 IpcHandler::~IpcHandler() {
 	if (this->registeredState.enabled) {
 		this->targetState.enabled = false;
-		this->updateRegistration(true);
+		this->updateRegistration();
 	}
 }
 
@@ -301,28 +301,34 @@ void IpcHandler::onSignalTriggered(const QString& signal, const QString& value) 
 	    -> triggered(this->registeredState.target, signal, value);
 }
 
-void IpcHandler::updateRegistration(bool destroying) {
+void IpcHandler::updateRegistration() {
 	if (!this->complete) return;
 
-	auto* generation = EngineGeneration::findObjectGeneration(this);
+	IpcHandlerRegistry* registry = nullptr;
+	if (this->registeredState.enabled) {
+		registry = this->registry.get();
+	} else {
+		auto* generation = EngineGeneration::findObjectGeneration(this);
 
-	if (!generation) {
-		if (!destroying) {
+		if (!generation) {
 			qmlWarning(this) << "Unable to identify engine generation, cannot register.";
+			return;
 		}
 
-		return;
+		registry = IpcHandlerRegistry::forGeneration(generation);
 	}
 
-	auto* registry = IpcHandlerRegistry::forGeneration(generation);
+	if (!registry) return;
 
 	if (this->registeredState.enabled) {
 		registry->deregisterHandler(this);
+		this->registry = nullptr;
 		qCDebug(logIpcHandler) << "Deregistered" << this << "from registry" << registry;
 	}
 
 	if (this->targetState.enabled && !this->targetState.target.isEmpty()) {
 		registry->registerHandler(this);
+		this->registry = registry;
 		qCDebug(logIpcHandler) << "Registered" << this << "to registry" << registry;
 	}
 }
