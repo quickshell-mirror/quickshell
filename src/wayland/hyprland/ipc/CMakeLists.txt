@@ -3,19 +3,21 @@ qt_add_library(quickshell-hyprland-ipc STATIC
 	monitor.cpp
 	workspace.cpp
 	qml.cpp
+	keyboard.cpp
 )
 
 qt_add_qml_module(quickshell-hyprland-ipc
 	URI Quickshell.Hyprland._Ipc
 	VERSION 0.1
 	DEPENDENCIES QtQuick
+	IMPORTS Quickshell.Keyboard
 )
 
 qs_add_module_deps_light(quickshell-hyprland-ipc Quickshell)
 
 install_qml_module(quickshell-hyprland-ipc)
 
-target_link_libraries(quickshell-hyprland-ipc PRIVATE Qt::Quick quickshell-core)
+target_link_libraries(quickshell-hyprland-ipc PRIVATE Qt::Quick quickshell-core quickshell-keyboard)
 
 if (WAYLAND_TOPLEVEL_MANAGEMENT)
 	target_sources(quickshell-hyprland-ipc PRIVATE

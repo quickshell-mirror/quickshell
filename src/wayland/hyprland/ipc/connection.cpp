@@ -26,6 +26,7 @@
 #include "../../../core/qmlscreen.hpp"
 #include "../../toplevel/wlr_toplevel.hpp"
 #include "hyprland_toplevel.hpp"
+#include "keyboard.hpp"
 #include "monitor.hpp"
 #include "toplevel_mapping.hpp"
 #include "workspace.hpp"
@@ -90,6 +91,7 @@ HyprlandIpc::HyprlandIpc() {
 		this->refreshMonitors(true);
 		this->refreshWorkspaces(true);
 		this->refreshToplevels();
+		this->refreshKeyboards();
 	});
 }
 
@@ -199,9 +201,9 @@ void HyprlandIpc::makeRequest(
 	requestSocket->connectToServer(this->mRequestSocketPath);
 }
 
-void HyprlandIpc::dispatch(const QString& request) {
+void HyprlandIpc::dispatch(const QString& request, bool useDispatch) {
 	this->makeRequest(
-	    ("dispatch " + request).toUtf8(),
+	    (useDispatch ? ("dispatch " + request) : request).toUtf8(),
 	    [request](bool success, const QByteArray& response) {
 		    if (!success) {
 			    qCWarning(logHyprlandIpc) << "Failed to request dispatch of" << request;
@@ -221,6 +223,8 @@ ObjectModel<HyprlandMonitor>* HyprlandIpc::monitors() { return &this->mMonitors;
 ObjectModel<HyprlandWorkspace>* HyprlandIpc::workspaces() { return &this->mWorkspaces; }
 
 ObjectModel<HyprlandToplevel>* HyprlandIpc::toplevels() { return &this->mToplevels; }
+
+ObjectModel<HyprlandKeyboard>* HyprlandIpc::keyboards() { return &this->mKeyboards; }
 
 QVector<QByteArrayView> HyprlandIpc::parseEventArgs(QByteArrayView event, quint16 count) {
 	auto args = QVector<QByteArrayView>();
@@ -575,6 +579,16 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		// It happens that Hyprland sends urgent before "openwindow"
 		auto* toplevel = this->findToplevelByAddress(windowAddress, true);
 		toplevel->bindableUrgent().setValue(true);
+	} else if (event->name == "activelayout") {
+		auto args = event->parseView(2);
+		auto keyboardName = QString::fromUtf8(args.at(0));
+		auto layoutName = QString::fromUtf8(args.at(1));
+
+		qCDebug(logHyprlandIpc) << "Active layout on" << keyboardName << ":" << layoutName;
+
+		auto* keyboard = this->findKeyboardByName(keyboardName, true);
+		keyboard->updateActiveLayout(layoutName);
+		this->bActiveKeyboard = keyboard;
 	}
 }
 
@@ -702,6 +716,28 @@ HyprlandToplevel* HyprlandIpc::findToplevelByAddress(quint64 address, bool creat
 	return toplevel;
 }
 
+HyprlandKeyboard* HyprlandIpc::findKeyboardByName(const QString& name, bool createIfMissing) {
+	const auto& mList = this->mKeyboards.valueList();
+
+	auto kbIter = std::ranges::find_if(mList, [&name](HyprlandKeyboard* kb) {
+		return kb->bindableName().value() == name;
+	});
+
+	if (kbIter != mList.end()) {
+		return *kbIter;
+	} else if (createIfMissing) {
+		qCDebug(logHyprlandIpc) << "Keyboard" << name
+		                        << "requested before creation, performing early init";
+
+		auto* keyboard = new HyprlandKeyboard(this);
+		keyboard->bindableName().setValue(name);
+		this->mKeyboards.insertObject(keyboard);
+		return keyboard;
+	} else {
+		return nullptr;
+	}
+}
+
 void HyprlandIpc::refreshToplevels() {
 	if (this->requestingToplevels) return;
 	this->requestingToplevels = true;
@@ -742,6 +778,33 @@ void HyprlandIpc::refreshToplevels() {
 
 			auto* workspace = toplevel->bindableWorkspace().value();
 			if (workspace) workspace->insertToplevel(toplevel);
+		}
+	});
+}
+
+void HyprlandIpc::refreshKeyboards() {
+	if (this->requestingDevices) return;
+	this->requestingDevices = true;
+
+	this->makeRequest("j/devices", [this](bool success, const QByteArray& resp) {
+		this->requestingDevices = false;
+		if (!success) return;
+
+		qCDebug(logHyprlandIpc) << "Parsing devices response";
+		auto json = QJsonDocument::fromJson(resp).object();
+		auto keyboards = json.value("keyboards").toArray();
+
+		for (auto entry: keyboards) {
+			auto obj = entry.toObject().toVariantMap();
+			auto name = obj.value("name").toString();
+
+			if (!name.isEmpty()) {
+				auto* keyboard = this->findKeyboardByName(name, true);
+				keyboard->updateFromDeviceObject(obj);
+				if (this->bActiveKeyboard.value() == nullptr) {
+					this->bActiveKeyboard = keyboard;
+				}
+			}
 		}
 	});
 }
