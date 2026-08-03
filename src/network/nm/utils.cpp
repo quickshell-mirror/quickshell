@@ -461,6 +461,188 @@ QVariant settingTypeFromQml(const QString& group, const QString& key, const QVar
 	return value;
 }
 
+NMSettingsMap settingsMapFromQml(
+    const QVariantMap& settings,
+    NMSettingsMap& removedSettings,
+    QStringList& failedSettings
+) {
+	NMSettingsMap changedSettings;
+
+	for (auto it = settings.constBegin(); it != settings.constEnd(); ++it) {
+		if (!it.value().canConvert<QVariantMap>()) continue;
+
+		auto group = it.value().toMap();
+		QVariantMap toChange;
+		QVariantMap toRemove;
+		for (auto jt = group.constBegin(); jt != group.constEnd(); ++jt) {
+			if (jt.value().isNull()) {
+				toRemove.insert(jt.key(), QVariant());
+			} else {
+				auto converted = settingTypeFromQml(it.key(), jt.key(), jt.value());
+				if (!converted.isValid()) failedSettings.append(it.key() + "." + jt.key());
+				else toChange.insert(jt.key(), converted);
+			}
+		}
+		if (!toChange.isEmpty()) changedSettings.insert(it.key(), toChange);
+		if (!toRemove.isEmpty()) removedSettings.insert(it.key(), toRemove);
+	}
+
+	return changedSettings;
+}
+
+namespace {
+
+// Transform a cert path into the required format for nm
+QByteArray eapCertReference(const QString& value) {
+	if (value.startsWith("file://") || value.startsWith("pkcs11:")) return value.toUtf8();
+	if (value.startsWith('/')) {
+		QByteArray ref = "file://" + value.toUtf8();
+		ref.append('\0');
+		return ref;
+	}
+	return value.toUtf8();
+}
+
+// Builds an 802-1x settings group from EAP credentials for enterprise networks
+QVariantMap eapSettings(const QVariantMap& credentials, QStringList& errors) {
+	QVariantMap eap;
+
+	const auto method = credentials.value("eap").toString().toLower();
+	if (method.isEmpty()) {
+		errors.append("credentials.eap is required for an enterprise network");
+		return eap;
+	}
+	if (method != "peap" && method != "ttls" && method != "tls") {
+		errors.append("credentials.eap must be one of peap, ttls, or tls");
+		return eap;
+	}
+	eap.insert("eap", QStringList {method});
+
+	const auto identity = credentials.value("identity").toString();
+	if (identity.isEmpty())
+		errors.append("credentials.identity is required for an enterprise network");
+	else eap.insert("identity", identity);
+
+	const auto anonymousIdentity = credentials.value("anonymousIdentity").toString();
+	if (!anonymousIdentity.isEmpty()) eap.insert("anonymous-identity", anonymousIdentity);
+
+	const auto caCert = credentials.value("caCert").toString();
+	if (!caCert.isEmpty()) eap.insert("ca-cert", eapCertReference(caCert));
+
+	if (method == "tls") {
+		// EAP-TLS authenticates with a client certificate and private key.
+		const auto clientCert = credentials.value("clientCert").toString();
+		const auto privateKey = credentials.value("privateKey").toString();
+
+		if (clientCert.isEmpty()) errors.append("credentials.clientCert is required for EAP-TLS");
+		else eap.insert("client-cert", eapCertReference(clientCert));
+
+		if (privateKey.isEmpty()) errors.append("credentials.privateKey is required for EAP-TLS");
+		else eap.insert("private-key", eapCertReference(privateKey));
+
+		const auto privateKeyPassword = credentials.value("privateKeyPassword").toString();
+		if (!privateKeyPassword.isEmpty()) eap.insert("private-key-password", privateKeyPassword);
+	} else {
+		// PEAP / TTLS authenticate with an inner username + password.
+		const auto password = credentials.value("password").toString();
+		if (password.isEmpty())
+			errors.append("credentials.password is required for a PEAP/TTLS network");
+		else eap.insert("password", password);
+
+		const auto phase2Auth = credentials.value("phase2Auth").toString();
+		if (!phase2Auth.isEmpty()) eap.insert("phase2-auth", phase2Auth.toLower());
+	}
+
+	return eap;
+}
+
+} // namespace
+
+NMSettingsMap wifiConnectionSettings(
+    const QString& ssid,
+    WifiSecurityType::Enum security,
+    const QVariantMap& credentials,
+    bool hidden,
+    QStringList& errors
+) {
+	if (ssid.isEmpty()) {
+		errors.append("ssid is required");
+		return {};
+	}
+
+	QVariantMap wireless {{"ssid", ssid}};
+	if (hidden) wireless.insert("hidden", true);
+
+	QVariantMap qmlSettings {
+	    {"connection", QVariantMap {{"id", ssid}, {"type", "802-11-wireless"}}},
+	    {"802-11-wireless", wireless},
+	};
+
+	const auto requirePsk = [&](const char* keyMgmt) {
+		QVariantMap sec {{"key-mgmt", QString::fromLatin1(keyMgmt)}};
+		const auto psk = credentials.value("psk").toString();
+		if (psk.isEmpty()) errors.append("credentials.psk is required for this security type");
+		else sec.insert("psk", psk);
+		qmlSettings.insert("802-11-wireless-security", sec);
+	};
+
+	switch (security) {
+	case WifiSecurityType::Open:
+	case WifiSecurityType::Unknown:
+		// Open network: no security group.
+		break;
+	case WifiSecurityType::Owe:
+		qmlSettings.insert("802-11-wireless-security", QVariantMap {{"key-mgmt", "owe"}});
+		break;
+	case WifiSecurityType::WpaPsk:
+	case WifiSecurityType::Wpa2Psk: requirePsk("wpa-psk"); break;
+	case WifiSecurityType::Sae: requirePsk("sae"); break;
+	case WifiSecurityType::StaticWep: {
+		QVariantMap sec {{"key-mgmt", "none"}, {"auth-alg", "open"}};
+		const auto key = credentials.value("wepKey").toString();
+		if (key.isEmpty()) errors.append("credentials.wepKey is required for a WEP network");
+		else sec.insert("wep-key0", key);
+		qmlSettings.insert("802-11-wireless-security", sec);
+		break;
+	}
+	case WifiSecurityType::WpaEap:
+	case WifiSecurityType::Wpa2Eap:
+	case WifiSecurityType::Wpa3SuiteB192:
+	case WifiSecurityType::DynamicWep: {
+		const char* keyMgmt = security == WifiSecurityType::Wpa3SuiteB192 ? "wpa-eap-suite-b-192"
+		                    : security == WifiSecurityType::DynamicWep    ? "ieee8021x"
+		                                                                  : "wpa-eap";
+		qmlSettings.insert(
+		    "802-11-wireless-security",
+		    QVariantMap {{"key-mgmt", QString::fromLatin1(keyMgmt)}}
+		);
+		const auto eap = eapSettings(credentials, errors);
+		if (!eap.isEmpty()) qmlSettings.insert("802-1x", eap);
+		break;
+	}
+	case WifiSecurityType::Leap: {
+		// LEAP isn't 802-1x/EAP; the credentials live in the wireless-security group.
+		QVariantMap sec {{"key-mgmt", "ieee8021x"}, {"auth-alg", "leap"}};
+		const auto identity = credentials.value("identity").toString();
+		const auto password = credentials.value("password").toString();
+		if (identity.isEmpty()) errors.append("credentials.identity is required for a LEAP network");
+		else sec.insert("leap-username", identity);
+		if (password.isEmpty()) errors.append("credentials.password is required for a LEAP network");
+		else sec.insert("leap-password", password);
+		qmlSettings.insert("802-11-wireless-security", sec);
+		break;
+	}
+	}
+
+	if (!errors.isEmpty()) return {};
+
+	NMSettingsMap removedSettings; // Unused: a new connection has nothing to remove.
+	QStringList failedSettings;
+	auto settings = settingsMapFromQml(qmlSettings, removedSettings, failedSettings);
+	for (const auto& failed: failedSettings) errors.append("failed to convert " + failed);
+	return settings;
+}
+
 // Some NMSettingsMap setting types must be converted to a type that is supported by QML.
 // Although QByteArrays can be represented in QML, we convert them to strings for convenience.
 QVariant settingTypeToQml(const QVariant& value) {
