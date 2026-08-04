@@ -171,10 +171,13 @@ class DBusMenuHandle;
 QDebug operator<<(QDebug debug, const DBusMenuHandle* handle);
 
 class DBusMenuHandle: public menu::QsMenuHandle {
-public:
-	explicit DBusMenuHandle(QObject* parent): menu::QsMenuHandle(parent) {}
+	Q_OBJECT;
+	QML_ELEMENT;
 
-	void setAddress(const QString& service, const QString& path);
+public:
+	explicit DBusMenuHandle(QObject* parent = nullptr): menu::QsMenuHandle(parent) {}
+
+	Q_INVOKABLE void setAddress(const QString& service, const QString& path);
 
 	void refHandle() override;
 	void unrefHandle() override;
