@@ -1,3 +1,7 @@
+## New Features
+
+- Added `WaylandWindow.appId` for setting the app id of toplevel windows on Wayland.
+
 ## Bug Fixes
 
 - Fixed ScreencopyView not displaying when only lock surfaces are shown.
