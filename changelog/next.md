@@ -12,3 +12,4 @@
 - Fixed unhandled notifications sending `NotificationClosed` out of order.
 - Fixed `qs kill` not waiting for the process to exit.
 - Fixed IPC calls from children of a crashed and relaunched process crashing.
+- Fixed BackgroundEffect never applying if the compositor announces ext-background-effect-v1 after surface creation.

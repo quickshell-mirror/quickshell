@@ -62,12 +62,15 @@ private slots:
 	void onWaylandWindowDestroyed();
 	void onWaylandSurfaceCreated();
 	void onWaylandSurfaceDestroyed();
+	void onManagerActiveChanged();
 	void onProxyWindowDestroyed();
 	void onBlurRegionDestroyed();
 	void onWindowPolished();
 	void updateBlurRegion();
 
 private:
+	void attachEffectSurface();
+
 	ProxyWindowBase* proxyWindow = nullptr;
 	QWindow* mWindow = nullptr;
 	QtWaylandClient::QWaylandWindow* mWaylandWindow = nullptr;
