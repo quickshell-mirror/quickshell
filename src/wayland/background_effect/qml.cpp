@@ -192,11 +192,39 @@ void BackgroundEffect::onWaylandWindowDestroyed() { this->mWaylandWindow = nullp
 void BackgroundEffect::onWaylandSurfaceCreated() {
 	auto* manager = impl::BackgroundEffectManager::instance();
 
-	if (!manager) {
-		qWarning() << "Cannot enable background effect as ext-background-effect-v1 is not supported "
-		              "by the current compositor.";
+	if (!manager->isActive()) {
+		qWarning() << "Cannot enable background effect as ext-background-effect-v1 is not currently "
+		              "supported by the compositor. The effect will be enabled if the protocol "
+		              "becomes available.";
+
+		// The manager global may be announced at any point, including after surfaces
+		// that want an effect are created.
+		QObject::connect(
+		    manager,
+		    &impl::BackgroundEffectManager::activeChanged,
+		    this,
+		    &BackgroundEffect::onManagerActiveChanged
+		);
+
 		return;
 	}
+
+	this->attachEffectSurface();
+}
+
+void BackgroundEffect::onManagerActiveChanged() {
+	auto* manager = impl::BackgroundEffectManager::instance();
+	if (!manager->isActive()) return;
+
+	QObject::disconnect(manager, nullptr, this, nullptr);
+
+	if (this->proxyWindow && this->mWaylandWindow && this->mWaylandWindow->surface()) {
+		this->attachEffectSurface();
+	}
+}
+
+void BackgroundEffect::attachEffectSurface() {
+	auto* manager = impl::BackgroundEffectManager::instance();
 
 	// Steal protocol surface from previous BackgroundEffect to avoid duplicate-attachment on reload.
 	auto v = this->mWaylandWindow->property("qs_background_effect");
@@ -222,6 +250,8 @@ void BackgroundEffect::onWaylandSurfaceCreated() {
 }
 
 void BackgroundEffect::onWaylandSurfaceDestroyed() {
+	QObject::disconnect(impl::BackgroundEffectManager::instance(), nullptr, this, nullptr);
+
 	this->surface = nullptr;
 	this->pendingBlurRegion = false;
 
