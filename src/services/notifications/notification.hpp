@@ -72,6 +72,15 @@ class Notification
 	Q_PROPERTY(quint32 id READ id CONSTANT);
 	/// If the notification is tracked by the notification server.
 	///
+	/// Setting this property to true means that the server will not destroy
+	/// this notification object immediately after it has been emitted.
+	/// > [!INFO] The server still may set this to false by itself
+	/// > e.g. when the sending application is being closed
+	///
+	/// > [!WARNING] If you don't untrack the notification by either calling 
+	/// > @@dismiss() or @@expire() the notification server will keep the notification 
+	/// > object alive until you do so. 
+	/// 	
 	/// Setting this property to false is equivalent to calling @@dismiss().
 	Q_PROPERTY(bool tracked READ isTracked WRITE setTracked NOTIFY trackedChanged);
 	/// If this notification was carried over from the last generation
@@ -90,6 +99,7 @@ class Notification
 	/// The image associated with this notification, or "" if none.
 	Q_PROPERTY(QString summary READ default NOTIFY summaryChanged BINDABLE bindableSummary);
 	Q_PROPERTY(QString body READ default NOTIFY bodyChanged BINDABLE bindableBody);
+	/// See @@NotificationUrgency for details
 	Q_PROPERTY(qs::service::notifications::NotificationUrgency::Enum urgency READ default NOTIFY urgencyChanged BINDABLE bindableUrgency);
 	/// Actions that can be taken for this notification.
 	Q_PROPERTY(QList<qs::service::notifications::NotificationAction*> actions READ actions NOTIFY actionsChanged);
