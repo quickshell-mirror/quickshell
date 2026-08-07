@@ -30,16 +30,22 @@ WindowsetProjection::WindowsetProjection(QObject* parent): QObject(parent) {
 		}
 		return result;
 	});
+}
 
-	this->bScreens.setBinding([this] {
-		QList<QuickshellScreenInfo*> screens;
+QList<QuickshellScreenInfo*> WindowsetProjection::screens() {
+	QList<QuickshellScreenInfo*> screens;
 
-		for (auto* screen: this->bQScreens.value()) {
-			screens.append(QuickshellTracked::instance()->screenInfo(screen));
+	for (auto* screen: this->bQScreens.value()) {
+		if (auto* qsScreen = QuickshellTracked::instance()->screenInfo(screen)) {
+			screens.append(qsScreen);
+		} else {
+			qCDebug(logWorkspace) << this << "screens list contains invalid screen"
+			                      << static_cast<void*>(screen)
+			                      << "which was probably removed before workspace state has settled.";
 		}
+	}
 
-		return screens;
-	});
+	return screens;
 }
 
 } // namespace qs::wm

@@ -89,7 +89,7 @@ void QmlScanner::scanDir(const QDir& dir) {
 		QString qmldir;
 		auto stream = QTextStream(&qmldir);
 
-		// cant derive a module name if not in shell path
+		// can't derive a module name if not in shell path
 		if (path.startsWith(this->rootPath.path())) {
 			auto end = path.sliced(this->rootPath.path().length());
 
@@ -145,10 +145,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 	QString overrideText;
 	bool isOverridden = false;
 
-	auto pragmaEngine = QJSEngine();
-	pragmaEngine.globalObject().setPrototype(
-	    pragmaEngine.newQObject(new qs::scan::env::PreprocEnv())
-	);
+	auto& pragmaEngine = *QmlScanner::preprocEngine();
 
 	auto postError = [&, this](QString error) {
 		this->scanErrors.append({.file = path, .message = std::move(error), .line = lineNum});
@@ -163,7 +160,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			if (!singleton && line == "pragma Singleton") {
 				singleton = true;
 			} else if (line.startsWith("import")) {
-				// we dont care about "import qs" as we always load the root folder
+				// we don't care about "import qs" as we always load the root folder
 				if (auto importCursor = line.indexOf(" qs."); importCursor != -1) {
 					importCursor += 4;
 					QString path;
@@ -214,7 +211,7 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 				mask = false;
 			}
 			if (!sourceMasked && mask) hideMask = true;
-			mask = sourceMasked || mask; // cant unmask if a nested if passes
+			mask = sourceMasked || mask; // can't unmask if a nested if passes
 			ifScopes.append(mask);
 			if (mask) isOverridden = true;
 			sourceMasked = mask;
@@ -369,4 +366,14 @@ QPair<QString, QString> QmlScanner::jsonToQml(const QJsonValue& value, int inden
 	} else {
 		return qMakePair(QStringLiteral("var"), "null");
 	}
+}
+
+QJSEngine* QmlScanner::preprocEngine() {
+	static auto* engine = [] {
+		auto* engine = new QJSEngine();
+		engine->globalObject().setPrototype(engine->newQObject(new qs::scan::env::PreprocEnv()));
+		return engine;
+	}();
+
+	return engine;
 }

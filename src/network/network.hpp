@@ -6,137 +6,102 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../core/model.hpp"
-#include "device.hpp"
+#include "../core/doc.hpp"
+#include "enums.hpp"
+#include "nm/settings.hpp"
+
+namespace qs::network {
+class NetworkDevice;
+}
 
 namespace qs::network {
 
-///! The connection state of a Network.
-class NetworkState: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		Unknown = 0,
-		Connecting = 1,
-		Connected = 2,
-		Disconnecting = 3,
-		Disconnected = 4,
-	};
-	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkState::Enum state);
-};
-
-///! The backend supplying the Network service.
-class NetworkBackendType: public QObject {
-	Q_OBJECT;
-	QML_ELEMENT;
-	QML_SINGLETON;
-
-public:
-	enum Enum : quint8 {
-		None = 0,
-		NetworkManager = 1,
-	};
-	Q_ENUM(Enum);
-};
-
-class NetworkBackend: public QObject {
-	Q_OBJECT;
-
-public:
-	[[nodiscard]] virtual bool isAvailable() const = 0;
-
-protected:
-	explicit NetworkBackend(QObject* parent = nullptr): QObject(parent) {};
-};
-
-///! The Network service.
-/// An interface to a network backend (currently only NetworkManager),
-/// which can be used to view, configure, and connect to various networks.
-class Networking: public QObject {
-	Q_OBJECT;
-	QML_SINGLETON;
-	QML_ELEMENT;
-	// clang-format off
-	/// A list of all network devices.
-	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::NetworkDevice>*);
-	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
-	/// The backend being used to power the Network service.
-	Q_PROPERTY(qs::network::NetworkBackendType::Enum backend READ backend CONSTANT);
-	/// Switch for the rfkill software block of all wireless devices.
-	Q_PROPERTY(bool wifiEnabled READ wifiEnabled WRITE setWifiEnabled NOTIFY wifiEnabledChanged);
-	/// State of the rfkill hardware block of all wireless devices.
-	Q_PROPERTY(bool wifiHardwareEnabled READ default NOTIFY wifiHardwareEnabledChanged BINDABLE bindableWifiHardwareEnabled);
-	// clang-format on
-
-public:
-	explicit Networking(QObject* parent = nullptr);
-
-	[[nodiscard]] ObjectModel<NetworkDevice>* devices() { return &this->mDevices; };
-	[[nodiscard]] NetworkBackendType::Enum backend() const { return this->mBackendType; };
-	QBindable<bool> bindableWifiEnabled() { return &this->bWifiEnabled; };
-	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; };
-	void setWifiEnabled(bool enabled);
-	QBindable<bool> bindableWifiHardwareEnabled() { return &this->bWifiHardwareEnabled; };
-
-signals:
-	void requestSetWifiEnabled(bool enabled);
-	void wifiEnabledChanged();
-	void wifiHardwareEnabledChanged();
-
-private slots:
-	void deviceAdded(NetworkDevice* dev);
-	void deviceRemoved(NetworkDevice* dev);
-
-private:
-	ObjectModel<NetworkDevice> mDevices {this};
-	NetworkBackend* mBackend = nullptr;
-	NetworkBackendType::Enum mBackendType = NetworkBackendType::None;
-	// clang-format off
-	Q_OBJECT_BINDABLE_PROPERTY(Networking, bool, bWifiEnabled, &Networking::wifiEnabledChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(Networking, bool, bWifiHardwareEnabled, &Networking::wifiHardwareEnabledChanged);
-	// clang-format on
-};
-
 ///! A network.
+/// A network. Networks derived from a @@WifiDevice are @@WifiNetwork instances.
 class Network: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("BaseNetwork can only be aqcuired through network devices");
+	QML_UNCREATABLE("Network can only be aqcuired through networking devices");
 
 	// clang-format off
 	/// The name of the network.
-	Q_PROPERTY(QString name READ name CONSTANT);
+	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
+	/// The device this network belongs to.
+	Q_PROPERTY(NetworkDevice* device READ device CONSTANT);
+	/// A list of NetworkManager connection settings profiles for this network.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend. 
+	Q_PROPERTY(QList<NMSettings*> nmSettings READ default NOTIFY nmSettingsChanged BINDABLE bindableNmSettings);
 	/// True if the network is connected.
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
+	/// True if the wifi network has known connection settings saved.
+	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	/// The connectivity state of the network.
-	Q_PROPERTY(NetworkState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(ConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// If the network is currently connecting or disconnecting. Shorthand for checking @@state.
 	Q_PROPERTY(bool stateChanging READ default NOTIFY stateChangingChanged BINDABLE bindableStateChanging);
 	// clang-format on
 
 public:
-	explicit Network(QString name, QObject* parent = nullptr);
+	explicit Network(QString name, NetworkDevice* device, QObject* parent = nullptr);
+	/// Attempt to connect to the network.
+	///
+	/// > [!NOTE] If the network is a @@WifiNetwork and requires secrets, a @@connectionFailed(s)
+	/// > signal will be emitted with `NoSecrets`.
+	/// > @@WifiNetwork.connectWithPsk() can be used to provide secrets.
+	Q_INVOKABLE void connect();
+	/// Attempt to connect to the network with a specific @@nmSettings entry.
+	///
+	/// > [!WARNING] Only valid for the NetworkManager backend.
+	Q_INVOKABLE void connectWithSettings(NMSettings* settings);
+	/// Disconnect from the network.
+	Q_INVOKABLE void disconnect();
+	/// Forget all connection settings for this network.
+	Q_INVOKABLE void forget();
 
-	[[nodiscard]] QString name() const { return this->mName; };
+	void settingsAdded(NMSettings* settings);
+	void settingsRemoved(NMSettings* settings);
+
+	// clang-format off
+	[[nodiscard]] QString name() const { return this->bName; }
+	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
+	[[nodiscard]] NetworkDevice* device() const { return this->mDevice; }
+ 	[[nodiscard]] const QList<NMSettings*>& nmSettings() const { return this->bNmSettings; }
+	QBindable<QList<NMSettings*>> bindableNmSettings() const { return &this->bNmSettings; }
 	QBindable<bool> bindableConnected() { return &this->bConnected; }
-	QBindable<NetworkState::Enum> bindableState() { return &this->bState; }
+	QBindable<bool> bindableKnown() { return &this->bKnown; }
+	[[nodiscard]] ConnectionState::Enum state() const { return this->bState; }
+	QBindable<ConnectionState::Enum> bindableState() { return &this->bState; }
 	QBindable<bool> bindableStateChanging() { return &this->bStateChanging; }
+	// clang-format on
 
 signals:
+	/// Signals that a connection to the network has failed because of the given @@ConnectionFailReason.
+	void connectionFailed(ConnectionFailReason::Enum reason);
+
+	void nameChanged();
 	void connectedChanged();
+	void knownChanged();
 	void stateChanged();
 	void stateChangingChanged();
+	void nmSettingsChanged();
+	QSDOC_HIDE void requestConnect();
+	QSDOC_HIDE void requestConnectWithSettings(NMSettings* settings);
+	QSDOC_HIDE void requestDisconnect();
+	QSDOC_HIDE void requestForget();
 
 protected:
-	QString mName;
-
+	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(Network, QString, bName, &Network::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bConnected, &Network::connectedChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(Network, NetworkState::Enum, bState, &Network::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bKnown, &Network::knownChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, ConnectionState::Enum, bState, &Network::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(Network, bool, bStateChanging, &Network::stateChangingChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(Network, QList<NMSettings*>, bNmSettings, &Network::nmSettingsChanged);
+	// clang-format on
+
+private:
+	NetworkDevice* mDevice;
 };
 
 } // namespace qs::network

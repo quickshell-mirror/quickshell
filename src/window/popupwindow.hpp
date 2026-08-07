@@ -144,5 +144,10 @@ private:
 	    &ProxyPopupWindow::targetVisibleChanged
 	);
 
-	Q_OBJECT_BINDABLE_PROPERTY(ProxyPopupWindow, bool, bWantsGrab);
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    ProxyPopupWindow,
+	    bool,
+	    bWantsGrab,
+	    &ProxyPopupWindow::grabFocusChanged
+	);
 };

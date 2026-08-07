@@ -96,7 +96,7 @@ class SocketServer: public Reloadable {
 	Q_OBJECT;
 	/// If the socket server is currently active. Defaults to false.
 	///
-	/// Setting this to false will destory all active connections and delete
+	/// Setting this to false will destroy all active connections and delete
 	/// the socket file on disk.
 	///
 	/// If path is empty setting this property will have no effect.
@@ -105,7 +105,7 @@ class SocketServer: public Reloadable {
 	///
 	/// Setting this property while the server is active will have no effect.
 	Q_PROPERTY(QString path READ path WRITE setPath NOTIFY pathChanged);
-	/// Connection handler component. Must creeate a @@Socket.
+	/// Connection handler component. Must create a @@Socket.
 	///
 	/// The created socket should not set @@connected or @@path or the incoming
 	/// socket connection will be dropped (they will be set by the socket server.)

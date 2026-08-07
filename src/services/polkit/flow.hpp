@@ -127,14 +127,14 @@ signals:
 	///
 	/// This may be because the user entered the wrong password or otherwise
 	/// failed to authenticate.
-	/// This signal is not emmitted when the user canceled the request or it
+	/// This signal is not emitted when the user canceled the request or it
 	/// was cancelled by the PolKit daemon.
 	///
 	/// After this signal, a new session is automatically started for the same
 	/// identity.
 	void authenticationFailed();
 
-	/// Emmitted when on ongoing authentication request is cancelled by the PolKit daemon.
+	/// Emitted when an ongoing authentication request is cancelled by the PolKit daemon.
 	void authenticationRequestCancelled();
 
 	void selectedIdentityChanged();

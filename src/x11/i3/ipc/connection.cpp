@@ -133,7 +133,7 @@ void I3Ipc::eventSocketReady() {
 void I3Ipc::connect() { this->liveEventSocket.connectToServer(this->mSocketPath); }
 
 void I3Ipc::reconnectIPC() {
-	qCWarning(logI3Ipc) << "Fatal IPC error occured, recreating connection";
+	qCWarning(logI3Ipc) << "Fatal IPC error occurred, recreating connection";
 	this->liveEventSocket.disconnectFromServer();
 	this->connect();
 }

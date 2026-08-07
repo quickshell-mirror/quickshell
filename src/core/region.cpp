@@ -242,7 +242,7 @@ QRegion PendingRegion::applyTo(QRegion& region) const {
 }
 
 QRegion PendingRegion::applyTo(const QRect& rect) const {
-	// if left as the default, dont combine it with the whole rect area, leave it as is.
+	// if left as the default, don't combine it with the whole rect area, leave it as is.
 	if (this->mIntersection == Intersection::Combine) {
 		return this->build();
 	} else {

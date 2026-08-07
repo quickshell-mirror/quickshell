@@ -13,17 +13,11 @@ body:
     id: report
     attributes:
       label: Report file
-      description: Attach `report.txt` here.
-    validations:
-        required: true
-  - type: upload
-    id: logs
-    attributes:
-      label: Log file
       description: |
-        Attach `log.qslog.log` here. If it is too big to upload, compress it.
+        Attach `report.txt` here.
 
-        You can preview the log if you'd like using `qs log <path-to-log> -r '*=true'`.
+        Please ensure the report does not contain personal information,
+        as reports may contain detailed logs leading up to the crash.
     validations:
         required: true
   - type: textarea

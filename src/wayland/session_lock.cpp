@@ -19,6 +19,7 @@
 #include "../core/qmlglobal.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
+#include "../window/proxywindow.hpp"
 #include "session_lock/session_lock.hpp"
 
 void WlSessionLock::onReload(QObject* oldInstance) {
@@ -55,9 +56,12 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 	auto screens = QGuiApplication::screens();
 
 	screens.removeIf([](QScreen* screen) {
-		if (dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle()) == nullptr) {
+		auto* waylandScreen = dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle());
+		if (waylandScreen == nullptr || waylandScreen->isPlaceholder()
+		    || waylandScreen->output() == nullptr)
+		{
 			qDebug() << "Not creating lock surface for screen" << screen
-			         << "as it is not backed by a wayland screen.";
+			         << "as it is not backed by a valid wayland output.";
 
 			return true;
 		}
@@ -206,6 +210,7 @@ WlSessionLockSurface::WlSessionLockSurface(QObject* parent)
 
 WlSessionLockSurface::~WlSessionLockSurface() {
 	if (this->window != nullptr) {
+		this->window->destroy();
 		this->window->deleteLater();
 	}
 }
@@ -216,7 +221,7 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	}
 
 	if (this->window == nullptr) {
-		this->window = new QQuickWindow();
+		this->window = new QsQuickWindowBase();
 
 		// needed for vulkan dmabuf import, qt ignores these if not applicable
 		auto graphicsConfig = this->window->graphicsConfiguration();
@@ -273,7 +278,10 @@ void WlSessionLockSurface::show() {
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
 
-bool WlSessionLockSurface::isVisible() const { return this->window->isVisible(); }
+bool WlSessionLockSurface::isVisible() const {
+	if (this->window == nullptr) return false;
+	return this->window->isVisible();
+}
 
 qint32 WlSessionLockSurface::width() const {
 	if (this->window == nullptr) return 0;

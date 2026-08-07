@@ -18,14 +18,17 @@
 #include <qscreen.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
+#include <qtversion.h>
 #include <qtypes.h>
 #include <qvariant.h>
+#include <qversionnumber.h>
 #include <qwindowdefs.h>
 #include <unistd.h>
 
 #include "../io/processcore.hpp"
 #include "generation.hpp"
 #include "iconimageprovider.hpp"
+#include "instanceinfo.hpp"
 #include "paths.hpp"
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
@@ -151,6 +154,22 @@ QuickshellGlobal::QuickshellGlobal(QObject* parent): QObject(parent) {
 
 qint32 QuickshellGlobal::processId() const { // NOLINT
 	return getpid();
+}
+
+QString QuickshellGlobal::instanceId() const { // NOLINT
+	return InstanceInfo::CURRENT.instanceId;
+}
+
+QString QuickshellGlobal::shellId() const { // NOLINT
+	return InstanceInfo::CURRENT.shellId;
+}
+
+QString QuickshellGlobal::appId() const { // NOLINT
+	return InstanceInfo::CURRENT.appId;
+}
+
+QDateTime QuickshellGlobal::launchTime() const { // NOLINT
+	return InstanceInfo::CURRENT.launchTime;
 }
 
 qsizetype QuickshellGlobal::screensCount(QQmlListProperty<QuickshellScreenInfo>* /*unused*/) {
@@ -324,6 +343,12 @@ bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor, const QStringList&
 
 bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor) {
 	return QuickshellGlobal::hasVersion(major, minor, QStringList());
+}
+
+bool QuickshellGlobal::hasQtVersion(int major, int minor) {
+	auto qtVersion = QVersionNumber::fromString(qVersion());
+	auto requiredVersion = QVersionNumber(major, minor);
+	return qtVersion >= requiredVersion;
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {

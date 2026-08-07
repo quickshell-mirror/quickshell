@@ -105,11 +105,19 @@ IpcClient::IpcClient(const QString& path) {
 bool IpcClient::isConnected() const { return this->socket.isValid(); }
 
 void IpcClient::waitForConnected() { this->socket.waitForConnected(); }
-void IpcClient::waitForDisconnected() { this->socket.waitForDisconnected(); }
 
-void IpcClient::kill() { this->sendMessage(IpcCommand(IpcKillCommand())); }
+void IpcClient::waitForDisconnected() {
+	this->waitingForDisconnect = true;
+	this->socket.waitForDisconnected();
+}
 
-void IpcClient::onError(QLocalSocket::LocalSocketError error) {
+void IpcClient::kill() {
+	this->sendMessage(IpcCommand(IpcKillCommand()));
+	this->waitForDisconnected();
+}
+
+void IpcClient::onError(QLocalSocket::LocalSocketError error) const {
+	if (this->waitingForDisconnect && error == QLocalSocket::PeerClosedError) return;
 	qCCritical(logIpc) << "Socket Error" << error;
 }
 

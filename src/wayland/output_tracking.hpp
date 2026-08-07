@@ -13,6 +13,8 @@ class WlOutputTracker: public QObject {
 	Q_OBJECT;
 
 public:
+	WlOutputTracker();
+
 	[[nodiscard]] const QList<QScreen*>& screens() const { return this->mScreens; }
 
 signals:
@@ -25,6 +27,7 @@ public slots:
 
 private slots:
 	void onQScreenAdded(QScreen* screen);
+	void onQScreenRemoved(QScreen* screen);
 
 private:
 	QList<QScreen*> mScreens;

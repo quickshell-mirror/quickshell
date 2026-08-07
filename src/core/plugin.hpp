@@ -18,12 +18,14 @@ public:
 	virtual QString name() { return QString(); }
 	virtual QList<QString> dependencies() { return {}; }
 	virtual bool applies() { return true; }
+	virtual void preinit() {}
 	virtual void init() {}
 	virtual void registerTypes() {}
 	virtual void constructGeneration(EngineGeneration& /*unused*/) {} // NOLINT
 	virtual void onReload() {}
 
 	static void registerPlugin(QsEnginePlugin& plugin);
+	static void preinitPluginsOnly();
 	static void initPlugins();
 	static void runConstructGeneration(EngineGeneration& generation);
 	static void runOnReload();

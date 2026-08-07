@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <qcolor.h>
 #include <qcontainerfwd.h>
 #include <qevent.h>
@@ -250,12 +252,24 @@ private:
 	void setWindow(ProxyWindowBase* window);
 };
 
-class ProxiedWindow: public QQuickWindow {
+class QsQuickWindowBase: public QQuickWindow {
+	Q_OBJECT;
+
+public:
+	explicit QsQuickWindowBase(QWindow* parent = nullptr);
+
+	static void callOnScenegraphInit(std::function<void(QQuickWindow*)> cb);
+
+private slots:
+	void onSceneGraphInitialized();
+};
+
+class ProxiedWindow: public QsQuickWindowBase {
 	Q_OBJECT;
 
 public:
 	explicit ProxiedWindow(ProxyWindowBase* proxy, QWindow* parent = nullptr)
-	    : QQuickWindow(parent)
+	    : QsQuickWindowBase(parent)
 	    , mProxy(proxy) {}
 
 	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }

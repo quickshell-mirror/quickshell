@@ -140,7 +140,7 @@ public:
 		// This is equivalent to the media class `Video/Source` and is composed
 		// of the @@PwNodeType.Video and @@PwNodeType.Source flags.
 		VideoSource = Video | Source,
-		// A consumer of video, such as a program that is recieving a video stream.
+		// A consumer of video, such as a program that is receiving a video stream.
 		//
 		// This is equivalent to the media class `Video/Sink` and is composed of the
 		// @@PwNodeType.Video and @@PwNodeType.Sink flags.

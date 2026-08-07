@@ -14,7 +14,9 @@ public:
 	WlBufferManager* manager;
 	dmabuf::LinuxDmabufManager dmabuf;
 
-	bool mReady = false;
+	bool mDmabufFormatsReady = false;
+	bool mRenderFormatsReady = false;
+	bool mRenderFormatsFailed = false;
 };
 
 } // namespace qs::wayland::buffer

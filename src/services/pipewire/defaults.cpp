@@ -214,13 +214,24 @@ void PwDefaultTracker::setDefaultSink(PwNode* node) {
 	qCInfo(logDefaults) << "Default sink changed to" << node;
 
 	if (this->mDefaultSink != nullptr) {
-		QObject::disconnect(this->mDefaultSink, nullptr, this, nullptr);
+		// Targeted disconnect is used because this can also be the default configured sink.
+		QObject::disconnect(
+		    this->mDefaultSink,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSinkDestroyed
+		);
 	}
 
 	this->mDefaultSink = node;
 
 	if (node != nullptr) {
-		QObject::connect(node, &QObject::destroyed, this, &PwDefaultTracker::onDefaultSinkDestroyed);
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSinkDestroyed
+		);
 	}
 
 	emit this->defaultSinkChanged();
@@ -244,13 +255,24 @@ void PwDefaultTracker::setDefaultSource(PwNode* node) {
 	qCInfo(logDefaults) << "Default source changed to" << node;
 
 	if (this->mDefaultSource != nullptr) {
-		QObject::disconnect(this->mDefaultSource, nullptr, this, nullptr);
+		// Targeted disconnect is used because this can also be the default configured source.
+		QObject::disconnect(
+		    this->mDefaultSource,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSourceDestroyed
+		);
 	}
 
 	this->mDefaultSource = node;
 
 	if (node != nullptr) {
-		QObject::connect(node, &QObject::destroyed, this, &PwDefaultTracker::onDefaultSourceDestroyed);
+		QObject::connect(
+		    node,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultSourceDestroyed
+		);
 	}
 
 	emit this->defaultSourceChanged();
@@ -274,7 +296,13 @@ void PwDefaultTracker::setDefaultConfiguredSink(PwNode* node) {
 	qCInfo(logDefaults) << "Default configured sink changed to" << node;
 
 	if (this->mDefaultConfiguredSink != nullptr) {
-		QObject::disconnect(this->mDefaultConfiguredSink, nullptr, this, nullptr);
+		// Targeted disconnect is used because this can also be the default sink.
+		QObject::disconnect(
+		    this->mDefaultConfiguredSink,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSinkDestroyed
+		);
 	}
 
 	this->mDefaultConfiguredSink = node;
@@ -282,7 +310,7 @@ void PwDefaultTracker::setDefaultConfiguredSink(PwNode* node) {
 	if (node != nullptr) {
 		QObject::connect(
 		    node,
-		    &QObject::destroyed,
+		    &PwBindableObject::destroying,
 		    this,
 		    &PwDefaultTracker::onDefaultConfiguredSinkDestroyed
 		);
@@ -309,7 +337,13 @@ void PwDefaultTracker::setDefaultConfiguredSource(PwNode* node) {
 	qCInfo(logDefaults) << "Default configured source changed to" << node;
 
 	if (this->mDefaultConfiguredSource != nullptr) {
-		QObject::disconnect(this->mDefaultConfiguredSource, nullptr, this, nullptr);
+		// Targeted disconnect is used because this can also be the default source.
+		QObject::disconnect(
+		    this->mDefaultConfiguredSource,
+		    &PwBindableObject::destroying,
+		    this,
+		    &PwDefaultTracker::onDefaultConfiguredSourceDestroyed
+		);
 	}
 
 	this->mDefaultConfiguredSource = node;
@@ -317,7 +351,7 @@ void PwDefaultTracker::setDefaultConfiguredSource(PwNode* node) {
 	if (node != nullptr) {
 		QObject::connect(
 		    node,
-		    &QObject::destroyed,
+		    &PwBindableObject::destroying,
 		    this,
 		    &PwDefaultTracker::onDefaultConfiguredSourceDestroyed
 		);

@@ -7,8 +7,8 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-#include "../../toplevel_management/handle.hpp"
-#include "../../toplevel_management/qml.hpp"
+#include "../../toplevel/qml.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "connection.hpp"
 
 namespace qs::hyprland::ipc {
@@ -30,7 +30,7 @@ class HyprlandToplevel: public QObject {
 	/// Will be null until the address is reported
 	Q_PROPERTY(HyprlandToplevel* handle READ hyprlandHandle NOTIFY hyprlandHandleChanged);
 	/// The wayland toplevel handle. Will be null intil the address is reported
-	Q_PROPERTY(qs::wayland::toplevel_management::Toplevel* wayland READ waylandHandle NOTIFY waylandHandleChanged);
+	Q_PROPERTY(qs::wayland::toplevel::Toplevel* wayland READ waylandHandle NOTIFY waylandHandleChanged);
 	/// The title of the toplevel
 	Q_PROPERTY(QString title READ default NOTIFY titleChanged BINDABLE bindableTitle);
 	/// Whether the toplevel is active or not
@@ -53,7 +53,7 @@ public:
 	/// When invoked from HyprlandIpc, reacting to Hyprland's IPC events.
 	explicit HyprlandToplevel(HyprlandIpc* ipc);
 	/// When attached from a Toplevel
-	explicit HyprlandToplevel(HyprlandIpc* ipc, qs::wayland::toplevel_management::Toplevel* toplevel);
+	explicit HyprlandToplevel(HyprlandIpc* ipc, qs::wayland::toplevel::Toplevel* toplevel);
 
 	static HyprlandToplevel* qmlAttachedProperties(QObject* object);
 
@@ -69,8 +69,8 @@ public:
 	[[nodiscard]] HyprlandToplevel* hyprlandHandle() { return this->mHyprlandHandle; }
 	void setHyprlandHandle(HyprlandToplevel* handle);
 
-	[[nodiscard]] wayland::toplevel_management::Toplevel* waylandHandle();
-	void setWaylandHandle(wayland::toplevel_management::impl::ToplevelHandle* handle);
+	[[nodiscard]] wayland::toplevel::Toplevel* waylandHandle();
+	void setWaylandHandle(wayland::toplevel::wlr::ToplevelHandle* handle);
 	// clang-format on
 
 	[[nodiscard]] QBindable<QString> bindableTitle() { return &this->bTitle; }
@@ -105,7 +105,7 @@ private:
 	quint64 mAddress = 0;
 	HyprlandIpc* ipc;
 
-	qs::wayland::toplevel_management::impl::ToplevelHandle* mWaylandHandle = nullptr;
+	qs::wayland::toplevel::wlr::ToplevelHandle* mWaylandHandle = nullptr;
 	HyprlandToplevel* mHyprlandHandle = nullptr;
 
 	// clang-format off

@@ -12,7 +12,6 @@
 #include <qdebug.h>
 #include <qdir.h>
 #include <qfileinfo.h>
-#include <qguiapplication.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
@@ -120,7 +119,7 @@ int locateConfigFile(CommandState& cmd, QString& path) {
 					return -1;
 				}
 			} else {
-				qCCritical(logBare) << "Could not open maifest at path" << *cmd.config.manifest;
+				qCCritical(logBare) << "Could not open manifest at path" << *cmd.config.manifest;
 				return -1;
 			}
 		} else {
@@ -165,7 +164,12 @@ void sortInstances(QVector<InstanceLockInfo>& list, bool newestFirst) {
 	});
 };
 
-int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallback = false) {
+int selectInstance(
+    CommandState& cmd,
+    InstanceLockInfo* instance,
+    bool deadFallback = false,
+    bool logHelp = true
+) {
 	auto* basePath = QsPaths::instance()->baseRunDir();
 	if (!basePath) return -1;
 
@@ -174,15 +178,19 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 	if (cmd.instance.pid != -1) {
 		path = QDir(basePath->filePath("by-pid")).filePath(QString::number(cmd.instance.pid));
 		if (!QsPaths::checkLock(path, instance, deadFallback)) {
-			qCInfo(logBare) << "No instance found for pid" << cmd.instance.pid;
+			if (logHelp) qCInfo(logBare) << "No instance found for pid" << cmd.instance.pid;
 			return -1;
 		}
 	} else if (!cmd.instance.id->isEmpty()) {
 		path = basePath->filePath("by-pid");
-		auto [liveInstances, deadInstances] =
+		auto [liveInstances, mismatchedInstances, deadInstances] =
 		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		liveInstances.removeIf([&](const InstanceLockInfo& info) {
+			return !info.instance.instanceId.startsWith(*cmd.instance.id);
+		});
+
+		mismatchedInstances.removeIf([&](const InstanceLockInfo& info) {
 			return !info.instance.instanceId.startsWith(*cmd.instance.id);
 		});
 
@@ -193,27 +201,43 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		auto instances = liveInstances.isEmpty() && deadFallback ? deadInstances : liveInstances;
 
 		if (instances.isEmpty()) {
-			if (deadFallback) {
-				qCInfo(logBare) << "No instances start with" << *cmd.instance.id;
-			} else {
-				qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
+			if (logHelp) {
+				if (!mismatchedInstances.isEmpty()) {
+					qCInfo(logBare) << "No running instances on the current display" << getDisplayConnection()
+					                << "start with" << *cmd.instance.id;
 
-				if (!deadInstances.isEmpty()) {
-					qCInfo(logBare) << "Some dead instances match:";
+					qCInfo(logBare) << "Some instances on other displays match:";
 
-					for (auto& instance: deadInstances) {
-						qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+					for (auto& instance: mismatchedInstances) {
+						qCInfo(logBare).noquote().nospace() << " - " << instance.instance.instanceId << " ("
+						                                    << instance.instance.display << ')';
+					}
+				}
+
+				if (deadFallback) {
+					qCInfo(logBare) << "No instances start with" << *cmd.instance.id;
+				} else {
+					qCInfo(logBare) << "No running instances start with" << *cmd.instance.id;
+
+					if (!deadInstances.isEmpty()) {
+						qCInfo(logBare) << "Some dead instances match:";
+
+						for (auto& instance: deadInstances) {
+							qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+						}
 					}
 				}
 			}
 
 			return -1;
 		} else if (instances.length() != 1) {
-			qCInfo(logBare) << "More than one instance starts with" << *cmd.instance.id;
+			if (logHelp) {
+				qCInfo(logBare) << "More than one instance starts with" << *cmd.instance.id;
 
-			for (auto& instance: instances) {
-				qCInfo(logBare).noquote() << " -" << instance.instance.instanceId
-				                          << (instance.pid == -1 ? " (dead)" : "");
+				for (auto& instance: instances) {
+					qCInfo(logBare).noquote()
+					    << " -" << instance.instance.instanceId << (instance.pid == -1 ? "(dead)" : "");
+				}
 			}
 
 			return -1;
@@ -230,7 +254,7 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 
-		auto [liveInstances, deadInstances] =
+		auto [liveInstances, mismatchedInstances, deadInstances] =
 		    QsPaths::collectInstances(path, cmd.config.anyDisplay ? "" : getDisplayConnection());
 
 		auto instances = liveInstances;
@@ -244,16 +268,29 @@ int selectInstance(CommandState& cmd, InstanceLockInfo* instance, bool deadFallb
 		);
 
 		if (instances.isEmpty()) {
-			if (liveInstances.isEmpty() && deadInstances.length() > 1) {
-				qCInfo(logBare) << "No running instances for" << configFilePath;
-				qCInfo(logBare) << "Dead instances:";
-				sortInstances(deadInstances, cmd.config.newest);
-				for (auto& instance: deadInstances) {
-					qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+			if (logHelp) {
+				if (liveInstances.isEmpty() && deadInstances.length() > 1) {
+					qCInfo(logBare) << "No running instances for" << configFilePath;
+					qCInfo(logBare) << "Dead instances:";
+					sortInstances(deadInstances, cmd.config.newest);
+					for (auto& instance: deadInstances) {
+						qCInfo(logBare).noquote() << " -" << instance.instance.instanceId;
+					}
+				} else if (!mismatchedInstances.isEmpty()) {
+					qCInfo(logBare) << "No running instances for" << configFilePath
+					                << " present on the current display" << getDisplayConnection();
+
+					qCInfo(logBare) << "Some instances on other displays match:";
+
+					for (auto& instance: mismatchedInstances) {
+						qCInfo(logBare).noquote().nospace() << " - " << instance.instance.instanceId << " ("
+						                                    << instance.instance.display << ')';
+					}
+				} else {
+					qCInfo(logBare) << "No running instances for" << configFilePath;
 				}
-			} else {
-				qCInfo(logBare) << "No running instances for" << configFilePath;
 			}
+
 			return -1;
 		}
 
@@ -314,7 +351,7 @@ int listInstances(CommandState& cmd) {
 		path = QDir(basePath->filePath("by-path")).filePath(pathId);
 	}
 
-	auto [liveInstances, deadInstances] = QsPaths::collectInstances(
+	auto [liveInstances, mismatchedInstances, deadInstances] = QsPaths::collectInstances(
 	    path,
 	    cmd.config.anyDisplay || cmd.instance.all ? "" : getDisplayConnection()
 	);
@@ -436,7 +473,7 @@ int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
 
 	{
 		InstanceLockInfo info;
-		if (cmd.misc.noDuplicate && selectInstance(cmd, &info) == 0) {
+		if (cmd.misc.noDuplicate && selectInstance(cmd, &info, false, false) == 0) {
 			qCInfo(logBare) << "An instance of this configuration is already running.";
 			return 0;
 		}
@@ -547,16 +584,17 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 }
 
 QString getDisplayConnection() {
-	auto platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+	// Doesn't actually have to match what qt picks, but will 99% of the time.
+	// Running quickshell under wayland in x11 mode doesn't really make any sense.
 	auto wlDisplay = qEnvironmentVariable("WAYLAND_DISPLAY");
 	auto xDisplay = qEnvironmentVariable("DISPLAY");
 
-	if (platform == "wayland" || (platform.isEmpty() && !wlDisplay.isEmpty())) {
-		return "wayland," + wlDisplay;
-	} else if (platform == "xcb" || (platform.isEmpty() && !xDisplay.isEmpty())) {
-		return "x11," + xDisplay;
+	if (!wlDisplay.isEmpty()) {
+		return "wayland/" + wlDisplay;
+	} else if (!xDisplay.isEmpty()) {
+		return "x11/" + xDisplay;
 	} else {
-		return "unk," + QGuiApplication::platformName();
+		return "unk";
 	}
 }
 

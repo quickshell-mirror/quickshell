@@ -109,7 +109,7 @@ bool WlrLayershell::deleteOnInvisible() const {
 	// Qt windows behave weirdly when geometry is modified and setVisible(false)
 	// is subsequently called in the same frame.
 	// It will attach buffers to the wayland surface unconditionally before
-	// the surface recieves a configure event, causing a protocol error.
+	// the surface receives a configure event, causing a protocol error.
 	// To remedy this we forcibly disallow window reuse.
 	return true;
 }

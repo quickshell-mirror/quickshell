@@ -8,8 +8,12 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
-#include "connection.hpp"
+#include "../device.hpp"
+#include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "enums.hpp"
+#include "network.hpp"
+#include "settings.hpp"
 
 namespace qs::dbus {
 
@@ -17,6 +21,13 @@ template <>
 struct DBusDataTransform<qs::network::NMDeviceState::Enum> {
 	using Wire = quint32;
 	using Data = qs::network::NMDeviceState::Enum;
+	static DBusResult<Data> fromWire(Wire wire);
+};
+
+template <>
+struct DBusDataTransform<qs::network::NMDeviceInterfaceFlags::Enum> {
+	using Wire = quint32;
+	using Data = qs::network::NMDeviceInterfaceFlags::Enum;
 	static DBusResult<Data> fromWire(Wire wire);
 };
 
@@ -36,43 +47,61 @@ public:
 	[[nodiscard]] virtual bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
-	[[nodiscard]] QString interface() const { return this->bInterface; };
-	[[nodiscard]] QString hwAddress() const { return this->bHwAddress; };
-	[[nodiscard]] bool managed() const { return this->bManaged; };
-	[[nodiscard]] NMDeviceState::Enum state() const { return this->bState; };
-	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; };
-	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; };
+	[[nodiscard]] QString interface() const { return this->bInterface; }
+	[[nodiscard]] QString hwAddress() const { return this->bHwAddress; }
+	[[nodiscard]] bool managed() const { return this->bManaged; }
+	[[nodiscard]] NMDeviceState::Enum state() const { return this->bState; }
+	[[nodiscard]] NMDeviceStateReason::Enum stateReason() const { return this->bStateReason; }
+	[[nodiscard]] NMDeviceStateReason::Enum lastFailReason() const { return this->bLastFailReason; }
+	[[nodiscard]] NMDeviceInterfaceFlags::Enum interfaceFlags() const {
+		return this->bInterfaceFlags;
+	}
+	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; }
+	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; }
+	[[nodiscard]] virtual NetworkDevice* frontend() = 0;
 
 signals:
+	void loaded();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
-	    const ConnectionSettingsMap& settings,
+	    const NMSettingsMap& settings,
 	    const QDBusObjectPath& devPath,
-	    const QDBusObjectPath& apPath
+	    const QDBusObjectPath& specificObjectPath
 	);
-	void connectionLoaded(NMConnectionSettings* connection);
-	void connectionRemoved(NMConnectionSettings* connection);
-	void availableConnectionPathsChanged(QList<QDBusObjectPath> paths);
+	void networkAdded(Network* net);
+	void networkRemoved(Network* net);
+	void settingsLoaded(NMSettings* settings);
+	void settingsRemoved(NMSettings* settings);
+	void availableSettingsPathsChanged(QList<QDBusObjectPath> paths);
 	void activeConnectionPathChanged(const QDBusObjectPath& connection);
 	void activeConnectionLoaded(NMActiveConnection* active);
 	void interfaceChanged(const QString& interface);
 	void hwAddressChanged(const QString& hwAddress);
 	void managedChanged(bool managed);
 	void stateChanged(NMDeviceState::Enum state);
+	void stateReasonChanged(NMDeviceStateReason::Enum reason);
+	void lastFailReasonChanged(NMDeviceStateReason::Enum reason);
 	void autoconnectChanged(bool autoconnect);
+	void interfaceFlagsChanged(NMDeviceInterfaceFlags::Enum flags);
 
 public slots:
 	void disconnect();
 	void setAutoconnect(bool autoconnect);
+	void setManaged(bool managed);
+
+protected:
+	void bindFrontend(NetworkDevice* frontend);
+	void bindNetwork(NMNetwork* net);
 
 private slots:
-	void onAvailableConnectionPathsChanged(const QList<QDBusObjectPath>& paths);
+	void onStateChanged(quint32 newState, quint32 oldState, quint32 reason);
+	void onAvailableSettingsPathsChanged(const QList<QDBusObjectPath>& paths);
 	void onActiveConnectionPathChanged(const QDBusObjectPath& path);
 
 private:
-	void registerConnection(const QString& path);
+	void registerSettings(const QString& path);
 
-	QHash<QString, NMConnectionSettings*> mConnections;
+	QHash<QString, NMSettings*> mSettings;
 	NMActiveConnection* mActiveConnection = nullptr;
 
 	// clang-format off
@@ -80,9 +109,12 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QString, bHwAddress, &NMDevice::hwAddressChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bManaged, &NMDevice::managedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceState::Enum, bState, &NMDevice::stateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bStateReason, &NMDevice::stateReasonChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bLastFailReason, &NMDevice::lastFailReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bAutoconnect, &NMDevice::autoconnectChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableConnectionPathsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableSettingsPathsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceInterfaceFlags::Enum, bInterfaceFlags, &NMDevice::interfaceFlagsChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pName, bInterface, deviceProperties, "Interface");
@@ -92,6 +124,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAutoconnect, bAutoconnect, deviceProperties, "Autoconnect");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pInterfaceFlags, bInterfaceFlags, deviceProperties, "InterfaceFlags");
 	// clang-format on
 
 	DBusNMDeviceProxy* deviceProxy = nullptr;

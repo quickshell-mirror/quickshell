@@ -29,9 +29,9 @@ class FileViewError: public QObject {
 
 public:
 	enum Enum : quint8 {
-		/// No error occured.
+		/// No error occurred.
 		Success = 0,
-		/// An unknown error occured. Check the logs for details.
+		/// An unknown error occurred. Check the logs for details.
 		Unknown = 1,
 		/// The file to read does not exist.
 		FileNotFound = 2,
@@ -204,7 +204,7 @@ class FileView: public QObject {
 	///
 	/// > [!NOTE] This works by creating another file with the desired content, and renaming
 	/// > it over the existing file if successful.
-	Q_PROPERTY(bool atomicWrites READ default WRITE default NOTIFY blockWritesChanged BINDABLE bindableAtomicWrites);
+	Q_PROPERTY(bool atomicWrites READ default WRITE default NOTIFY atomicWritesChanged BINDABLE bindableAtomicWrites);
 	/// If true (default), read or write errors will be printed to the quickshell logs.
 	/// If false, all known errors will not be printed.
 	QSDOC_PROPERTY_OVERRIDE(bool printErrors READ default WRITE default NOTIFY printErrorsChanged);

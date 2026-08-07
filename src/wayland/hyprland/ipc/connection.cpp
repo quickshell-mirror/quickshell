@@ -24,7 +24,7 @@
 #include "../../../core/logcat.hpp"
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
-#include "../../toplevel_management/handle.hpp"
+#include "../../toplevel/wlr_toplevel.hpp"
 #include "hyprland_toplevel.hpp"
 #include "monitor.hpp"
 #include "toplevel_mapping.hpp"
@@ -74,10 +74,23 @@ HyprlandIpc::HyprlandIpc() {
 
 	// clang-format on
 
-	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
-	this->refreshMonitors(true);
-	this->refreshWorkspaces(true);
-	this->refreshToplevels();
+	this->makeRequest("j/status", [&, this](bool success, QByteArray resp) {
+		if (success) {
+			this->bUsingLua = [&]() {
+				if (resp == "unknown request") return false;
+				auto json = QJsonDocument::fromJson(resp).object();
+				auto provider = json.value("configProvider");
+				return provider == "lua";
+			}();
+		} else {
+			qCWarning(logHyprlandIpc) << "Hyprland ipc status request failed.";
+		}
+
+		this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
+		this->refreshMonitors(true);
+		this->refreshWorkspaces(true);
+		this->refreshToplevels();
+	});
 }
 
 QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath; }
@@ -126,11 +139,10 @@ void HyprlandIpc::eventSocketReady() {
 }
 
 void HyprlandIpc::toplevelAddressed(
-    wayland::toplevel_management::impl::ToplevelHandle* handle,
+    wayland::toplevel::wlr::ToplevelHandle* handle,
     quint64 address
 ) {
-	auto* waylandToplevel =
-	    wayland::toplevel_management::ToplevelManager::instance()->forImpl(handle);
+	auto* waylandToplevel = wayland::toplevel::ToplevelManager::instance()->forImpl(handle);
 
 	if (!waylandToplevel) return;
 

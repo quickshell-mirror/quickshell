@@ -1,9 +1,13 @@
 name = "Quickshell.Networking"
 description = "Network API"
 headers = [
+	"qml.hpp",
 	"network.hpp",
 	"device.hpp",
 	"wifi.hpp",
+	"wired.hpp",
+	"enums.hpp",
+	"nm/settings.hpp",
 ]
 -----
 This module exposes Network management APIs provided by a supported network backend.

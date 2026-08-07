@@ -13,6 +13,7 @@
 #include <qnumeric.h>
 #include <qobject.h>
 #include <qqmllist.h>
+#include <qrect.h>
 #include <qrgb.h>
 #include <qthreadpool.h>
 #include <qtmetamacros.h>
@@ -24,9 +25,15 @@ namespace {
 QS_LOGGING_CATEGORY(logColorQuantizer, "quickshell.colorquantizer", QtWarningMsg);
 }
 
-ColorQuantizerOperation::ColorQuantizerOperation(QUrl* source, qreal depth, qreal rescaleSize)
+ColorQuantizerOperation::ColorQuantizerOperation(
+    QUrl* source,
+    qreal depth,
+    QRect imageRect,
+    qreal rescaleSize
+)
     : source(source)
     , maxDepth(depth)
+    , imageRect(imageRect)
     , rescaleSize(rescaleSize) {
 	this->setAutoDelete(false);
 }
@@ -37,6 +44,11 @@ void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCa
 	this->colors.clear();
 
 	auto image = QImage(this->source->toLocalFile());
+
+	if (this->imageRect.isValid()) {
+		image = image.copy(this->imageRect);
+	}
+
 	if ((image.width() > this->rescaleSize || image.height() > this->rescaleSize)
 	    && this->rescaleSize > 0)
 	{
@@ -198,16 +210,27 @@ void ColorQuantizer::setDepth(qreal depth) {
 		this->mDepth = depth;
 		emit this->depthChanged();
 
-		if (this->componentCompleted) this->quantizeAsync();
+		if (this->componentCompleted && !this->mSource.isEmpty()) this->quantizeAsync();
 	}
 }
+
+void ColorQuantizer::setImageRect(QRect imageRect) {
+	if (this->mImageRect != imageRect) {
+		this->mImageRect = imageRect;
+		emit this->imageRectChanged();
+
+		if (this->componentCompleted && !this->mSource.isEmpty()) this->quantizeAsync();
+	}
+}
+
+void ColorQuantizer::resetImageRect() { this->setImageRect(QRect()); }
 
 void ColorQuantizer::setRescaleSize(int rescaleSize) {
 	if (this->mRescaleSize != rescaleSize) {
 		this->mRescaleSize = rescaleSize;
 		emit this->rescaleSizeChanged();
 
-		if (this->componentCompleted) this->quantizeAsync();
+		if (this->componentCompleted && !this->mSource.isEmpty()) this->quantizeAsync();
 	}
 }
 
@@ -221,8 +244,13 @@ void ColorQuantizer::quantizeAsync() {
 	if (this->liveOperation) this->cancelAsync();
 
 	qCDebug(logColorQuantizer) << "Starting color quantization asynchronously";
-	this->liveOperation =
-	    new ColorQuantizerOperation(&this->mSource, this->mDepth, this->mRescaleSize);
+
+	this->liveOperation = new ColorQuantizerOperation(
+	    &this->mSource,
+	    this->mDepth,
+	    this->mImageRect,
+	    this->mRescaleSize
+	);
 
 	QObject::connect(
 	    this->liveOperation,

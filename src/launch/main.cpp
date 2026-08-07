@@ -27,20 +27,28 @@ namespace {
 void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 #if CRASH_HANDLER
 	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
+	auto dumpPid = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
 
 	if (!lastInfoFdStr.isEmpty()) {
 		auto lastInfoFd = lastInfoFdStr.toInt();
 
-		QFile file;
-		if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
-			qFatal() << "Failed to open crash info fd. Cannot restart.";
+		RelaunchInfo info;
+
+		{
+			QFile file;
+			if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
+				qFatal() << "Failed to open crash info fd. Cannot restart.";
+			}
+
+			file.seek(0);
+
+			auto ds = QDataStream(&file);
+			ds >> info;
 		}
 
-		file.seek(0);
-
-		auto ds = QDataStream(&file);
-		RelaunchInfo info;
-		ds >> info;
+		qunsetenv("__QUICKSHELL_CRASH_INFO_FD");
+		qunsetenv("__QUICKSHELL_CRASH_DUMP_PID");
+		qunsetenv("__QUICKSHELL_CRASH_SIGNAL");
 
 		LogManager::init(
 		    !info.noColor,
@@ -50,8 +58,7 @@ void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 		    info.logRules
 		);
 
-		qCritical().nospace() << "Quickshell has crashed under pid "
-		                      << qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt()
+		qCritical().nospace() << "Quickshell has crashed under pid " << dumpPid
 		                      << " (Coredumps will be available under that pid.)";
 
 		qCritical() << "Further crash information is stored under"
@@ -84,21 +91,29 @@ void exitDaemon(int code) {
 
 	close(DAEMON_PIPE);
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	if (open("/dev/null", O_RDONLY) != STDIN_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdin";
+	auto fd = open("/dev/null", O_RDWR);
+	if (fd == -1) {
+		qCritical().nospace() << "Failed to open /dev/null for daemon stdio" << errno << ": "
+		                      << qt_error_string();
+		return;
 	}
 
-	if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stdout";
+	if (dup2(fd, STDIN_FILENO) != STDIN_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stdin to /dev/null" << errno << ": "
+		                      << qt_error_string();
 	}
 
-	if (open("/dev/null", O_WRONLY) != STDERR_FILENO) { // NOLINT
-		qFatal() << "Failed to open /dev/null on stderr";
+	if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stdout to /dev/null" << errno << ": "
+		                      << qt_error_string();
 	}
+
+	if (dup2(fd, STDERR_FILENO) != STDERR_FILENO) { // NOLINT
+		qCritical().nospace() << "Failed to set daemon stderr to /dev/null" << errno << ": "
+		                      << qt_error_string();
+	}
+
+	close(fd);
 }
 
 int main(int argc, char** argv) {

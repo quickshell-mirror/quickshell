@@ -1,130 +1,35 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qmetatype.h>
 #include <qobjectdefs.h>
-#include <qtclasshelpermacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "../ipc/ipc.hpp"
 
 namespace qs::io::ipc {
 
-class IpcTypeSlot;
-
-class IpcType {
+class IpcValueSlot {
 public:
-	IpcType() = default;
-	virtual ~IpcType() = default;
-	IpcType(const IpcType&) = default;
-	IpcType(IpcType&&) = default;
-	IpcType& operator=(const IpcType&) = default;
-	IpcType& operator=(IpcType&&) = default;
+	IpcValueSlot() = default;
+	explicit IpcValueSlot(QMetaType type): mValue(type) {}
 
-	[[nodiscard]] virtual const char* name() const = 0;
-	[[nodiscard]] virtual const char* genericArgumentName() const = 0;
-	[[nodiscard]] virtual qsizetype size() const = 0;
-	[[nodiscard]] virtual void* fromString(const QString& /*string*/) const { return nullptr; }
-	[[nodiscard]] virtual QString toString(void* /*slot*/) const { return ""; }
-	[[nodiscard]] virtual void* createStorage() const { return nullptr; }
-	virtual void destroyStorage(void* /*slot*/) const {}
-	void* copyStorage(const void* data) const;
+	[[nodiscard]] static bool isSupported(const QMetaType& type);
+	[[nodiscard]] static const char* typeName(const QMetaType& type);
+	[[nodiscard]] const char* name() const;
+	[[nodiscard]] bool isVoid() const;
+	[[nodiscard]] const QVariant& value() const;
 
-	static const IpcType* ipcType(const QMetaType& metaType);
-};
+	bool setString(const QString& string);
+	void setValue(QVariant value);
+	[[nodiscard]] QString toString() const;
 
-class IpcTypeSlot {
-public:
-	explicit IpcTypeSlot(const IpcType* type = nullptr): mType(type) {}
-	~IpcTypeSlot();
-	Q_DISABLE_COPY(IpcTypeSlot);
-	IpcTypeSlot(IpcTypeSlot&& other) noexcept;
-	IpcTypeSlot& operator=(IpcTypeSlot&& other) noexcept;
-
-	[[nodiscard]] const IpcType* type() const;
-	[[nodiscard]] void* get();
-	[[nodiscard]] QGenericArgument asGenericArgument();
+	[[nodiscard]] QGenericArgument asGenericArgument() const;
 	[[nodiscard]] QGenericReturnArgument asGenericReturnArgument();
 
-	void replace(void* value);
-	void replace(const QVariant& value);
-
 private:
-	const IpcType* mType = nullptr;
-	void* storage = nullptr;
-};
-
-class VoidIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-
-	static const VoidIpcType INSTANCE;
-};
-
-class StringIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-	[[nodiscard]] void* fromString(const QString& string) const override;
-	[[nodiscard]] QString toString(void* slot) const override;
-	[[nodiscard]] void* createStorage() const override;
-	void destroyStorage(void* slot) const override;
-
-	static const StringIpcType INSTANCE;
-};
-
-class IntIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-	[[nodiscard]] void* fromString(const QString& string) const override;
-	[[nodiscard]] QString toString(void* slot) const override;
-	[[nodiscard]] void* createStorage() const override;
-	void destroyStorage(void* slot) const override;
-
-	static const IntIpcType INSTANCE;
-};
-
-class BoolIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-	[[nodiscard]] void* fromString(const QString& string) const override;
-	[[nodiscard]] QString toString(void* slot) const override;
-	[[nodiscard]] void* createStorage() const override;
-	void destroyStorage(void* slot) const override;
-
-	static const BoolIpcType INSTANCE;
-};
-
-class DoubleIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-	[[nodiscard]] void* fromString(const QString& string) const override;
-	[[nodiscard]] QString toString(void* slot) const override;
-	[[nodiscard]] void* createStorage() const override;
-	void destroyStorage(void* slot) const override;
-
-	static const DoubleIpcType INSTANCE;
-};
-
-class ColorIpcType: public IpcType {
-public:
-	[[nodiscard]] const char* name() const override;
-	[[nodiscard]] const char* genericArgumentName() const override;
-	[[nodiscard]] qsizetype size() const override;
-	[[nodiscard]] void* fromString(const QString& string) const override;
-	[[nodiscard]] QString toString(void* slot) const override;
-	[[nodiscard]] void* createStorage() const override;
-	void destroyStorage(void* slot) const override;
-
-	static const ColorIpcType INSTANCE;
+	QVariant mValue;
 };
 
 struct WireFunctionDefinition {

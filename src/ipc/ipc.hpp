@@ -19,7 +19,7 @@
 
 template <typename... Types>
 constexpr void assertSerializable() {
-	// monostate being zero ensures transactional reads wont break
+	// monostate being zero ensures transactional reads won't break
 	static_assert(
 	    std::is_same_v<std::variant_alternative_t<0, std::variant<Types...>>, std::monostate>,
 	    "Serialization of variants without std::monostate at index 0 is disallowed."
@@ -216,7 +216,10 @@ signals:
 	void disconnected();
 
 private slots:
-	static void onError(QLocalSocket::LocalSocketError error);
+	void onError(QLocalSocket::LocalSocketError error) const;
+
+private:
+	bool waitingForDisconnect = false;
 };
 
 } // namespace qs::ipc

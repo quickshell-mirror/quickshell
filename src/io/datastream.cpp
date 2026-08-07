@@ -51,7 +51,7 @@ void SplitParser::parseBytes(QByteArray& incoming, QByteArray& buffer) {
 		return;
 	}
 
-	// make sure we dont miss any delimiters in the buffer if the delimiter changes
+	// make sure we don't miss any delimiters in the buffer if the delimiter changes
 	if (this->mSplitMarkerChanged) {
 		this->mSplitMarkerChanged = false;
 		this->parseBytes(buffer, buffer);

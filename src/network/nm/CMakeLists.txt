@@ -29,6 +29,16 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 	dbus_nm_wireless
 )
 
+set_source_files_properties(org.freedesktop.NetworkManager.Device.Wired.xml PROPERTIES
+	CLASSNAME DBusNMWiredProxy
+	NO_NAMESPACE TRUE
+)
+
+qt_add_dbus_interface(NM_DBUS_INTERFACES
+	org.freedesktop.NetworkManager.Device.Wired.xml
+	dbus_nm_wired
+)
+
 set_source_files_properties(org.freedesktop.NetworkManager.AccessPoint.xml PROPERTIES
 	CLASSNAME DBusNMAccessPointProxy
 	NO_NAMESPACE TRUE
@@ -63,10 +73,14 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 qt_add_library(quickshell-network-nm STATIC
 	backend.cpp
 	device.cpp
-	connection.cpp
+	active_connection.cpp
+	settings.cpp
 	accesspoint.cpp
 	wireless.cpp
+	wired.cpp
 	utils.cpp
+	dbus_types.cpp
+	network.cpp
 	enums.hpp
 	${NM_DBUS_INTERFACES}
 )
@@ -77,3 +91,4 @@ target_include_directories(quickshell-network-nm PUBLIC
 
 target_link_libraries(quickshell-network-nm PRIVATE Qt::Qml Qt::DBus)
 qs_add_link_dependencies(quickshell-network-nm quickshell-dbus)
+qs_add_link_dependencies(quickshell-network-nm quickshell-network)

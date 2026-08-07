@@ -33,8 +33,9 @@ class WaylandPlugin: public QsEnginePlugin {
 		return isWayland;
 	}
 
+	void preinit() override { installWlProxySafeDeref(); }
+
 	void init() override {
-		installWlProxySafeDeref();
 		installPlatformMenuHook();
 		installPopupPositioner();
 	}

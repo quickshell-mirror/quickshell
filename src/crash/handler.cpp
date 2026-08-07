@@ -5,9 +5,11 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 
 #include <cpptrace/basic.hpp>
 #include <cpptrace/forward.hpp>
+#include <cpptrace/utils.hpp>
 #include <qdatastream.h>
 #include <qfile.h>
 #include <qlogging.h>
@@ -58,6 +60,12 @@ void signalHandler(
     siginfo_t* /*info*/, // NOLINT (misc-include-cleaner)
     void*                /*context*/
 ) {
+	// NOLINTBEGIN (misc-include-cleaner)
+	sigset_t set;
+	sigfillset(&set);
+	sigprocmask(SIG_UNBLOCK, &set, nullptr);
+	// NOLINTEND
+
 	if (CrashInfo::INSTANCE.traceFd != -1) {
 		auto traceBuffer = std::array<cpptrace::frame_ptr, 1024>();
 		auto frameCount = cpptrace::safe_generate_raw_trace(traceBuffer.data(), traceBuffer.size(), 1);
@@ -79,13 +87,9 @@ void signalHandler(
 	fail:;
 	}
 
+	// TODO: coredump fork and crash reporter remain as zombies, fix
 	auto coredumpPid = fork();
 	if (coredumpPid == 0) {
-		// NOLINTBEGIN (misc-include-cleaner)
-		sigset_t set;
-		sigfillset(&set);
-		sigprocmask(SIG_UNBLOCK, &set, nullptr);
-		// NOLINTEND
 		raise(sig);
 		_exit(-1);
 	}
@@ -131,7 +135,6 @@ void signalHandler(
 		perror("Failed to fork and launch crash reporter.\n");
 		_exit(-1);
 	} else if (pid == 0) {
-
 		// dup to remove CLOEXEC
 		auto dumpFdStr = std::array<char, 48>();
 		auto logFdStr = std::array<char, 48>();
@@ -153,6 +156,21 @@ void signalHandler(
 		perror("Failed to relaunch quickshell.\n");
 		_exit(-1);
 	}
+}
+
+void handleCppTerminate() {
+	if (auto ptr = std::current_exception()) {
+		try {
+			std::rethrow_exception(ptr);
+		} catch (std::exception& e) {
+			qFatal().nospace() << "Terminate called with C++ exception ("
+			                   << cpptrace::demangle(typeid(e).name()).data() << "): " << e.what();
+		} catch (...) {
+			qFatal() << "Terminate called with non exception object";
+		}
+	}
+
+	qFatal() << "Terminate called without active C++ exception";
 }
 
 } // namespace
@@ -202,6 +220,8 @@ void CrashHandler::init() {
 	sigaction(SIGTRAP, &sa, nullptr);
 
 	// NOLINTEND (misc-include-cleaner)
+
+	std::set_terminate(&handleCppTerminate);
 
 	qCInfo(logCrashHandler) << "Crash handler initialized.";
 }

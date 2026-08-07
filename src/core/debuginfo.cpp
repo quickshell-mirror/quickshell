@@ -129,12 +129,13 @@ QString envInfo() {
 	auto stream = QTextStream(&info);
 
 	for (auto** envp = environ; *envp != nullptr; ++envp) { // NOLINT
-		auto prefixes = std::array<std::string_view, 5> {
+		auto prefixes = std::array<std::string_view, 6> {
 		    "QS_",
 		    "QT_",
 		    "QML_",
 		    "QML2_",
 		    "QSG_",
+		    "XDG_CURRENT_DESKTOP=",
 		};
 
 		for (const auto& prefix: prefixes) {

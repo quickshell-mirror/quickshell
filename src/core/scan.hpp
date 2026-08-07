@@ -4,6 +4,7 @@
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qhash.h>
+#include <qjsengine.h>
 #include <qloggingcategory.h>
 #include <qvector.h>
 
@@ -42,4 +43,6 @@ private:
 	bool scanQmlFile(const QString& path, bool& singleton, bool& internal);
 	bool scanQmlJson(const QString& path);
 	[[nodiscard]] static QPair<QString, QString> jsonToQml(const QJsonValue& value, int indent = 0);
+
+	static QJSEngine* preprocEngine();
 };

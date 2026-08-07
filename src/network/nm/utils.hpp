@@ -3,15 +3,14 @@
 #include <qcontainerfwd.h>
 #include <qdbusservicewatcher.h>
 #include <qobject.h>
-#include <qqmlintegration.h>
 
-#include "../wifi.hpp"
+#include "../enums.hpp"
 #include "dbus_types.hpp"
 #include "enums.hpp"
 
 namespace qs::network {
 
-WifiSecurityType::Enum securityFromConnectionSettings(const ConnectionSettingsMap& settings);
+WifiSecurityType::Enum securityFromSettingsMap(const NMSettingsMap& settings);
 
 bool deviceSupportsApCiphers(
     NMWirelessCapabilities::Enum caps,
@@ -39,6 +38,16 @@ WifiSecurityType::Enum findBestWirelessSecurity(
     NM80211ApSecurityFlags::Enum apWpa,
     NM80211ApSecurityFlags::Enum apRsn
 );
+
+NMSettingsMap mergeSettingsMaps(const NMSettingsMap& target, const NMSettingsMap& source);
+
+NMSettingsMap removeSettingsInMap(const NMSettingsMap& target, const NMSettingsMap& toRemove);
+
+void manualSettingDemarshall(NMSettingsMap& map);
+
+QVariant settingTypeFromQml(const QString& group, const QString& key, const QVariant& value);
+
+QVariant settingTypeToQml(const QVariant& value);
 
 QDateTime clockBootTimeToDateTime(qint64 clockBootTime);
 

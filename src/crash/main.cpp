@@ -25,6 +25,7 @@
 #include "../core/logging.hpp"
 #include "../core/logging_p.hpp"
 #include "../core/paths.hpp"
+#include "../core/plugin.hpp"
 #include "../core/ringbuf.hpp"
 #include "interface.hpp"
 
@@ -237,6 +238,9 @@ void qsCheckCrash(int argc, char** argv) {
 	auto crashDir = QsPaths::crashDir(info.instance.instanceId);
 
 	qCInfo(logCrashReporter) << "Starting crash reporter...";
+
+	// Required platform compatibility hooks
+	QsEnginePlugin::preinitPluginsOnly();
 
 	recordCrashInfo(crashDir, info.instance);
 

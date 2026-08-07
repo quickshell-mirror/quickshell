@@ -85,7 +85,7 @@ void IccScreencopyContext::ext_image_copy_capture_session_v1_dmabuf_format(
 	auto reqFormat = buffer::WlBufferRequest::DmaFormat(format);
 
 	for (uint16_t i = 0; i != modifierCount; i++) {
-		reqFormat.modifiers.push(modifierArray[i]); // NOLINT
+		reqFormat.pushMod(modifierArray[i]); // NOLINT
 	}
 
 	this->request.dmabuf.formats.push(reqFormat);

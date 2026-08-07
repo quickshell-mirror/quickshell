@@ -141,6 +141,8 @@ void ScreencopyView::componentComplete() {
 		    this,
 		    &ScreencopyView::onBuffersReady
 		);
+
+		bufManager->initWindow(this->window());
 	} else {
 		this->onBuffersReady();
 	}
@@ -167,6 +169,7 @@ QSGNode* ScreencopyView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* 
 	auto& swapchain = this->context->swapchain();
 	node->syncSwapchain(swapchain);
 	node->setRect(this->boundingRect());
+	node->setFiltering(QSGTexture::Linear); // NOLINT (misc-include-cleaner)
 
 	if (this->mLive) this->context->captureFrame();
 	return node;

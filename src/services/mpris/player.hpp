@@ -325,8 +325,8 @@ public:
 	void setLoopState(MprisLoopState::Enum loopState);
 
 	[[nodiscard]] qreal rate() const { return this->bRate; }
-	[[nodiscard]] QBindable<qreal> bindableMinRate() const { return &this->bRate; }
-	[[nodiscard]] QBindable<qreal> bindableMaxRate() const { return &this->bRate; }
+	[[nodiscard]] QBindable<qreal> bindableMinRate() const { return &this->bMinRate; }
+	[[nodiscard]] QBindable<qreal> bindableMaxRate() const { return &this->bMaxRate; }
 	void setRate(qreal rate);
 
 	[[nodiscard]] bool shuffle() const { return this->bShuffle; }

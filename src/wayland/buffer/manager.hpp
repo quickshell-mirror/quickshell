@@ -55,9 +55,12 @@ struct WlBufferRequest {
 	struct DmaFormat {
 		DmaFormat() = default;
 		DmaFormat(uint32_t format): format(format) {}
+		void pushMod(uint64_t mod);
+		[[nodiscard]] bool modsDefined() const;
 
 		uint32_t format = 0;
 		StackList<uint64_t, 10> modifiers;
+		bool implicit = false;
 	};
 
 	struct {
@@ -123,6 +126,7 @@ public:
 
 	static WlBufferManager* instance();
 
+	void initWindow(QQuickWindow* window);
 	[[nodiscard]] bool isReady() const;
 	[[nodiscard]] WlBuffer* createBuffer(const WlBufferRequest& request);
 

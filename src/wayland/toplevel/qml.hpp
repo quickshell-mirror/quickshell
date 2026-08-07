@@ -11,12 +11,12 @@
 #include "../../core/util.hpp"
 #include "../../window/proxywindow.hpp"
 
-namespace qs::wayland::toplevel_management {
+namespace qs::wayland::toplevel {
 
-namespace impl {
+namespace wlr {
 class ToplevelManager; // NOLINT
 class ToplevelHandle;
-} // namespace impl
+} // namespace wlr
 
 ///! Window from another application.
 /// A window/toplevel from another application, retrievable from
@@ -26,7 +26,7 @@ class Toplevel: public QObject {
 	Q_PROPERTY(QString appId READ appId NOTIFY appIdChanged);
 	Q_PROPERTY(QString title READ title NOTIFY titleChanged);
 	/// Parent toplevel if this toplevel is a modal/dialog, otherwise null.
-	Q_PROPERTY(qs::wayland::toplevel_management::Toplevel* parent READ parent NOTIFY parentChanged);
+	Q_PROPERTY(qs::wayland::toplevel::Toplevel* parent READ parent NOTIFY parentChanged);
 	/// If the window is currently activated or focused.
 	///
 	/// Activation can be requested with the @@activate() function.
@@ -56,7 +56,7 @@ class Toplevel: public QObject {
 	QML_UNCREATABLE("Toplevels must be acquired from the ToplevelManager.");
 
 public:
-	explicit Toplevel(impl::ToplevelHandle* handle, QObject* parent);
+	explicit Toplevel(wlr::ToplevelHandle* handle, QObject* parent);
 
 	/// Request that this toplevel is activated.
 	/// The request may be ignored by the compositor.
@@ -91,7 +91,7 @@ public:
 	[[nodiscard]] bool fullscreen() const;
 	void setFullscreen(bool fullscreen);
 
-	[[nodiscard]] impl::ToplevelHandle* implHandle() const { return this->handle; }
+	[[nodiscard]] wlr::ToplevelHandle* implHandle() const { return this->handle; }
 
 signals:
 	void closed();
@@ -110,7 +110,7 @@ private slots:
 	void onRectangleProxyDestroyed();
 
 private:
-	impl::ToplevelHandle* handle;
+	wlr::ToplevelHandle* handle;
 	ProxyWindowBase* rectWindow = nullptr;
 	QRect rectangle;
 
@@ -121,7 +121,7 @@ class ToplevelManager: public QObject {
 	Q_OBJECT;
 
 public:
-	Toplevel* forImpl(impl::ToplevelHandle* impl) const;
+	Toplevel* forImpl(wlr::ToplevelHandle* impl) const;
 
 	[[nodiscard]] ObjectModel<Toplevel>* toplevels();
 
@@ -131,7 +131,7 @@ signals:
 	void activeToplevelChanged();
 
 private slots:
-	void onToplevelReady(impl::ToplevelHandle* handle);
+	void onToplevelReady(wlr::ToplevelHandle* handle);
 	void onToplevelActiveChanged();
 	void onToplevelClosed();
 
@@ -158,13 +158,13 @@ class ToplevelManagerQml: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	/// All toplevel windows exposed by the compositor.
-	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::wayland::toplevel_management::Toplevel>*);
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::wayland::toplevel::Toplevel>*);
 	Q_PROPERTY(UntypedObjectModel* toplevels READ toplevels CONSTANT);
 	/// Active toplevel or null.
 	///
 	/// > [!INFO] If multiple are active, this will be the most recently activated one.
 	/// > Usually compositors will not report more than one toplevel as active at a time.
-	Q_PROPERTY(qs::wayland::toplevel_management::Toplevel* activeToplevel READ activeToplevel NOTIFY activeToplevelChanged);
+	Q_PROPERTY(qs::wayland::toplevel::Toplevel* activeToplevel READ activeToplevel NOTIFY activeToplevelChanged);
 	// clang-format on
 	QML_NAMED_ELEMENT(ToplevelManager);
 	QML_SINGLETON;
@@ -179,4 +179,4 @@ signals:
 	void activeToplevelChanged();
 };
 
-} // namespace qs::wayland::toplevel_management
+} // namespace qs::wayland::toplevel
