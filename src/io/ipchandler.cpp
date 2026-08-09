@@ -304,6 +304,18 @@ void IpcHandler::onSignalTriggered(const QString& signal, const QString& value) 
 void IpcHandler::updateRegistration(bool destroying) {
 	if (!this->complete) return;
 
+	// Deregister through the registry this handler actually joined. Re-resolving
+	// the generation fails once the object's QML context is gone, which is the
+	// case during destruction, and would leave the target held forever.
+	if (this->registeredState.enabled && this->registeredRegistry != nullptr) {
+		auto* registry = this->registeredRegistry;
+		registry->deregisterHandler(this);
+		this->registeredRegistry = nullptr;
+		qCDebug(logIpcHandler) << "Deregistered" << this << "from registry" << registry;
+	}
+
+	if (!this->targetState.enabled || this->targetState.target.isEmpty()) return;
+
 	auto* generation = EngineGeneration::findObjectGeneration(this);
 
 	if (!generation) {
@@ -315,15 +327,19 @@ void IpcHandler::updateRegistration(bool destroying) {
 	}
 
 	auto* registry = IpcHandlerRegistry::forGeneration(generation);
+	registry->registerHandler(this);
+	this->registeredRegistry = registry;
+	qCDebug(logIpcHandler) << "Registered" << this << "to registry" << registry;
+}
 
-	if (this->registeredState.enabled) {
-		registry->deregisterHandler(this);
-		qCDebug(logIpcHandler) << "Deregistered" << this << "from registry" << registry;
-	}
-
-	if (this->targetState.enabled && !this->targetState.target.isEmpty()) {
-		registry->registerHandler(this);
-		qCDebug(logIpcHandler) << "Registered" << this << "to registry" << registry;
+IpcHandlerRegistry::~IpcHandlerRegistry() {
+	// The generation owns this registry and may outlive nothing: clear the back
+	// pointers so a handler destroyed later does not touch freed memory.
+	for (const auto& handlers: this->knownHandlers) {
+		for (auto* handler: handlers) {
+			handler->registeredRegistry = nullptr;
+			handler->registeredState = IpcHandler::RegistrationState(false);
+		}
 	}
 }
 

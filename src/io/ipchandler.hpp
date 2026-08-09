@@ -265,6 +265,8 @@ private:
 
 	RegistrationState registeredState;
 	RegistrationState targetState {true};
+	// Deregistration cannot re-resolve the generation, which is gone by then.
+	IpcHandlerRegistry* registeredRegistry = nullptr;
 	bool complete = false;
 
 	QHash<QString, IpcFunction> functionMap;
@@ -276,6 +278,8 @@ private:
 
 class IpcHandlerRegistry: public EngineGenerationExt {
 public:
+	~IpcHandlerRegistry() override;
+
 	static IpcHandlerRegistry* forGeneration(EngineGeneration* generation);
 
 	void registerHandler(IpcHandler* handler);
