@@ -12,3 +12,4 @@
 - Fixed unhandled notifications sending `NotificationClosed` out of order.
 - Fixed `qs kill` not waiting for the process to exit.
 - Fixed IPC calls from children of a crashed and relaunched process crashing.
+- Fixed JsonAdapter crashing when deserializing new objects into an array.
