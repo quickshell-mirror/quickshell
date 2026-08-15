@@ -121,8 +121,11 @@ void ToplevelHandle::setRectangle(QWindow* window, QRect rect) {
 			}
 		}
 
-		QObject::disconnect(this->rectWindow, nullptr, this, nullptr);
-		this->rectWindow = nullptr;
+		if (this->rectWindow) {
+			QObject::disconnect(this->rectWindow, nullptr, this, nullptr);
+			this->rectWindow = nullptr;
+		}
+
 		return;
 	}
 
