@@ -16,3 +16,4 @@
 - Fixed `Toplevel.unsetRectangle` crashing when calle.
 - Fixed intermittent `FileView` crashes when updating watched files.
 - Fixed `ColorQuantizer` deletion crashing if an operation was live.
+- Fixed crashes when failing to create a `ScreencopyView`.
