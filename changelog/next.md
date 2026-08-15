@@ -15,3 +15,4 @@
 - Fixed JsonAdapter crashing when deserializing new objects into an array.
 - Fixed `Toplevel.unsetRectangle` crashing when calle.
 - Fixed intermittent `FileView` crashes when updating watched files.
+- Fixed `ColorQuantizer` deletion crashing if an operation was live.

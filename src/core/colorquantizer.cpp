@@ -1,5 +1,6 @@
 #include "colorquantizer.hpp"
 #include <algorithm>
+#include <utility>
 
 #include <qatomic.h>
 #include <qcolor.h>
@@ -26,12 +27,12 @@ QS_LOGGING_CATEGORY(logColorQuantizer, "quickshell.colorquantizer", QtWarningMsg
 }
 
 ColorQuantizerOperation::ColorQuantizerOperation(
-    QUrl* source,
+    QUrl source,
     qreal depth,
     QRect imageRect,
     qreal rescaleSize
 )
-    : source(source)
+    : source(std::move(source))
     , maxDepth(depth)
     , imageRect(imageRect)
     , rescaleSize(rescaleSize) {
@@ -39,11 +40,11 @@ ColorQuantizerOperation::ColorQuantizerOperation(
 }
 
 void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCancel) {
-	if (shouldCancel.loadAcquire() || this->source->isEmpty()) return;
+	if (shouldCancel.loadAcquire() || this->source.isEmpty()) return;
 
 	this->colors.clear();
 
-	auto image = QImage(this->source->toLocalFile());
+	auto image = QImage(this->source.toLocalFile());
 
 	if (this->imageRect.isValid()) {
 		image = image.copy(this->imageRect);
@@ -61,7 +62,7 @@ void ColorQuantizerOperation::quantizeImage(const QAtomicInteger<bool>& shouldCa
 	}
 
 	if (image.isNull()) {
-		qCWarning(logColorQuantizer) << "Failed to load image from" << this->source->toString();
+		qCWarning(logColorQuantizer) << "Failed to load image from" << this->source.toString();
 		return;
 	}
 
@@ -191,6 +192,8 @@ void ColorQuantizerOperation::run() {
 
 void ColorQuantizerOperation::tryCancel() { this->shouldCancel.storeRelease(true); }
 
+ColorQuantizer::~ColorQuantizer() { this->cancelAsync(); }
+
 void ColorQuantizer::componentComplete() {
 	this->componentCompleted = true;
 	if (!this->mSource.isEmpty()) this->quantizeAsync();
@@ -246,7 +249,7 @@ void ColorQuantizer::quantizeAsync() {
 	qCDebug(logColorQuantizer) << "Starting color quantization asynchronously";
 
 	this->liveOperation = new ColorQuantizerOperation(
-	    &this->mSource,
+	    this->mSource,
 	    this->mDepth,
 	    this->mImageRect,
 	    this->mRescaleSize
