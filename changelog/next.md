@@ -19,3 +19,4 @@
 - Fixed crashes when failing to create a `ScreencopyView`.
 - Fixed `PwNodePeakMonitor` crashing when sampling a stream with mismatched channels from the node.
 - Fixed unsetting `PopupAnchor.item` causing a crash.
+- Fixed hiding the last `PanelWindow` on screen causing a crash under X11.
