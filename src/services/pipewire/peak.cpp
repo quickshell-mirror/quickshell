@@ -245,12 +245,13 @@ void PwPeakStream::handleProcess() {
 	if (!this->formatReady || this->stream == nullptr) return;
 
 	auto* buffer = pw_stream_dequeue_buffer(this->stream);
-	auto requeue = qScopeGuard([&, this] { pw_stream_queue_buffer(this->stream, buffer); });
 
 	if (buffer == nullptr) {
 		qCWarning(logPeak) << "Peak monitor ran out of buffers.";
 		return;
 	}
+
+	auto requeue = qScopeGuard([&, this] { pw_stream_queue_buffer(this->stream, buffer); });
 
 	auto* spaBuffer = buffer->buffer;
 	if (spaBuffer == nullptr || spaBuffer->n_datas < 1) {
@@ -277,7 +278,27 @@ void PwPeakStream::handleProcess() {
 
 	QVector<float> volumes;
 	if (auto* audioData = dynamic_cast<PwNodeBoundAudio*>(this->node->boundData)) {
-		if (!this->node->shouldUseDevice()) volumes = audioData->volumes();
+		// Device volumes don't require inverse scaling
+		if (!this->node->shouldUseDevice()) {
+			const auto& nchannels = audioData->channels();
+			const auto& nvolumes = audioData->volumes();
+
+			for (const auto channel: this->monitor->mChannels) {
+				for (auto i = 0; i != nchannels.length(); i++) {
+					if (nchannels[i] == channel) {
+						volumes.push_back(nvolumes[i]);
+						break;
+					}
+				}
+			}
+
+			if (volumes.length() != channelCount) {
+				qCCritical(logPeak) << this->node
+				                    << "is missing channels present in capture stream. Node channels:"
+				                    << nchannels << "Stream channels:" << this->monitor->mChannels;
+				return;
+			}
+		}
 	}
 
 	this->channelPeaks.fill(0.0f, channelCount);
