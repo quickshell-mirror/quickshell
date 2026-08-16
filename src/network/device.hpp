@@ -45,6 +45,16 @@ class NetworkDevice: public QObject {
 	Q_PROPERTY(bool nmManaged READ nmManaged WRITE setNmManaged NOTIFY nmManagedChanged)
 	/// True if the device is allowed to autoconnect to a network.
 	Q_PROPERTY(bool autoconnect READ autoconnect WRITE setAutoconnect NOTIFY autoconnectChanged);
+	/// Refresh rate of the @@rxBytes and @@txBytes in milliseconds.
+  ///
+	/// > [!NOTE] @@rxBytes and @@txBytes are guaranteed to be refreshed each @@refreshRate milliseconds in the case the underlying counter has changed too.
+	/// > If zero, there is no guaranteed refresh rate of the properties.
+	Q_PROPERTY(quint32 refreshRate READ default WRITE setRefreshRate NOTIFY refreshRateChanged BINDABLE bindableRefreshRate);
+	/// Number of bytes this device received.
+	Q_PROPERTY(quint64 rxBytes READ default NOTIFY rxBytesChanged BINDABLE bindableRxBytes);
+	/// Number of bytes this device transmitted.
+	Q_PROPERTY(quint64 txBytes READ default NOTIFY txBytesChanged BINDABLE bindableTxBytes);
+
 	// clang-format on
 
 public:
@@ -69,17 +79,25 @@ public:
 	QBindable<bool> bindableAutoconnect() { return &this->bAutoconnect; }
 	[[nodiscard]] bool autoconnect() { return this->bAutoconnect; }
 	void setAutoconnect(bool autoconnect);
+	QBindable<quint32> bindableRefreshRate() { return &this->bRefreshRate; }
+	void setRefreshRate(quint32 refreshRate);
+	QBindable<quint64> bindableRxBytes() { return &this->bRxBytes; }
+	QBindable<quint64> bindableTxBytes() { return &this->bTxBytes; }
 
 signals:
 	QSDOC_HIDE void requestDisconnect();
 	QSDOC_HIDE void requestSetAutoconnect(bool autoconnect);
 	QSDOC_HIDE void requestSetNmManaged(bool managed);
+	QSDOC_HIDE void requestSetRefreshRate(quint32 refreshRate);
 	void nameChanged();
 	void addressChanged();
 	void connectedChanged();
 	void stateChanged();
 	void nmManagedChanged();
 	void autoconnectChanged();
+	void refreshRateChanged();
+	void rxBytesChanged();
+	void txBytesChanged();
 
 protected:
 	ObjectModel<Network> mNetworks {this};
@@ -93,6 +111,9 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, ConnectionState::Enum, bState, &NetworkDevice::stateChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bNmManaged, &NetworkDevice::nmManagedChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, bool, bAutoconnect, &NetworkDevice::autoconnectChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, quint32, bRefreshRate, &NetworkDevice::refreshRateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, quint64, bRxBytes, &NetworkDevice::rxBytesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NetworkDevice, quint64, bTxBytes, &NetworkDevice::txBytesChanged);
 	// clang-format on
 };
 
