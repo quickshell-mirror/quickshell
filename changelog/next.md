@@ -20,3 +20,4 @@
 - Fixed `PwNodePeakMonitor` crashing when sampling a stream with mismatched channels from the node.
 - Fixed unsetting `PopupAnchor.item` causing a crash.
 - Fixed hiding the last `PanelWindow` on screen causing a crash under X11.
+- Fixed crashes when `ScriptModel.values` is set while processing previously set values.

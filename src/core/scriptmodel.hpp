@@ -85,7 +85,7 @@ public:
 	[[nodiscard]] QList<QJSValue> values() const {
 		auto values = this->mValues;
 		// If not detached, the QML engine will invalidate iterators in updateValuesUnique.
-		if (this->hasActiveIterators) values.detach();
+		if (this->isModifying) values.detach();
 		return values;
 	}
 
@@ -105,7 +105,8 @@ signals:
 private:
 	QList<QJSValue> mValues;
 	QString cmpKey;
-	bool hasActiveIterators = false;
+	bool isModifying = false;
+	std::optional<QList<QJSValue>> stagedValues;
 
 	bool updateValuesUnique(const QList<QJSValue>& newValues);
 };

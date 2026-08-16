@@ -16,7 +16,7 @@
 bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 	auto anyChanges = false;
 
-	this->hasActiveIterators = true;
+	this->isModifying = true;
 	this->mValues.reserve(newValues.size());
 
 	auto iter = this->mValues.begin();
@@ -158,12 +158,24 @@ bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 		}
 	}
 
-	this->hasActiveIterators = false;
+	this->isModifying = false;
+
+	if (this->stagedValues.has_value()) {
+		auto values = *this->stagedValues;
+		this->stagedValues.reset();
+		anyChanges |= this->updateValuesUnique(values);
+	}
 
 	return anyChanges;
 }
 
 void ScriptModel::setValues(const QList<QJSValue>& newValues) {
+	// Re-entrant modification waits for the original modification to complete to avoid mishandled duplicates.
+	if (this->isModifying) {
+		this->stagedValues = newValues;
+		return;
+	}
+
 	auto changed = this->updateValuesUnique(newValues);
 	if (changed) emit this->valuesChanged();
 }
