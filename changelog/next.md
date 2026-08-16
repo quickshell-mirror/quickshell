@@ -18,3 +18,4 @@
 - Fixed `ColorQuantizer` deletion crashing if an operation was live.
 - Fixed crashes when failing to create a `ScreencopyView`.
 - Fixed `PwNodePeakMonitor` crashing when sampling a stream with mismatched channels from the node.
+- Fixed unsetting `PopupAnchor.item` causing a crash.
