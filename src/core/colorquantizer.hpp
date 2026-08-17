@@ -7,6 +7,7 @@
 #include <qqmlparserstatus.h>
 #include <qrect.h>
 #include <qrunnable.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qurl.h>
@@ -17,7 +18,7 @@ class ColorQuantizerOperation
 	Q_OBJECT;
 
 public:
-	explicit ColorQuantizerOperation(QUrl* source, qreal depth, QRect imageRect, qreal rescaleSize);
+	explicit ColorQuantizerOperation(QUrl source, qreal depth, QRect imageRect, qreal rescaleSize);
 
 	void run() override;
 	void tryCancel();
@@ -43,7 +44,7 @@ private:
 
 	QAtomicInteger<bool> shouldCancel = false;
 	QList<QColor> colors;
-	QUrl* source;
+	QUrl source;
 	qreal maxDepth;
 	QRect imageRect;
 	qreal rescaleSize;
@@ -94,6 +95,8 @@ class ColorQuantizer
 
 public:
 	explicit ColorQuantizer(QObject* parent = nullptr): QObject(parent) {}
+	~ColorQuantizer() override;
+	Q_DISABLE_COPY_MOVE(ColorQuantizer);
 
 	void componentComplete() override;
 	void classBegin() override {}

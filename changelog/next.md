@@ -12,3 +12,12 @@
 - Fixed unhandled notifications sending `NotificationClosed` out of order.
 - Fixed `qs kill` not waiting for the process to exit.
 - Fixed IPC calls from children of a crashed and relaunched process crashing.
+- Fixed JsonAdapter crashing when deserializing new objects into an array.
+- Fixed `Toplevel.unsetRectangle` crashing when calle.
+- Fixed intermittent `FileView` crashes when updating watched files.
+- Fixed `ColorQuantizer` deletion crashing if an operation was live.
+- Fixed crashes when failing to create a `ScreencopyView`.
+- Fixed `PwNodePeakMonitor` crashing when sampling a stream with mismatched channels from the node.
+- Fixed unsetting `PopupAnchor.item` causing a crash.
+- Fixed hiding the last `PanelWindow` on screen causing a crash under X11.
+- Fixed crashes when `ScriptModel.values` is set while processing previously set values.

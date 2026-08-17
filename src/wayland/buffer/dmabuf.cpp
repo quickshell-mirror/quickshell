@@ -799,7 +799,6 @@ WlBuffer* LinuxDmabufManager::createDmabuf(
 		if (plane.fd < 0) {
 			qCritical(logDmabuf) << "Failed to get gbm_bo fd for plane" << i << qt_error_string(plane.fd);
 			params.destroy();
-			gbm_bo_destroy(bo);
 			return nullptr;
 		}
 

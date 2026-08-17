@@ -98,7 +98,7 @@ void Toplevel::setRectangle(QObject* window, QRect rect) {
 	}
 
 	this->rectangle = rect;
-	this->handle->setRectangle(proxyWindow->backingWindow(), rect);
+	this->handle->setRectangle(proxyWindow ? proxyWindow->backingWindow() : nullptr, rect);
 }
 
 void Toplevel::unsetRectangle() { this->setRectangle(nullptr, QRect()); }

@@ -57,7 +57,7 @@ public:
 			}
 
 			// from the bottom up, update all panels
-			for (auto* panel: panels) {
+			for (auto* panel: this->mPanels[panel->engineGeneration]) {
 				panel->updateDimensions();
 			}
 		}

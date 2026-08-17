@@ -495,6 +495,7 @@ void FileView::updateWatchedFiles() {
 	// If inotify events are sent to the watcher after deletion and deleteLater
 	// isn't used, a use after free in the QML engine will occur.
 	if (this->watcher) {
+		QObject::disconnect(this->watcher, nullptr, this, nullptr);
 		this->watcher->deleteLater();
 		this->watcher = nullptr;
 	}

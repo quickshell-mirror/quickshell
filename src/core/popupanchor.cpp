@@ -93,6 +93,8 @@ void PopupAnchor::setItem(QQuickItem* item) {
 		QObject::connect(item, &QObject::destroyed, this, &PopupAnchor::onItemDestroyed);
 		QObject::connect(item, &QQuickItem::windowChanged, this, &PopupAnchor::onItemWindowChanged);
 	}
+
+	emit this->itemChanged();
 }
 
 void PopupAnchor::onWindowDestroyed() {
@@ -109,7 +111,7 @@ void PopupAnchor::onItemDestroyed() {
 }
 
 void PopupAnchor::onItemWindowChanged() {
-	if (auto* window = qobject_cast<ProxiedWindow*>(this->mItem->window())) {
+	if (auto* window = qobject_cast<ProxiedWindow*>(this->mItem ? this->mItem->window() : nullptr)) {
 		this->setWindowInternal(window->proxy());
 	} else {
 		this->setWindowInternal(nullptr);
