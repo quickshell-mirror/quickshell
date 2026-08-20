@@ -5,6 +5,7 @@
 #include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
 #include <qjsvalue.h>
+#include <qjsvalueiterator.h>
 #include <qlist.h>
 #include <qnamespace.h>
 #include <qobject.h>
@@ -12,6 +13,55 @@
 #include <qtversionchecks.h>
 #include <qtypes.h>
 #include <qvariant.h>
+
+namespace {
+struct RecursionPair {
+	const QJSValue* a;
+	const QJSValue* b;
+	const RecursionPair* previous;
+};
+
+bool qjsValueStructuralEq(
+    const QJSValue& a,
+    const QJSValue& b,
+    const RecursionPair* activePair = nullptr
+) {
+	if (a.strictlyEquals(b)) return true;
+	if (!a.isObject() || !b.isObject() || a.isArray() != b.isArray()) return false;
+
+	for (const auto* pair = activePair; pair != nullptr; pair = pair->previous) {
+		if (a.strictlyEquals(*pair->a) || b.strictlyEquals(*pair->b)) return false;
+	}
+
+	const auto nextActivePair = RecursionPair {.a = &a, .b = &b, .previous = activePair};
+
+	auto aIter = QJSValueIterator(a);
+	auto bIter = QJSValueIterator(b);
+
+	while (aIter.hasNext()) {
+		if (!bIter.hasNext()) return false;
+
+		aIter.next();
+		bIter.next();
+
+		const auto aName = aIter.name();
+		const auto bName = bIter.name();
+		const auto aValue = aIter.value();
+
+		if (aName == bName) {
+			const auto bValue = bIter.value();
+			if (!qjsValueStructuralEq(aValue, bValue, &nextActivePair)) return false;
+		} else {
+			if (!b.hasOwnProperty(aName)) return false;
+
+			const auto bValue = b.property(aName);
+			if (!qjsValueStructuralEq(aValue, bValue, &nextActivePair)) return false;
+		}
+	}
+
+	return !bIter.hasNext();
+}
+} // namespace
 
 bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 	auto anyChanges = false;
@@ -22,14 +72,23 @@ bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 	auto iter = this->mValues.begin();
 	auto newIter = newValues.begin();
 
-	auto getCmpKey = [this](const QJSValue& v) {
-		if (v.hasProperty(this->cmpKey)) return v.property(this->cmpKey);
-		else return v;
+	auto comparisonValue = [this](const QJSValue& value) {
+		if (value.hasProperty(this->cmpKey)) return value.property(this->cmpKey);
+
+		return value;
 	};
 
 	auto valueCmp = [&, this](const QJSValue& a, const QJSValue& b) {
-		if (!this->cmpKey.isEmpty()) return getCmpKey(a).strictlyEquals(getCmpKey(b));
-		return a.strictlyEquals(b);
+		if (a.strictlyEquals(b)) return true;
+
+		const auto aValue = this->cmpKey.isEmpty() ? a : comparisonValue(a);
+		const auto bValue = this->cmpKey.isEmpty() ? b : comparisonValue(b);
+
+		if (this->mComparisonMode == ObjectComparison::Identity) {
+			return aValue.strictlyEquals(bValue);
+		} else {
+			return qjsValueStructuralEq(aValue, bValue);
+		}
 	};
 
 	auto eqPredicate = [&](const QJSValue& b) {
@@ -185,6 +244,12 @@ void ScriptModel::setObjectProp(const QString& objectProp) {
 	this->cmpKey = objectProp;
 	this->updateValuesUnique(this->mValues);
 	emit this->objectPropChanged();
+}
+
+void ScriptModel::setComparisonMode(ObjectComparison::Enum comparisonMode) {
+	if (comparisonMode == this->mComparisonMode) return;
+	this->mComparisonMode = comparisonMode;
+	emit this->comparisonModeChanged();
 }
 
 qint32 ScriptModel::rowCount(const QModelIndex& parent) const {

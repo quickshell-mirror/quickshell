@@ -4,6 +4,7 @@
 #include <qabstractitemmodeltester.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
+#include <qjsengine.h>
 #include <qjsvalue.h>
 #include <qlist.h>
 #include <qlogging.h>
@@ -14,8 +15,6 @@
 #include <qtypes.h>
 
 #include "../scriptmodel.hpp"
-
-using OpList = QList<ModelOperation>;
 
 bool ModelOperation::operator==(const ModelOperation& other) const {
 	return other.operation == this->operation && other.index == this->index
@@ -44,9 +43,38 @@ QDebug& operator<<(QDebug& debug, const ModelOperation& op) {
 	return debug;
 }
 
+ChangeObserver::ChangeObserver(QAbstractItemModel* model) {
+	QObject::connect(model, &QAbstractItemModel::rowsInserted, this, &ChangeObserver::onInsert);
+	QObject::connect(model, &QAbstractItemModel::rowsRemoved, this, &ChangeObserver::onRemove);
+	QObject::connect(model, &QAbstractItemModel::rowsMoved, this, &ChangeObserver::onMove);
+}
+
+void ChangeObserver::onInsert(const QModelIndex& parent, int first, int last) {
+	QCOMPARE(parent, QModelIndex());
+	this->mOperations.emplaceBack(ModelOperation::Insert, first, last - first + 1);
+}
+
+void ChangeObserver::onRemove(const QModelIndex& parent, int first, int last) {
+	QCOMPARE(parent, QModelIndex());
+	this->mOperations.emplaceBack(ModelOperation::Remove, first, last - first + 1);
+}
+
+void ChangeObserver::onMove(
+    const QModelIndex& sourceParent,
+    int sourceStart,
+    int sourceEnd,
+    const QModelIndex& destParent,
+    int destStart
+) {
+	QCOMPARE(sourceParent, QModelIndex());
+	QCOMPARE(destParent, QModelIndex());
+	this->mOperations
+	    .emplaceBack(ModelOperation::Move, sourceStart, sourceEnd - sourceStart + 1, destStart);
+}
+
 // NOLINTNEXTLINE(misc-use-internal-linkage)
 QDebug& operator<<(QDebug& debug, const QJSValueList& list) {
-	auto str = QString();
+	QString str;
 
 	for (const auto& var: list) {
 		if (var.isString()) {
@@ -139,55 +167,117 @@ void TestScriptModel::unique() {
 		return list;
 	};
 
-	auto oldlist = strToJsValueList(oldstr);
-	auto newlist = strToJsValueList(newstr);
+	auto oldList = strToJsValueList(oldstr);
+	auto newList = strToJsValueList(newstr);
 
-	auto model = ScriptModel();
+	ScriptModel model;
 	auto modelTester = QAbstractItemModelTester(&model);
+	auto observer = ChangeObserver(&model);
 
-	OpList actualOperations;
-
-	auto onInsert = [&](const QModelIndex& parent, int first, int last) {
-		QCOMPARE(parent, QModelIndex());
-		actualOperations << ModelOperation(ModelOperation::Insert, first, last - first + 1);
-	};
-
-	auto onRemove = [&](const QModelIndex& parent, int first, int last) {
-		QCOMPARE(parent, QModelIndex());
-		actualOperations << ModelOperation(ModelOperation::Remove, first, last - first + 1);
-	};
-
-	auto onMove = [&](const QModelIndex& sourceParent,
-	                  int sourceStart,
-	                  int sourceEnd,
-	                  const QModelIndex& destParent,
-	                  int destStart) {
-		QCOMPARE(sourceParent, QModelIndex());
-		QCOMPARE(destParent, QModelIndex());
-		actualOperations << ModelOperation(
-		    ModelOperation::Move,
-		    sourceStart,
-		    sourceEnd - sourceStart + 1,
-		    destStart
-		);
-	};
-
-	QObject::connect(&model, &QAbstractItemModel::rowsInserted, &model, onInsert);
-	QObject::connect(&model, &QAbstractItemModel::rowsRemoved, &model, onRemove);
-	QObject::connect(&model, &QAbstractItemModel::rowsMoved, &model, onMove);
-
-	model.setValues(oldlist);
-	QVERIFY(qjsValueListsEqual(model.values(), oldlist));
+	model.setValues(oldList);
+	QVERIFY(qjsValueListsEqual(model.values(), oldList));
 	QCOMPARE_EQ(
-	    actualOperations,
-	    OpList({{ModelOperation::Insert, 0, static_cast<qint32>(oldlist.length())}})
+	    observer.operations(),
+	    OpList({{ModelOperation::Insert, 0, static_cast<qint32>(oldList.length())}})
 	);
 
-	actualOperations.clear();
+	observer.clear();
 
-	model.setValues(newlist);
-	QVERIFY(qjsValueListsEqual(model.values(), newlist));
-	QCOMPARE_EQ(actualOperations, operations);
+	model.setValues(newList);
+	QVERIFY(qjsValueListsEqual(model.values(), newList));
+	QCOMPARE_EQ(observer.operations(), operations);
+}
+
+void TestScriptModel::structuralEquality() {
+	ScriptModel model;
+	QJSEngine engine;
+
+	auto object = engine.newObject();
+	object.setProperty("foo", "bar");
+	object.setProperty("bar", "baz");
+	object.setProperty("subobject", engine.newObject());
+
+	auto replacement = engine.newObject();
+	replacement.setProperty("subobject", engine.newObject());
+	replacement.setProperty("bar", "baz");
+	replacement.setProperty("foo", "bar");
+
+	auto oldList = QList<QJSValue> {object};
+
+	auto newList = QList<QJSValue> {replacement};
+
+	auto modelTester = QAbstractItemModelTester(&model);
+	auto observer = ChangeObserver(&model);
+
+	model.setValues(oldList);
+	QVERIFY(qjsValueListsEqual(model.values(), oldList));
+	QCOMPARE_EQ(
+	    observer.operations(),
+	    OpList({{ModelOperation::Insert, 0, static_cast<qint32>(oldList.length())}})
+	);
+
+	observer.clear();
+
+	model.setValues(newList);
+	QVERIFY(qjsValueListsEqual(model.values(), newList));
+	QCOMPARE_EQ(observer.operations(), OpList());
+
+	auto structurallyEquals = [](const QJSValue& a, const QJSValue& b) {
+		ScriptModel model;
+		model.setValues({a});
+
+		auto observer = ChangeObserver(&model);
+		model.setValues({b});
+		return observer.operations().isEmpty();
+	};
+
+	auto different = engine.newObject();
+	different.setProperty("foo", "bar");
+	different.setProperty("bar", "baz");
+	auto differentSubobject = engine.newObject();
+	differentSubobject.setProperty("value", 1);
+	different.setProperty("subobject", differentSubobject);
+	QVERIFY(!structurallyEquals(object, different));
+
+	auto cycleA = engine.newObject();
+	cycleA.setProperty("self", cycleA);
+	auto cycleB = engine.newObject();
+	cycleB.setProperty("self", cycleB);
+	QVERIFY(!structurallyEquals(cycleA, cycleB));
+
+	const auto arrayA = engine.evaluate("[1, { value: 'x' }]");
+	const auto arrayB = engine.evaluate("[1, { value: 'x' }]");
+	QVERIFY(structurallyEquals(arrayA, arrayB));
+
+	auto sparseArrayA = engine.newArray(1);
+	auto sparseArrayB = engine.newArray(2);
+	QVERIFY(!structurallyEquals(sparseArrayA, sparseArrayB));
+}
+
+void TestScriptModel::comparisonModes() {
+	QJSEngine engine;
+	auto makeValue = [&engine]() {
+		auto value = engine.newObject();
+		value.setProperty("nested", engine.newObject());
+		return value;
+	};
+
+	ScriptModel model;
+	QCOMPARE_EQ(model.comparisonMode(), ObjectComparison::Structure);
+
+	model.setValues({makeValue()});
+	model.setComparisonMode(ObjectComparison::Identity);
+	QCOMPARE_EQ(model.comparisonMode(), ObjectComparison::Identity);
+
+	auto observer = ChangeObserver(&model);
+	model.setValues({makeValue()});
+	QVERIFY(!observer.operations().isEmpty());
+
+	model.setComparisonMode(ObjectComparison::Structure);
+
+	observer.clear();
+	model.setValues({makeValue()});
+	QCOMPARE_EQ(observer.operations(), OpList());
 }
 
 QTEST_MAIN(TestScriptModel);
