@@ -6,7 +6,7 @@
 
 class QSWaylandSessionLockManager;
 
-class QSWaylandSessionLock
+class QSWaylandSessionLock // NOLINT(misc-multiple-inheritance)
     : public QObject
     , public QtWayland::ext_session_lock_v1 {
 	Q_OBJECT;
@@ -27,10 +27,11 @@ signals:
 	void compositorLocked();
 	void unlocked();
 
-private:
+protected:
 	void ext_session_lock_v1_locked() override;
 	void ext_session_lock_v1_finished() override;
 
+private:
 	QSWaylandSessionLockManager* manager; // static and not dealloc'd
 
 	// true when the compositor determines the session is locked

@@ -11,7 +11,7 @@
 
 #include "session_lock.hpp"
 
-class QSWaylandSessionLockSurface
+class QSWaylandSessionLockSurface // NOLINT(misc-multiple-inheritance)
     : public QtWaylandClient::QWaylandShellSurface
     , public QtWayland::ext_session_lock_surface_v1 {
 public:
@@ -31,10 +31,11 @@ public:
 	void setExtension(LockWindowExtension* ext);
 	void setVisible();
 
-private:
+protected:
 	void
 	ext_session_lock_surface_v1_configure(quint32 serial, quint32 width, quint32 height) override;
 
+private:
 #if QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
 	void initVisible();
 	bool visible = false;
