@@ -11,6 +11,7 @@
 #include "../device.hpp"
 #include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "dbus_nm_device_statistics.h"
 #include "enums.hpp"
 #include "network.hpp"
 #include "settings.hpp"
@@ -56,6 +57,9 @@ public:
 	[[nodiscard]] NMDeviceInterfaceFlags::Enum interfaceFlags() const {
 		return this->bInterfaceFlags;
 	}
+	[[nodiscard]] quint32 refreshRate() const { return this->bRefreshRate; }
+	[[nodiscard]] quint64 rxBytes() const { return this->bRxBytes; }
+	[[nodiscard]] quint64 txBytes() const { return this->bTxBytes; }
 	[[nodiscard]] bool autoconnect() const { return this->bAutoconnect; }
 	[[nodiscard]] NMActiveConnection* activeConnection() const { return this->mActiveConnection; }
 	[[nodiscard]] virtual NetworkDevice* frontend() = 0;
@@ -83,11 +87,15 @@ signals:
 	void lastFailReasonChanged(NMDeviceStateReason::Enum reason);
 	void autoconnectChanged(bool autoconnect);
 	void interfaceFlagsChanged(NMDeviceInterfaceFlags::Enum flags);
+	void refreshRateChanged(quint32 refreshRate);
+	void rxBytesChanged(quint64 rxBytes);
+	void txBytesChanged(quint64 txBytes);
 
 public slots:
 	void disconnect();
 	void setAutoconnect(bool autoconnect);
 	void setManaged(bool managed);
+	void setRefreshRate(quint32 refreshRate);
 
 protected:
 	void bindFrontend(NetworkDevice* frontend);
@@ -115,8 +123,11 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableSettingsPathsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceInterfaceFlags::Enum, bInterfaceFlags, &NMDevice::interfaceFlagsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, quint32, bRefreshRate, &NMDevice::refreshRateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, quint64, bRxBytes, &NMDevice::rxBytesChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, quint64, bTxBytes, &NMDevice::txBytesChanged);
 
-	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDevice, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pName, bInterface, deviceProperties, "Interface");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAddress, bHwAddress, deviceProperties, "HwAddress");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pManaged, bManaged, deviceProperties, "Managed");
@@ -125,9 +136,14 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pInterfaceFlags, bInterfaceFlags, deviceProperties, "InterfaceFlags");
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDevice, deviceStatisticsProperties);
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pRefreshRate, bRefreshRate, deviceStatisticsProperties, "RefreshRateMs");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pRxBytes, bRxBytes, deviceStatisticsProperties, "RxBytes");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pTxBytes, bTxBytes, deviceStatisticsProperties, "TxBytes");
 	// clang-format on
 
 	DBusNMDeviceProxy* deviceProxy = nullptr;
+	DBusNMDeviceStatisticsProxy* deviceStatisticsProxy = nullptr;
 };
 
 } // namespace qs::network
