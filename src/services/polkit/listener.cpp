@@ -11,8 +11,11 @@
 #include <polkit/polkit.h>
 #include <polkit/polkittypes.h>
 #include <polkitagent/polkitagent.h>
+#include <qbytearray.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qstring.h>
+#include <qtenvironmentvariables.h>
 #include <unistd.h>
 
 #include "../../core/logcat.hpp"
@@ -91,6 +94,34 @@ void qs_polkit_agent_register(QsPolkitAgent* agent, const char* path) {
 		qCWarning(logPolkitListener) << "cannot register listener without a path set.";
 		agent->cb->registerComplete(false);
 		return;
+	}
+
+	const auto sessionId = qEnvironmentVariable("XDG_SESSION_ID");
+	if (!sessionId.isEmpty()) {
+		const auto sessionIdUtf8 = sessionId.toUtf8();
+		auto* subject = polkit_unix_session_new(sessionIdUtf8.constData());
+		if (subject != nullptr) {
+			GError* error = nullptr;
+			agent->registration_handle = polkit_agent_listener_register(
+			    POLKIT_AGENT_LISTENER(agent),
+			    POLKIT_AGENT_REGISTER_FLAGS_NONE,
+			    subject,
+			    path,
+			    nullptr,
+			    &error
+			);
+			g_object_unref(subject);
+
+			if (error != nullptr) {
+				qCWarning(logPolkitListener) << "failed to register listener:" << error->message;
+				g_clear_error(&error);
+				agent->cb->registerComplete(false);
+				return;
+			}
+
+			agent->cb->registerComplete(true);
+			return;
+		}
 	}
 
 	auto* data = new RegisterCbData {.agent = GObjectRef(agent), .path = path};
