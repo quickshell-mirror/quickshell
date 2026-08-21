@@ -221,6 +221,17 @@ To disable: `-DHYPRLAND_FOCUS_GRAB=OFF`
 
 [hyprland-focus-grab-v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-focus-grab-v1.xml
 
+### Niri
+This feature enables niri specific integrations. It requires wayland support
+but has no extra dependencies.
+
+To disable: `-DNIRI=OFF`
+
+#### Niri IPC
+Enables interfacing with niri's IPC.
+
+To disable: `-DNIRI_IPC=OFF`
+
 ### i3/Sway
 Enables i3 and Sway specific features, does not have any dependency on Wayland or x11.
 
