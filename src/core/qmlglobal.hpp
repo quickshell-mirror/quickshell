@@ -77,6 +77,11 @@ private slots:
 
 signals:
 	void screensChanged();
+
+private:
+	// Screens removed from the system are stored here instead of being
+	// deleted, since users might hold on to bare `QObject*`s pointing at them.
+	QVector<QuickshellScreenInfo*> mDeadScreens;
 };
 
 class QuickshellGlobal: public QObject {

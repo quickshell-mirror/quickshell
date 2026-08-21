@@ -127,8 +127,10 @@ void QuickshellTracked::updateScreens() {
 	next:;
 	}
 
+	// Retain removed screens rather than deleting them, since users might hold on to
+	// a bare `QObject*` (via a `QVariant`) pointing at the old screen.
 	for (auto* oldScreen: this->screens) {
-		oldScreen->deleteLater();
+		this->mDeadScreens.push_back(oldScreen);
 	}
 
 	this->screens = newScreens;
