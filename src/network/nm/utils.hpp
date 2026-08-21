@@ -47,6 +47,23 @@ void manualSettingDemarshall(NMSettingsMap& map);
 
 QVariant settingTypeFromQml(const QString& group, const QString& key, const QVariant& value);
 
+NMSettingsMap settingsMapFromQml(
+    const QVariantMap& settings,
+    NMSettingsMap& removedSettings,
+    QStringList& failedSettings
+);
+
+// Builds the NMSettingsMap for a new Wi-Fi connection profile, dispatching on the security type to
+// set the appropriate key-mgmt and pull the relevant fields out of credentials. Any missing or
+// unsupported requirement is appended to errors, in which case the returned map should not be used.
+NMSettingsMap wifiConnectionSettings(
+    const QString& ssid,
+    WifiSecurityType::Enum security,
+    const QVariantMap& credentials,
+    bool hidden,
+    QStringList& errors
+);
+
 QVariant settingTypeToQml(const QVariant& value);
 
 QDateTime clockBootTimeToDateTime(qint64 clockBootTime);
