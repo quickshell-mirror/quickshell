@@ -106,7 +106,7 @@ void PolkitAgentImpl::initiateAuthentication(AuthRequest* request) {
 
 	this->queuedRequests.emplace_back(request);
 
-	if (this->queuedRequests.size() == 1) {
+	if (!this->bActiveFlow.value()) {
 		this->activateAuthenticationRequest();
 	}
 }
@@ -130,37 +130,39 @@ void PolkitAgentImpl::cancelAuthentication(AuthRequest* request) {
 }
 
 void PolkitAgentImpl::activateAuthenticationRequest() {
-	if (this->queuedRequests.empty()) return;
+	while (!this->queuedRequests.empty()) {
+		AuthRequest* req = this->queuedRequests.front();
+		this->queuedRequests.pop_front();
+		qCDebug(logPolkit) << "activating authentication request for action" << req->actionId
+		                   << ", cookie: " << req->cookie;
 
-	AuthRequest* req = this->queuedRequests.front();
-	this->queuedRequests.pop_front();
-	qCDebug(logPolkit) << "activating authentication request for action" << req->actionId
-	                   << ", cookie: " << req->cookie;
+		QList<Identity*> identities;
+		for (auto& identity: req->identities) {
+			auto* obj = Identity::fromPolkitIdentity(identity);
+			if (obj) identities.append(obj);
+		}
+		if (identities.isEmpty()) {
+			qCWarning(
+			    logPolkit
+			) << "no supported identities available for authentication request, cancelling.";
+			req->cancel("Error requesting authentication: no supported identities available.");
+			delete req;
+			continue;
+		}
 
-	QList<Identity*> identities;
-	for (auto& identity: req->identities) {
-		auto* obj = Identity::fromPolkitIdentity(identity);
-		if (obj) identities.append(obj);
-	}
-	if (identities.isEmpty()) {
-		qCWarning(
-		    logPolkit
-		) << "no supported identities available for authentication request, cancelling.";
-		req->cancel("Error requesting authentication: no supported identities available.");
-		delete req;
+		this->bActiveFlow = new AuthFlow(req, std::move(identities));
+
+		QObject::connect(
+		    this->bActiveFlow.value(),
+		    &AuthFlow::isCompletedChanged,
+		    this,
+		    &PolkitAgentImpl::finishAuthenticationRequest
+		);
+
+		emit this->qmlAgent->authenticationRequestStarted();
+
 		return;
 	}
-
-	this->bActiveFlow = new AuthFlow(req, std::move(identities));
-
-	QObject::connect(
-	    this->bActiveFlow.value(),
-	    &AuthFlow::isCompletedChanged,
-	    this,
-	    &PolkitAgentImpl::finishAuthenticationRequest
-	);
-
-	emit this->qmlAgent->authenticationRequestStarted();
 }
 
 void PolkitAgentImpl::finishAuthenticationRequest() {
@@ -170,11 +172,8 @@ void PolkitAgentImpl::finishAuthenticationRequest() {
 	                   << this->bActiveFlow.value()->actionId();
 
 	this->bActiveFlow.value()->deleteLater();
+	this->bActiveFlow = nullptr;
 
-	if (!this->queuedRequests.empty()) {
-		this->activateAuthenticationRequest();
-	} else {
-		this->bActiveFlow = nullptr;
-	}
+	this->activateAuthenticationRequest();
 }
 } // namespace qs::service::polkit
