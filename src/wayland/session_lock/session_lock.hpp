@@ -1,8 +1,10 @@
 #pragma once
 
 #include <qobject.h>
+#include <qstring.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qwindow.h>
 
 class QSWaylandSessionLock;
@@ -10,19 +12,14 @@ class QSWaylandSessionLockSurface;
 class QSWaylandSessionLockIntegration;
 
 class SessionLockManager: public QObject {
-	Q_OBJECT;
+	Q_OBJECT
 
 public:
-	explicit SessionLockManager(QObject* parent = nullptr): QObject(parent) {}
+	explicit SessionLockManager(bool logindLockedHint, QObject* parent = nullptr);
 
 	[[nodiscard]] static bool lockAvailable();
 
-	// Returns true if a lock was acquired.
-	// If true is returned the caller must watch the global screen list and create/destroy
-	// windows with an attached LockWindowExtension to match it.
 	bool lock();
-
-	// Returns true if the session was locked and is now unlocked.
 	bool unlock();
 
 	[[nodiscard]] bool isLocked() const;
@@ -46,43 +43,36 @@ signals:
 	// After receiving this event the caller should destroy all of its lock surfaces.
 	void unlocked();
 
-private slots:
-	//void onUnlocked();
-
 private:
+	void updateLogindLockedHint(bool locked);
+	void updateLogindLockedHint(const QString& sessionPath, bool locked, quint64 generation);
+
 	QSWaylandSessionLock* mLock = nullptr;
+	QString mLogindSessionPath;
+	quint64 mLogindLockedHintGeneration = 0;
+	bool mLogindLockedHint = false;
 
 	friend class LockWindowExtension;
 };
 
 class LockWindowExtension: public QObject {
-	Q_OBJECT;
+	Q_OBJECT
 
 public:
 	explicit LockWindowExtension(QObject* parent = nullptr): QObject(parent) {}
 	~LockWindowExtension() override;
-	Q_DISABLE_COPY_MOVE(LockWindowExtension);
+	Q_DISABLE_COPY_MOVE(LockWindowExtension)
 
 	[[nodiscard]] bool isAttached() const;
 
-	// Attach this lock extension to the given window.
-	// The extension is reparented to the window and replaces any existing lock extension.
-	// Returns false if the window cannot be used.
 	bool attach(QWindow* window, SessionLockManager* manager);
 
-	// This must be called in place of QWindow::setVisible. Calling QWindow::setVisible will result in a crash.
-	// To make a window invisible, destroy it as it cannot be recovered.
 	void setVisible();
 
 	static LockWindowExtension* get(QWindow* window);
 
 signals:
-	// This signal is sent once the compositor considers the session to be fully locked.
-	// See SessionLockManager::locked for details.
 	void locked();
-
-	// After receiving this signal the window is no longer in use by the compositor
-	// and should be destroyed. See SessionLockManager::unlocked for details.
 	void unlocked();
 
 private:
