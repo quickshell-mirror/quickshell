@@ -12,6 +12,8 @@
 
 namespace qs::i3::ipc {
 
+QBindable<I3Monitor*> I3Workspace::bindableMonitor() const { return &this->bMonitor; }
+
 I3Workspace::I3Workspace(I3IpcController* ipc): QObject(ipc), ipc(ipc) {
 	Qt::beginPropertyUpdateGroup();
 
