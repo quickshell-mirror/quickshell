@@ -64,7 +64,7 @@ public:
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
 	[[nodiscard]] QBindable<bool> bindableUrgent() { return &this->bUrgent; }
 	[[nodiscard]] QBindable<bool> bindableHasFullscreen() { return &this->bHasFullscreen; }
-	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor() { return &this->bMonitor; }
+	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor();
 	[[nodiscard]] ObjectModel<HyprlandToplevel>* toplevels() { return &this->mToplevels; }
 
 	[[nodiscard]] QVariantMap lastIpcObject() const;
