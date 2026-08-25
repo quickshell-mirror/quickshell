@@ -15,6 +15,8 @@ namespace qs::hyprland::ipc {
 
 QVariantMap HyprlandWorkspace::lastIpcObject() const { return this->mLastIpcObject; }
 
+QBindable<HyprlandMonitor*> HyprlandWorkspace::bindableMonitor() { return &this->bMonitor; }
+
 HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 	Qt::beginPropertyUpdateGroup();
 

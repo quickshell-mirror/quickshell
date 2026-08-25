@@ -1,5 +1,6 @@
 ## Other Changes
 
+- Added support for Qt 6.12
 - Added support for Hyprland's new workspace address format.
 
 ## Bug Fixes
