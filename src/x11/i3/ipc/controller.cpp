@@ -31,6 +31,14 @@ QS_LOGGING_CATEGORY(logI3Ipc, "quickshell.I3.ipc", QtWarningMsg);
 QS_LOGGING_CATEGORY(logI3IpcEvents, "quickshell.I3.ipc.events", QtWarningMsg);
 } // namespace
 
+QBindable<I3Monitor*> I3IpcController::bindableFocusedMonitor() const {
+	return &this->bFocusedMonitor;
+}
+
+QBindable<I3Workspace*> I3IpcController::bindableFocusedWorkspace() const {
+	return &this->bFocusedWorkspace;
+}
+
 I3IpcController::I3IpcController(): I3Ipc({"workspace", "output"}) {
 	// bind focused workspace to focused monitor's active workspace
 	this->bFocusedWorkspace.setBinding([this]() -> I3Workspace* {

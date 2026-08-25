@@ -20,8 +20,8 @@ class I3Workspace;
 class I3Monitor;
 } // namespace qs::i3::ipc
 
-Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Workspace*);
-Q_DECLARE_OPAQUE_POINTER(qs::i3::ipc::I3Monitor*);
+Q_MOC_INCLUDE("monitor.hpp")
+Q_MOC_INCLUDE("workspace.hpp")
 
 namespace qs::i3::ipc {
 
@@ -43,13 +43,8 @@ public:
 
 	I3Monitor* monitorFor(QuickshellScreenInfo* screen);
 
-	[[nodiscard]] QBindable<I3Monitor*> bindableFocusedMonitor() const {
-		return &this->bFocusedMonitor;
-	};
-
-	[[nodiscard]] QBindable<I3Workspace*> bindableFocusedWorkspace() const {
-		return &this->bFocusedWorkspace;
-	};
+	[[nodiscard]] QBindable<I3Monitor*> bindableFocusedMonitor() const;
+	[[nodiscard]] QBindable<I3Workspace*> bindableFocusedWorkspace() const;
 
 	[[nodiscard]] ObjectModel<I3Monitor>* monitors();
 	[[nodiscard]] ObjectModel<I3Workspace>* workspaces();

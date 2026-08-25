@@ -81,10 +81,10 @@ public:
 		return &this->bLastIpcObject;
 	};
 
-	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableWorkspace() { return &this->bWorkspace; }
+	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableWorkspace();
 	void setWorkspace(HyprlandWorkspace* workspace);
 
-	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor() { return &this->bMonitor; }
+	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor();
 
 signals:
 	void addressChanged();
