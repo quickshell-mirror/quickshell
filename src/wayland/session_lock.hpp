@@ -73,6 +73,7 @@ class WlSessionLock: public Reloadable {
 
 public:
 	explicit WlSessionLock(QObject* parent = nullptr): Reloadable(parent) {}
+	~WlSessionLock() override;
 
 	void onReload(QObject* oldInstance) override;
 

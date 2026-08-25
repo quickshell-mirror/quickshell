@@ -22,6 +22,15 @@
 #include "../window/proxywindow.hpp"
 #include "session_lock/session_lock.hpp"
 
+WlSessionLock::~WlSessionLock() {
+	if (this->isLocked()) {
+		qCritical() << "Session lock object was destroyed without unlocking. The session will stay "
+		               "locked in case this was accidental.";
+		qCritical() << "Component.onDestruction may be used if this behavior is required, but it may "
+		               "result in a lock failing open.";
+	}
+}
+
 void WlSessionLock::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<WlSessionLock*>(oldInstance);
 
