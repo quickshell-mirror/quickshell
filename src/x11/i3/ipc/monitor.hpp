@@ -55,9 +55,7 @@ public:
 	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
 
-	[[nodiscard]] QBindable<I3Workspace*> bindableActiveWorkspace() const {
-		return &this->bActiveWorkspace;
-	}
+	[[nodiscard]] QBindable<I3Workspace*> bindableActiveWorkspace() const;
 
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
