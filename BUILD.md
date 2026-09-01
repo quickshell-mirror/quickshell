@@ -39,7 +39,7 @@ Quickshell has a set of base dependencies you will always need, names vary by di
 - `pkg-config` (build-time)
 - `cli11` (static library)
 
-Quickshell relies on private Qt APIs and **MUST** be rebuilt against the each Qt release
+Quickshell relies on private Qt APIs and **MUST** be rebuilt against each Qt release
 or crashes via ABI mismatches will occur.
 
 Build time dependencies and static libraries don't have to exist at runtime,
