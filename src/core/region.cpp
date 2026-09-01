@@ -32,6 +32,7 @@ void PendingRegion::setItem(QQuickItem* item) {
 
 	if (this->mItem != nullptr) {
 		QObject::disconnect(this->mItem, nullptr, this, nullptr);
+		this->disconnectParentChain();
 	}
 
 	this->mItem = item;
@@ -42,14 +43,40 @@ void PendingRegion::setItem(QQuickItem* item) {
 		QObject::connect(this->mItem, &QQuickItem::yChanged, this, &PendingRegion::itemChanged);
 		QObject::connect(this->mItem, &QQuickItem::widthChanged, this, &PendingRegion::itemChanged);
 		QObject::connect(this->mItem, &QQuickItem::heightChanged, this, &PendingRegion::itemChanged);
+		this->connectParentChain(item);
 	}
 
 	emit this->itemChanged();
 }
 
-void PendingRegion::onItemDestroyed() { this->mItem = nullptr; }
+void PendingRegion::onItemDestroyed() {
+	this->mItem = nullptr;
+	this->disconnectParentChain();
+}
 
 void PendingRegion::onChildDestroyed() { this->mRegions.removeAll(this->sender()); }
+
+void PendingRegion::connectParentChain(QQuickItem* item) {
+	this->disconnectParentChain();
+
+	auto* parent = item->parentItem();
+	while (parent != nullptr) {
+		this->mParentConnections.push_back(
+		    QObject::connect(parent, &QQuickItem::xChanged, this, &PendingRegion::itemChanged)
+		);
+		this->mParentConnections.push_back(
+		    QObject::connect(parent, &QQuickItem::yChanged, this, &PendingRegion::itemChanged)
+		);
+		parent = parent->parentItem();
+	}
+}
+
+void PendingRegion::disconnectParentChain() {
+	for (const auto& connection: this->mParentConnections) {
+		QObject::disconnect(connection);
+	}
+	this->mParentConnections.clear();
+}
 
 qint32 PendingRegion::radius() const { return this->mRadius; }
 
