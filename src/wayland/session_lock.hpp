@@ -12,6 +12,7 @@
 #include <qquickwindow.h>
 #include <qscreen.h>
 #include <qtclasshelpermacros.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -182,6 +183,9 @@ private slots:
 	void onScreenDestroyed();
 	void onWidthChanged();
 	void onHeightChanged();
+	void onSceneGraphError(QQuickWindow::SceneGraphError error, const QString& message);
+	void retryRendering();
+	void onFrameSwapped();
 
 private:
 	QQuickWindow* window = nullptr;
@@ -189,4 +193,7 @@ private:
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
 	LockWindowExtension* ext;
+	QTimer renderRetryTimer;
+
+	friend class TestSessionLockSurface;
 };
