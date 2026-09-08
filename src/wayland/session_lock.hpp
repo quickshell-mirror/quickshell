@@ -12,6 +12,7 @@
 #include <qquickwindow.h>
 #include <qscreen.h>
 #include <qtclasshelpermacros.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -180,13 +181,28 @@ signals:
 
 private slots:
 	void onScreenDestroyed();
+	void onVisibleChanged();
 	void onWidthChanged();
 	void onHeightChanged();
+	void onSceneGraphError(QQuickWindow::SceneGraphError error, const QString& message);
+	void retryRendering();
+	void onFrameSwapped();
 
 private:
+	[[nodiscard]] bool isActiveLockSurface() const;
+	void recreateWindow();
+
 	QQuickWindow* window = nullptr;
 	QQuickItem* mContentItem;
 	QScreen* mScreen = nullptr;
 	QColor mColor = Qt::white;
+	qint32 mWidth = 0;
+	qint32 mHeight = 0;
+	bool mVisible = false;
 	LockWindowExtension* ext;
+	QTimer renderRetryTimer;
+
+#ifdef QS_TEST
+	friend class TestSessionLockSurface;
+#endif
 };

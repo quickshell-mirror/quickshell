@@ -6,3 +6,4 @@
 - Fixed accessibility information not being provided for Quickshell windows.
 - Fixed `WlSessionLockSurface.screen` being null and never updating with a real screen on monitor plug.
 - Fixed `NotificationAction.text` not accepting text updates.
+- Fixed session lock graphics initialization failures crashing Quickshell; failed lock surfaces now retry while keeping the session locked.
