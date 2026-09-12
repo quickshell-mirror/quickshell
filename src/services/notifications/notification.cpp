@@ -56,7 +56,7 @@ void NotificationAction::invoke() {
 }
 
 void NotificationAction::setText(const QString& text) {
-	if (text != this->mText) return;
+	if (text == this->mText) return;
 
 	this->mText = text;
 	emit this->textChanged();
