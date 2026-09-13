@@ -6,6 +6,7 @@
 #include <qdbusmetatype.h>
 #include <qdbuspendingcall.h>
 #include <qdbuspendingreply.h>
+#include <qfile.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -18,6 +19,7 @@
 #include "../device.hpp"
 #include "../enums.hpp"
 #include "../network.hpp"
+#include "../wired.hpp"
 #include "../wifi.hpp"
 #include "dbus_nm_backend.h"
 #include "dbus_nm_device.h"
@@ -133,6 +135,7 @@ void NetworkManager::registerDevice(const QString& path) {
 
 			switch (type) {
 			case NMDeviceType::Wifi: dev = new NMWirelessDevice(path); break;
+			case NMDeviceType::Ethernet: dev = new NMDevice(path); break;
 			default: break;
 			}
 
@@ -186,6 +189,40 @@ void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* d
 		frontendDev = frontendWifiDev;
 		break;
 	}
+	case NMDeviceType::Ethernet: {
+		auto* frontendWiredDev = new WiredDevice(dev);
+		// Bind WiredDevice-specific properties - hasLink from carrier file, linkSpeed from state
+		frontendWiredDev->bindableHasLink().setBinding([dev]() {
+			// Try to read carrier from sysfs, fallback to state
+			QString iface = dev->interface();
+			if (!iface.isEmpty()) {
+				QFile f(QStringLiteral("/sys/class/net/%1/carrier").arg(iface));
+				if (f.open(QIODevice::ReadOnly)) {
+					QByteArray data = f.readAll().trimmed();
+					return data == "1";
+				}
+			}
+			// Fallback: has link if connected or connecting
+			auto s = dev->state();
+			return s == 100 || (s >= 40 && s <= 90);
+		});
+		frontendWiredDev->bindableLinkSpeed().setBinding([dev]() -> quint32 {
+			auto s = dev->state();
+			if (s == 100) return 1000;
+			QString iface = dev->interface();
+			if (!iface.isEmpty()) {
+				QFile f(QStringLiteral("/sys/class/net/%1/speed").arg(iface));
+				if (f.open(QIODevice::ReadOnly)) {
+					bool ok = false;
+					quint32 sp = f.readAll().trimmed().toUInt(&ok);
+					if (ok && sp > 0 && sp < 100000) return sp;
+				}
+			}
+			return 0;
+		});
+		frontendDev = frontendWiredDev;
+		break;
+	}
 	default: return;
 	}
 
@@ -206,7 +243,7 @@ void NetworkManager::registerFrontendDevice(NMDeviceType::Enum type, NMDevice* d
 	frontendDev->bindableState().setBinding(translateState);
 	frontendDev->bindableAutoconnect().setBinding([dev]() { return dev->autoconnect(); });
 	frontendDev->bindableNmManaged().setBinding([dev]() { return dev->managed(); });
-	QObject::connect(frontendDev, &WifiDevice::requestDisconnect, dev, &NMDevice::disconnect);
+	QObject::connect(frontendDev, &NetworkDevice::requestDisconnect, dev, &NMDevice::disconnect);
 	QObject::connect(frontendDev, &NetworkDevice::requestSetAutoconnect, dev, &NMDevice::setAutoconnect);
 	QObject::connect(frontendDev, &NetworkDevice::requestSetNmManaged, dev, &NMDevice::setManaged);
 	// clang-format on

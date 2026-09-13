@@ -50,6 +50,7 @@ QString DeviceType::toString(DeviceType::Enum type) {
 	switch (type) {
 	case None: return QStringLiteral("None");
 	case Wifi: return QStringLiteral("Wifi");
+	case Wired: return QStringLiteral("Wired");
 	default: return QStringLiteral("Unknown");
 	}
 }
