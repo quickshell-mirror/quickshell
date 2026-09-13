@@ -155,3 +155,7 @@ install_qml_module(quickshell-wayland)
 qs_module_pch(quickshell-wayland SET large)
 
 target_link_libraries(quickshell PRIVATE quickshell-waylandplugin quickshell-wayland-init)
+
+if (BUILD_TESTING AND WAYLAND_SESSION_LOCK)
+	add_subdirectory(test)
+endif()
