@@ -2,9 +2,11 @@
 #include <cstdlib>
 #include <utility>
 
+#include <qcoreapplication.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qfilesystemwatcher.h>
+#include <qlocale.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
@@ -48,10 +50,27 @@ RootWrapper::RootWrapper(QString rootPath, QString shellId)
 }
 
 RootWrapper::~RootWrapper() {
+	QObject::disconnect(this->translationLanguageConnection);
 	// event loop may no longer be running so deleteLater is not an option
 	if (this->generation != nullptr) {
 		this->generation->shutdown();
 	}
+	QCoreApplication::removeTranslator(&this->translator);
+}
+
+void RootWrapper::updateTranslations(QQmlEngine* engine) {
+	QCoreApplication::removeTranslator(&this->translator);
+	if (!engine->uiLanguage().isEmpty()
+	    && this->translator.load(
+	        QLocale(engine->uiLanguage()),
+	        "qml",
+	        "_",
+	        QFileInfo(this->rootPath).dir().filePath("i18n")
+	    ))
+	{
+		QCoreApplication::installTranslator(&this->translator);
+	}
+	engine->retranslate();
 }
 
 void RootWrapper::reloadGraph(bool hard) {
@@ -143,6 +162,19 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		return;
 	}
+
+	// Do not replace the running shell's translator or connection until compilation succeeds.
+	// Install before creating objects so imperative translations during startup work too.
+	auto* engine = generation->engine;
+	engine->setUiLanguage(
+	    this->generation ? this->generation->engine->uiLanguage() : QLocale().uiLanguages().value(0)
+	);
+	QObject::disconnect(this->translationLanguageConnection);
+	this->translationLanguageConnection =
+	    QObject::connect(engine, &QQmlEngine::uiLanguageChanged, this, [this, engine]() {
+		    this->updateTranslations(engine);
+	    });
+	this->updateTranslations(engine);
 
 	auto* newRoot = component.beginCreate(generation->engine->rootContext());
 

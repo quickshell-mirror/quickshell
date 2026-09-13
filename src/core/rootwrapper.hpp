@@ -5,6 +5,7 @@
 #include <qqmlengine.h>
 #include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
+#include <qtranslator.h>
 #include <qurl.h>
 
 #include "generation.hpp"
@@ -26,9 +27,14 @@ private slots:
 	void updateTooling();
 
 private:
+	void updateTranslations(QQmlEngine* engine);
+
 	QString rootPath;
 	QString shellId;
 	EngineGeneration* generation = nullptr;
 	QString originalWorkingDirectory;
 	QFileSystemWatcher configDirWatcher;
+	// Keep one catalog across overlapping engine generations. Qt translators are process-wide.
+	QTranslator translator;
+	QMetaObject::Connection translationLanguageConnection;
 };
