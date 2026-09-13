@@ -43,6 +43,8 @@ void PolkitAgentImpl::cancelAllRequests(const QString& reason) {
 
 	auto* flow = this->bActiveFlow.value();
 	if (flow) {
+		QObject::disconnect(flow, nullptr, this, nullptr);
+		this->bActiveFlow = nullptr;
 		flow->cancelAuthenticationRequest();
 		flow->deleteLater();
 	}
@@ -169,12 +171,12 @@ void PolkitAgentImpl::finishAuthenticationRequest() {
 	qCDebug(logPolkit) << "finishing authentication request for action"
 	                   << this->bActiveFlow.value()->actionId();
 
+	QObject::disconnect(this->bActiveFlow.value(), nullptr, this, nullptr);
 	this->bActiveFlow.value()->deleteLater();
+	this->bActiveFlow = nullptr;
 
 	if (!this->queuedRequests.empty()) {
 		this->activateAuthenticationRequest();
-	} else {
-		this->bActiveFlow = nullptr;
 	}
 }
 } // namespace qs::service::polkit
