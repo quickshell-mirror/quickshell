@@ -6,7 +6,7 @@
 #include "reload.hpp"
 
 ///! Object that holds properties that can persist across a config reload.
-/// PersistentProperties holds properties declated in it across a reload, which is
+/// PersistentProperties holds properties declared in it across a reload, which is
 /// often useful for things like keeping expandable popups open and styling them.
 ///
 /// Below is an example of using `PersistentProperties` to keep track of the state
