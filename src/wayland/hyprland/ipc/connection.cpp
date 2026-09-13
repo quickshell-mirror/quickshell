@@ -187,11 +187,13 @@ void HyprlandIpc::makeRequest(
 		requestSocket->flush();
 	};
 
-	auto errorCallback = [=](QLocalSocket::LocalSocketError error) {
-		qCWarning(logHyprlandIpc) << "Error making request:" << error << "request:" << request;
-		requestSocket->deleteLater();
-		callback(false, {});
-	};
+	auto errorCallback =
+			[this, requestSocket, request, callback](QLocalSocket::LocalSocketError error) {
+				qCWarning(logHyprlandIpc) << "Error making request:" << error << "request:" << request;
+				QObject::disconnect(requestSocket, nullptr, this, nullptr);
+				requestSocket->deleteLater();
+				callback(false, {});
+			};
 
 	QObject::connect(requestSocket, &QLocalSocket::connected, this, connectedCallback);
 	QObject::connect(requestSocket, &QLocalSocket::errorOccurred, this, errorCallback);

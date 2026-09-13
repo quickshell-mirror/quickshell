@@ -198,6 +198,7 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 		}
 	} else {
 		if (this->watcher != nullptr) {
+			QObject::disconnect(this->watcher, nullptr, this, nullptr);
 			this->watcher->deleteLater();
 			this->watcher = nullptr;
 		}

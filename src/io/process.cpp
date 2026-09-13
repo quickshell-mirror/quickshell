@@ -272,6 +272,7 @@ void Process::onStarted() {
 }
 
 void Process::onFinished(qint32 exitCode, QProcess::ExitStatus exitStatus) {
+	QObject::disconnect(this->process, nullptr, this, nullptr);
 	this->process->deleteLater();
 	this->process = nullptr;
 	if (this->mStdoutParser) this->mStdoutParser->streamEnded(this->stdoutBuffer);
@@ -290,6 +291,7 @@ void Process::onErrorOccurred(QProcess::ProcessError error) {
 	if (error == QProcess::FailedToStart) { // other cases should be covered by other events
 		qWarning() << "Process failed to start, likely because the binary could not be found. Command:"
 		           << this->mCommand;
+		QObject::disconnect(this->process, nullptr, this, nullptr);
 		this->process->deleteLater();
 		this->process = nullptr;
 		emit this->runningChanged();

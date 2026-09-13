@@ -65,8 +65,10 @@ void MprisWatcher::onServiceRegistered(const QString& service) {
 
 void MprisWatcher::onServiceUnregistered(const QString& service) {
 	if (auto* player = this->mPlayers.value(service)) {
-		player->deleteLater();
+		QObject::disconnect(player, nullptr, this, nullptr);
 		this->mPlayers.remove(service);
+		this->readyPlayers.removeObject(player);
+		player->deleteLater();
 		qCDebug(logMprisWatcher) << "Unregistered MprisPlayer" << service;
 	} else {
 		qCWarning(logMprisWatcher) << "Got service unregister event for untracked service" << service;
