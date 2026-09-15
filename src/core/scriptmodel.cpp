@@ -27,7 +27,14 @@ bool qjsValueStructuralEq(
     const RecursionPair* activePair = nullptr
 ) {
 	if (a.strictlyEquals(b)) return true;
-	if (!a.isObject() || !b.isObject() || a.isArray() != b.isArray()) return false;
+
+	const auto jsValueType = QMetaType::fromType<QJSValue>();
+	const auto aIsNative = a.toVariant(QJSValue::RetainJSObjects).metaType() != jsValueType;
+	const auto bIsNative = b.toVariant(QJSValue::RetainJSObjects).metaType() != jsValueType;
+	if (aIsNative || bIsNative) return false;
+
+	if (!a.isObject() || !b.isObject() || a.isCallable() || b.isCallable()) return false;
+	if (a.isArray() != b.isArray()) return false;
 
 	for (const auto* pair = activePair; pair != nullptr; pair = pair->previous) {
 		if (a.strictlyEquals(*pair->a) || b.strictlyEquals(*pair->b)) return false;
