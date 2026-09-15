@@ -31,7 +31,13 @@ DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
 	    &this->watcher,
 	    &QFileSystemWatcher::directoryChanged,
 	    this,
-	    &DesktopEntryMonitor::onDirectoryChanged
+	    &DesktopEntryMonitor::onWatchedPathChanged
+	);
+	QObject::connect(
+	    &this->watcher,
+	    &QFileSystemWatcher::fileChanged,
+	    this,
+	    &DesktopEntryMonitor::onWatchedPathChanged
 	);
 	QObject::connect(
 	    &this->debounceTimer,
@@ -40,14 +46,17 @@ DesktopEntryMonitor::DesktopEntryMonitor(QObject* parent): QObject(parent) {
 	    &DesktopEntryMonitor::processChanges
 	);
 
-	this->startMonitoring();
+	this->updateWatchedPaths();
 }
 
-void DesktopEntryMonitor::startMonitoring() {
+void DesktopEntryMonitor::updateWatchedPaths() {
 	for (const auto& path: DesktopEntryManager::desktopPaths()) {
-		if (!QDir(path).exists()) continue;
 		addPathAndParents(this->watcher, path);
 		this->scanAndWatch(path);
+	}
+
+	for (const auto& path: DesktopEntryManager::terminalConfigPaths()) {
+		addPathAndParents(this->watcher, path);
 	}
 }
 
@@ -61,8 +70,11 @@ void DesktopEntryMonitor::scanAndWatch(const QString& dirPath) {
 	for (const auto& subdir: subdirs) this->watcher.addPath(subdir.absoluteFilePath());
 }
 
-void DesktopEntryMonitor::onDirectoryChanged(const QString& /*path*/) {
+void DesktopEntryMonitor::onWatchedPathChanged(const QString& /*path*/) {
 	this->debounceTimer.start();
 }
 
-void DesktopEntryMonitor::processChanges() { emit this->desktopEntriesChanged(); }
+void DesktopEntryMonitor::processChanges() {
+	this->updateWatchedPaths();
+	emit this->desktopEntriesChanged();
+}
