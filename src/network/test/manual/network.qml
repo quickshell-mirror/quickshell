@@ -237,6 +237,26 @@ Scope {
                                         text: `| Signal strength: ${Math.round(modelData.signalStrength * 100)}%`
                                         color: palette.placeholderText
                                     }
+                                    Label {
+                                        text: `| ${modelData.frequency} MHz`
+                                        color: palette.placeholderText
+                                    }
+                                    Label {
+                                        text: `| BSSID: ${modelData.bssid}`
+                                        color: palette.placeholderText
+                                    }
+                                    Label {
+                                        text: `| Bitrate: ${modelData.maxBitrate} Kbps`
+                                        color: palette.placeholderText
+                                    }
+                                    Label {
+                                        text: `| Bandwidth: ${modelData.bandwidth} MHz`
+                                        color: palette.placeholderText
+                                    }
+                                    Label {
+                                        text: `| Last seen: ${modelData.lastSeen?.toLocaleTimeString() ?? "Never"}`
+                                        color: palette.placeholderText
+                                    }
                                 }
                             }
                             ColumnLayout {

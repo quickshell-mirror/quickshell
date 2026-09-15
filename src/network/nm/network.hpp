@@ -103,6 +103,11 @@ public:
 	// clang-format off
 	[[nodiscard]] QString ssid() const { return this->mSsid; }
 	[[nodiscard]] quint8 signalStrength() const { return this->bSignalStrength; }
+	[[nodiscard]] quint32 frequency() const { return this->bFrequency; }
+	[[nodiscard]] QString hwAddress() const { return this->bHwAddress; }
+	[[nodiscard]] quint32 maxBitrate() const { return this->bMaxBitrate; }
+	[[nodiscard]] quint32 bandwidth() const { return this->bBandwidth; }
+	[[nodiscard]] QDateTime lastSeen() const { return this->bLastSeen; }
 	[[nodiscard]] WifiSecurityType::Enum security() const { return this->bSecurity; }
 	[[nodiscard]] NMAccessPoint* referenceAp() const { return this->bReferenceAp; }
 	[[nodiscard]] QList<NMAccessPoint*> accessPoints() const { return this->mAccessPoints.values(); }
@@ -113,6 +118,11 @@ public:
 signals:
 	void disappeared();
 	void signalStrengthChanged(quint8 signal);
+	void frequencyChanged(quint32 frequency);
+	void hwAddressChanged(const QString& hwAddress);
+	void maxBitrateChanged(quint32 maxBitrate);
+	void bandwidthChanged(quint32 bandwidth);
+	void lastSeenChanged(const QDateTime& lastSeen);
 	void securityChanged(WifiSecurityType::Enum security);
 	void activeApPathChanged(QString path);
 	void referenceApChanged(NMAccessPoint* ap);
@@ -130,6 +140,11 @@ private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint32, bFrequency, &NMWirelessNetwork::frequencyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bHwAddress, &NMWirelessNetwork::hwAddressChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint32, bMaxBitrate, &NMWirelessNetwork::maxBitrateChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint32, bBandwidth, &NMWirelessNetwork::bandwidthChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QDateTime, bLastSeen, &NMWirelessNetwork::lastSeenChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMAccessPoint*, bReferenceAp, &NMWirelessNetwork::referenceApChanged);
 	// clang-format on
