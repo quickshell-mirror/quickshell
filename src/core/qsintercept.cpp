@@ -48,6 +48,18 @@ QUrl QsUrlInterceptor::intercept(
 			return QUrl("qrc:/qs-blackhole");
 		}
 
+		// Documents must resolve to their vfs path. Qt keys types by intercepted url, so a
+		// second url for the same document means a second compile and singleton instance.
+		if (!this->vfsPath.isEmpty()
+		    && (type != QQmlAbstractUrlInterceptor::DataType::UrlString || path.endsWith(".qml")))
+		{
+			auto newUrl = url;
+			newUrl.setScheme("file");
+			newUrl.setPath(this->toVfsPath(path));
+			qCDebug(logQsIntercept) << "Rewrote intercept" << url << "to" << newUrl;
+			return newUrl;
+		}
+
 		// Some types such as Image take into account where they are loading from, and force
 		// asynchronous loading over a network. qs: is considered to be over a network.
 		// In those cases we want to return a file:// url so asynchronous loading is not forced.
@@ -66,7 +78,33 @@ QUrl QsUrlInterceptor::intercept(
 		}
 	}
 
+	// Real config paths, e.g. from Quickshell.shellDir, are folded in for the same reason.
+	if (!this->vfsPath.isEmpty() && url.scheme() == "file") {
+		auto isDocument =
+		    type == QQmlAbstractUrlInterceptor::DataType::QmlFile
+		    || type == QQmlAbstractUrlInterceptor::DataType::JavaScriptFile
+		    || type == QQmlAbstractUrlInterceptor::DataType::QmldirFile
+		    || (type == QQmlAbstractUrlInterceptor::DataType::UrlString && url.path().endsWith(".qml"));
+
+		if (isDocument) {
+			auto newPath = this->toVfsPath(url.path());
+
+			if (newPath != url.path()) {
+				auto newUrl = url;
+				newUrl.setPath(newPath);
+				qCDebug(logQsIntercept) << "Canonicalized intercept" << url << "to" << newUrl;
+				return newUrl;
+			}
+		}
+	}
+
 	return url;
+}
+
+QString QsUrlInterceptor::toVfsPath(const QString& path) const {
+	const auto& rootPath = this->configRoot.path();
+	if (!path.startsWith(rootPath % '/')) return path;
+	return this->vfsPath % "/qs" % path.sliced(rootPath.length());
 }
 
 QsInterceptDataReply::QsInterceptDataReply(const QString& data, QObject* parent)

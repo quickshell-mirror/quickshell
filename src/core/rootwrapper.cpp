@@ -60,7 +60,7 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto scanner = QmlScanner(rootPath);
 	scanner.scanQmlRoot(this->rootPath);
 
-	qs::core::QmlToolingSupport::updateTooling(rootPath, scanner);
+	qs::core::QmlToolingSupport::updateTooling(rootPath);
 	this->configDirWatcher.addPath(rootPath.path());
 
 	// todo: move into EngineGeneration
@@ -95,12 +95,21 @@ void RootWrapper::reloadGraph(bool hard) {
 		return;
 	}
 
-	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
+	// the qml disk cache only accepts file urls, so load from the vfs mirror when possible
+	auto vfsPath = qs::core::QmlToolingSupport::updateMirror(rootPath, scanner);
+	if (vfsPath.isEmpty()) qWarning() << "Falling back to qs: urls, QML disk cache disabled";
+
+	auto* generation = new EngineGeneration(rootPath, std::move(scanner), vfsPath);
 	generation->wrapper = this;
 
 	QUrl url;
-	url.setScheme("qs");
-	url.setPath("@/qs/" % rootFile.fileName());
+	if (vfsPath.isEmpty()) {
+		url.setScheme("qs");
+		url.setPath("@/qs/" % rootFile.fileName());
+	} else {
+		url = QUrl::fromLocalFile(vfsPath % "/qs/" % rootFile.fileName());
+	}
+
 	auto component = QQmlComponent(generation->engine, url);
 
 	if (!component.isReady()) {
@@ -109,9 +118,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		auto errors = component.errors();
 		for (auto& error: errors) {
-			const auto& url = error.url();
-			auto rel = url.scheme() == "qs" && url.path().startsWith("@/qs/") ? "@" % url.path().sliced(5)
-			                                                                  : url.toString();
+			auto rel = generation->relativeUrl(error.url());
 			auto msg = "  caused by " % rel % '[' % QString::number(error.line()) % ':'
 			         % QString::number(error.column()) % "]: " % error.description();
 			errorString += '\n' % msg;
@@ -211,5 +218,6 @@ void RootWrapper::onWatchedFilesChanged() { this->reloadGraph(false); }
 void RootWrapper::updateTooling() {
 	if (!this->generation) return;
 	auto configDir = QFileInfo(this->rootPath).dir();
-	qs::core::QmlToolingSupport::updateTooling(configDir, this->generation->scanner);
+	qs::core::QmlToolingSupport::updateTooling(configDir);
+	qs::core::QmlToolingSupport::updateMirror(configDir, this->generation->scanner);
 }

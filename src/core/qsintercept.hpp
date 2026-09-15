@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include <qdir.h>
 #include <qhash.h>
 #include <qloggingcategory.h>
@@ -16,12 +18,17 @@ QS_DECLARE_LOGGING_CATEGORY(logQsIntercept);
 
 class QsUrlInterceptor: public QQmlAbstractUrlInterceptor {
 public:
-	explicit QsUrlInterceptor(const QDir& configRoot): configRoot(configRoot) {}
+	explicit QsUrlInterceptor(const QDir& configRoot, QString vfsPath)
+	    : configRoot(configRoot)
+	    , vfsPath(std::move(vfsPath)) {}
 
 	QUrl intercept(const QUrl& originalUrl, QQmlAbstractUrlInterceptor::DataType type) override;
 
 private:
+	[[nodiscard]] QString toVfsPath(const QString& path) const;
+
 	QDir configRoot;
+	QString vfsPath;
 };
 
 class QsInterceptDataReply: public QNetworkReply {

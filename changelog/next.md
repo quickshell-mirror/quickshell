@@ -1,3 +1,7 @@
+## Other Changes
+
+- The qml disk cache is now enabled. Config documents are loaded from a mirror in the runtime dir, which is visible in `Component.url` and `Qt.resolvedUrl` results.
+
 ## Bug Fixes
 
 - Fixed main process crashes on pam subprocess misbehavior.

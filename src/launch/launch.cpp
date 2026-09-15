@@ -230,7 +230,7 @@ int launch(const LaunchArgs& args, char** argv) {
 		}
 	}
 
-	// The qml engine currently refuses to cache non file (qsintercept) paths.
+	// The qml engine only caches file urls, so configs are loaded from the vfs mirror.
 
 	// if (auto* cacheDir = QsPaths::instance()->cacheDir()) {
 	// 	auto qmlCacheDir = cacheDir->filePath("qml-engine-cache");
