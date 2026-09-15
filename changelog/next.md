@@ -1,3 +1,7 @@
+## New Features
+
+- Added a refreshRate property to ShellScreen.
+
 ## Bug Fixes
 
 - Fixed main process crashes on pam subprocess misbehavior.
