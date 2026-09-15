@@ -22,12 +22,14 @@ namespace qs::hyprland::ipc {
 class HyprlandMonitor;
 class HyprlandWorkspace;
 class HyprlandToplevel;
+class HyprlandKeyboard;
 
 } // namespace qs::hyprland::ipc
 
 Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandWorkspace*);
 Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandMonitor*);
 Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandToplevel*);
+Q_DECLARE_OPAQUE_POINTER(qs::hyprland::ipc::HyprlandKeyboard*);
 
 namespace qs::hyprland::ipc {
 
@@ -77,7 +79,7 @@ public:
 
 	void
 	makeRequest(const QByteArray& request, const std::function<void(bool, QByteArray)>& callback);
-	void dispatch(const QString& request);
+	void dispatch(const QString& request, bool useDispatch = true);
 
 	[[nodiscard]] HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
 
@@ -95,21 +97,28 @@ public:
 		return &this->bActiveToplevel;
 	}
 
+	[[nodiscard]] QBindable<HyprlandKeyboard*> bindableActiveKeyboard() const {
+		return &this->bActiveKeyboard;
+	}
+
 	void setFocusedMonitor(HyprlandMonitor* monitor);
 
 	[[nodiscard]] ObjectModel<HyprlandMonitor>* monitors();
 	[[nodiscard]] ObjectModel<HyprlandWorkspace>* workspaces();
 	[[nodiscard]] ObjectModel<HyprlandToplevel>* toplevels();
+	[[nodiscard]] ObjectModel<HyprlandKeyboard>* keyboards();
 
 	// No byId because these preemptively create objects. The given id is set if created.
 	HyprlandWorkspace* findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id = -1);
 	HyprlandMonitor* findMonitorByName(const QString& name, bool createIfMissing, qint32 id = -1);
 	HyprlandToplevel* findToplevelByAddress(quint64 address, bool createIfMissing);
+	HyprlandKeyboard* findKeyboardByName(const QString& name, bool createIfMissing);
 
 	// canCreate avoids making ghost workspaces when the connection races
 	void refreshWorkspaces(bool canCreate);
 	void refreshMonitors(bool canCreate);
 	void refreshToplevels();
+	void refreshKeyboards();
 
 	// The last argument may contain commas, so the count is required.
 	[[nodiscard]] static QVector<QByteArrayView> parseEventArgs(QByteArrayView event, quint16 count);
@@ -122,6 +131,7 @@ signals:
 	void focusedMonitorChanged();
 	void focusedWorkspaceChanged();
 	void activeToplevelChanged();
+	void activeKeyboardChanged();
 
 private slots:
 	void eventSocketError(QLocalSocket::LocalSocketError error) const;
@@ -147,11 +157,13 @@ private:
 	bool requestingMonitors = false;
 	bool requestingWorkspaces = false;
 	bool requestingToplevels = false;
+	bool requestingDevices = false;
 	bool monitorsRequested = false;
 
 	ObjectModel<HyprlandMonitor> mMonitors {this};
 	ObjectModel<HyprlandWorkspace> mWorkspaces {this};
 	ObjectModel<HyprlandToplevel> mToplevels {this};
+	ObjectModel<HyprlandKeyboard> mKeyboards {this};
 
 	HyprlandIpcEvent event {this};
 
@@ -176,6 +188,13 @@ private:
 	    HyprlandToplevel*,
 	    bActiveToplevel,
 	    &HyprlandIpc::activeToplevelChanged
+	);
+
+	Q_OBJECT_BINDABLE_PROPERTY(
+	    HyprlandIpc,
+	    HyprlandKeyboard*,
+	    bActiveKeyboard,
+	    &HyprlandIpc::activeKeyboardChanged
 	);
 };
 

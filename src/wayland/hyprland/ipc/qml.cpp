@@ -6,6 +6,7 @@
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "connection.hpp"
+#include "keyboard.hpp"
 #include "monitor.hpp"
 
 namespace qs::hyprland::ipc {
@@ -35,6 +36,13 @@ HyprlandIpcQml::HyprlandIpcQml() {
 	    this,
 	    &HyprlandIpcQml::activeToplevelChanged
 	);
+
+	QObject::connect(
+	    instance,
+	    &HyprlandIpc::activeKeyboardChanged,
+	    this,
+	    &HyprlandIpcQml::activeKeyboardChanged
+	);
 }
 
 void HyprlandIpcQml::dispatch(const QString& request) {
@@ -48,6 +56,8 @@ HyprlandMonitor* HyprlandIpcQml::monitorFor(QuickshellScreenInfo* screen) {
 void HyprlandIpcQml::refreshMonitors() { HyprlandIpc::instance()->refreshMonitors(false); }
 void HyprlandIpcQml::refreshWorkspaces() { HyprlandIpc::instance()->refreshWorkspaces(false); }
 void HyprlandIpcQml::refreshToplevels() { HyprlandIpc::instance()->refreshToplevels(); }
+void HyprlandIpcQml::refreshKeyboards() { HyprlandIpc::instance()->refreshKeyboards(); }
+
 QString HyprlandIpcQml::requestSocketPath() { return HyprlandIpc::instance()->requestSocketPath(); }
 QString HyprlandIpcQml::eventSocketPath() { return HyprlandIpc::instance()->eventSocketPath(); }
 
@@ -67,6 +77,10 @@ QBindable<HyprlandToplevel*> HyprlandIpcQml::bindableActiveToplevel() {
 	return HyprlandIpc::instance()->bindableActiveToplevel();
 }
 
+QBindable<HyprlandKeyboard*> HyprlandIpcQml::bindableActiveKeyboard() {
+	return HyprlandIpc::instance()->bindableActiveKeyboard();
+}
+
 ObjectModel<HyprlandMonitor>* HyprlandIpcQml::monitors() {
 	return HyprlandIpc::instance()->monitors();
 }
@@ -77,6 +91,10 @@ ObjectModel<HyprlandWorkspace>* HyprlandIpcQml::workspaces() {
 
 ObjectModel<HyprlandToplevel>* HyprlandIpcQml::toplevels() {
 	return HyprlandIpc::instance()->toplevels();
+}
+
+ObjectModel<HyprlandKeyboard>* HyprlandIpcQml::keyboards() {
+	return HyprlandIpc::instance()->keyboards();
 }
 
 } // namespace qs::hyprland::ipc
