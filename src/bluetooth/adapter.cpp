@@ -19,7 +19,10 @@ namespace qs::bluetooth {
 
 namespace {
 QS_LOGGING_CATEGORY(logAdapter, "quickshell.bluetooth.adapter", QtWarningMsg);
-}
+
+constexpr int POWER_STATE_POLL_INTERVAL = 250;    // ms
+constexpr int POWER_STATE_POLL_MAX_ATTEMPTS = 40; // 10s ceiling
+} // namespace
 
 QString BluetoothAdapterState::toString(BluetoothAdapterState::Enum state) {
 	switch (state) {
@@ -43,12 +46,100 @@ BluetoothAdapter::BluetoothAdapter(const QString& path, QObject* parent): QObjec
 	}
 
 	this->properties.setInterface(this->mInterface);
+
+	this->mPowerStatePollTimer.setSingleShot(true);
+	this->mPowerStatePollTimer.setInterval(POWER_STATE_POLL_INTERVAL);
+
+	QObject::connect(&this->mPowerStatePollTimer, &QTimer::timeout, this, [this] {
+		if (this->bState == BluetoothAdapterState::Enabling
+		    || this->bState == BluetoothAdapterState::Disabling)
+		{
+			this->startPowerStatePoll();
+		} else {
+			this->stopPowerStatePoll();
+		}
+	});
+
+	QObject::connect(this, &BluetoothAdapter::stateChanged, this, &BluetoothAdapter::onStateChanged);
+
+	QObject::connect(
+	    &this->properties,
+	    &qs::dbus::DBusPropertyGroup::getAllFinished,
+	    this,
+	    &BluetoothAdapter::onPowerStatePollFinished
+	);
+
+	QObject::connect(
+	    &this->properties,
+	    &qs::dbus::DBusPropertyGroup::getAllFailed,
+	    this,
+	    &BluetoothAdapter::onPowerStatePollFailed
+	);
 }
 
 QString BluetoothAdapter::adapterId() const {
 	auto path = this->path();
 	return path.sliced(path.lastIndexOf('/') + 1);
 }
+
+void BluetoothAdapter::onStateChanged() {
+	// BlueZ can leave an adapter in a transitional power state without ever sending
+	// a follow-up PropertiesChanged once the transition completes, for example when
+	// the controller is re-registered while it is still coming up. Re-read its power
+	// state until it settles so enabled/state do not get stuck mid-transition.
+	if (this->bState == BluetoothAdapterState::Enabling
+	    || this->bState == BluetoothAdapterState::Disabling)
+	{
+		this->schedulePowerStatePoll();
+	} else {
+		this->stopPowerStatePoll();
+	}
+}
+
+void BluetoothAdapter::schedulePowerStatePoll() {
+	if (this->mPowerStatePollPending) return;
+
+	this->mPowerStatePollPending = true;
+	this->mPowerStatePollAttempts = 0;
+	this->startPowerStatePoll();
+}
+
+void BluetoothAdapter::startPowerStatePoll() {
+	if (!this->mPowerStatePollPending) return;
+
+	if (!this->properties.isConnected()) {
+		this->stopPowerStatePoll();
+		return;
+	}
+
+	if (this->mPowerStatePollAttempts++ >= POWER_STATE_POLL_MAX_ATTEMPTS) {
+		this->stopPowerStatePoll();
+		return;
+	}
+
+	this->properties.updateAllViaGetAll();
+}
+
+void BluetoothAdapter::continuePowerStatePoll() {
+	if (!this->mPowerStatePollPending) return;
+
+	if (this->bState == BluetoothAdapterState::Enabling
+	    || this->bState == BluetoothAdapterState::Disabling)
+	{
+		this->mPowerStatePollTimer.start();
+	} else {
+		this->stopPowerStatePoll();
+	}
+}
+
+void BluetoothAdapter::stopPowerStatePoll() {
+	this->mPowerStatePollTimer.stop();
+	this->mPowerStatePollPending = false;
+}
+
+void BluetoothAdapter::onPowerStatePollFinished() { this->continuePowerStatePoll(); }
+
+void BluetoothAdapter::onPowerStatePollFailed() { this->continuePowerStatePoll(); }
 
 void BluetoothAdapter::setEnabled(bool enabled) {
 	if (enabled == this->bEnabled) return;
