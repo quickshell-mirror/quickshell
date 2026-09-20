@@ -66,6 +66,8 @@ public:
 	void applyConfigure() override;
 	void setWindowGeometry(const QRect& /*geometry*/) override {}
 
+	void requestXdgActivationToken(quint32 serial) override;
+
 	void attachPopup(QtWaylandClient::QWaylandShellSurface* popup) override;
 
 	void commit();

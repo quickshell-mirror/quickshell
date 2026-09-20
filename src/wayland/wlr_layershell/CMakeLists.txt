@@ -1,4 +1,5 @@
 qt_add_library(quickshell-wayland-layershell STATIC
+	activation.cpp
 	wlr_layershell.cpp
 	shell_integration.cpp
 	surface.cpp
@@ -16,12 +17,14 @@ install_qml_module(quickshell-wayland-layershell)
 
 wl_proto(wlp-layer-shell wlr-layer-shell-unstable-v1 "${CMAKE_CURRENT_SOURCE_DIR}")
 
+wl_proto(wlp-layer-activation xdg-activation-v1 "${WAYLAND_PROTOCOLS}/staging/xdg-activation")
+
 # link dependency of wlr-layer-shell's codegen
 wl_proto(wlp-xdg-shell xdg-shell "${WAYLAND_PROTOCOLS}/stable/xdg-shell")
 
 target_link_libraries(quickshell-wayland-layershell PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
-	wlp-layer-shell wlp-xdg-shell
+	wlp-layer-shell wlp-xdg-shell wlp-layer-activation
 )
 
 qs_module_pch(quickshell-wayland-layershell SET large)
