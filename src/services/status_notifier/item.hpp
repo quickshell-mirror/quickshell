@@ -127,6 +127,8 @@ public:
 	explicit StatusNotifierItem(const QString& address, QObject* parent = nullptr);
 
 	/// Primary activation action, generally triggered via a left click.
+	/// On Wayland, call this directly from the input handler (for example, `MouseArea.onClicked`)
+	/// so the application can focus its window.
 	Q_INVOKABLE void activate();
 	/// Secondary activation action, generally triggered via a middle click.
 	Q_INVOKABLE void secondaryActivate();
@@ -169,6 +171,8 @@ private slots:
 	void onGetAllFailed() const;
 
 private:
+	void activateWithToken(const QString& token);
+	void activateWithoutToken();
 	void updateMenuState();
 	void updatePixmapIndex();
 	void onMenuPathChanged();
