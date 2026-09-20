@@ -52,3 +52,10 @@ target_link_libraries(quickshell-service-statusnotifier PRIVATE Qt::Quick Qt::DB
 target_link_libraries(quickshell PRIVATE quickshell-service-statusnotifierplugin)
 
 qs_module_pch(quickshell-service-statusnotifier SET dbus)
+
+if (WAYLAND)
+    target_compile_definitions(quickshell-service-statusnotifier PRIVATE QS_WAYLAND)
+    target_link_libraries(quickshell-service-statusnotifier PRIVATE
+        quickshell-wayland-activation
+    )
+endif()

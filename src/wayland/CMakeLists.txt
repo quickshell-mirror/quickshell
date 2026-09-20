@@ -73,6 +73,16 @@ endfunction()
 
 # -----
 
+wl_proto(wlp-xdg-activation xdg-activation-v1 "${WAYLAND_PROTOCOLS}/staging/xdg-activation")
+
+qt_add_library(quickshell-wayland-activation STATIC
+	activation.cpp
+)
+
+target_link_libraries(quickshell-wayland-activation PRIVATE
+	Qt::Gui Qt::WaylandClient Qt::WaylandClientPrivate wlp-xdg-activation
+)
+
 qt_add_library(quickshell-wayland STATIC
 	wl_proxy_safe_deref.cpp
 	platformmenu.cpp

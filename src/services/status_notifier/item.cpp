@@ -12,6 +12,7 @@
 #include <qobject.h>
 #include <qpainter.h>
 #include <qpixmap.h>
+#include <qpointer.h>
 #include <qqmlengine.h>
 #include <qrect.h>
 #include <qsize.h>
@@ -29,6 +30,10 @@
 #include "dbus_item_types.hpp"
 #include "host.hpp"
 #include "watcher.hpp"
+
+#ifdef QS_WAYLAND
+#include "../../wayland/activation.hpp"
+#endif
 
 using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
@@ -219,6 +224,39 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 }
 
 void StatusNotifierItem::activate() {
+#ifdef QS_WAYLAND
+	auto callback = [item = QPointer(this)](const QString& token) {
+		if (item) item->activateWithToken(token);
+	};
+
+	if (qs::wayland::activation::requestActivationToken(callback)) return;
+#endif
+	this->activateWithoutToken();
+}
+
+void StatusNotifierItem::activateWithToken(const QString& token) {
+	if (token.isEmpty()) {
+		this->activateWithoutToken();
+		return;
+	}
+
+	auto* call = new QDBusPendingCallWatcher(this->item->ProvideXdgActivationToken(token), this);
+	QObject::connect(
+	    call,
+	    &QDBusPendingCallWatcher::finished,
+	    this,
+	    [this](QDBusPendingCallWatcher* call) {
+		    const QDBusPendingReply<> reply = *call;
+		    if (reply.isError() && reply.error().type() != QDBusError::UnknownMethod) {
+			    qCWarning(logStatusNotifierItem) << "Error providing activation token:" << reply.error();
+		    }
+		    delete call;
+		    this->activateWithoutToken();
+	    }
+	);
+}
+
+void StatusNotifierItem::activateWithoutToken() {
 	auto pendingCall = this->item->Activate(0, 0);
 	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
 
