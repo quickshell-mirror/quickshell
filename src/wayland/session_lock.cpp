@@ -1,11 +1,14 @@
 #include "session_lock.hpp"
+#include <algorithm>
 
 #include <private/qwaylandscreen_p.h>
 #include <qcolor.h>
 #include <qcoreapplication.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
+#include <qnamespace.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
 #include <qqmllist.h>
@@ -37,6 +40,7 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 	if (old != nullptr) {
 		QObject::disconnect(old->manager, nullptr, old, nullptr);
 		this->manager = old->manager;
+		old->manager = nullptr;
 		this->manager->setParent(this);
 	} else {
 		this->manager = new SessionLockManager(this);
@@ -146,7 +150,7 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 
 			// preload initial surfaces to make the chance of the compositor displaying a blank
 			// frame before the lock surfaces are shown as low as possible.
-			this->updateSurfaces(false);
+			this->updateSurfaces(false, old);
 
 			auto wasLocked = this->isLocked();
 			if (!this->manager->lock()) {
@@ -155,7 +159,7 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 				return;
 			}
 
-			this->updateSurfaces(true, old);
+			this->updateSurfaces(true);
 			if (!wasLocked) emit this->lockStateChanged();
 		} else {
 			this->unlock(); // emits lockStateChanged
@@ -225,9 +229,11 @@ WlSessionLockSurface::WlSessionLockSurface(QObject* parent)
 	QQmlEngine::setObjectOwnership(this->mContentItem, QQmlEngine::CppOwnership);
 	this->mContentItem->setParent(this);
 
+	this->renderRetryTimer.setSingleShot(true);
+	this->renderRetryTimer.setInterval(1000);
+
 	// clang-format off
-	QObject::connect(this, &WlSessionLockSurface::widthChanged, this, &WlSessionLockSurface::onWidthChanged);
-	QObject::connect(this, &WlSessionLockSurface::heightChanged, this, &WlSessionLockSurface::onHeightChanged);
+	QObject::connect(&this->renderRetryTimer, &QTimer::timeout, this, &WlSessionLockSurface::retryRendering);
 	// clang-format on
 }
 
@@ -240,6 +246,8 @@ WlSessionLockSurface::~WlSessionLockSurface() {
 
 void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	if (auto* old = qobject_cast<WlSessionLockSurface*>(oldInstance)) {
+		this->renderRetryTimer.setInterval(old->renderRetryTimer.interval());
+		if (old->renderRetryTimer.isActive()) this->renderRetryTimer.start();
 		this->window = old->disownWindow();
 	}
 
@@ -254,6 +262,7 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 		    "VK_EXT_image_drm_format_modifier",
 		});
 		this->window->setGraphicsConfiguration(graphicsConfig);
+		this->window->resize(this->mWidth, this->mHeight);
 	}
 
 	this->mContentItem->setParentItem(this->window->contentItem());
@@ -265,12 +274,19 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	this->window->setColor(this->mColor);
 
 	// clang-format off
-	QObject::connect(this->window, &QWindow::visibilityChanged, this, &WlSessionLockSurface::visibleChanged);
-	QObject::connect(this->window, &QWindow::widthChanged, this, &WlSessionLockSurface::widthChanged);
-	QObject::connect(this->window, &QWindow::heightChanged, this, &WlSessionLockSurface::heightChanged);
+	QObject::connect(this->window, &QWindow::visibilityChanged, this, &WlSessionLockSurface::onVisibleChanged);
+	QObject::connect(this->window, &QWindow::widthChanged, this, &WlSessionLockSurface::onWidthChanged);
+	QObject::connect(this->window, &QWindow::heightChanged, this, &WlSessionLockSurface::onHeightChanged);
 	QObject::connect(this->window, &QWindow::screenChanged, this, &WlSessionLockSurface::screenChanged);
 	QObject::connect(this->window, &QQuickWindow::colorChanged, this, &WlSessionLockSurface::colorChanged);
+	QObject::connect(this->window, &QQuickWindow::sceneGraphError, this, &WlSessionLockSurface::onSceneGraphError);
+	QObject::connect(this->window, &QQuickWindow::frameSwapped, this, &WlSessionLockSurface::onFrameSwapped, Qt::ConnectionType(Qt::QueuedConnection | Qt::SingleShotConnection));
 	// clang-format on
+
+	this->onWidthChanged();
+	this->onHeightChanged();
+	this->onVisibleChanged();
+	emit this->screenChanged();
 }
 
 void WlSessionLockSurface::attach() {
@@ -286,6 +302,7 @@ void WlSessionLockSurface::attach() {
 }
 
 QQuickWindow* WlSessionLockSurface::disownWindow() {
+	this->renderRetryTimer.stop();
 	QObject::disconnect(this->window, nullptr, this, nullptr);
 	this->mContentItem->setParentItem(nullptr);
 
@@ -299,22 +316,57 @@ void WlSessionLockSurface::show() {
 	this->ext->setVisible();
 }
 
+void WlSessionLockSurface::onSceneGraphError(
+    QQuickWindow::SceneGraphError error,
+    const QString& message
+) {
+	qWarning() << "Failed to initialize session lock graphics:" << error << message << "Retrying in"
+	           << this->renderRetryTimer.interval() << "ms.";
+	if (!this->renderRetryTimer.isActive()) this->renderRetryTimer.start();
+}
+
+void WlSessionLockSurface::onFrameSwapped() {
+	if (!this->window || this->sender() != this->window) return;
+	this->renderRetryTimer.stop();
+	this->renderRetryTimer.setInterval(1000);
+}
+
+bool WlSessionLockSurface::isActiveLockSurface() const {
+	auto* lock = qobject_cast<WlSessionLock*>(this->parent());
+	return lock && lock->lockTarget && lock->isLocked() && this->mScreen
+	    && lock->surfaces.value(this->mScreen) == this;
+}
+
+void WlSessionLockSurface::retryRendering() {
+	if (!this->isActiveLockSurface()) return;
+
+	this->renderRetryTimer.setInterval(std::min(this->renderRetryTimer.interval() * 2, 30000));
+	this->recreateWindow();
+
+	// Reparenting content can invoke QML handlers which unlock or remove this surface.
+	if (this->isActiveLockSurface()) this->show();
+}
+
+void WlSessionLockSurface::recreateWindow() {
+	// Qt permanently gives up on a window after RHI initialization fails. Recreate
+	// the window after the error callback unwinds, retaining the QML content and
+	// the session lock. The compositor covers the output while its surface is absent.
+	auto focusItem = QPointer(this->window->activeFocusItem());
+	auto* oldWindow = this->disownWindow();
+	oldWindow->destroy();
+	delete oldWindow;
+	this->ext = new LockWindowExtension(this);
+	this->onReload(nullptr);
+	if (focusItem) focusItem->forceActiveFocus();
+}
+
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
 
-bool WlSessionLockSurface::isVisible() const {
-	if (this->window == nullptr) return false;
-	return this->window->isVisible();
-}
+bool WlSessionLockSurface::isVisible() const { return this->mVisible; }
 
-qint32 WlSessionLockSurface::width() const {
-	if (this->window == nullptr) return 0;
-	else return this->window->width();
-}
+qint32 WlSessionLockSurface::width() const { return this->mWidth; }
 
-qint32 WlSessionLockSurface::height() const {
-	if (this->window == nullptr) return 0;
-	else return this->window->height();
-}
+qint32 WlSessionLockSurface::height() const { return this->mHeight; }
 
 QuickshellScreenInfo* WlSessionLockSurface::screen() const {
 	QScreen* qscreen = nullptr;
@@ -354,15 +406,37 @@ QColor WlSessionLockSurface::color() const {
 }
 
 void WlSessionLockSurface::setColor(QColor color) {
+	if (this->mColor == color) return;
+	this->mColor = color;
+
 	if (this->window == nullptr) {
-		this->mColor = color;
 		emit this->colorChanged();
-	} else this->window->setColor(color);
+	} else {
+		this->window->setColor(color);
+	}
 }
 
 QQmlListProperty<QObject> WlSessionLockSurface::data() {
 	return this->mContentItem->property("data").value<QQmlListProperty<QObject>>();
 }
 
-void WlSessionLockSurface::onWidthChanged() { this->mContentItem->setWidth(this->width()); }
-void WlSessionLockSurface::onHeightChanged() { this->mContentItem->setHeight(this->height()); }
+void WlSessionLockSurface::onVisibleChanged() {
+	// Visibility belongs to the QML surface, which survives native window retries.
+	if (this->mVisible || !this->window->isVisible()) return;
+	this->mVisible = true;
+	emit this->visibleChanged();
+}
+
+void WlSessionLockSurface::onWidthChanged() {
+	if (this->mWidth == this->window->width()) return;
+	this->mWidth = this->window->width();
+	this->mContentItem->setWidth(this->mWidth);
+	emit this->widthChanged();
+}
+
+void WlSessionLockSurface::onHeightChanged() {
+	if (this->mHeight == this->window->height()) return;
+	this->mHeight = this->window->height();
+	this->mContentItem->setHeight(this->mHeight);
+	emit this->heightChanged();
+}
