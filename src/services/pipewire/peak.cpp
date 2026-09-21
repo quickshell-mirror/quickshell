@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <numeric>
 
 #include <pipewire/core.h>
 #include <pipewire/keys.h>
@@ -68,6 +69,7 @@ private:
 	SpaHook listener;
 	spa_audio_info_raw format = SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_UNKNOWN);
 	bool formatReady = false;
+	bool warnedChannelMismatch = false;
 	QVector<float> channelPeaks;
 };
 
@@ -237,6 +239,7 @@ void PwPeakStream::handleParamChanged(uint32_t id, const spa_pod* param) {
 void PwPeakStream::resetFormat() {
 	this->format = SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_UNKNOWN);
 	this->formatReady = false;
+	this->warnedChannelMismatch = false;
 	this->channelPeaks.clear();
 	this->monitor->clearPeaks();
 }
@@ -293,10 +296,22 @@ void PwPeakStream::handleProcess() {
 			}
 
 			if (volumes.length() != channelCount) {
-				qCCritical(logPeak) << this->node
-				                    << "is missing channels present in capture stream. Node channels:"
-				                    << nchannels << "Stream channels:" << this->monitor->mChannels;
-				return;
+				if (!this->warnedChannelMismatch) {
+					this->warnedChannelMismatch = true;
+					qCDebug(logPeak) << this->node
+					                 << "has channels that do not match the capture stream, matching"
+					                 << "volumes by index. Node channels:" << nchannels
+					                 << "Stream channels:" << this->monitor->mChannels;
+				}
+
+				volumes.clear();
+				if (nvolumes.length() == channelCount) {
+					volumes = nvolumes;
+				} else if (!nvolumes.isEmpty()) {
+					auto mean = std::accumulate(nvolumes.begin(), nvolumes.end(), 0.0f)
+					          / static_cast<float>(nvolumes.length());
+					volumes.fill(mean, channelCount);
+				}
 			}
 		}
 	}
