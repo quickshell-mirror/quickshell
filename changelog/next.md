@@ -1,3 +1,7 @@
+## Other Changes
+
+- Added support for Hyprland's new workspace address format.
+
 ## Bug Fixes
 
 - Fixed main process crashes on pam subprocess misbehavior.

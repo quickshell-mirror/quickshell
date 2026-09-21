@@ -102,7 +102,11 @@ public:
 	[[nodiscard]] ObjectModel<HyprlandToplevel>* toplevels();
 
 	// No byId because these preemptively create objects. The given id is set if created.
-	HyprlandWorkspace* findWorkspaceByName(const QString& name, bool createIfMissing, qint32 id = -1);
+	HyprlandWorkspace* findWorkspaceByName(
+	    const QString& name,
+	    bool createIfMissing,
+	    const QString& address = QString()
+	);
 	HyprlandMonitor* findMonitorByName(const QString& name, bool createIfMissing, qint32 id = -1);
 	HyprlandToplevel* findToplevelByAddress(quint64 address, bool createIfMissing);
 

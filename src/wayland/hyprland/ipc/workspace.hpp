@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qbytearrayview.h>
+#include <qcontainerfwd.h>
 #include <qjsonobject.h>
 #include <qobject.h>
 #include <qproperty.h>
@@ -18,6 +19,13 @@ class HyprlandMonitor;
 class HyprlandWorkspace: public QObject {
 	Q_OBJECT;
 	// clang-format off
+	// > [!NOTE] On Hyprland versions prior to 0.57, this property is set to @@id as a string for compatibility.
+	// >
+	// > Prefer this property over @@id for new code.
+	Q_PROPERTY(QString address READ default NOTIFY addressChanged BINDABLE bindableAddress);
+	// > [!NOTE] On Hyprland versions 0.57 and later, this property is set to @@address as an integer for compatibility.
+	// >
+	// > After 0.57, this property will equal `-1` for non-numbered workspaces.
 	Q_PROPERTY(qint32 id READ default NOTIFY idChanged BINDABLE bindableId);
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// If this workspace is currently active on its monitor. See also @@focused.
@@ -47,7 +55,7 @@ class HyprlandWorkspace: public QObject {
 public:
 	explicit HyprlandWorkspace(HyprlandIpc* ipc);
 
-	void updateInitial(qint32 id, const QString& name);
+	void updateInitial(const QString& address, const QString& name);
 	void updateFromObject(QVariantMap object);
 
 	/// Activate the workspace.
@@ -58,6 +66,7 @@ public:
 	/// > ```
 	Q_INVOKABLE void activate();
 
+	[[nodiscard]] QBindable<QString> bindableAddress() { return &this->bAddress; }
 	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
 	[[nodiscard]] QBindable<bool> bindableActive() { return &this->bActive; }
@@ -75,7 +84,9 @@ public:
 	void removeToplevel(HyprlandToplevel* toplevel);
 
 signals:
+	void addressChanged();
 	void idChanged();
+	void typeChanged();
 	void nameChanged();
 	void activeChanged();
 	void focusedChanged();
@@ -97,6 +108,7 @@ private:
 	ObjectModel<HyprlandToplevel> mToplevels {this};
 
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bAddress, &HyprlandWorkspace::addressChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(HyprlandWorkspace, qint32, bId, -1, &HyprlandWorkspace::idChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bName, &HyprlandWorkspace::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bActive, &HyprlandWorkspace::activeChanged);

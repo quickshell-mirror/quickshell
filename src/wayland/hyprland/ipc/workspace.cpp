@@ -18,11 +18,18 @@ QVariantMap HyprlandWorkspace::lastIpcObject() const { return this->mLastIpcObje
 HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 	Qt::beginPropertyUpdateGroup();
 
-	this->bActive.setBinding([this]() {
+	this->bId.setBinding([this] {
+		auto idOk = false;
+		auto id = this->bAddress.value().toInt(&idOk);
+		if (!idOk) id = -1;
+		return id;
+	});
+
+	this->bActive.setBinding([this] {
 		return this->bMonitor.value() && this->bMonitor->bindableActiveWorkspace().value() == this;
 	});
 
-	this->bFocused.setBinding([this]() {
+	this->bFocused.setBinding([this] {
 		return this->ipc->bindableFocusedWorkspace().value() == this;
 	});
 
@@ -35,9 +42,9 @@ HyprlandWorkspace::HyprlandWorkspace(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 	Qt::endPropertyUpdateGroup();
 }
 
-void HyprlandWorkspace::updateInitial(qint32 id, const QString& name) {
+void HyprlandWorkspace::updateInitial(const QString& address, const QString& name) {
 	Qt::beginPropertyUpdateGroup();
-	this->bId = id;
+	this->bAddress = address;
 	this->bName = name;
 	Qt::endPropertyUpdateGroup();
 }
@@ -47,11 +54,14 @@ void HyprlandWorkspace::updateFromObject(QVariantMap object) {
 	auto monitorName = object.value("monitor").value<QString>();
 	auto hasFullscreen = object.value("hasfullscreen").value<bool>();
 
-	auto initial = this->bId == -1;
+	auto initial = this->bAddress.value().isEmpty();
 
-	// ID cannot be updated after creation
+	// Address cannot be updated after creation
 	if (initial) {
-		this->bId = object.value("id").value<qint32>();
+		auto address = object.value("address").value<QString>();
+		auto id = object.value("id").value<qint32>();
+		if (address.isEmpty()) address = QString::number(id);
+		this->bAddress = address;
 	}
 
 	// No events we currently handle give a workspace id but not a name,

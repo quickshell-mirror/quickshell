@@ -28,7 +28,9 @@ void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QStrin
 
 void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	auto activeWorkspaceObj = object.value("activeWorkspace").value<QVariantMap>();
+	auto activeWorkspaceAddress = activeWorkspaceObj.value("address").value<QString>();
 	auto activeWorkspaceId = activeWorkspaceObj.value("id").value<qint32>();
+	if (activeWorkspaceAddress.isEmpty()) activeWorkspaceAddress = QString::number(activeWorkspaceId);
 	auto activeWorkspaceName = activeWorkspaceObj.value("name").value<QString>();
 	auto focused = object.value("focused").value<bool>();
 
@@ -46,7 +48,8 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	if (this->bActiveWorkspace == nullptr
 	    || this->bActiveWorkspace->bindableName().value() != activeWorkspaceName)
 	{
-		auto* workspace = this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceId);
+		auto* workspace =
+		    this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceAddress);
 		workspace->setMonitor(this);
 		this->setActiveWorkspace(workspace);
 	}
