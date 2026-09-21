@@ -4,6 +4,7 @@
 
 ## Bug Fixes
 
+- Fixed graphics initialization failures in the initial session lock surfaces crashing Quickshell. The lock attempt is now aborted instead.
 - Fixed main process crashes on pam subprocess misbehavior.
 - Fixed crashes when attempting to create or modify session locks reentrantly.
 - Fixed networking state breaking after restarting NetworkManager.
