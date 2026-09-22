@@ -73,6 +73,13 @@ void Socket::onSocketDisconnected() {
 void Socket::onSocketError(QLocalSocket::LocalSocketError error) {
 	qCWarning(logSocket) << "Socket error for" << this << error;
 	emit this->error(error);
+
+	if (!this->connected) {
+		QObject::disconnect(this->socket, nullptr, this, nullptr);
+		this->socket->deleteLater();
+		this->socket = nullptr;
+		this->disconnecting = false;
+	}
 }
 
 bool Socket::isConnected() const { return this->connected; }
