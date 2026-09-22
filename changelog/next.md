@@ -1,6 +1,7 @@
 ## Other Changes
 
 - Added support for Hyprland's new workspace address format.
+- Added `DiskCache` pragma which loads the config from a mirror in the runtime dir to enable the qml disk cache, visible in `Component.url` and `Qt.resolvedUrl` results.
 
 ## Bug Fixes
 

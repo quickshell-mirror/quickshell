@@ -48,6 +48,17 @@ QUrl QsUrlInterceptor::intercept(
 			return QUrl("qrc:/qs-blackhole");
 		}
 
+		// types are keyed by intercepted url, a second url for a document doubles its singletons
+		if (!this->vfsPath.isEmpty()
+		    && (type != QQmlAbstractUrlInterceptor::DataType::UrlString || path.endsWith(".qml")))
+		{
+			auto newUrl = url;
+			newUrl.setScheme("file");
+			newUrl.setPath(this->toVfsPath(path));
+			qCDebug(logQsIntercept) << "Rewrote intercept" << url << "to" << newUrl;
+			return newUrl;
+		}
+
 		// Some types such as Image take into account where they are loading from, and force
 		// asynchronous loading over a network. qs: is considered to be over a network.
 		// In those cases we want to return a file:// url so asynchronous loading is not forced.
@@ -66,7 +77,39 @@ QUrl QsUrlInterceptor::intercept(
 		}
 	}
 
+	// documents from real paths (Quickshell.shellDir) go to the mirror for the same reason,
+	// everything else resolved against a mirror document goes back to the real path
+	if (!this->vfsPath.isEmpty() && url.scheme() == "file") {
+		auto isDocument =
+		    type == QQmlAbstractUrlInterceptor::DataType::QmlFile
+		    || type == QQmlAbstractUrlInterceptor::DataType::JavaScriptFile
+		    || type == QQmlAbstractUrlInterceptor::DataType::QmldirFile
+		    || (type == QQmlAbstractUrlInterceptor::DataType::UrlString && url.path().endsWith(".qml"));
+
+		auto path = url.path();
+		auto newPath = isDocument ? this->toVfsPath(path) : this->toConfigPath(path);
+
+		if (newPath != path) {
+			auto newUrl = url;
+			newUrl.setPath(newPath);
+			qCDebug(logQsIntercept) << "Canonicalized intercept" << url << "to" << newUrl;
+			return newUrl;
+		}
+	}
+
 	return url;
+}
+
+QString QsUrlInterceptor::toVfsPath(const QString& path) const {
+	const auto& rootPath = this->configRoot.path();
+	if (!path.startsWith(rootPath % '/')) return path;
+	return this->vfsPath % "/qs" % path.sliced(rootPath.length());
+}
+
+QString QsUrlInterceptor::toConfigPath(const QString& path) const {
+	const QString mirrorPath = this->vfsPath % "/qs";
+	if (!path.startsWith(mirrorPath % '/')) return path;
+	return this->configRoot.path() % path.sliced(mirrorPath.length());
 }
 
 QsInterceptDataReply::QsInterceptDataReply(const QString& data, QObject* parent)
