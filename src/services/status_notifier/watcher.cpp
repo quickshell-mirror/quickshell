@@ -114,13 +114,16 @@ void StatusNotifierWatcher::RegisterStatusNotifierHost(const QString& host) {
 		return;
 	}
 
+	// Watch first, so the host cannot exit unnoticed before it is tracked.
+	this->serviceWatcher.addWatchedService(host);
+
 	if (!QDBusConnection::sessionBus().interface()->serviceOwner(host).isValid()) {
 		qCWarning(logStatusNotifierWatcher).noquote()
 		    << "Ignoring invalid StatusNotifierHost registration of" << host << "to watcher";
+		this->serviceWatcher.removeWatchedService(host);
 		return;
 	}
 
-	this->serviceWatcher.addWatchedService(host);
 	this->hosts.push_back(host);
 	qCDebug(logStatusNotifierWatcher).noquote()
 	    << "Registered StatusNotifierHost" << host << "to watcher";
@@ -137,13 +140,16 @@ void StatusNotifierWatcher::RegisterStatusNotifierItem(const QString& item) {
 		return;
 	}
 
+	// Watch first, so the item cannot exit unnoticed before it is tracked.
+	this->serviceWatcher.addWatchedService(service);
+
 	if (!QDBusConnection::sessionBus().interface()->serviceOwner(service).isValid()) {
 		qCWarning(logStatusNotifierWatcher).noquote()
 		    << "Ignoring invalid StatusNotifierItem registration of" << qualifiedItem << "to watcher";
+		this->serviceWatcher.removeWatchedService(service);
 		return;
 	}
 
-	this->serviceWatcher.addWatchedService(service);
 	this->items.push_back(qualifiedItem);
 
 	qCDebug(logStatusNotifierWatcher).noquote()
