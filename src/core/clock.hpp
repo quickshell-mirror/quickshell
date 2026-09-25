@@ -7,6 +7,10 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#ifdef Q_OS_LINUX
+#include <qsocketnotifier.h>
+#endif
+
 ///! System clock accessor.
 /// SystemClock is a view into the system's clock.
 /// It updates at hour, minute, or second intervals depending on @@precision.
@@ -29,6 +33,7 @@
 /// > of the constructed object could be off by up to a second.
 class SystemClock: public QObject {
 	Q_OBJECT;
+	Q_DISABLE_COPY_MOVE(SystemClock);
 	/// If the clock should update. Defaults to true.
 	///
 	/// Setting enabled to false pauses the clock.
@@ -58,6 +63,7 @@ public:
 	Q_ENUM(Enum);
 
 	explicit SystemClock(QObject* parent = nullptr);
+	~SystemClock() override;
 
 	[[nodiscard]] bool enabled() const;
 	void setEnabled(bool enabled);
@@ -79,6 +85,13 @@ private slots:
 	void onTimeout();
 
 private:
+#ifdef Q_OS_LINUX
+	void onRealtimeTimeout();
+	void closeRealtimeTimer();
+	int timerFd = -1;
+	QSocketNotifier notifier {QSocketNotifier::Read};
+#endif
+
 	bool mEnabled = true;
 	SystemClock::Enum mPrecision = SystemClock::Seconds;
 	QTimer timer;

@@ -4,6 +4,8 @@
 
 ## Bug Fixes
 
+- Fixed `SystemClock` remaining stale after suspend or system clock changes on Linux.
+
 - Fixed main process crashes on pam subprocess misbehavior.
 - Fixed crashes when attempting to create or modify session locks reentrantly.
 - Fixed networking state breaking after restarting NetworkManager.
