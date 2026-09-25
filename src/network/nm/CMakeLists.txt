@@ -19,6 +19,16 @@ qt_add_dbus_interface(NM_DBUS_INTERFACES
 	dbus_nm_device
 )
 
+set_source_files_properties(org.freedesktop.NetworkManager.Device.Statistics.xml PROPERTIES
+	CLASSNAME DBusNMDeviceStatisticsProxy
+	NO_NAMESPACE TRUE
+)
+
+qt_add_dbus_interface(NM_DBUS_INTERFACES
+	org.freedesktop.NetworkManager.Device.Statistics.xml
+	dbus_nm_device_statistics
+)
+
 set_source_files_properties(org.freedesktop.NetworkManager.Device.Wireless.xml PROPERTIES
 	CLASSNAME DBusNMWirelessProxy
 	NO_NAMESPACE TRUE
