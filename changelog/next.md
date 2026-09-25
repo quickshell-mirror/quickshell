@@ -2,6 +2,10 @@
 
 - Added support for Hyprland's new workspace address format.
 
+## New Features
+
+- Added `WaylandWindow.appId` for setting the app id of toplevel windows on Wayland.
+
 ## Bug Fixes
 
 - Fixed main process crashes on pam subprocess misbehavior.
