@@ -37,6 +37,18 @@ QS_LOGGING_CATEGORY(logHyprlandIpc, "quickshell.hyprland.ipc", QtWarningMsg);
 QS_LOGGING_CATEGORY(logHyprlandIpcEvents, "quickshell.hyprland.ipc.events", QtWarningMsg);
 } // namespace
 
+QBindable<HyprlandMonitor*> HyprlandIpc::bindableFocusedMonitor() const {
+	return &this->bFocusedMonitor;
+}
+
+QBindable<HyprlandWorkspace*> HyprlandIpc::bindableFocusedWorkspace() const {
+	return &this->bFocusedWorkspace;
+}
+
+QBindable<HyprlandToplevel*> HyprlandIpc::bindableActiveToplevel() const {
+	return &this->bActiveToplevel;
+}
+
 HyprlandIpc::HyprlandIpc() {
 	auto his = qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE");
 	if (his.isEmpty()) {

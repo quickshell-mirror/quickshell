@@ -13,6 +13,10 @@ namespace qs::hyprland::ipc {
 
 QVariantMap HyprlandMonitor::lastIpcObject() const { return this->mLastIpcObject; }
 
+QBindable<HyprlandWorkspace*> HyprlandMonitor::bindableActiveWorkspace() const {
+	return &this->bActiveWorkspace;
+}
+
 void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QString& description) {
 	Qt::beginPropertyUpdateGroup();
 	this->bId = id;
