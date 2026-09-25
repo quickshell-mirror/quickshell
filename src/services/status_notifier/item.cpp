@@ -30,6 +30,10 @@
 #include "host.hpp"
 #include "watcher.hpp"
 
+#ifdef QS_WAYLAND
+#include "activation.hpp"
+#endif
+
 using namespace qs::dbus;
 using namespace qs::dbus::dbusmenu;
 using namespace qs::menu::platform;
@@ -219,6 +223,43 @@ QPixmap StatusNotifierItem::createPixmap(const QSize& size) const {
 }
 
 void StatusNotifierItem::activate() {
+#ifdef QS_WAYLAND
+	if (requestActivationToken(
+	        this,
+	        [this](const QString& token) { this->activateWithToken(token); }
+	    ))
+	{
+		return;
+	}
+#endif
+	this->activateWithoutToken();
+}
+
+void StatusNotifierItem::activateWithToken(const QString& token) {
+	if (token.isEmpty()) {
+		this->activateWithoutToken();
+		return;
+	}
+
+	auto* call = new QDBusPendingCallWatcher(this->item->ProvideXdgActivationToken(token), this);
+	QObject::connect(
+	    call,
+	    &QDBusPendingCallWatcher::finished,
+	    this,
+	    [this](QDBusPendingCallWatcher* call) {
+		    // Wait for delivery before activating. Older items may reject the optional
+		    // method; they must still receive the ordinary activation in that case.
+		    const QDBusPendingReply<> reply = *call;
+		    if (reply.isError() && reply.error().type() != QDBusError::UnknownMethod) {
+			    qCWarning(logStatusNotifierItem) << "Error providing activation token:" << reply.error();
+		    }
+		    delete call;
+		    this->activateWithoutToken();
+	    }
+	);
+}
+
+void StatusNotifierItem::activateWithoutToken() {
 	auto pendingCall = this->item->Activate(0, 0);
 	auto* call = new QDBusPendingCallWatcher(pendingCall, this);
 
