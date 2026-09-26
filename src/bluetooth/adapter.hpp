@@ -2,6 +2,7 @@
 
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 
 #include "../core/doc.hpp"
@@ -143,8 +144,20 @@ signals:
 	void pairableTimeoutChanged();
 
 private:
+	void onStateChanged();
+	void schedulePowerStatePoll();
+	void startPowerStatePoll();
+	void continuePowerStatePoll();
+	void stopPowerStatePoll();
+	void onPowerStatePollFinished();
+	void onPowerStatePollFailed();
+
 	DBusBluezAdapterInterface* mInterface = nullptr;
 	ObjectModel<BluetoothDevice> mDevices {this};
+
+	QTimer mPowerStatePollTimer;
+	quint8 mPowerStatePollAttempts = 0;
+	bool mPowerStatePollPending = false;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(BluetoothAdapter, QString, bName, &BluetoothAdapter::nameChanged);

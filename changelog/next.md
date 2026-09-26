@@ -4,6 +4,8 @@
 
 ## Bug Fixes
 
+- Fixed `BluetoothAdapter.enabled` getting stuck on transitional power states when an adapter
+  is registered while it is still powering on or off.
 - Fixed main process crashes on pam subprocess misbehavior.
 - Fixed crashes when attempting to create or modify session locks reentrantly.
 - Fixed networking state breaking after restarting NetworkManager.
