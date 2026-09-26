@@ -9,6 +9,7 @@
 #include "../../../core/model.hpp"
 #include "../../../core/qmlscreen.hpp"
 #include "connection.hpp"
+#include "keyboard.hpp"
 #include "monitor.hpp"
 
 namespace qs::hyprland::ipc {
@@ -41,6 +42,11 @@ class HyprlandIpcQml: public QObject {
 	/// All hyprland toplevels
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandToplevel>*);
 	Q_PROPERTY(UntypedObjectModel* toplevels READ toplevels CONSTANT);
+	/// The keyboard device that last received an activelayout event. May be null.
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandKeyboard* activeKeyboard READ default NOTIFY activeKeyboardChanged BINDABLE bindableActiveKeyboard);
+	/// All known hyprland keyboard devices.
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::hyprland::ipc::HyprlandKeyboard>*);
+	Q_PROPERTY(UntypedObjectModel* keyboards READ keyboards CONSTANT);
 	// clang-format on
 	QML_NAMED_ELEMENT(Hyprland);
 	QML_SINGLETON;
@@ -72,15 +78,20 @@ public:
 	/// so this function is available if required.
 	Q_INVOKABLE static void refreshToplevels();
 
+	/// Refresh keyboard device information and their available layouts.
+	Q_INVOKABLE static void refreshKeyboards();
+
 	[[nodiscard]] static QString requestSocketPath();
 	[[nodiscard]] static QString eventSocketPath();
 	[[nodiscard]] static QBindable<bool> bindableUsingLua();
 	[[nodiscard]] static QBindable<HyprlandMonitor*> bindableFocusedMonitor();
 	[[nodiscard]] static QBindable<HyprlandWorkspace*> bindableFocusedWorkspace();
 	[[nodiscard]] static QBindable<HyprlandToplevel*> bindableActiveToplevel();
+	[[nodiscard]] static QBindable<HyprlandKeyboard*> bindableActiveKeyboard();
 	[[nodiscard]] static ObjectModel<HyprlandMonitor>* monitors();
 	[[nodiscard]] static ObjectModel<HyprlandWorkspace>* workspaces();
 	[[nodiscard]] static ObjectModel<HyprlandToplevel>* toplevels();
+	[[nodiscard]] static ObjectModel<HyprlandKeyboard>* keyboards();
 
 signals:
 	/// Emitted for every event that comes in through the hyprland event socket (socket2).
@@ -92,6 +103,7 @@ signals:
 	void focusedMonitorChanged();
 	void focusedWorkspaceChanged();
 	void activeToplevelChanged();
+	void activeKeyboardChanged();
 };
 
 } // namespace qs::hyprland::ipc
