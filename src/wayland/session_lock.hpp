@@ -15,6 +15,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../core/doc.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
 #include "session_lock/session_lock.hpp"
@@ -58,6 +59,9 @@ class WlSessionLock: public Reloadable {
 	// clang-format off
 	/// Controls the lock state.
 	///
+	/// If graphics initialization fails while creating the initial lock surfaces, the lock
+	/// attempt is aborted and this property returns to false.
+	///
 	/// > [!WARNING] Only one WlSessionLock may be locked at a time. Attempting to enable a lock while
 	/// > another lock is enabled will do nothing.
 	Q_PROPERTY(bool locked READ isLocked WRITE setLocked NOTIFY lockStateChanged);
@@ -94,6 +98,7 @@ signals:
 private slots:
 	void unlock();
 	void onScreensChanged();
+	void onGraphicsInitializationFailed(QQuickWindow::SceneGraphError error, const QString& message);
 
 private:
 	void updateSurfaces(bool show, WlSessionLock* old = nullptr);
@@ -155,6 +160,7 @@ public:
 
 	void attach();
 	void show();
+	void handleInitialGraphicsErrors();
 
 	[[nodiscard]] QQuickItem* contentItem() const;
 
@@ -172,6 +178,8 @@ public:
 	[[nodiscard]] QQmlListProperty<QObject> data();
 
 signals:
+	QSDOC_HIDE void
+	graphicsInitializationFailed(QQuickWindow::SceneGraphError error, const QString& message);
 	void visibleChanged();
 	void widthChanged();
 	void heightChanged();
