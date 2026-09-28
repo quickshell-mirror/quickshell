@@ -17,6 +17,7 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../qml.hpp"
+#include "connection_manager.hpp"
 #include "dbus_nm_backend.h"
 #include "dbus_nm_device.h"
 #include "dbus_types.hpp"
@@ -33,7 +34,7 @@ QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWa
 
 NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	qCDebug(logNetworkManager) << "Connecting to NetworkManager";
-	qDBusRegisterMetaType<NMSettingsMap>();
+	qDBusRegisterMetaType<NMSettings>();
 
 	auto bus = QDBusConnection::systemBus();
 	if (!bus.isConnected()) {
@@ -67,6 +68,7 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	// clang-format on
 
 	this->dbusProperties.setInterface(this->proxy);
+	this->mSettingsManager = new NMConnectionManager(this);
 
 	if (!this->proxy->isValid()) {
 		qCDebug(
@@ -154,6 +156,15 @@ void NetworkManager::registerDevice(const QString& path) {
 					QObject::connect(dev, &NMDevice::activateConnection, this, &NetworkManager::activateConnection);
 					// clang-format on
 					QObject::connect(dev, &NMDevice::loaded, this, [this, dev]() {
+						QObject::connect(
+						    this->mSettingsManager,
+						    &NMConnectionManager::connectionLoaded,
+						    dev,
+						    &NMDevice::onConnectionLoaded
+						);
+						for (auto* conn: this->mSettingsManager->loadedConnections()) {
+							dev->onConnectionLoaded(conn);
+						}
 						emit this->deviceAdded(dev->frontend());
 					});
 				}
@@ -206,7 +217,7 @@ void NetworkManager::activateConnection(
 }
 
 void NetworkManager::addAndActivateConnection(
-    const NMSettingsMap& settings,
+    const NMSettings& settings,
     const QDBusObjectPath& devPath,
     const QDBusObjectPath& specificObjectPath
 ) {
@@ -241,10 +252,12 @@ void NetworkManager::onServiceRegistered() {
 	qCDebug(logNetworkManager) << "NetworkManager service registered";
 	this->dbusProperties.updateAllViaGetAll();
 	this->registerDevices();
+	this->mSettingsManager->onServiceRegistered();
 }
 
 void NetworkManager::onServiceUnregistered() {
 	qCDebug(logNetworkManager) << "NetworkManager service unregistered";
+	this->mSettingsManager->onServiceUnregistered();
 
 	// Clear all remaining devices
 	const auto devices = this->mDevices;

@@ -10,7 +10,9 @@
 #include "../core/logcat.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+#include "known_network.hpp"
 #include "nm/backend.hpp"
+#include "nm/connection_manager.hpp"
 
 namespace qs::network {
 
@@ -25,6 +27,8 @@ Networking::Networking(QObject* parent): QObject(parent) {
 		// clang-format off
 		QObject::connect(nm, &NetworkManager::deviceAdded, this, &Networking::deviceAdded);
 		QObject::connect(nm, &NetworkManager::deviceRemoved, this, &Networking::deviceRemoved);
+		QObject::connect(nm->settingsManager(), &NMConnectionManager::knownNetworkAdded, this, &Networking::knownNetworkAdded);
+		QObject::connect(nm->settingsManager(), &NMConnectionManager::knownNetworkRemoved, this, &Networking::knownNetworkRemoved);
 		QObject::connect(this, &Networking::requestSetWifiEnabled, nm, &NetworkManager::setWifiEnabled);
 		QObject::connect(this, &Networking::requestSetConnectivityCheckEnabled, nm, &NetworkManager::setConnectivityCheckEnabled);
 		QObject::connect(this, &Networking::requestCheckConnectivity, nm, &NetworkManager::checkConnectivity);
@@ -51,6 +55,12 @@ Networking* Networking::instance() {
 
 void Networking::deviceAdded(NetworkDevice* dev) { this->mDevices.insertObject(dev); }
 void Networking::deviceRemoved(NetworkDevice* dev) { this->mDevices.removeObject(dev); }
+void Networking::knownNetworkAdded(KnownNetwork* knownNet) {
+	this->mKnownNetworks.insertObject(knownNet);
+}
+void Networking::knownNetworkRemoved(KnownNetwork* knownNet) {
+	this->mKnownNetworks.removeObject(knownNet);
+}
 
 void Networking::checkConnectivity() {
 	if (!this->bConnectivityCheckEnabled || !this->bCanCheckConnectivity) return;

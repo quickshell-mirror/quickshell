@@ -9,10 +9,10 @@
 
 namespace qs::network {
 
-using NMSettingsMap = QMap<QString, QVariantMap>;
+using NMSettings = QMap<QString, QVariantMap>;
 
-const QDBusArgument& operator>>(const QDBusArgument& argument, NMSettingsMap& map);
-const QDBusArgument& operator<<(QDBusArgument& argument, const NMSettingsMap& map);
+const QDBusArgument& operator>>(const QDBusArgument& argument, NMSettings& map);
+const QDBusArgument& operator<<(QDBusArgument& argument, const NMSettings& map);
 
 struct NMIPv6Address {
 	QByteArray address;
@@ -35,6 +35,6 @@ const QDBusArgument& operator<<(QDBusArgument& argument, const qs::network::NMIP
 
 } // namespace qs::network
 
-Q_DECLARE_METATYPE(qs::network::NMSettingsMap);
+Q_DECLARE_METATYPE(qs::network::NMSettings);
 Q_DECLARE_METATYPE(qs::network::NMIPv6Address);
 Q_DECLARE_METATYPE(qs::network::NMIPv6Route);

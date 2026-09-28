@@ -9,7 +9,7 @@
 
 namespace qs::network {
 
-const QDBusArgument& operator>>(const QDBusArgument& argument, NMSettingsMap& map) {
+const QDBusArgument& operator>>(const QDBusArgument& argument, NMSettings& map) {
 	argument.beginMap();
 	while (!argument.atEnd()) {
 		argument.beginMapEntry();
@@ -26,7 +26,7 @@ const QDBusArgument& operator>>(const QDBusArgument& argument, NMSettingsMap& ma
 	return argument;
 }
 
-const QDBusArgument& operator<<(QDBusArgument& argument, const NMSettingsMap& map) {
+const QDBusArgument& operator<<(QDBusArgument& argument, const NMSettings& map) {
 	argument.beginMap(qMetaTypeId<QString>(), qMetaTypeId<QVariantMap>());
 	for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
 		argument.beginMapEntry();

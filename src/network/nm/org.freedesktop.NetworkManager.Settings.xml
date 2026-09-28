@@ -1,0 +1,18 @@
+<node>
+  <interface name="org.freedesktop.NetworkManager.Settings">
+		<method name="AddConnection">
+			<arg name="connection" type="a{sa{sv}}" direction="in"/>
+			<arg name="path" type="o" direction="out"/>
+			<annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="qs::network::NMSettings"/>
+		</method>
+    <method name="ListConnections">
+			<arg name="settings" type="ao" direction="out"/>
+    </method>
+		<signal name="NewConnection">
+			<arg name="connection" type="o"/>
+		</signal>
+		<signal name="ConnectionRemoved">
+			<arg name="connection" type="o"/>
+		</signal>
+  </interface>
+</node>

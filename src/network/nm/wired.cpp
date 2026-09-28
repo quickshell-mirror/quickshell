@@ -11,12 +11,12 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../wired.hpp"
-#include "active_connection.hpp"
+#include "connection.hpp"
 #include "dbus_nm_wired.h"
+#include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -69,11 +69,6 @@ void NMWiredDevice::initWired() {
 	this->NMDevice::bindNetwork(net);
 	this->mNetwork = net;
 
-	// clang-format off
-	QObject::connect(this, &NMWiredDevice::settingsLoaded, this, &NMWiredDevice::onSettingsLoaded);
-	QObject::connect(this, &NMWiredDevice::activeConnectionLoaded, this, &NMWiredDevice::onActiveConnectionLoaded);
-	// clang-format on
-
 	emit this->loaded();
 }
 
@@ -86,12 +81,13 @@ void NMWiredDevice::bindFrontend() {
 	});
 }
 
-void NMWiredDevice::onSettingsLoaded(NMSettings* settings) {
-	this->mNetwork->addSettings(settings);
+bool NMWiredDevice::isConnectionCompatible(const NMSettings& settings) const {
+	return this->NMDevice::isConnectionCompatible(settings)
+	    && settings.value("connection").value("type").toString() == "802-3-ethernet";
 }
 
-void NMWiredDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	this->mNetwork->addActiveConnection(active);
+NMNetwork* NMWiredDevice::networkForConnection(NMConnection* conn) {
+	return this->isConnectionCompatible(conn->settings()) ? this->mNetwork : nullptr;
 }
 
 bool NMWiredDevice::isValid() const {
