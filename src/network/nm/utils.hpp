@@ -10,7 +10,7 @@
 
 namespace qs::network {
 
-WifiSecurityType::Enum securityFromSettingsMap(const NMSettingsMap& settings);
+WifiSecurityType::Enum securityFromSettings(const NMSettings& settings);
 
 bool deviceSupportsApCiphers(
     NMWirelessCapabilities::Enum caps,
@@ -39,15 +39,17 @@ WifiSecurityType::Enum findBestWirelessSecurity(
     NM80211ApSecurityFlags::Enum apRsn
 );
 
-NMSettingsMap mergeSettingsMaps(const NMSettingsMap& target, const NMSettingsMap& source);
+NMSettings mergeSettings(const NMSettings& target, const NMSettings& source);
 
-NMSettingsMap removeSettingsInMap(const NMSettingsMap& target, const NMSettingsMap& toRemove);
+NMSettings removeSettings(const NMSettings& target, const NMSettings& toRemove);
 
-void manualSettingDemarshall(NMSettingsMap& map);
+void manualSettingDemarshall(NMSettings& map);
 
 QVariant settingTypeFromQml(const QString& group, const QString& key, const QVariant& value);
 
 QVariant settingTypeToQml(const QVariant& value);
+
+QVariantMap settingsToQml(const NMSettings& settings);
 
 QDateTime clockBootTimeToDateTime(qint64 clockBootTime);
 

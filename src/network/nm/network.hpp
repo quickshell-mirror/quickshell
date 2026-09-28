@@ -7,23 +7,22 @@
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
 #include "active_connection.hpp"
+#include "connection.hpp"
 #include "enums.hpp"
-#include "settings.hpp"
 
 namespace qs::network {
 
-// NMNetwork aggregates NMActiveConnections and NMSettings of the same network.
+// NMNetwork aggregates NMActiveConnections and NMConnections that belong to the same logical network.
 class NMNetwork: public QObject {
 	Q_OBJECT;
 
 public:
 	explicit NMNetwork(QObject* parent = nullptr);
 
-	void addSettings(NMSettings* settings);
+	void addConnection(NMConnection* conn);
+	void removeConnection(NMConnection* conn);
 	void addActiveConnection(NMActiveConnection* active);
 	void forget();
-	void connect(const QString& devPath);
-	void connectWithSettings(const QString& devPath, NMSettings* settings);
 
 	// clang-format off
 	[[nodiscard]] NMConnectionState::Enum state() const { return this->bState; }
@@ -31,8 +30,8 @@ public:
 	[[nodiscard]] NMConnectionStateReason::Enum reason() const { return this->bReason; }
 	QBindable<NMDeviceStateReason::Enum> bindableDeviceFailReason() { return &this->bDeviceFailReason; }
 	[[nodiscard]] NMDeviceStateReason::Enum deviceFailReason() const { return this->bDeviceFailReason; }
-	[[nodiscard]] QList<NMSettings*> settings() const { return this->mSettings.values(); }
-	[[nodiscard]] NMSettings* referenceSettings() const { return this->bReferenceSettings; }
+	[[nodiscard]] QList<NMConnection*> connections() const { return this->mConnections.values(); }
+	[[nodiscard]] NMConnection* referenceConnection() const { return this->bReferenceConnection; }
 	[[nodiscard]] virtual Network* frontend() = 0;
 	QBindable<bool> bindableVisible() { return &this->bVisible; }
 	[[nodiscard]] bool visible() const { return this->bVisible; }
@@ -42,29 +41,29 @@ signals:
 	void requestDisconnect();
 	void requestActivateConnection(const QString& settingsPath);
 	void
-	requestAddAndActivateConnection(const NMSettingsMap& settingsMap, const QString& specificObject);
+	requestAddAndActivateConnection(const NMSettings& settingsMap, const QString& specificObject);
 
-	void settingsAdded(NMSettings* settings);
-	void settingsRemoved(NMSettings* settings);
+	void connectionAdded(NMConnection* conn);
+	void connectionRemoved(NMConnection* conn);
 	void stateChanged(NMConnectionState::Enum state);
 	void knownChanged(bool known);
 	void reasonChanged(NMConnectionStateReason::Enum reason);
 	void deviceFailReasonChanged(NMDeviceStateReason::Enum reason);
-	void referenceSettingsChanged(NMSettings* settings);
+	void referenceConnectionChanged(NMConnection* settings);
 	void visibilityChanged(bool visible);
 
 protected:
 	void bindFrontend(Network* frontend);
-	QHash<QString, NMSettings*> mSettings;
+	QHash<QString, NMConnection*> mConnections;
 	Q_OBJECT_BINDABLE_PROPERTY(
 	    NMNetwork,
-	    NMSettings*,
-	    bReferenceSettings,
-	    &NMNetwork::referenceSettingsChanged
+	    NMConnection*,
+	    bReferenceConnection,
+	    &NMNetwork::referenceConnectionChanged
 	);
 
 private:
-	void updateReferenceSettings();
+	void updateReferenceConnection();
 
 	NMActiveConnection* mActiveConnection = nullptr;
 

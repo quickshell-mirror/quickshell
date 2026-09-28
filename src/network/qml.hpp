@@ -10,6 +10,7 @@
 #include "../core/model.hpp"
 #include "device.hpp"
 #include "enums.hpp"
+#include "known_network.hpp"
 
 namespace qs::network {
 
@@ -32,6 +33,7 @@ public:
 	void checkConnectivity();
 
 	[[nodiscard]] ObjectModel<NetworkDevice>* devices() { return &this->mDevices; }
+	[[nodiscard]] ObjectModel<KnownNetwork>* knownNetworks() { return &this->mKnownNetworks; }
 	[[nodiscard]] NetworkBackendType::Enum backend() const { return this->mBackendType; }
 	QBindable<bool> bindableWifiEnabled() { return &this->bWifiEnabled; }
 	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; }
@@ -57,11 +59,14 @@ signals:
 private slots:
 	void deviceAdded(NetworkDevice* dev);
 	void deviceRemoved(NetworkDevice* dev);
+	void knownNetworkAdded(KnownNetwork* knownNet);
+	void knownNetworkRemoved(KnownNetwork* knownNet);
 
 private:
 	explicit Networking(QObject* parent = nullptr);
 
 	ObjectModel<NetworkDevice> mDevices {this};
+	ObjectModel<KnownNetwork> mKnownNetworks {this};
 	NetworkBackend* mBackend = nullptr;
 	NetworkBackendType::Enum mBackendType = NetworkBackendType::None;
 	// clang-format off
@@ -84,6 +89,9 @@ class NetworkingQml: public QObject {
 	/// A list of all network devices. Networks are exposed through their respective devices.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::NetworkDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
+	/// A list of known wired and wireless network profiles.
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::KnownNetwork>*);
+	Q_PROPERTY(UntypedObjectModel* knownNetworks READ knownNetworks CONSTANT);
 	/// The backend being used to power the Network service.
 	Q_PROPERTY(qs::network::NetworkBackendType::Enum backend READ backend CONSTANT);
 	/// Switch for the rfkill software block of all wireless devices.
@@ -115,6 +123,9 @@ public:
 
 	[[nodiscard]] static ObjectModel<NetworkDevice>* devices() {
 		return Networking::instance()->devices();
+	}
+	[[nodiscard]] static ObjectModel<KnownNetwork>* knownNetworks() {
+		return Networking::instance()->knownNetworks();
 	}
 	[[nodiscard]] static NetworkBackendType::Enum backend() {
 		return Networking::instance()->backend();

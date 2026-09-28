@@ -9,7 +9,7 @@
 
 #include "../core/logcat.hpp"
 #include "enums.hpp"
-#include "nm/settings.hpp"
+#include "known_network.hpp"
 
 namespace qs::network {
 
@@ -35,13 +35,13 @@ void Network::connect() {
 	this->requestConnect();
 }
 
-void Network::connectWithSettings(NMSettings* settings) {
+void Network::connectToKnownNetwork(KnownNetwork* knownNet) {
 	if (this->bConnected) {
 		qCCritical(logNetwork) << this << "is already connected.";
 		return;
 	}
-	if (this->bNmSettings.value().indexOf(settings) == -1) return;
-	this->requestConnectWithSettings(settings);
+	if (!this->bKnownNetworks.value().contains(knownNet)) return;
+	this->requestConnectWithKnownNetwork(knownNet);
 }
 
 void Network::disconnect() {
@@ -54,17 +54,17 @@ void Network::disconnect() {
 
 void Network::forget() { this->requestForget(); }
 
-void Network::settingsAdded(NMSettings* settings) {
-	auto list = this->bNmSettings.value();
-	if (list.contains(settings)) return;
-	list.append(settings);
-	this->bNmSettings = list;
+void Network::knownNetworkAdded(KnownNetwork* knownNet) {
+	auto list = this->bKnownNetworks.value();
+	if (list.contains(knownNet)) return;
+	list.append(knownNet);
+	this->bKnownNetworks = list;
 }
 
-void Network::settingsRemoved(NMSettings* settings) {
-	auto list = this->bNmSettings.value();
-	list.removeOne(settings);
-	this->bNmSettings = list;
+void Network::knownNetworkRemoved(KnownNetwork* knownNet) {
+	auto list = this->bKnownNetworks.value();
+	if (!list.removeOne(knownNet)) return;
+	this->bKnownNetworks = list;
 }
 
 } // namespace qs::network

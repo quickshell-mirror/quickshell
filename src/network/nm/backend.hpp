@@ -10,6 +10,7 @@
 
 #include "../../dbus/properties.hpp"
 #include "../qml.hpp"
+#include "connection_manager.hpp"
 #include "dbus_nm_backend.h"
 #include "dbus_types.hpp"
 #include "device.hpp"
@@ -35,6 +36,7 @@ public:
 	explicit NetworkManager(QObject* parent = nullptr);
 
 	[[nodiscard]] bool isAvailable() const override;
+	[[nodiscard]] NMConnectionManager* settingsManager() const { return this->mSettingsManager; }
 	[[nodiscard]] bool wifiEnabled() const { return this->bWifiEnabled; }
 	[[nodiscard]] bool wifiHardwareEnabled() const { return this->bWifiHardwareEnabled; }
 	[[nodiscard]] bool connectivityCheckAvailable() const {
@@ -64,7 +66,7 @@ private slots:
 	void onServiceUnregistered();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
-	    const NMSettingsMap& settings,
+	    const NMSettings& settings,
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& specificObjectPath
 	);
@@ -74,6 +76,7 @@ private:
 	void registerDevice(const QString& path);
 
 	QHash<QString, NMDevice*> mDevices;
+	NMConnectionManager* mSettingsManager = nullptr;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiEnabled, &NetworkManager::wifiEnabledChanged);

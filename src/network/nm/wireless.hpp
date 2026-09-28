@@ -14,7 +14,6 @@
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 
 namespace qs::dbus {
 template <>
@@ -63,12 +62,12 @@ private slots:
 	void onAccessPointAdded(const QDBusObjectPath& path);
 	void onAccessPointRemoved(const QDBusObjectPath& path);
 	void onAccessPointLoaded(NMAccessPoint* ap);
-	void onSettingsLoaded(NMSettings* settings);
-	void onActiveConnectionLoaded(NMActiveConnection* active);
 	void onScanTimeout();
 	void onScanningChanged(bool scanning);
 
 private:
+	[[nodiscard]] bool isConnectionCompatible(const NMSettings& settings) const;
+	[[nodiscard]] NMNetwork* networkForConnection(NMConnection* conn) override;
 	void registerAccessPoint(const QString& path);
 	void removeNetwork();
 	bool checkVisibility(WifiNetwork* net);
