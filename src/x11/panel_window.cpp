@@ -18,7 +18,6 @@
 
 #include "../core/generation.hpp"
 #include "../core/qmlscreen.hpp"
-#include "../core/types.hpp"
 #include "../window/panelinterface.hpp"
 #include "../window/proxywindow.hpp"
 #include "util.hpp"

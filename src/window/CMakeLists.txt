@@ -1,10 +1,13 @@
 qt_add_library(quickshell-window STATIC
+	../core/margins.hpp
 	proxywindow.cpp
 	windowinterface.cpp
 	panelinterface.cpp
 	floatingwindow.cpp
 	popupwindow.cpp
 )
+
+target_include_directories(quickshell-window PRIVATE ../core)
 
 qt_add_qml_module(quickshell-window
 	URI Quickshell._Window
