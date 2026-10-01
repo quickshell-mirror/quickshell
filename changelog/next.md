@@ -1,5 +1,6 @@
 ## Other Changes
 
+- Added experimental `QS_RENDER_CONTROL` environment variable to render Wayland windows without Qt's render loop, with partial damage.
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
 
 ## Bug Fixes

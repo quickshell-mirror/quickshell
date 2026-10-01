@@ -14,6 +14,10 @@ void installWlProxySafeDeref(); // NOLINT(misc-use-internal-linkage)
 void installPlatformMenuHook(); // NOLINT(misc-use-internal-linkage)
 void installPopupPositioner();  // NOLINT(misc-use-internal-linkage)
 
+#ifdef QS_WAYLAND_RENDER_CONTROL
+void installRenderControl(); // NOLINT(misc-use-internal-linkage)
+#endif
+
 namespace {
 
 class WaylandPlugin: public QsEnginePlugin {
@@ -33,7 +37,12 @@ class WaylandPlugin: public QsEnginePlugin {
 		return isWayland;
 	}
 
-	void preinit() override { installWlProxySafeDeref(); }
+	void preinit() override {
+		installWlProxySafeDeref();
+#ifdef QS_WAYLAND_RENDER_CONTROL
+		installRenderControl();
+#endif
+	}
 
 	void init() override {
 		installPlatformMenuHook();

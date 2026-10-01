@@ -123,6 +123,10 @@ if (SCREENCOPY)
 	add_subdirectory(buffer)
 	add_subdirectory(screencopy)
 	list(APPEND WAYLAND_MODULES Quickshell.Wayland._Screencopy)
+
+	target_sources(quickshell-wayland PRIVATE rendercontrol.cpp)
+	target_link_libraries(quickshell-wayland PRIVATE quickshell-wayland-buffer Qt::QuickPrivate)
+	target_compile_definitions(quickshell-wayland-init PRIVATE QS_WAYLAND_RENDER_CONTROL)
 endif()
 
 
