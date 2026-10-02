@@ -186,10 +186,10 @@ NMWirelessNetwork::NMWirelessNetwork(const QString& ssid, NetworkDevice* device,
     , bSecurity(WifiSecurityType::Unknown) {
 
 	auto updateSecurity = [this]() {
-		if (NMSettings* settings = this->bReferenceSettings) {
-			this->bSecurity.setBinding([settings]() { return securityFromSettingsMap(settings->map()); });
-		} else if (NMAccessPoint* ap = this->bReferenceAp) {
+		if (NMAccessPoint* ap = this->bReferenceAp) {
 			this->bSecurity.setBinding([ap]() { return ap->security(); });
+		} else if (NMSettings* settings = this->bReferenceSettings) {
+			this->bSecurity.setBinding([settings]() { return securityFromSettingsMap(settings->map()); });
 		} else {
 			this->bSecurity = WifiSecurityType::Unknown;
 		}
