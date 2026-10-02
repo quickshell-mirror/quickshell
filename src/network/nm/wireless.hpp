@@ -66,7 +66,6 @@ private slots:
 	void onScanningChanged(bool scanning);
 
 private:
-	[[nodiscard]] bool isConnectionCompatible(const NMSettings& settings) const;
 	[[nodiscard]] NMNetwork* networkForConnection(NMConnection* conn) override;
 	void registerAccessPoint(const QString& path);
 	void removeNetwork();

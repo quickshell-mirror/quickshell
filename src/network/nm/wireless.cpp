@@ -108,26 +108,14 @@ void NMWirelessDevice::onAccessPointLoaded(NMAccessPoint* ap) {
 	}
 }
 
-bool NMWirelessDevice::isConnectionCompatible(const NMSettings& settings) const {
-	if (!this->NMDevice::isConnectionCompatible(settings)) return false;
-
-	const auto type = settings.value("connection").value("type").toString();
-	if (type != "802-11-wireless") return false;
-
-	const auto wireless = settings.value("802-11-wireless");
+NMNetwork* NMWirelessDevice::networkForConnection(NMConnection* conn) {
+	const auto wireless = conn->settings().value("802-11-wireless");
 	const auto mode = wireless.value("mode").toString();
 	const auto hidden = wireless.value("hidden").toBool();
 	const auto ssid = wireless.value("ssid").toString();
 	// Omitted mode is assumed to be "infrastructure".
 	// TODO: Include hotspots and hidden networks.
-	return !hidden && !ssid.isEmpty() && (mode.isEmpty() || mode == "infrastructure");
-}
-
-NMNetwork* NMWirelessDevice::networkForConnection(NMConnection* conn) {
-	const NMSettings settings = conn->settings();
-	if (!this->isConnectionCompatible(settings)) return nullptr;
-
-	const auto ssid = settings.value("802-11-wireless").value("ssid").toString();
+	if (hidden || ssid.isEmpty() || (!mode.isEmpty() && mode != "infrastructure")) return nullptr;
 	auto* target = this->mNetworks.value(ssid);
 	if (!target) target = this->registerNetwork(ssid);
 	return target;

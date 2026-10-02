@@ -2,6 +2,7 @@
 
 #include <qdbusextratypes.h>
 #include <qhash.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qtmetamacros.h>
@@ -79,6 +80,7 @@ signals:
 	void lastFailReasonChanged(NMDeviceStateReason::Enum reason);
 	void autoconnectChanged(bool autoconnect);
 	void interfaceFlagsChanged(NMDeviceInterfaceFlags::Enum flags);
+	void availableConnectionsChanged();
 
 public slots:
 	void onConnectionLoaded(NMConnection* conn);
@@ -90,7 +92,6 @@ protected:
 	[[nodiscard]] virtual NMNetwork* networkForConnection(NMConnection* conn) = 0;
 	void bindFrontend(NetworkDevice* frontend);
 	void bindNetwork(NMNetwork* net);
-	[[nodiscard]] bool isConnectionCompatible(const NMSettings& settings) const;
 
 private slots:
 	void onStateChanged(quint32 newState, quint32 oldState, quint32 reason);
@@ -114,6 +115,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bAutoconnect, &NMDevice::autoconnectChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceInterfaceFlags::Enum, bInterfaceFlags, &NMDevice::interfaceFlagsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableConnectionsChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pName, bInterface, deviceProperties, "Interface");
@@ -123,6 +125,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAutoconnect, bAutoconnect, deviceProperties, "Autoconnect");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pInterfaceFlags, bInterfaceFlags, deviceProperties, "InterfaceFlags");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	// clang-format on
 
 	DBusNMDeviceProxy* deviceProxy = nullptr;

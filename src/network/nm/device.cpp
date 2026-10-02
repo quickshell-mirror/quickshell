@@ -83,8 +83,10 @@ void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 re
 }
 
 void NMDevice::onConnectionLoaded(NMConnection* conn) {
-	// Some changes to an NMConnetions settings can change the devices or networks it is compatible with
 	QObject::connect(conn, &NMConnection::settingsChanged, this, [this, conn]() {
+		this->assignToNetwork(conn);
+	});
+	QObject::connect(this, &NMDevice::availableConnectionsChanged, conn, [this, conn]() {
 		this->assignToNetwork(conn);
 	});
 	QObject::connect(conn, &NMConnection::unregistered, this, [this, conn]() {
@@ -101,19 +103,16 @@ void NMDevice::onConnectionLoaded(NMConnection* conn) {
 
 void NMDevice::assignToNetwork(NMConnection* conn) {
 	auto* current = this->mConnectionNetworks.value(conn);
-	auto* target = this->networkForConnection(conn);
+	auto* target = this->bAvailableConnections.value().contains(QDBusObjectPath(conn->path()))
+	                 ? this->networkForConnection(conn)
+	                 : nullptr;
 	if (current == target) return;
 
 	if (target) this->mConnectionNetworks.insert(conn, target);
 	else this->mConnectionNetworks.remove(conn);
 	if (current) current->removeConnection(conn);
-	if (target) target->addConnection(conn);
-}
 
-bool NMDevice::isConnectionCompatible(const NMSettings& settings) const {
-	// Connections may explicitly list compatible interfaces
-	const auto interfaceName = settings.value("connection").value("interface-name").toString();
-	return interfaceName.isEmpty() || interfaceName == this->interface();
+	if (target) target->addConnection(conn);
 }
 
 void NMDevice::bindNetwork(NMNetwork* net) {
