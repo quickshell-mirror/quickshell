@@ -254,7 +254,10 @@ bool WaylandRenderControl::eventFilter(QObject* watched, QEvent* event) {
 	switch (event->type()) {
 	case QEvent::UpdateRequest: this->renderFrame(); break;
 	case QEvent::Expose:
-		if (!this->window()->isExposed()) break;
+		if (!this->window()->isExposed()) {
+			this->presented = false;
+			break;
+		}
 		// Commit surface state even if renderFrame() finds no damage.
 		this->commitRequested = true;
 		// Deliver any update left pending while the window was unexposed.
@@ -305,7 +308,9 @@ bool WaylandRenderControl::initializeScene() {
 
 void WaylandRenderControl::renderFrame() {
 	auto* window = this->window();
-	if (!window->isExposed() || !QQuickWindowPrivate::get(window)->updatesEnabled) return;
+	if (!window->isExposed()) return;
+	// Allow the first frame with updates disabled; see QSGThreadedRenderLoop::handleExposure().
+	if (this->presented && !QQuickWindowPrivate::get(window)->updatesEnabled) return;
 	if (!this->rhi && !this->initializeScene()) return;
 	if (!buffer::WlBufferManager::instance()->isReady()) return;
 
@@ -390,6 +395,7 @@ void WaylandRenderControl::renderFrame() {
 	if (!exposed) return;
 
 	this->commitRequested = false;
+	this->presented = true;
 	if (tracker) tracker->presented();
 }
 

@@ -99,6 +99,7 @@ private:
 	std::unique_ptr<DecorationTarget> decoration;
 	qs::window::WindowDamageTracker* tracker = nullptr;
 	bool commitRequested = false;
+	bool presented = false;
 	bool repaintRequested = false;
 	bool polishing = false;
 };
