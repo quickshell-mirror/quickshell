@@ -31,7 +31,6 @@ signals:
 	void speedChanged(quint32 speed);
 
 private:
-	[[nodiscard]] bool isConnectionCompatible(const NMSettings& settings) const;
 	[[nodiscard]] NMNetwork* networkForConnection(NMConnection* conn) override;
 	void initWired();
 	void bindFrontend();

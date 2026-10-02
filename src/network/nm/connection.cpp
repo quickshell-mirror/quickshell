@@ -102,10 +102,8 @@ void NMConnection::getSettings() {
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
 }
 
-QDBusPendingCallWatcher* NMConnection::update(
-    const NMSettings& settingsToChange,
-    const NMSettings& settingsToRemove
-) {
+QDBusPendingCallWatcher*
+NMConnection::update(const NMSettings& settingsToChange, const NMSettings& settingsToRemove) {
 	auto settings = removeSettings(this->bSettings, settingsToRemove);
 	settings = mergeSettings(settings, settingsToChange);
 	auto pending = this->proxy->Update(settings);

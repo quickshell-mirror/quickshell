@@ -13,7 +13,6 @@
 #include "../wired.hpp"
 #include "connection.hpp"
 #include "dbus_nm_wired.h"
-#include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
@@ -81,14 +80,7 @@ void NMWiredDevice::bindFrontend() {
 	});
 }
 
-bool NMWiredDevice::isConnectionCompatible(const NMSettings& settings) const {
-	return this->NMDevice::isConnectionCompatible(settings)
-	    && settings.value("connection").value("type").toString() == "802-3-ethernet";
-}
-
-NMNetwork* NMWiredDevice::networkForConnection(NMConnection* conn) {
-	return this->isConnectionCompatible(conn->settings()) ? this->mNetwork : nullptr;
-}
+NMNetwork* NMWiredDevice::networkForConnection(NMConnection* /*conn*/) { return this->mNetwork; }
 
 bool NMWiredDevice::isValid() const {
 	return this->NMDevice::isValid() && (this->wiredProxy && this->wiredProxy->isValid());

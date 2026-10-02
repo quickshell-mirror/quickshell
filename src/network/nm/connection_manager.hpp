@@ -23,9 +23,7 @@ class NMConnectionManager: public QObject {
 
 public:
 	explicit NMConnectionManager(QObject* parent = nullptr);
-	[[nodiscard]] QList<NMConnection*> loadedConnections() const {
-		return this->mLoadedConnections;
-	}
+	[[nodiscard]] QList<NMConnection*> loadedConnections() const { return this->mLoadedConnections; }
 	void onServiceRegistered();
 	void onServiceUnregistered();
 
