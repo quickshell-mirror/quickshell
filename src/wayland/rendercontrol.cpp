@@ -21,6 +21,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qoffscreensurface.h> // NOLINT(misc-include-cleaner)
+#include <qpa/qplatformwindow.h>
 #include <qpoint.h>
 #include <qquickgraphicsdevice.h>
 #include <qquickrendertarget.h>
@@ -256,6 +257,11 @@ bool WaylandRenderControl::eventFilter(QObject* watched, QEvent* event) {
 		if (!this->window()->isExposed()) break;
 		// Commit surface state even if renderFrame() finds no damage.
 		this->commitRequested = true;
+		// Deliver any update left pending while the window was unexposed.
+		if (this->window()->handle()->hasPendingUpdateRequest()) {
+			this->window()->handle()->deliverUpdateRequest();
+			break;
+		}
 		this->renderFrame();
 		break;
 	default: break;
