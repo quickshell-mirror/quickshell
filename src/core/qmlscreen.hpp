@@ -43,11 +43,14 @@ class QuickshellScreenInfo: public QObject {
 	Q_PROPERTY(qreal logicalPixelDensity READ logicalPixelDensity NOTIFY logicalPixelDensityChanged);
 	/// The ratio between physical pixels and device-independent (scaled) pixels.
 	Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio NOTIFY physicalPixelDensityChanged);
-	/// The refresh rate of the screen's current mode, in hertz.
+	/// The approximate refresh rate of the screen's current mode, in hertz.
 	///
 	/// This is the rate reported for the current mode, not a measurement of when
 	/// frames are actually presented. With variable refresh rate enabled the two
 	/// can differ substantially.
+	///
+	/// Avoid using this value to drive animations with a timer. Use Qt Quick
+	/// animations instead, which synchronize with the rendering loop.
 	Q_PROPERTY(qreal refreshRate READ refreshRate NOTIFY refreshRateChanged);
 	Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation NOTIFY orientationChanged);
 	Q_PROPERTY(Qt::ScreenOrientation primaryOrientation READ primaryOrientation NOTIFY primaryOrientationChanged);
