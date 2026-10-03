@@ -2,6 +2,7 @@
 
 #include <qdbusextratypes.h>
 #include <qhash.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qtmetamacros.h>
@@ -13,7 +14,6 @@
 #include "dbus_nm_device.h"
 #include "enums.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 
 namespace qs::dbus {
 
@@ -37,7 +37,7 @@ namespace qs::network {
 
 // Proxy of a /org/freedesktop/NetworkManager/Device/* object.
 // Only the members from the org.freedesktop.NetworkManager.Device interface.
-// Owns the lifetime of NMActiveConnection(s) and NMConnectionSetting(s).
+// Owns the lifetime of an NMActiveConnection.
 class NMDevice: public QObject {
 	Q_OBJECT;
 
@@ -64,15 +64,12 @@ signals:
 	void loaded();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
-	    const NMSettingsMap& settings,
+	    const NMSettings& settings,
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& specificObjectPath
 	);
 	void networkAdded(Network* net);
 	void networkRemoved(Network* net);
-	void settingsLoaded(NMSettings* settings);
-	void settingsRemoved(NMSettings* settings);
-	void availableSettingsPathsChanged(QList<QDBusObjectPath> paths);
 	void activeConnectionPathChanged(const QDBusObjectPath& connection);
 	void activeConnectionLoaded(NMActiveConnection* active);
 	void interfaceChanged(const QString& interface);
@@ -83,26 +80,30 @@ signals:
 	void lastFailReasonChanged(NMDeviceStateReason::Enum reason);
 	void autoconnectChanged(bool autoconnect);
 	void interfaceFlagsChanged(NMDeviceInterfaceFlags::Enum flags);
+	void availableConnectionsChanged();
 
 public slots:
+	void onConnectionLoaded(NMConnection* conn);
 	void disconnect();
 	void setAutoconnect(bool autoconnect);
 	void setManaged(bool managed);
 
 protected:
+	[[nodiscard]] virtual NMNetwork* networkForConnection(NMConnection* conn) = 0;
 	void bindFrontend(NetworkDevice* frontend);
 	void bindNetwork(NMNetwork* net);
 
 private slots:
 	void onStateChanged(quint32 newState, quint32 oldState, quint32 reason);
-	void onAvailableSettingsPathsChanged(const QList<QDBusObjectPath>& paths);
 	void onActiveConnectionPathChanged(const QDBusObjectPath& path);
+	void onActiveConnectionLoaded(NMActiveConnection* active);
 
 private:
-	void registerSettings(const QString& path);
+	void assignToNetwork(NMConnection* conn);
 
-	QHash<QString, NMSettings*> mSettings;
 	NMActiveConnection* mActiveConnection = nullptr;
+	// Reverse lookup of connections for this device -> network.
+	QHash<NMConnection*, NMNetwork*> mConnectionNetworks;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QString, bInterface, &NMDevice::interfaceChanged);
@@ -112,9 +113,9 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bStateReason, &NMDevice::stateReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceStateReason::Enum, bLastFailReason, &NMDevice::lastFailReasonChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, bool, bAutoconnect, &NMDevice::autoconnectChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableSettingsPathsChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QDBusObjectPath, bActiveConnection, &NMDevice::activeConnectionPathChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, NMDeviceInterfaceFlags::Enum, bInterfaceFlags, &NMDevice::interfaceFlagsChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMDevice, QList<QDBusObjectPath>, bAvailableConnections, &NMDevice::availableConnectionsChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMDeviceAdapter, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pName, bInterface, deviceProperties, "Interface");
@@ -122,9 +123,9 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pManaged, bManaged, deviceProperties, "Managed");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pState, bState, deviceProperties, "State");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pAutoconnect, bAutoconnect, deviceProperties, "Autoconnect");
-	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pActiveConnection, bActiveConnection, deviceProperties, "ActiveConnection");
 	QS_DBUS_PROPERTY_BINDING(NMDevice, pInterfaceFlags, bInterfaceFlags, deviceProperties, "InterfaceFlags");
+	QS_DBUS_PROPERTY_BINDING(NMDevice, pAvailableConnections, bAvailableConnections, deviceProperties, "AvailableConnections");
 	// clang-format on
 
 	DBusNMDeviceProxy* deviceProxy = nullptr;

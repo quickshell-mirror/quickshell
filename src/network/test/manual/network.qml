@@ -10,17 +10,17 @@ Scope {
         id: editorComponent
         FloatingWindow {
             id: editorWindow
-            required property var nmSettings
+            required property var knownNetwork
             color: contentItem.palette.window
 
-            Component.onCompleted: editorArea.text = JSON.stringify(nmSettings.read(), null, 2)
+            Component.onCompleted: editorArea.text = JSON.stringify(knownNetwork.read(), null, 2)
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 10
 
                 Label {
-                    text: "Editing " + nmSettings?.id + " (" + nmSettings?.uuid + ")"
+                    text: "Editing " + knownNetwork.name + " (" + knownNetwork?.read()?.connection?.uuid + ")"
                     font.bold: true
                     font.pointSize: 12
                 }
@@ -45,7 +45,7 @@ Scope {
                     Button {
                         text: "Reload"
                         onClicked: {
-                            editorArea.text = JSON.stringify(editorWindow.nmSettings.read(), null, 2);
+                            editorArea.text = JSON.stringify(editorWindow.knownNetwork.read(), null, 2);
                             statusLabel.text = "Reloaded";
                         }
                     }
@@ -54,7 +54,7 @@ Scope {
                         onClicked: {
                             try {
                                 const parsed = JSON.parse(editorArea.text);
-                                nmSettings.write(parsed);
+                                knownNetwork.write(parsed);
                                 statusLabel.text = "Saved";
                             } catch (e) {
                                 statusLabel.text = "Parse error: " + e.message;
@@ -147,23 +147,24 @@ Scope {
                             if (a.connected !== b.connected) {
                                 return b.connected - a.connected;
                             }
-                            if (modelData.device?.type === DeviceType.Wifi) {
+                            if (modelData.type === DeviceType.Wifi) {
                                 return b.signalStrength - a.signalStrength;
                             }
+                            return 0;
                         })
                     }
 
                     WrapperRectangle {
                         id: ethernetNetwork
-                        property var chosenSettings: {
-                            const settings = modelData.nmSettings;
-                            if (!settings || settings.length === 0) {
+                        property var chosenKnownNetwork: {
+                            const profiles = modelData.knownNetworks;
+                            if (!profiles || profiles.length === 0) {
                                 return null;
                             }
-                            if (settings.length === 1) {
-                                return settings[0];
+                            if (profiles.length === 1) {
+                                return profiles[0];
                             }
-                            return settings[settingsComboBox.currentIndex];
+                            return profiles[profileComboBox.currentIndex];
                         }
 
                         Connections {
@@ -255,20 +256,20 @@ Scope {
                                     }
                                     RowLayout {
                                         Label {
-                                            text: "Choose settings:"
+                                            text: "Choose profile:"
                                         }
                                         ComboBox {
-                                            id: settingsComboBox
-                                            model: modelData.nmSettings.map(s => s?.read()?.connection?.id)
+                                            id: profileComboBox
+                                            model: modelData.knownNetworks.map(profile => profile?.read()?.connection?.id)
                                             currentIndex: 0
                                         }
-                                        visible: modelData.nmSettings.length > 1
+                                        visible: modelData.knownNetworks.length > 1
                                     }
                                     Button {
                                         text: "Connect"
                                         onClicked: {
-                                            if (ethernetNetwork.chosenSettings)
-                                                modelData.connectWithSettings(ethernetNetwork.chosenSettings);
+                                            if (ethernetNetwork.chosenKnownNetwork)
+                                                modelData.connectToKnownNetwork(ethernetNetwork.chosenKnownNetwork);
                                             else
                                                 modelData.connect();
                                         }
@@ -288,9 +289,9 @@ Scope {
                                         text: "Edit"
                                         visible: modelData.known
                                         onClicked: {
-                                            if (ethernetNetwork.chosenSettings)
+                                            if (ethernetNetwork.chosenKnownNetwork)
                                                 editorComponent.createObject(null, {
-                                                    nmSettings: chosenSettings
+                                                    knownNetwork: ethernetNetwork.chosenKnownNetwork
                                                 });
                                         }
                                     }

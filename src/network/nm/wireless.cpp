@@ -21,13 +21,12 @@
 #include "../enums.hpp"
 #include "../wifi.hpp"
 #include "accesspoint.hpp"
-#include "active_connection.hpp"
+#include "connection.hpp"
 #include "dbus_nm_wireless.h"
 #include "dbus_types.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 #include "utils.hpp"
 
 namespace qs::network {
@@ -76,11 +75,8 @@ void NMWirelessDevice::initWireless() {
 	QObject::connect(this->wirelessProxy, &DBusNMWirelessProxy::AccessPointAdded, this, &NMWirelessDevice::onAccessPointAdded);
 	QObject::connect(this->wirelessProxy, &DBusNMWirelessProxy::AccessPointRemoved, this, &NMWirelessDevice::onAccessPointRemoved);
 	QObject::connect(this, &NMWirelessDevice::accessPointLoaded, this, &NMWirelessDevice::onAccessPointLoaded);
-	QObject::connect(this, &NMWirelessDevice::settingsLoaded, this, &NMWirelessDevice::onSettingsLoaded);
-	QObject::connect(this, &NMWirelessDevice::activeConnectionLoaded, this, &NMWirelessDevice::onActiveConnectionLoaded);
 	QObject::connect(this, &NMWirelessDevice::scanningChanged, this, &NMWirelessDevice::onScanningChanged);
 	// clang-format on
-
 	this->registerAccessPoints();
 	emit this->loaded();
 }
@@ -112,44 +108,17 @@ void NMWirelessDevice::onAccessPointLoaded(NMAccessPoint* ap) {
 	}
 }
 
-void NMWirelessDevice::onSettingsLoaded(NMSettings* settings) {
-	const NMSettingsMap& map = settings->map();
-	// Filter connections that aren't wireless or have missing settings
-	if (map["connection"]["id"].toString().isEmpty() || map["connection"]["uuid"].toString().isEmpty()
-	    || !map.contains("802-11-wireless") || map["802-11-wireless"]["ssid"].toString().isEmpty())
-	{
-		return;
-	}
-
-	const auto ssid = map["802-11-wireless"]["ssid"].toString();
-	const auto mode = map["802-11-wireless"]["mode"].toString();
-
+NMNetwork* NMWirelessDevice::networkForConnection(NMConnection* conn) {
+	const auto wireless = conn->settings().value("802-11-wireless");
+	const auto mode = wireless.value("mode").toString();
+	const auto hidden = wireless.value("hidden").toBool();
+	const auto ssid = wireless.value("ssid").toString();
 	// Omitted mode is assumed to be "infrastructure".
-	if (mode.isEmpty() || mode == "infrastructure") {
-		auto* net = this->mNetworks.value(ssid);
-		if (!net) net = this->registerNetwork(ssid);
-		net->addSettings(settings);
-
-		// Check for active connections that loaded before their respective connection settings
-		auto* active = this->activeConnection();
-		if (active && settings->path() == active->connection().path()) {
-			net->addActiveConnection(active);
-		}
-	}
-	// TODO: Create hotspots when mode == "ap"
-}
-
-void NMWirelessDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	// Find an existing network with connection settings that matches the active
-	const QString activeConnPath = active->connection().path();
-	for (const auto& net: this->mNetworks.values()) {
-		for (auto* settings: net->settings()) {
-			if (activeConnPath == settings->path()) {
-				net->addActiveConnection(active);
-				return;
-			}
-		}
-	}
+	// TODO: Include hotspots and hidden networks.
+	if (hidden || ssid.isEmpty() || (!mode.isEmpty() && mode != "infrastructure")) return nullptr;
+	auto* target = this->mNetworks.value(ssid);
+	if (!target) target = this->registerNetwork(ssid);
+	return target;
 }
 
 void NMWirelessDevice::onScanTimeout() {
@@ -237,7 +206,12 @@ NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {
 
 	this->NMDevice::bindNetwork(net);
 	auto visible = [this, net]() {
-		return this->bScanning || net->state() == NMConnectionState::Activated || net->known();
+		// Only networks with an AP are considered available.
+		// TODO: Include hidden networks and hotspots (who won't have an AP)
+		const bool available = net->referenceAp() != nullptr;
+		const bool showOutsideScan = net->known() || net->state() == NMConnectionState::Activated;
+
+		return available && (this->bScanning || showOutsideScan);
 	};
 	net->bindableVisible().setBinding(visible);
 	net->bindableActiveApPath().setBinding([this]() { return this->activeApPath().path(); });
