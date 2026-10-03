@@ -62,6 +62,7 @@ IpcServerConnection::IpcServerConnection(QLocalSocket* socket, IpcServer* server
 
 void IpcServerConnection::onDisconnected() {
 	qCInfo(logIpc) << "IPC connection disconnected" << this;
+	QObject::disconnect(this->socket, nullptr, this, nullptr);
 	this->deleteLater();
 }
 

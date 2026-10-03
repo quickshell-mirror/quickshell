@@ -70,6 +70,7 @@ public:
 	QVector<QuickshellScreenInfo*> screens;
 	QuickshellScreenInfo* screenInfo(QScreen* screen) const;
 
+	static void init();
 	static QuickshellTracked* instance();
 
 private slots:

@@ -102,6 +102,7 @@ void PwConnection::startSocketWatcher() {
 void PwConnection::stopSocketWatcher() {
 	if (this->socketWatcher == nullptr) return;
 
+	QObject::disconnect(this->socketWatcher, nullptr, this, nullptr);
 	this->socketWatcher->deleteLater();
 	this->socketWatcher = nullptr;
 }

@@ -335,18 +335,23 @@ void LogManager::init(
 
 	qInstallMessageHandler(&LogManager::messageHandler);
 
-	qCDebug(logLogging) << "Creating offthread logger...";
-	auto* thread = new QThread();
-	instance->threadProxy.moveToThread(thread);
-	thread->start();
-
-	QMetaObject::invokeMethod(
-	    &instance->threadProxy,
-	    &LoggingThreadProxy::initInThread,
-	    Qt::BlockingQueuedConnection
-	);
+	instance->threadLogging = new ThreadLogging(instance);
+	instance->threadLogging->init();
 
 	qCDebug(logLogging) << "Logger initialized.";
+}
+
+void LogManager::initThreadLogging() {
+	auto* instance = LogManager::instance();
+
+	qCDebug(logLogging) << "Moving logger to dedicated thread...";
+
+	auto* thread = new QThread();
+	instance->threadLogging->setParent(nullptr);
+	instance->threadLogging->moveToThread(thread);
+	thread->start();
+
+	qCDebug(logLogging) << "Logger thread initialized.";
 }
 
 void initLogCategoryLevel(const char* name, QtMsgType defaultLevel) {
@@ -355,8 +360,8 @@ void initLogCategoryLevel(const char* name, QtMsgType defaultLevel) {
 
 void LogManager::initFs() {
 	QMetaObject::invokeMethod(
-	    &LogManager::instance()->threadProxy,
-	    "initFs",
+	    LogManager::instance()->threadLogging,
+	    &ThreadLogging::initFs,
 	    Qt::BlockingQueuedConnection
 	);
 }
@@ -368,13 +373,6 @@ bool LogManager::isSparse() const { return this->sparse; }
 CategoryFilter LogManager::getFilter(QLatin1StringView category) {
 	return this->allFilters.value(category);
 }
-
-void LoggingThreadProxy::initInThread() {
-	this->logging = new ThreadLogging(this);
-	this->logging->init();
-}
-
-void LoggingThreadProxy::initFs() { this->logging->initFs(); }
 
 void ThreadLogging::init() {
 	auto logMfd = memfd_create("quickshell:logs", 0);

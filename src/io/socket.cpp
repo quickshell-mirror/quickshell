@@ -17,7 +17,11 @@
 QS_LOGGING_CATEGORY(logSocket, "quickshell.io.socket", QtWarningMsg);
 
 void Socket::setSocket(QLocalSocket* socket) {
-	if (this->socket != nullptr) this->socket->deleteLater();
+	if (this->socket != nullptr) {
+		QObject::disconnect(this->socket, nullptr, this, nullptr);
+		this->socket->deleteLater();
+	}
+
 	this->socket = socket;
 
 	if (socket != nullptr) {
@@ -57,6 +61,7 @@ void Socket::onSocketDisconnected() {
 	qCDebug(logSocket) << "Socket disconnected:" << this;
 	this->connected = false;
 	this->disconnecting = false;
+	QObject::disconnect(this->socket, nullptr, this, nullptr);
 	this->socket->deleteLater();
 	this->socket = nullptr;
 	this->buffer.clear();
@@ -68,6 +73,13 @@ void Socket::onSocketDisconnected() {
 void Socket::onSocketError(QLocalSocket::LocalSocketError error) {
 	qCWarning(logSocket) << "Socket error for" << this << error;
 	emit this->error(error);
+
+	if (!this->connected) {
+		QObject::disconnect(this->socket, nullptr, this, nullptr);
+		this->socket->deleteLater();
+		this->socket = nullptr;
+		this->disconnecting = false;
+	}
 }
 
 bool Socket::isConnected() const { return this->connected; }
@@ -191,6 +203,7 @@ void SocketServer::disableServer() {
 		}
 
 		this->mSockets.clear();
+		QObject::disconnect(this->server, nullptr, this, nullptr);
 		this->server->close();
 		this->server->deleteLater();
 		this->server = nullptr;

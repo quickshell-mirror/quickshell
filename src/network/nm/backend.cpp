@@ -6,6 +6,7 @@
 #include <qdbusmetatype.h>
 #include <qdbuspendingcall.h>
 #include <qdbuspendingreply.h>
+#include <qdbusservicewatcher.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
@@ -42,6 +43,17 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 		return;
 	}
 
+	// clang-format off
+  QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceRegistered, this, &NetworkManager::onServiceRegistered);
+  QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this, &NetworkManager::onServiceUnregistered);
+	// clang-format on
+
+	this->serviceWatcher.setWatchMode(
+	    QDBusServiceWatcher::WatchForRegistration | QDBusServiceWatcher::WatchForUnregistration
+	);
+	this->serviceWatcher.addWatchedService("org.freedesktop.NetworkManager");
+	this->serviceWatcher.setConnection(bus);
+
 	this->proxy = new DBusNetworkManagerProxy(
 	    "org.freedesktop.NetworkManager",
 	    "/org/freedesktop/NetworkManager",
@@ -49,25 +61,20 @@ NetworkManager::NetworkManager(QObject* parent): NetworkBackend(parent) {
 	    this
 	);
 
-	if (!this->proxy->isValid()) {
-		qCDebug(
-		    logNetworkManager
-		) << "NetworkManager is not currently running. This network backend will not work";
-	} else {
-		this->init();
-	}
-}
-
-void NetworkManager::init() {
 	// clang-format off
 	QObject::connect(this->proxy, &DBusNetworkManagerProxy::DeviceAdded, this, &NetworkManager::onDevicePathAdded);
 	QObject::connect(this->proxy, &DBusNetworkManagerProxy::DeviceRemoved, this, &NetworkManager::onDevicePathRemoved);
 	// clang-format on
 
 	this->dbusProperties.setInterface(this->proxy);
-	this->dbusProperties.updateAllViaGetAll();
 
-	this->registerDevices();
+	if (!this->proxy->isValid()) {
+		qCDebug(
+		    logNetworkManager
+		) << "NetworkManager is not currently running. This network backend will not work";
+	} else {
+		this->onServiceRegistered();
+	}
 }
 
 void NetworkManager::checkConnectivity() {
@@ -228,6 +235,27 @@ void NetworkManager::setWifiEnabled(bool enabled) {
 	if (enabled == this->bWifiEnabled) return;
 	this->bWifiEnabled = enabled;
 	this->pWifiEnabled.write();
+}
+
+void NetworkManager::onServiceRegistered() {
+	qCDebug(logNetworkManager) << "NetworkManager service registered";
+	this->dbusProperties.updateAllViaGetAll();
+	this->registerDevices();
+}
+
+void NetworkManager::onServiceUnregistered() {
+	qCDebug(logNetworkManager) << "NetworkManager service unregistered";
+
+	// Clear all remaining devices
+	const auto devices = this->mDevices;
+	this->mDevices.clear();
+
+	for (auto* device: devices) {
+		if (!device) continue;
+		qCDebug(logNetworkManager) << "Device removed:" << device->path();
+		emit this->deviceRemoved(device->frontend());
+		delete device;
+	}
 }
 
 bool NetworkManager::isAvailable() const { return this->proxy && this->proxy->isValid(); };

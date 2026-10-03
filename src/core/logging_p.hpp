@@ -114,8 +114,10 @@ public:
 	explicit ThreadLogging(QObject* parent): QObject(parent) {}
 
 	void init();
-	void initFs();
 	void setupFileLogging();
+
+public slots:
+	void initFs();
 
 private slots:
 	void onMessage(const LogMessage& msg, bool showInSparse);

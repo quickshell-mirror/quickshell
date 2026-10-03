@@ -74,6 +74,7 @@ void QsMenuAnchor::onClosed() {
 	this->mOpen = false;
 
 	if (this->platformMenu) {
+		QObject::disconnect(this->platformMenu, nullptr, this, nullptr);
 		this->platformMenu->deleteLater();
 		this->platformMenu = nullptr;
 	}
@@ -101,7 +102,12 @@ void QsMenuAnchor::setMenu(QsMenuHandle* menu) {
 	if (menu == this->mMenu) return;
 
 	if (this->mMenu != nullptr) {
-		if (this->platformMenu != nullptr) this->platformMenu->deleteLater();
+		if (this->platformMenu != nullptr) {
+			QObject::disconnect(this->platformMenu, nullptr, this, nullptr);
+			this->platformMenu->deleteLater();
+			this->platformMenu = nullptr;
+		}
+
 		QObject::disconnect(this->mMenu, nullptr, this, nullptr);
 	}
 

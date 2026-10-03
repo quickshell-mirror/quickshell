@@ -55,20 +55,6 @@ size_t qHash(const LogMessage& message);
 
 class ThreadLogging;
 
-class LoggingThreadProxy: public QObject {
-	Q_OBJECT;
-
-public:
-	explicit LoggingThreadProxy() = default;
-
-public slots:
-	void initInThread();
-	void initFs();
-
-private:
-	ThreadLogging* logging = nullptr;
-};
-
 namespace qt_logging_registry {
 class QLoggingRule;
 }
@@ -104,6 +90,7 @@ public:
 	    const QString& prefix = ""
 	);
 
+	static void initThreadLogging();
 	static void initFs();
 	static LogManager* instance();
 
@@ -137,7 +124,7 @@ private:
 
 	QTextStream stdoutStream;
 	QMutex stdoutMutex;
-	LoggingThreadProxy threadProxy;
+	ThreadLogging* threadLogging = nullptr;
 
 	friend void initLogCategoryLevel(const char* name, QtMsgType defaultLevel);
 };

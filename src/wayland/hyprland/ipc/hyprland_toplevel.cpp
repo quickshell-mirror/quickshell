@@ -8,12 +8,17 @@
 
 #include "../../toplevel/qml.hpp"
 #include "connection.hpp"
+#include "monitor.hpp"
 #include "toplevel_mapping.hpp"
 #include "workspace.hpp"
 
 using namespace qs::wayland::toplevel;
 
 namespace qs::hyprland::ipc {
+
+QBindable<HyprlandWorkspace*> HyprlandToplevel::bindableWorkspace() { return &this->bWorkspace; }
+
+QBindable<HyprlandMonitor*> HyprlandToplevel::bindableMonitor() { return &this->bMonitor; }
 
 HyprlandToplevel::HyprlandToplevel(HyprlandIpc* ipc): QObject(ipc), ipc(ipc) {
 	this->bMonitor.setBinding([this]() {

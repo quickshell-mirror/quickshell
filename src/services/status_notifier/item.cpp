@@ -103,7 +103,12 @@ StatusNotifierItem::StatusNotifierItem(const QString& address, QObject* parent)
 		return this->imageHandle.url() % "/" % QString::number(this->pixmapIndex);
 	});
 
-	this->bHasMenu.setBinding([this]() { return !this->bMenuPath.value().path().isEmpty(); });
+	this->bHasMenu.setBinding([this]() {
+		// Could not find any documentation about No_DBUSMENU but KDE checks for it
+		// and it was requested.
+		return !this->bMenuPath.value().path().isEmpty()
+		    && this->bMenuPath.value().path() != "/NO_DBUSMENU";
+	});
 
 	QObject::connect(
 	    this->item,
@@ -270,11 +275,13 @@ void StatusNotifierItem::scroll(qint32 delta, bool horizontal) const {
 void StatusNotifierItem::updatePixmapIndex() { this->pixmapIndex = this->pixmapIndex + 1; }
 
 DBusMenuHandle* StatusNotifierItem::menuHandle() {
-	return this->bMenuPath.value().path().isEmpty() ? nullptr : &this->mMenuHandle;
+	return !this->bHasMenu ? nullptr : &this->mMenuHandle;
 }
 
 void StatusNotifierItem::onMenuPathChanged() {
-	this->mMenuHandle.setAddress(this->item->service(), this->bMenuPath.value().path());
+	auto path = this->bMenuPath.value().path();
+	if (!this->bHasMenu) path = "";
+	this->mMenuHandle.setAddress(this->item->service(), path);
 }
 
 void StatusNotifierItem::onGetAllFinished() {

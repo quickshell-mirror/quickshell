@@ -124,7 +124,8 @@ void NMWirelessDevice::onSettingsLoaded(NMSettings* settings) {
 	const auto ssid = map["802-11-wireless"]["ssid"].toString();
 	const auto mode = map["802-11-wireless"]["mode"].toString();
 
-	if (mode == "infrastructure") {
+	// Omitted mode is assumed to be "infrastructure".
+	if (mode.isEmpty() || mode == "infrastructure") {
 		auto* net = this->mNetworks.value(ssid);
 		if (!net) net = this->registerNetwork(ssid);
 		net->addSettings(settings);

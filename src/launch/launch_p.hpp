@@ -107,10 +107,10 @@ struct LaunchArgs {
 void exitDaemon(int code);
 
 int parseCommand(int argc, char** argv, CommandState& state);
-int runCommand(int argc, char** argv, QCoreApplication* coreApplication);
+int runCommand(int argc, char** argv);
 
 QString getDisplayConnection();
 
-int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication);
+int launch(const LaunchArgs& args, char** argv);
 
 } // namespace qs::launch

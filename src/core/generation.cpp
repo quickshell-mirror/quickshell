@@ -11,6 +11,7 @@
 #include <qlist.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
@@ -62,6 +63,10 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 EngineGeneration::EngineGeneration(): EngineGeneration(QDir(), QmlScanner()) {}
 
 EngineGeneration::~EngineGeneration() {
+	for (auto* extension: this->extensions.values()) {
+		delete extension;
+	}
+
 	if (this->engine != nullptr) {
 		qFatal() << this << "destroyed without calling destroy()";
 	}
@@ -78,29 +83,36 @@ void EngineGeneration::destroy() {
 		this->watcher = nullptr;
 	}
 
-	for (auto* extension: this->extensions.values()) {
-		delete extension;
-	}
-
 	if (this->root != nullptr) {
+		// prevent further js execution during teardown of the root's children, gc and the engine.
 		QObject::connect(this->root, &QObject::destroyed, this, [this]() {
-			// prevent further js execution between garbage collection and engine destruction.
 			this->engine->setInterrupted(true);
-
-			g_generations.remove(this->engine);
-
-			// Garbage is not collected during engine destruction.
-			this->engine->collectGarbage();
-
-			delete this->engine;
-			this->engine = nullptr;
-
-			auto terminate = this->shouldTerminate;
-			auto code = this->exitCode;
-			delete this;
-
-			if (terminate) QCoreApplication::exit(code);
 		});
+
+		// QObject::destroyed is emitted before the root's children are destroyed.
+		// The engine must outlive them, as objects such as Loaders with in-flight
+		// incubations access it in their destructors.
+		QObject::connect(
+		    this->root,
+		    &QObject::destroyed,
+		    this,
+		    [this]() {
+			    g_generations.remove(this->engine);
+
+			    // Garbage is not collected during engine destruction.
+			    this->engine->collectGarbage();
+
+			    delete this->engine;
+			    this->engine = nullptr;
+
+			    auto terminate = this->shouldTerminate;
+			    auto code = this->exitCode;
+			    delete this;
+
+			    if (terminate) QCoreApplication::exit(code);
+		    },
+		    Qt::QueuedConnection
+		);
 
 		this->root->deleteLater();
 		this->root = nullptr;
@@ -198,6 +210,7 @@ void EngineGeneration::setWatchingFiles(bool watching) {
 		}
 	} else {
 		if (this->watcher != nullptr) {
+			QObject::disconnect(this->watcher, nullptr, this, nullptr);
 			this->watcher->deleteLater();
 			this->watcher = nullptr;
 		}

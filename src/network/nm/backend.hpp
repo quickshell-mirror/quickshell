@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qdbusextratypes.h>
+#include <qdbusservicewatcher.h>
 #include <qhash.h>
 #include <qobject.h>
 #include <qproperty.h>
@@ -59,6 +60,8 @@ public slots:
 private slots:
 	void onDevicePathAdded(const QDBusObjectPath& path);
 	void onDevicePathRemoved(const QDBusObjectPath& path);
+	void onServiceRegistered();
+	void onServiceUnregistered();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
 	    const NMSettingsMap& settings,
@@ -67,7 +70,6 @@ private slots:
 	);
 
 private:
-	void init();
 	void registerDevices();
 	void registerDevice(const QString& path);
 
@@ -88,6 +90,7 @@ private:
 	QS_DBUS_PROPERTY_BINDING(NetworkManager, pConnectivityCheckEnabled, bConnectivityCheckEnabled, dbusProperties, "ConnectivityCheckEnabled");
 	// clang-format on
 	DBusNetworkManagerProxy* proxy = nullptr;
+	QDBusServiceWatcher serviceWatcher;
 };
 
 } // namespace qs::network

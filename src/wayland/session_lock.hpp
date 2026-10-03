@@ -73,6 +73,8 @@ class WlSessionLock: public Reloadable {
 
 public:
 	explicit WlSessionLock(QObject* parent = nullptr): Reloadable(parent) {}
+	~WlSessionLock() override;
+	Q_DISABLE_COPY_MOVE(WlSessionLock);
 
 	void onReload(QObject* oldInstance) override;
 
@@ -101,6 +103,8 @@ private:
 	QQmlComponent* mSurfaceComponent = nullptr;
 	QMap<QScreen*, WlSessionLockSurface*> surfaces;
 	bool lockTarget = false;
+	bool realizing = false;
+	bool awaitingRealization = false;
 
 	friend class WlSessionLockSurface;
 };

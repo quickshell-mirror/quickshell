@@ -22,6 +22,7 @@
 #include "../core/logging.hpp"
 #include "../core/paths.hpp"
 #include "../core/plugin.hpp"
+#include "../core/qmlglobal.hpp"
 #include "../core/rootwrapper.hpp"
 #include "../ipc/ipc.hpp"
 #include "build.hpp"
@@ -57,7 +58,7 @@ QString base36Encode(T number) {
 
 } // namespace
 
-int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplication) {
+int launch(const LaunchArgs& args, char** argv) {
 	auto pathId = QCryptographicHash::hash(args.configPath.toUtf8(), QCryptographicHash::Md5).toHex();
 	auto shellId = QString(pathId);
 
@@ -171,7 +172,6 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 	QsPaths::init(shellId, pathId, pragmas.dataDir, pragmas.stateDir, pragmas.cacheDir);
 	QsPaths::instance()->linkRunDir();
 	QsPaths::instance()->linkPathDir();
-	LogManager::initFs();
 
 	Common::INITIAL_ENVIRONMENT = QProcessEnvironment::systemEnvironment();
 
@@ -279,8 +279,6 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 
 	QGuiApplication::setDesktopSettingsAware(pragmas.desktopSettingsAware);
 
-	delete coreApplication;
-
 	QGuiApplication* app = nullptr;
 	auto qArgC = 0;
 
@@ -290,6 +288,9 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		app = new QGuiApplication(qArgC, argv);
 	}
 
+	LogManager::initThreadLogging();
+	LogManager::initFs();
+
 	QGuiApplication::setDesktopFileName(appId);
 
 	if (args.debugPort != -1) {
@@ -298,6 +299,10 @@ int launch(const LaunchArgs& args, char** argv, QCoreApplication* coreApplicatio
 		                              : QQmlDebuggingEnabler::DoNotWaitForClient;
 		QQmlDebuggingEnabler::startTcpDebugServer(args.debugPort, wait);
 	}
+
+	// This needs to run early to get the first connection to QGuiApplication::screenAdded() in Qs.
+	// If we don't do that, attempts to get a QuickshellScreenInfo from a QScreen will fail in screenAdded bindings.
+	QuickshellTracked::init();
 
 	QsEnginePlugin::initPlugins();
 

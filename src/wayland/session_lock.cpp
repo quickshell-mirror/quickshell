@@ -22,6 +22,15 @@
 #include "../window/proxywindow.hpp"
 #include "session_lock/session_lock.hpp"
 
+WlSessionLock::~WlSessionLock() {
+	if (this->isLocked()) {
+		qCritical() << "Session lock object was destroyed without unlocking. The session will stay "
+		               "locked in case this was accidental.";
+		qCritical() << "Component.onDestruction may be used if this behavior is required, but it may "
+		               "result in a lock failing open.";
+	}
+}
+
 void WlSessionLock::onReload(QObject* oldInstance) {
 	auto* old = qobject_cast<WlSessionLock*>(oldInstance);
 
@@ -113,69 +122,83 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 }
 
 void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
-	if (this->lockTarget) {
-		if (!SessionLockManager::lockAvailable()) {
-			qCritical() << "Cannot start session lock: The current compositor does not support the "
-			               "ext-session-lock-v1 protocol.";
-			this->unlock();
-			return;
+	if (this->realizing || !this->manager) {
+		this->awaitingRealization = true;
+		return;
+	}
+
+	this->realizing = true;
+
+	[&, this]() {
+		if (this->lockTarget) {
+			if (!SessionLockManager::lockAvailable()) {
+				qCritical() << "Cannot start session lock: The current compositor does not support the "
+				               "ext-session-lock-v1 protocol.";
+				this->unlock();
+				return;
+			}
+
+			if (this->mSurfaceComponent == nullptr) {
+				qWarning() << "WlSessionLock.surface is null. Aborting lock.";
+				this->unlock();
+				return;
+			}
+
+			// preload initial surfaces to make the chance of the compositor displaying a blank
+			// frame before the lock surfaces are shown as low as possible.
+			this->updateSurfaces(false);
+
+			auto wasLocked = this->isLocked();
+			if (!this->manager->lock()) {
+				qWarning() << "Failed to acquire session lock.";
+				this->unlock();
+				return;
+			}
+
+			this->updateSurfaces(true, old);
+			if (!wasLocked) emit this->lockStateChanged();
+		} else {
+			this->unlock(); // emits lockStateChanged
 		}
+	}();
 
-		if (this->mSurfaceComponent == nullptr) {
-			qWarning() << "WlSessionLock.surface is null. Aborting lock.";
-			this->unlock();
-			return;
-		}
+	this->realizing = false;
 
-		// preload initial surfaces to make the chance of the compositor displaying a blank
-		// frame before the lock surfaces are shown as low as possible.
-		this->updateSurfaces(false);
-
-		if (!this->manager->lock()) this->lockTarget = false;
-
-		this->updateSurfaces(true, old);
-	} else {
-		this->unlock(); // emits lockStateChanged
+	if (this->awaitingRealization) {
+		this->awaitingRealization = false;
+		this->realizeLockTarget();
 	}
 }
 
 void WlSessionLock::unlock() {
-	if (this->isLocked()) {
-		this->lockTarget = false;
-		this->manager->unlock();
+	this->lockTarget = false;
 
-		for (auto* surface: this->surfaces) {
-			surface->deleteLater();
-		}
-
-		this->surfaces.clear();
-
-		emit this->lockStateChanged();
+	for (auto* surface: this->surfaces) {
+		surface->deleteLater();
 	}
+
+	this->surfaces.clear();
+
+	if (this->manager) this->manager->unlock();
+	if (this->isLocked()) emit this->lockStateChanged();
 }
 
 void WlSessionLock::onScreensChanged() {
-	if (this->manager != nullptr && this->manager->isLocked()) {
+	// Theoretically screens shouldnt be invalidated while realizing, instead in later event loop cycles.
+	if (this->isLocked() && !this->realizing) {
 		this->updateSurfaces(true);
 	}
 }
 
-bool WlSessionLock::isLocked() const {
-	return this->manager == nullptr ? this->lockTarget : this->manager->isLocked();
-}
+bool WlSessionLock::isLocked() const { return this->manager && this->manager->isLocked(); }
 
 bool WlSessionLock::isSecure() const {
 	return this->manager != nullptr && SessionLockManager::isSecure();
 }
 
 void WlSessionLock::setLocked(bool locked) {
-	if (this->isLocked() == locked) return;
+	if (this->lockTarget == locked) return;
 	this->lockTarget = locked;
-
-	if (this->manager == nullptr) {
-		emit this->lockStateChanged();
-		return;
-	}
 
 	this->realizeLockTarget();
 }

@@ -201,6 +201,6 @@ int PamSubprocess::conversation(
 	return PAM_SUCCESS;
 
 fail:
-	free(responseArray); // NOLINT
+	free(responses); // NOLINT
 	_exit(1);
 }

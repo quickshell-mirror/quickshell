@@ -2,6 +2,7 @@
 #include <array>
 #include <cerrno>
 #include <cstring>
+#include <functional>
 #include <utility>
 
 #include <qconfig.h>
@@ -465,7 +466,7 @@ int ipcCommand(CommandState& cmd) {
 	});
 }
 
-int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
+int launchFromCommand(CommandState& cmd) {
 	QString configPath;
 
 	auto r = locateConfigFile(cmd, configPath);
@@ -485,14 +486,13 @@ int launchFromCommand(CommandState& cmd, QCoreApplication* coreApplication) {
 	        .debugPort = cmd.debug.port,
 	        .waitForDebug = cmd.debug.wait,
 	    },
-	    cmd.exec.argv,
-	    coreApplication
+	    cmd.exec.argv
 	);
 }
 
 } // namespace
 
-int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
+int runCommand(int argc, char** argv) {
 	auto state = CommandState();
 	if (auto ret = parseCommand(argc, argv, state); ret != 65535) return ret;
 
@@ -555,20 +555,24 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 		);
 	}
 
+	std::function<int(CommandState&)> continuation;
+
 	if (state.misc.printVersion) {
 		if (state.log.verbosity == 0) {
 			qCInfo(logBare).noquote() << "Quickshell" << qs::debuginfo::qsVersion();
 		} else {
 			qCInfo(logBare).noquote() << qs::debuginfo::combinedInfo();
 		}
+
+		return 0;
 	} else if (*state.subcommand.log) {
-		return readLogFile(state);
+		continuation = readLogFile;
 	} else if (*state.subcommand.list) {
-		return listInstances(state);
+		continuation = listInstances;
 	} else if (*state.subcommand.kill) {
-		return killInstances(state);
+		continuation = killInstances;
 	} else if (*state.subcommand.msg || *state.ipc.ipc) {
-		return ipcCommand(state);
+		continuation = ipcCommand;
 	} else {
 		if (strcmp(qVersion(), QT_VERSION_STR) != 0) {
 			qWarning() << "\033[31mQuickshell was built against Qt" << QT_VERSION_STR
@@ -577,10 +581,12 @@ int runCommand(int argc, char** argv, QCoreApplication* coreApplication) {
 			              "the quickshell package must be rebuilt.\n";
 		}
 
-		return launchFromCommand(state, coreApplication);
+		return launchFromCommand(state);
 	}
 
-	return 0;
+	int qArgc = 1;
+	auto coreApp = QCoreApplication(qArgc, argv);
+	return continuation(state);
 }
 
 QString getDisplayConnection() {

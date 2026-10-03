@@ -24,7 +24,7 @@ namespace qs::launch {
 
 namespace {
 
-void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
+void checkCrashRelaunch(char** argv) {
 #if CRASH_HANDLER
 	auto lastInfoFdStr = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD");
 	auto dumpPid = qEnvironmentVariable("__QUICKSHELL_CRASH_DUMP_PID").toInt();
@@ -71,7 +71,7 @@ void checkCrashRelaunch(char** argv, QCoreApplication* coreApplication) {
 		} else {
 			qCritical() << "Quickshell has been restarted.";
 
-			launch({.configPath = info.instance.configPath}, argv, coreApplication);
+			launch({.configPath = info.instance.configPath}, argv);
 		}
 	}
 #endif
@@ -123,11 +123,8 @@ int main(int argc, char** argv) {
 	qsCheckCrash(argc, argv);
 #endif
 
-	auto qArgC = 1;
-	auto* coreApplication = new QCoreApplication(qArgC, argv);
-
-	checkCrashRelaunch(argv, coreApplication);
-	auto code = runCommand(argc, argv, coreApplication);
+	checkCrashRelaunch(argv);
+	auto code = runCommand(argc, argv);
 
 	exitDaemon(code);
 	return code;

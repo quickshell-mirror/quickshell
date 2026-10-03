@@ -2,26 +2,19 @@
 
 - Added a refreshRate property to ShellScreen.
 
+## Other Changes
+
+- Added support for Qt 6.12
+- Added support for Hyprland's new workspace address format.
+
 ## Bug Fixes
 
-- Fixed ScreencopyView not displaying when only lock surfaces are shown.
-- Fixed WlSessionLockSurface.visible crashing if accessed before backing surface creation.
-- Fixed mpris players returning `rate` for `minRate` and `maxRate`.
-- Fixed missing/wrong change signals on various properties.
-- Fixed session lock crashes on sleep, wake, DPMS, and unlocking.
-- QsWindow.updatesEnabled makes sure windows are redrawn when set to true.
-- Fixed potential crashes from usage of `WindowsetProjection.screens` during monitor unplug.
-- Fixed crashes from accessing freed objects laundered through a `ScriptModel`.
-- Fixed crashes when a wifi network disappear.
-- Fixed unhandled notifications sending `NotificationClosed` out of order.
-- Fixed `qs kill` not waiting for the process to exit.
-- Fixed IPC calls from children of a crashed and relaunched process crashing.
-- Fixed JsonAdapter crashing when deserializing new objects into an array.
-- Fixed `Toplevel.unsetRectangle` crashing when calle.
-- Fixed intermittent `FileView` crashes when updating watched files.
-- Fixed `ColorQuantizer` deletion crashing if an operation was live.
-- Fixed crashes when failing to create a `ScreencopyView`.
-- Fixed `PwNodePeakMonitor` crashing when sampling a stream with mismatched channels from the node.
-- Fixed unsetting `PopupAnchor.item` causing a crash.
-- Fixed hiding the last `PanelWindow` on screen causing a crash under X11.
-- Fixed crashes when `ScriptModel.values` is set while processing previously set values.
+- Fixed main process crashes on pam subprocess misbehavior.
+- Fixed crashes when attempting to create or modify session locks reentrantly.
+- Fixed networking state breaking after restarting NetworkManager.
+- Fixed accessibility information not being provided for Quickshell windows.
+- Fixed `WlSessionLockSurface.screen` being null and never updating with a real screen on monitor plug.
+- Fixed `NotificationAction.text` not accepting text updates.
+- Fixed PipeWire route volume writes for devices without a reported volume step.
+- Fixed a crash when quitting or reloading while a `Loader` was still loading asynchronously.
+- Fixed future `Socket` connection attempts after a failed connection attempt.
