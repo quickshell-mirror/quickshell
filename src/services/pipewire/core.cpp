@@ -55,6 +55,8 @@ bool PwCore::start(bool retry) {
 		return false;
 	}
 
+	pw_loop_enter(this->loop);
+
 	this->context = pw_context_new(this->loop, nullptr, 0);
 	if (this->context == nullptr) {
 		if (retry) {
@@ -103,6 +105,7 @@ void PwCore::shutdown() {
 	}
 
 	if (this->loop != nullptr) {
+		pw_loop_leave(this->loop);
 		pw_loop_destroy(this->loop);
 		this->loop = nullptr;
 	}
