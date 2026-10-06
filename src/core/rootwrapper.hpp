@@ -13,7 +13,7 @@ class RootWrapper: public QObject {
 	Q_OBJECT;
 
 public:
-	explicit RootWrapper(QString rootPath, QString shellId);
+	explicit RootWrapper(QString rootPath, QString shellId, bool diskCache);
 	~RootWrapper() override;
 	Q_DISABLE_COPY_MOVE(RootWrapper);
 
@@ -28,6 +28,7 @@ private slots:
 private:
 	QString rootPath;
 	QString shellId;
+	bool diskCache;
 	EngineGeneration* generation = nullptr;
 	QString originalWorkingDirectory;
 	QFileSystemWatcher configDirWatcher;

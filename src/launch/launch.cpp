@@ -80,6 +80,7 @@ int launch(const LaunchArgs& args, char** argv) {
 		QHash<QString, QString> defaultEnv;
 		QString appId = qEnvironmentVariable("QS_APP_ID");
 		bool dropExpensiveFonts = false;
+		bool diskCache = false;
 		QString dataDir;
 		QString stateDir;
 		QString cacheDir;
@@ -113,6 +114,7 @@ int launch(const LaunchArgs& args, char** argv) {
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
 			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
 			else if (pragma == "DropExpensiveFonts") pragmas.dropExpensiveFonts = true;
+			else if (pragma == "DiskCache") pragmas.diskCache = true;
 			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
 			else if (pragma.startsWith("AppId ")) {
 				pragmas.appId = pragma.sliced(6).trimmed();
@@ -317,7 +319,7 @@ int launch(const LaunchArgs& args, char** argv) {
 	qs::ipc::IpcServer::start();
 	QsPaths::instance()->createLock();
 
-	auto root = RootWrapper(args.configPath, shellId);
+	auto root = RootWrapper(args.configPath, shellId, pragmas.diskCache);
 	QGuiApplication::setQuitOnLastWindowClosed(false);
 
 	exitDaemon(0);

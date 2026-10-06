@@ -21,10 +21,11 @@
 #include "scan.hpp"
 #include "toolsupport.hpp"
 
-RootWrapper::RootWrapper(QString rootPath, QString shellId)
+RootWrapper::RootWrapper(QString rootPath, QString shellId, bool diskCache)
     : QObject(nullptr)
     , rootPath(std::move(rootPath))
     , shellId(std::move(shellId))
+    , diskCache(diskCache)
     , originalWorkingDirectory(QDir::current().absolutePath()) {
 	QObject::connect(
 	    QuickshellSettings::instance(),
@@ -60,8 +61,13 @@ void RootWrapper::reloadGraph(bool hard) {
 	auto scanner = QmlScanner(rootPath);
 	scanner.scanQmlRoot(this->rootPath);
 
-	qs::core::QmlToolingSupport::updateTooling(rootPath, scanner);
+	auto tooling = qs::core::QmlToolingSupport::updateTooling(rootPath, this->diskCache);
 	this->configDirWatcher.addPath(rootPath.path());
+
+	QString mirrorPath;
+	if (tooling || this->diskCache) {
+		mirrorPath = qs::core::QmlToolingSupport::updateMirror(rootPath, scanner, this->diskCache);
+	}
 
 	// todo: move into EngineGeneration
 	if (this->generation != nullptr) {
@@ -95,12 +101,23 @@ void RootWrapper::reloadGraph(bool hard) {
 		return;
 	}
 
-	auto* generation = new EngineGeneration(rootPath, std::move(scanner));
+	// the qml disk cache only accepts file urls, so DiskCache loads from the vfs mirror
+	auto vfsPath = this->diskCache ? mirrorPath : QString();
+	if (this->diskCache && vfsPath.isEmpty()) {
+		qWarning() << "Could not create config mirror, QML disk cache disabled";
+	}
+
+	auto* generation = new EngineGeneration(rootPath, std::move(scanner), vfsPath);
 	generation->wrapper = this;
 
 	QUrl url;
-	url.setScheme("qs");
-	url.setPath("@/qs/" % rootFile.fileName());
+	if (vfsPath.isEmpty()) {
+		url.setScheme("qs");
+		url.setPath("@/qs/" % rootFile.fileName());
+	} else {
+		url = QUrl::fromLocalFile(vfsPath % "/qs/" % rootFile.fileName());
+	}
+
 	auto component = QQmlComponent(generation->engine, url);
 
 	if (!component.isReady()) {
@@ -109,9 +126,7 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		auto errors = component.errors();
 		for (auto& error: errors) {
-			const auto& url = error.url();
-			auto rel = url.scheme() == "qs" && url.path().startsWith("@/qs/") ? "@" % url.path().sliced(5)
-			                                                                  : url.toString();
+			auto rel = generation->relativeUrl(error.url());
 			auto msg = "  caused by " % rel % '[' % QString::number(error.line()) % ':'
 			         % QString::number(error.column()) % "]: " % error.description();
 			errorString += '\n' % msg;
@@ -211,5 +226,8 @@ void RootWrapper::onWatchedFilesChanged() { this->reloadGraph(false); }
 void RootWrapper::updateTooling() {
 	if (!this->generation) return;
 	auto configDir = QFileInfo(this->rootPath).dir();
-	qs::core::QmlToolingSupport::updateTooling(configDir, this->generation->scanner);
+	auto tooling = qs::core::QmlToolingSupport::updateTooling(configDir, this->diskCache);
+	if (!tooling && !this->diskCache) return;
+
+	qs::core::QmlToolingSupport::updateMirror(configDir, this->generation->scanner, this->diskCache);
 }
