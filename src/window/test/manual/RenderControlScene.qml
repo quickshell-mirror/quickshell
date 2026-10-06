@@ -17,7 +17,7 @@ Scope {
     property string effectsStatus: ""
     property bool viewUnavailable: false
     property string status: ""
-    readonly property var tests: ["Idle", "Move", "Create and destroy", "Move child, then parent", "Move row, change text", "Resize clip", "Resize under scale", "XAnimator", "OpacityAnimator", "NumberAnimation and RotationAnimator", "Recolor antialiased", "Transform antialiased", "Hide antialiased", "Move text", "New glyphs", "Recolor 40 rects", "Perspective", "Custom vertex shader", "Recolor effect sources", "Hide effect chain middle", "Window color", "Swap pages", "Load effects", "Animate effects", "View3D Offscreen", "View3D Underlay", "View3D Overlay", "View3D Inline", "Popup", "Resize panel", "Click-through panel", "Hide and show", "Disable updates", "Decorated window"]
+    readonly property var tests: ["Idle", "Move", "Create and destroy", "Move child, then parent", "Move row, change text", "Resize clip", "Resize under scale", "XAnimator", "OpacityAnimator", "NumberAnimation and RotationAnimator", "Recolor antialiased", "Transform antialiased", "Hide antialiased", "Hidden changes", "Move text", "New glyphs", "Recolor 40 rects", "Perspective", "Custom vertex shader", "Recolor effect sources", "Hide effect chain middle", "Window color", "Swap pages", "Load effects", "Animate effects", "View3D Offscreen", "View3D Underlay", "View3D Overlay", "View3D Inline", "Popup", "Resize panel", "Click-through panel", "Hide and show", "Disable updates", "Decorated window"]
 
     onTestChanged: {
         if (testIndex < 0)
@@ -98,6 +98,12 @@ Scope {
             Label {
                 visible: root.status !== ""
                 text: root.status
+                color: "white"
+            }
+
+            Label {
+                visible: root.test === "Hidden changes"
+                text: "Hidden swaps: " + hiddenChange.swaps + "/" + hiddenChange.changes
                 color: "white"
             }
 
@@ -690,6 +696,38 @@ Scope {
             x: 10
             color: "white"
             text: root.rendererName + " panel, " + panel.height + " px"
+        }
+
+        Item {
+            id: hiddenChange
+            anchors.right: parent.right
+            width: 20
+            height: 20
+            opacity: 0
+            visible: root.test === "Hidden changes" && tick.on
+            property int changes: 0
+            property int swaps: 0
+            property bool pending: false
+
+            onVisibleChanged: {
+                changes++;
+                pending = true;
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: "white"
+            }
+
+            Connections {
+                target: hiddenChange.Window.window
+                function onFrameSwapped() {
+                    if (!hiddenChange.pending)
+                        return;
+                    hiddenChange.pending = false;
+                    hiddenChange.swaps++;
+                }
+            }
         }
     }
 }
