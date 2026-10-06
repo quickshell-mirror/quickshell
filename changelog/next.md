@@ -5,6 +5,7 @@
 
 ## Bug Fixes
 
+- Fixed PAM helpers surviving a killed or crashed shell and PAM module crashes relaunching the shell.
 - Fixed main process crashes on pam subprocess misbehavior.
 - Fixed crashes when attempting to create or modify session locks reentrantly.
 - Fixed networking state breaking after restarting NetworkManager.
