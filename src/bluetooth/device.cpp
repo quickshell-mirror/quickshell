@@ -1,4 +1,5 @@
 #include "device.hpp"
+#include <algorithm>
 
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
@@ -45,10 +46,31 @@ BluetoothDevice::BluetoothDevice(const QString& path, QObject* parent): QObject(
 	}
 
 	this->properties.setInterface(this->mInterface);
+
+	this->bRssi.subscribe([this]() { emit this->signalStrengthChanged(); });
 }
 
 BluetoothAdapter* BluetoothDevice::adapter() const {
 	return Bluez::instance()->adapter(this->bAdapterPath.value().path());
+}
+
+qint32 BluetoothDevice::signalStrength() const {
+	const auto rssi = this->bRssi.value();
+	auto percent = 0.0;
+
+	if (rssi == 0) {
+		percent = 0.0;
+	} else if (rssi >= -30) {
+		percent = 100.0;
+	} else if (rssi >= -60) {
+		percent = 75.0 + ((rssi + 60.0) / 30.0) * 25.0;
+	} else if (rssi >= -80) {
+		percent = 9.0 + ((rssi + 80.0) / 20.0) * 66.0;
+	} else if (rssi >= -90) {
+		percent = ((rssi + 90.0) / 10.0) * 9.0;
+	}
+
+	return static_cast<qint32>(std::lround(std::clamp(percent, 0.0, 100.0)));
 }
 
 void BluetoothDevice::setConnected(bool connected) {
