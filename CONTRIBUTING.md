@@ -9,6 +9,9 @@ To ensure nobody's time is wasted, please follow the rules below.
   your change works, do not submit it to be merged. You must be able to explain your reasoning
   for every change.
 
+- Change descriptions MUST NOT be written by AI. Summarize what you changed in your own words.
+  If you think an AI summary of a chat session etc may provide useful context, include it in a spoiler.
+
 - Changes MUST be submitted by a human who will be responsible for them. Changes submitted without
   a human in the loop such as automated tooling and AI Agents are **strictly disallowed**. Accounts
   responsible for such contribution attempts **will be banned**.
