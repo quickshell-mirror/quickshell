@@ -1,5 +1,7 @@
 #include "adapter.hpp"
 
+#include <fcntl.h>
+#include <linux/rfkill.h>
 #include <qcontainerfwd.h>
 #include <qdbusconnection.h>
 #include <qdbusextratypes.h>
@@ -8,8 +10,11 @@
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
+#include <qscopeguard.h>
 #include <qstring.h>
 #include <qtypes.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../core/logcat.hpp"
 #include "../dbus/properties.hpp"
@@ -43,6 +48,8 @@ BluetoothAdapter::BluetoothAdapter(const QString& path, QObject* parent): QObjec
 	}
 
 	this->properties.setInterface(this->mInterface);
+
+	QObject::connect(this, &BluetoothAdapter::stateChanged, this, &BluetoothAdapter::onStateChanged);
 }
 
 QString BluetoothAdapter::adapterId() const {
@@ -51,15 +58,56 @@ QString BluetoothAdapter::adapterId() const {
 }
 
 void BluetoothAdapter::setEnabled(bool enabled) {
+	this->mPendingEnable = false;
 	if (enabled == this->bEnabled) return;
 
 	if (enabled && this->bState == BluetoothAdapterState::Blocked) {
-		qCCritical(logAdapter) << "Cannot enable adapter because it is blocked by rfkill.";
+		// logind grants the seat user rw on /dev/rfkill, so the soft block can be lifted here.
+		if (!tryRfkillUnblock()) {
+			qCCritical(logAdapter) << "Cannot enable adapter" << this
+			                       << "because it is blocked by rfkill.";
+			return;
+		}
+
+		// bluez learns about the unblock asynchronously via its own /dev/rfkill
+		// reader and rejects a Powered write that races it. Retry once PowerState
+		// leaves "off-blocked".
+		this->mPendingEnable = true;
+		qCDebug(logAdapter) << "Adapter" << this << "was rfkill-blocked; unblocked, waiting for bluez.";
 		return;
 	}
 
 	this->bEnabled = enabled;
 	this->pEnabled.write();
+}
+
+void BluetoothAdapter::onStateChanged() {
+	if (this->mPendingEnable && this->bState != BluetoothAdapterState::Blocked) {
+		this->setEnabled(true);
+	}
+}
+
+bool BluetoothAdapter::tryRfkillUnblock() {
+	auto fd = open("/dev/rfkill", O_WRONLY | O_CLOEXEC);
+	if (fd == -1) {
+		qCWarning(logAdapter).nospace()
+		    << "Failed to open /dev/rfkill for writing: " << qt_error_string();
+		return false;
+	}
+	auto fdGuard = qScopeGuard([&] { close(fd); });
+
+	struct rfkill_event ev {};
+	ev.type = RFKILL_TYPE_BLUETOOTH;
+	ev.op = RFKILL_OP_CHANGE_ALL;
+	ev.soft = 0;
+
+	if (write(fd, &ev, sizeof(ev)) < static_cast<ssize_t>(RFKILL_EVENT_SIZE_V1)) {
+		qCWarning(logAdapter).nospace()
+		    << "Failed to write rfkill unblock event: " << qt_error_string();
+		return false;
+	}
+
+	return true;
 }
 
 void BluetoothAdapter::setDiscoverable(bool discoverable) {
