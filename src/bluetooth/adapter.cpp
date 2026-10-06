@@ -98,6 +98,7 @@ void BluetoothAdapter::addInterface(const QString& interface, const QVariantMap&
 	if (interface == "org.bluez.Adapter1") {
 		this->properties.updatePropertySet(properties, false);
 		qCDebug(logAdapter) << "Updated Adapter properties for" << this;
+		this->properties.updateAllViaGetAll();
 	}
 }
 
