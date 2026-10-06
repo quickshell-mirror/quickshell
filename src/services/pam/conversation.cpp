@@ -8,6 +8,7 @@
 #include <qtmetamacros.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #ifdef __FreeBSD__
 #include <signal.h>
 #endif
@@ -36,10 +37,14 @@ QString PamResult::toString(PamResult::Enum value) {
 	}
 }
 
-PamConversation::~PamConversation() { this->abort(); }
+PamConversation::~PamConversation() {
+	this->abort();
+	if (this->lifelineFd != -1) close(this->lifelineFd);
+}
 
 void PamConversation::start(const QString& configDir, const QString& config, const QString& user) {
-	this->childPid = PamConversation::createSubprocess(&this->pipes, configDir, config, user);
+	this->childPid =
+	    PamConversation::createSubprocess(&this->pipes, &this->lifelineFd, configDir, config, user);
 	if (this->childPid == 0) {
 		qCCritical(logPam) << "Failed to create pam subprocess.";
 		emit this->error(PamError::InternalError);
