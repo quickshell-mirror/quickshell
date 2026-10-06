@@ -15,3 +15,4 @@
 - Fixed a crash when quitting or reloading while a `Loader` was still loading asynchronously.
 - Fixed future `Socket` connection attempts after a failed connection attempt.
 - Fixed Open wifi networks showing as Unknown security.
+- Fixed a crash when capturing screencopy with a null screen.

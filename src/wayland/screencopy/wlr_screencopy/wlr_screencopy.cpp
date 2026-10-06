@@ -34,6 +34,7 @@ WlrScreencopyManager* WlrScreencopyManager::instance() {
 
 ScreencopyContext*
 WlrScreencopyManager::captureOutput(QScreen* screen, bool paintCursors, QRect region) {
+	if (screen == nullptr) return nullptr;
 	if (!dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle())) return nullptr;
 	return new WlrScreencopyContext(this, screen, paintCursors, region);
 }
