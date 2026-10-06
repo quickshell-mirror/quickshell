@@ -5,6 +5,7 @@
 #include <qcoreapplication.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
 #include <qqmlengine.h>
@@ -106,6 +107,17 @@ void WlSessionLock::updateSurfaces(bool show, WlSessionLock* old) {
 			auto* oldInstance = old == nullptr ? nullptr : old->surfaces.value(screen, nullptr);
 			instance->reload(oldInstance);
 
+			if (!this->isLocked()) {
+				instance->handleInitialGraphicsErrors();
+				QObject::connect(
+				    instance,
+				    &WlSessionLockSurface::graphicsInitializationFailed,
+				    this,
+				    &WlSessionLock::onGraphicsInitializationFailed,
+				    Qt::QueuedConnection
+				);
+			}
+
 			this->surfaces[screen] = instance;
 		}
 	}
@@ -171,6 +183,7 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 }
 
 void WlSessionLock::unlock() {
+	auto wasLocked = this->isLocked();
 	this->lockTarget = false;
 
 	for (auto* surface: this->surfaces) {
@@ -180,7 +193,35 @@ void WlSessionLock::unlock() {
 	this->surfaces.clear();
 
 	if (this->manager) this->manager->unlock();
-	if (this->isLocked()) emit this->lockStateChanged();
+	if (wasLocked) emit this->lockStateChanged();
+}
+
+void WlSessionLock::onGraphicsInitializationFailed(
+    QQuickWindow::SceneGraphError error,
+    const QString& message
+) {
+	auto* surface = qobject_cast<WlSessionLockSurface*>(this->sender());
+	if (this->manager->parent() != this || !this->surfaces.values().contains(surface)) return;
+
+	qWarning() << "Failed to initialize session lock graphics:" << error << message
+	           << "Aborting lock.";
+
+	if (this->isSecure()) {
+		this->setLocked(false);
+	} else {
+		// The protocol only permits unlocking after the compositor's locked event.
+		QObject::connect(
+		    this->manager,
+		    &SessionLockManager::locked,
+		    surface,
+		    [this, surface]() {
+			    if (this->manager->parent() == this && this->surfaces.values().contains(surface)) {
+				    this->setLocked(false);
+			    }
+		    },
+		    Qt::SingleShotConnection
+		);
+	}
 }
 
 void WlSessionLock::onScreensChanged() {
@@ -297,6 +338,23 @@ QQuickWindow* WlSessionLockSurface::disownWindow() {
 void WlSessionLockSurface::show() {
 	this->attach();
 	this->ext->setVisible();
+}
+
+void WlSessionLockSurface::handleInitialGraphicsErrors() {
+	auto connection = QObject::connect(
+	    this->window,
+	    &QQuickWindow::sceneGraphError,
+	    this,
+	    &WlSessionLockSurface::graphicsInitializationFailed
+	);
+
+	QObject::connect(
+	    this->window,
+	    &QQuickWindow::sceneGraphInitialized,
+	    this,
+	    [connection]() { QObject::disconnect(connection); },
+	    Qt::ConnectionType(Qt::QueuedConnection | Qt::SingleShotConnection)
+	);
 }
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
