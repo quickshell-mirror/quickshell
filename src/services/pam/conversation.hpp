@@ -87,6 +87,7 @@ private slots:
 private:
 	static pid_t createSubprocess(
 	    PamIpcPipes* pipes,
+	    int* lifelineFd,
 	    const QString& configDir,
 	    const QString& config,
 	    const QString& user
@@ -95,6 +96,8 @@ private:
 	void internalError();
 
 	pid_t childPid = 0;
+	// The subprocess is killed once every copy of this fd is closed, or if it is written to.
+	int lifelineFd = -1;
 	PamIpcPipes pipes;
 	QSocketNotifier notifier {QSocketNotifier::Read};
 };
