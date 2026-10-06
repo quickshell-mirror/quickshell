@@ -19,6 +19,7 @@ in pkgs.mkShell.override { stdenv = quickshell.stdenv; } {
     clang-tools
     parallel
     makeWrapper
+    qt6.qttools # lrelease for translation test catalogs
   ];
 
   TIDYFOX = "${tidyfox}/lib/libtidyfox.so";

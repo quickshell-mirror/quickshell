@@ -58,6 +58,10 @@ svg icons will not work, including system ones.
 
 At least Qt 6.6 is required.
 
+Developer builds with `-DBUILD_TESTING=ON` also require Qt Linguist Tools
+(`lrelease`) to compile translation test catalogs. This is not a runtime
+dependency or a requirement for builds with testing disabled.
+
 All features are enabled by default and some have their own dependencies.
 
 ### Crash Handler
