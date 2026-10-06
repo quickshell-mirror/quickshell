@@ -112,8 +112,9 @@ void TestPopupWindow::moveWithParent() { // NOLINT
 	parent.backingWindow()->setX(10);
 	parent.backingWindow()->setY(10);
 
-	QCOMPARE(popup.x(), parent.x() + 10);
-	QCOMPARE(popup.y(), parent.y() + 10);
+	// Popup repositioning is deferred until the next polish cycle.
+	QTRY_COMPARE(popup.x(), parent.x() + 10);
+	QTRY_COMPARE(popup.y(), parent.y() + 10);
 }
 
 void TestPopupWindow::attachParentLate() { // NOLINT
