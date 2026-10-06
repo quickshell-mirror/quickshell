@@ -6,6 +6,7 @@
 #include <qobject.h>
 #include <qstring.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "../core/logcat.hpp"
 #include "enums.hpp"
@@ -31,6 +32,11 @@ void NetworkDevice::setAutoconnect(bool autoconnect) {
 void NetworkDevice::setNmManaged(bool managed) {
 	if (this->bNmManaged == managed) return;
 	emit this->requestSetNmManaged(managed);
+}
+
+void NetworkDevice::setRefreshRate(quint32 refreshRate) {
+	if (this->bRefreshRate == refreshRate) return;
+	emit this->requestSetRefreshRate(refreshRate);
 }
 
 void NetworkDevice::disconnect() {

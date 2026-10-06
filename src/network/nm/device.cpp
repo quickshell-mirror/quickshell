@@ -18,6 +18,7 @@
 #include "../enums.hpp"
 #include "active_connection.hpp"
 #include "dbus_nm_device.h"
+#include "dbus_nm_device_statistics.h"
 #include "dbus_types.hpp"
 #include "enums.hpp"
 #include "network.hpp"
@@ -38,9 +39,24 @@ NMDevice::NMDevice(const QString& path, QObject* parent): QObject(parent) {
 	    this
 	);
 
+	this->deviceStatisticsProxy = new DBusNMDeviceStatisticsProxy(
+	    "org.freedesktop.NetworkManager",
+	    path,
+	    QDBusConnection::systemBus(),
+	    this
+	);
+
 	if (!this->deviceProxy->isValid()) {
 		qCWarning(logNetworkManager) << "Cannot create DBus interface for device at" << path;
 		return;
+	}
+
+	// Valid statistics aren't required to register a device.
+	if (!this->deviceStatisticsProxy->isValid()) {
+		qCWarning(logNetworkManager) << "Cannot create DBus interface for device statistics at" << path;
+	} else {
+		this->deviceStatisticsProperties.setInterface(this->deviceStatisticsProxy);
+		this->deviceStatisticsProperties.updateAllViaGetAll();
 	}
 
 	// clang-format off
@@ -69,9 +85,13 @@ void NMDevice::bindFrontend(NetworkDevice* frontend) {
 	frontend->bindableState().setBinding(translateState);
 	frontend->bindableAutoconnect().setBinding([this]() { return this->autoconnect(); });
 	frontend->bindableNmManaged().setBinding([this]() { return this->managed(); });
+	frontend->bindableRefreshRate().setBinding([this]() { return this->refreshRate(); });
+	frontend->bindableRxBytes().setBinding([this]() { return this->rxBytes(); });
+	frontend->bindableTxBytes().setBinding([this]() { return this->txBytes(); });
 	QObject::connect(frontend, &NetworkDevice::requestDisconnect, this, &NMDevice::disconnect);
 	QObject::connect(frontend, &NetworkDevice::requestSetAutoconnect, this, &NMDevice::setAutoconnect);
 	QObject::connect(frontend, &NetworkDevice::requestSetNmManaged, this, &NMDevice::setManaged);
+	QObject::connect(frontend, &NetworkDevice::requestSetRefreshRate, this, &NMDevice::setRefreshRate);
 	QObject::connect(this, &NMDevice::networkAdded, frontend, &NetworkDevice::networkAdded);
 	QObject::connect(this, &NMDevice::networkRemoved, frontend, &NetworkDevice::networkRemoved);
 }
@@ -186,6 +206,17 @@ void NMDevice::setManaged(bool managed) {
 	if (managed == this->bManaged) return;
 	this->bManaged = managed;
 	this->pManaged.write();
+}
+
+void NMDevice::setRefreshRate(quint32 refreshRate) {
+	if (refreshRate == this->bRefreshRate) return;
+	if (!this->deviceStatisticsProxy->isValid()) {
+		qCWarning(logNetworkManager) << "Cannot set refresh rate: Invalid device statistics interface";
+		return;
+	}
+
+	this->bRefreshRate = refreshRate;
+	this->pRefreshRate.write();
 }
 
 bool NMDevice::isValid() const { return this->deviceProxy && this->deviceProxy->isValid(); }
