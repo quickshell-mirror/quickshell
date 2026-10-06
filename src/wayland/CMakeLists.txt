@@ -80,6 +80,7 @@ qt_add_library(quickshell-wayland STATIC
 	xdgshell.cpp
 	util.cpp
 	output_tracking.cpp
+	wayland_window.cpp
 )
 
 # required for wl_proxy_safe_deref
