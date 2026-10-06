@@ -8,8 +8,8 @@
 #include <qobject.h>
 #include <qscreen.h>
 #include <qtmetamacros.h>
-#include <qtypes.h>
 #include <qwaylandclientextension.h>
+#include <wayland-client-protocol.h>
 #include <wayland-wlr-screencopy-unstable-v1-client-protocol.h>
 
 #include "../../../core/logcat.hpp"
@@ -161,8 +161,12 @@ void WlrScreencopyContext::submitFrame() {
 WlrScreencopyContext::OutputTransformQuery::OutputTransformQuery(WlrScreencopyContext* context)
     : context(context) {}
 
-WlrScreencopyContext::OutputTransformQuery::~OutputTransformQuery() {
-	if (this->isInitialized()) this->release();
+WlrScreencopyContext::OutputTransformQuery::~OutputTransformQuery() { this->release(); }
+
+void WlrScreencopyContext::OutputTransformQuery::release() {
+	if (this->output == nullptr) return;
+	wl_output_release(this->output);
+	this->output = nullptr;
 }
 
 void WlrScreencopyContext::OutputTransformQuery::setScreen(
@@ -174,28 +178,73 @@ void WlrScreencopyContext::OutputTransformQuery::setScreen(
 		[[nodiscard]] int globalId() const { return this->m_outputId; }
 	};
 
-	if (this->isInitialized()) this->release();
+	this->release();
 
-	this->init(
+	// Bound by hand, with our own listener: see the class comment.
+	this->output = static_cast<::wl_output*>(wl_registry_bind(
 	    screen->display()->wl_registry(),
 	    static_cast<QWaylandScreenReflector*>(screen)->globalId(), // NOLINT
+	    &wl_output_interface,
 	    3
-	);
+	));
+
+	wl_output_add_listener(this->output, &LISTENER, this);
 }
 
-void WlrScreencopyContext::OutputTransformQuery::output_geometry(
-    qint32 /*x*/,
-    qint32 /*y*/,
-    qint32 /*width*/,
-    qint32 /*height*/,
-    qint32 /*subpixel*/,
-    const QString& /*make*/,
-    const QString& /*model*/,
-    qint32 transform
+const wl_output_listener WlrScreencopyContext::OutputTransformQuery::LISTENER = {
+    .geometry = &OutputTransformQuery::onGeometry,
+    .mode = &OutputTransformQuery::onMode,
+    .done = &OutputTransformQuery::onDone,
+    .scale = &OutputTransformQuery::onScale,
+    .name = &OutputTransformQuery::onName,
+    .description = &OutputTransformQuery::onDescription,
+};
+
+void WlrScreencopyContext::OutputTransformQuery::onGeometry(
+    void* data,
+    ::wl_output* /*output*/,
+    int32_t /*x*/,
+    int32_t /*y*/,
+    int32_t /*physicalWidth*/,
+    int32_t /*physicalHeight*/,
+    int32_t /*subpixel*/,
+    const char* /*make*/,
+    const char* /*model*/,
+    int32_t transform
 ) {
-	auto newTransform = this->transform == -1;
-	this->transform = transform;
-	this->context->updateTransform(newTransform);
+	auto* self = static_cast<OutputTransformQuery*>(data);
+	auto newTransform = self->transform == -1;
+	self->transform = transform;
+	self->context->updateTransform(newTransform);
 }
+
+void WlrScreencopyContext::OutputTransformQuery::onMode(
+    void* /*data*/,
+    ::wl_output* /*output*/,
+    uint32_t /*flags*/,
+    int32_t /*width*/,
+    int32_t /*height*/,
+    int32_t /*refresh*/
+) {}
+
+void WlrScreencopyContext::OutputTransformQuery::onDone(void* /*data*/, ::wl_output* /*output*/) {}
+
+void WlrScreencopyContext::OutputTransformQuery::onScale(
+    void* /*data*/,
+    ::wl_output* /*output*/,
+    int32_t /*factor*/
+) {}
+
+void WlrScreencopyContext::OutputTransformQuery::onName(
+    void* /*data*/,
+    ::wl_output* /*output*/,
+    const char* /*name*/
+) {}
+
+void WlrScreencopyContext::OutputTransformQuery::onDescription(
+    void* /*data*/,
+    ::wl_output* /*output*/,
+    const char* /*description*/
+) {}
 
 } // namespace qs::wayland::screencopy::wlr
