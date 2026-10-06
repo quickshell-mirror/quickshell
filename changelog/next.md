@@ -1,3 +1,7 @@
+## New Features
+
+- Added a refreshRate property to ShellScreen.
+
 ## Other Changes
 
 - Added support for Qt 6.12
