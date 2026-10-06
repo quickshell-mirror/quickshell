@@ -6,10 +6,75 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
-SystemClock::SystemClock(QObject* parent): QObject(parent) {
+#ifdef Q_OS_LINUX
+#include <cerrno>
+#include <cstdint>
+#include <time.h> // NOLINT(modernize-deprecated-headers): POSIX clocks and itimerspec.
+
+#include <qlogging.h>
+#include <sys/timerfd.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
+SystemClock::SystemClock(QObject* parent)
+    : QObject(parent)
+#ifdef Q_OS_LINUX
+    // glibc defines these POSIX types/macros in private headers exported by time.h.
+    // NOLINTNEXTLINE(misc-include-cleaner)
+    , timerFd(timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC))
+#endif
+{
 	QObject::connect(&this->timer, &QTimer::timeout, this, &SystemClock::onTimeout);
+#ifdef Q_OS_LINUX
+	// QTimer measures awake time. A wall-clock deadline must also expire while
+	// suspended, so the first event loop iteration after resume sees fresh time.
+	if (this->timerFd >= 0) {
+		this->notifier.setSocket(this->timerFd);
+		QObject::connect(
+		    &this->notifier,
+		    &QSocketNotifier::activated,
+		    this,
+		    &SystemClock::onRealtimeTimeout
+		);
+	} else {
+		qWarning() << "SystemClock: could not create realtime timer, falling back to QTimer:" << errno;
+	}
+#endif
 	this->update();
 }
+
+SystemClock::~SystemClock() {
+#ifdef Q_OS_LINUX
+	this->closeRealtimeTimer();
+#endif
+}
+
+#ifdef Q_OS_LINUX
+void SystemClock::closeRealtimeTimer() {
+	this->notifier.setEnabled(false);
+	if (this->timerFd >= 0) close(this->timerFd);
+	this->timerFd = -1;
+}
+
+void SystemClock::onRealtimeTimeout() {
+	uint64_t expirations = 0;
+	ssize_t result = 0;
+	do {
+		result = read(this->timerFd, &expirations, sizeof(expirations));
+	} while (result < 0 && errno == EINTR);
+
+	if (result < 0 && errno == EAGAIN) return;
+	if (result < 0 && errno != ECANCELED) {
+		qWarning() << "SystemClock: could not read realtime timer, falling back to QTimer:" << errno;
+		this->closeRealtimeTimer();
+	}
+
+	// ECANCELED means the system clock was set, possibly backwards. Resample
+	// wall time instead of snapping to the old target, then arm a new deadline.
+	this->update();
+}
+#endif
 
 bool SystemClock::enabled() const { return this->mEnabled; }
 
@@ -40,6 +105,15 @@ void SystemClock::update() {
 		this->schedule(QDateTime::fromMSecsSinceEpoch(0));
 	} else {
 		this->timer.stop();
+#ifdef Q_OS_LINUX
+		if (this->timerFd >= 0) {
+			this->notifier.setEnabled(false);
+			const itimerspec disarmed {}; // NOLINT(misc-include-cleaner): exported by time.h.
+			if (timerfd_settime(this->timerFd, 0, &disarmed, nullptr) < 0) {
+				this->closeRealtimeTimer();
+			}
+		}
+#endif
 	}
 }
 
@@ -59,6 +133,9 @@ void SystemClock::setTime(const QDateTime& targetTime) {
 }
 
 void SystemClock::schedule(const QDateTime& targetTime) {
+	// A dateChanged handler may disable the clock while it is being updated.
+	if (!this->mEnabled) return;
+
 	auto secondPrecision = this->mPrecision >= SystemClock::Seconds;
 	auto minutePrecision = this->mPrecision >= SystemClock::Minutes;
 	auto hourPrecision = this->mPrecision >= SystemClock::Hours;
@@ -81,8 +158,30 @@ void SystemClock::schedule(const QDateTime& targetTime) {
 	else if (minutePrecision) nextTime = nextTime.addSecs(60);
 	else if (hourPrecision) nextTime = nextTime.addSecs(3600);
 
-	auto delay = currentTime.msecsTo(nextTime);
-
-	this->timer.start(static_cast<qint32>(delay));
 	this->targetTime = nextTime;
+#ifdef Q_OS_LINUX
+	if (this->timerFd >= 0) {
+		auto deadline = nextTime.toMSecsSinceEpoch();
+		itimerspec timeout {};
+		timeout.it_value.tv_sec = deadline / 1000;
+		timeout.it_value.tv_nsec = (deadline % 1000) * 1000000;
+		if (timerfd_settime(
+		        this->timerFd,
+		        TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET,
+		        &timeout,
+		        nullptr
+		    )
+		    == 0)
+		{
+			this->notifier.setEnabled(true);
+			return;
+		}
+
+		qWarning() << "SystemClock: could not arm realtime timer, falling back to QTimer:" << errno;
+		this->closeRealtimeTimer();
+	}
+#endif
+
+	auto delay = currentTime.msecsTo(nextTime);
+	this->timer.start(static_cast<qint32>(delay));
 }
