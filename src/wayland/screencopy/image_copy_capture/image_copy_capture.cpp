@@ -220,6 +220,8 @@ IccOutputSourceManager* IccOutputSourceManager::instance() {
 }
 
 ScreencopyContext* IccOutputSourceManager::captureOutput(QScreen* screen, bool paintCursors) {
+	if (screen == nullptr) return nullptr;
+
 	auto* waylandScreen = dynamic_cast<QtWaylandClient::QWaylandScreen*>(screen->handle());
 	if (!waylandScreen) return nullptr;
 

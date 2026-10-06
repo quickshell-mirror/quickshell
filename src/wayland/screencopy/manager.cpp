@@ -25,6 +25,8 @@ namespace qs::wayland::screencopy {
 
 ScreencopyContext* ScreencopyManager::createContext(QObject* object, bool paintCursors) {
 	if (auto* screen = qobject_cast<QuickshellScreenInfo*>(object)) {
+		if (screen->screen == nullptr) return nullptr;
+
 #if SCREENCOPY_ICC
 		{
 			auto* manager = icc::IccOutputSourceManager::instance();
