@@ -23,3 +23,7 @@ target_link_libraries(quickshell-wayland-idle-notify PRIVATE
 qs_module_pch(quickshell-wayland-idle-notify SET large)
 
 target_link_libraries(quickshell PRIVATE quickshell-wayland-idle-notifyplugin)
+
+if (BUILD_TESTING)
+	add_subdirectory(test)
+endif()
