@@ -5,6 +5,8 @@
 #include <qnamespace.h>
 #include <qrect.h>
 
+#include "margins.hpp"
+
 QRect Box::qrect() const { return {this->x, this->y, this->w, this->h}; }
 
 bool Box::operator==(const Box& other) const {
