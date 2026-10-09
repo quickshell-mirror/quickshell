@@ -162,28 +162,9 @@ QVariantMap NMSettings::read() {
 }
 
 void NMSettings::write(const QVariantMap& settings) {
-	NMSettingsMap changedSettings;
 	NMSettingsMap removedSettings;
 	QStringList failedSettings;
-
-	for (auto it = settings.constBegin(); it != settings.constEnd(); ++it) {
-		if (!it.value().canConvert<QVariantMap>()) continue;
-
-		auto group = it.value().toMap();
-		QVariantMap toChange;
-		QVariantMap toRemove;
-		for (auto jt = group.constBegin(); jt != group.constEnd(); ++jt) {
-			if (jt.value().isNull()) {
-				toRemove.insert(jt.key(), QVariant());
-			} else {
-				auto converted = settingTypeFromQml(it.key(), jt.key(), jt.value());
-				if (!converted.isValid()) failedSettings.append(it.key() + "." + jt.key());
-				else toChange.insert(jt.key(), converted);
-			}
-		}
-		if (!toChange.isEmpty()) changedSettings.insert(it.key(), toChange);
-		if (!toRemove.isEmpty()) removedSettings.insert(it.key(), toRemove);
-	}
+	const auto changedSettings = settingsMapFromQml(settings, removedSettings, failedSettings);
 
 	if (!failedSettings.isEmpty()) {
 		qCWarning(logNMSettings) << "A write to" << this
