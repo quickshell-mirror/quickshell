@@ -21,7 +21,7 @@ wl_proto(wlp-xdg-shell xdg-shell "${WAYLAND_PROTOCOLS}/stable/xdg-shell")
 
 target_link_libraries(quickshell-wayland-layershell PRIVATE
 	Qt::Quick Qt::WaylandClient Qt::WaylandClientPrivate wayland-client
-	wlp-layer-shell wlp-xdg-shell
+	wlp-layer-shell wlp-xdg-shell quickshell-wayland-activation
 )
 
 qs_module_pch(quickshell-wayland-layershell SET large)

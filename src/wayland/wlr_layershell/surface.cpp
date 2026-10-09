@@ -20,6 +20,7 @@
 #include <wayland-xdg-shell-client-protocol.h>
 
 #include "../../window/panelinterface.hpp"
+#include "../activation.hpp"
 #include "shell_integration.hpp"
 #include "wlr_layershell.hpp"
 
@@ -128,6 +129,10 @@ LayerSurfaceBridge* LayerSurfaceBridge::init(QWindow* window, LayerSurfaceState 
 	bridge->commitState();
 
 	return bridge;
+}
+
+void LayerSurface::requestXdgActivationToken(quint32 serial) {
+	activation::requestXdgActivationToken(this->window(), serial);
 }
 
 LayerSurface::LayerSurface(LayerShellIntegration* shell, QtWaylandClient::QWaylandWindow* window)
