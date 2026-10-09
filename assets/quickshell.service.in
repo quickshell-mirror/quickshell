@@ -1,0 +1,13 @@
+[Unit]
+Description=Quickshell Desktop Shell
+PartOf=graphical-session.target
+Requisite=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=@CMAKE_INSTALL_BINDIR@/quickshell
+Slice=session.slice
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

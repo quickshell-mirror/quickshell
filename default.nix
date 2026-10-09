@@ -139,10 +139,13 @@
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;
+    dontMoveSystemdUserUnits = true;
 
     installPhase = ''
       mkdir -p $out
-      cp -r ${unwrapped}/* $out
+      cp -r ${unwrapped} $out
+      substituteInPlace $out/lib/systemd/user/quickshell*.service \
+        --replace-fail ${unwrapped} $out
     '';
 
     passthru = {
