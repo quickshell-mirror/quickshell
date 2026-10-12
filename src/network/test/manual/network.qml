@@ -76,6 +76,12 @@ Scope {
     Component {
         id: deviceDelegate
         WrapperRectangle {
+            id: deviceRoot
+
+            function formatMib(bytes) {
+                return `${(bytes / 1024 / 1024).toFixed(3)} MiB`;
+            }
+
             width: parent.width
             color: "transparent"
             border.color: palette.button
@@ -138,6 +144,27 @@ Scope {
                             onClicked: modelData.scannerEnabled = !modelData.scannerEnabled
                             visible: modelData.type === DeviceType.Wifi
                         }
+                    }
+                }
+                RowLayout {
+                    Label {
+                        text: `RX: ${deviceRoot.formatMib(modelData.rxBytes)}`
+                        color: palette.placeholderText
+                    }
+                    Label {
+                        text: `TX: ${deviceRoot.formatMib(modelData.txBytes)}`
+                        color: palette.placeholderText
+                    }
+                    Label {
+                        text: "Refresh rate:"
+                    }
+                    SpinBox {
+                        from: 0
+                        to: 60000
+                        stepSize: 250
+                        value: modelData.refreshRate
+                        onValueModified: modelData.refreshRate = value
+                        textFromValue: value => value === 0 ? "Off" : value + "ms"
                     }
                 }
 
