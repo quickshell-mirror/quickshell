@@ -29,7 +29,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(BluetoothDeviceState::Enum state);
+	Q_INVOKABLE static QString toString(qs::bluetooth::BluetoothDeviceState::Enum state);
 };
 
 struct BatteryPercentage {};
@@ -70,7 +70,7 @@ class BluetoothDevice: public QObject {
 	/// System icon representing the device type. Use @@Quickshell.Quickshell.iconPath() to display this in an image.
 	Q_PROPERTY(QString icon READ default NOTIFY iconChanged BINDABLE bindableIcon);
 	/// Connection state of the device.
-	Q_PROPERTY(BluetoothDeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(qs::bluetooth::BluetoothDeviceState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// True if the device is currently connected to the computer.
 	///
 	/// Setting this property is equivalent to calling @@connect() and @@disconnect().
@@ -100,7 +100,7 @@ class BluetoothDevice: public QObject {
 	/// Battery level of the connected device, from `0.0` to `1.0`. Only valid if @@batteryAvailable is true.
 	Q_PROPERTY(qreal battery READ default NOTIFY batteryChanged BINDABLE bindableBattery);
 	/// The Bluetooth adapter this device belongs to.
-	Q_PROPERTY(BluetoothAdapter* adapter READ adapter NOTIFY adapterChanged);
+	Q_PROPERTY(qs::bluetooth::BluetoothAdapter* adapter READ adapter NOTIFY adapterChanged);
 	/// DBus path of the device under the `org.bluez` system service.
 	Q_PROPERTY(QString dbusPath READ path CONSTANT);
 	// clang-format on

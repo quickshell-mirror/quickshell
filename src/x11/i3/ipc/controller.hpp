@@ -56,7 +56,7 @@ signals:
 private slots:
 	void onFocusedMonitorDestroyed();
 
-	void onEvent(I3IpcEvent* event);
+	void onEvent(qs::i3::ipc::I3IpcEvent* event);
 	void onConnected();
 
 private:

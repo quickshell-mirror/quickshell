@@ -112,7 +112,7 @@ public:
 
 signals:
 	void connected();
-	void rawEvent(HyprlandIpcEvent* event);
+	void rawEvent(qs::hyprland::ipc::HyprlandIpcEvent* event);
 
 	void usingLuaChanged();
 	void focusedMonitorChanged();

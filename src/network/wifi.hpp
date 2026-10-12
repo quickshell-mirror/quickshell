@@ -22,7 +22,7 @@ class WifiNetwork: public Network {
 	/// The current signal strength of the network, from 0.0 to 1.0.
 	Q_PROPERTY(qreal signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
 	/// The security type of the wifi network.
-	Q_PROPERTY(WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
+	Q_PROPERTY(qs::network::WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
 	// clang-format on
 
 public:
@@ -64,7 +64,7 @@ class WifiDevice: public NetworkDevice {
 	/// When enabled, the scanner populates the device with an active list of available wifi networks.
 	Q_PROPERTY(bool scannerEnabled READ scannerEnabled WRITE setScannerEnabled NOTIFY scannerEnabledChanged BINDABLE bindableScannerEnabled);
 	/// The 802.11 mode the device is in.
-	Q_PROPERTY(WifiDeviceMode::Enum mode READ default NOTIFY modeChanged BINDABLE bindableMode);
+	Q_PROPERTY(qs::network::WifiDeviceMode::Enum mode READ default NOTIFY modeChanged BINDABLE bindableMode);
 	// clang-format on
 
 public:

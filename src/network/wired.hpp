@@ -20,7 +20,9 @@ class WiredDevice: public NetworkDevice {
 	/// The wired network for this device or `null`.
 	///
 	/// > [!NOTE] This network is only available when @@hasLink is `true`.
-	Q_PROPERTY(Network* network READ network NOTIFY networkChanged BINDABLE bindableNetwork);
+	Q_PROPERTY(
+	    qs::network::Network* network READ network NOTIFY networkChanged BINDABLE bindableNetwork
+	);
 	/// The maximum speed of the physical device link, in megabits per second.
 	Q_PROPERTY(quint32 linkSpeed READ default NOTIFY linkSpeedChanged BINDABLE bindableLinkSpeed);
 	/// True if the wired device has a physical link (cable plugged in).

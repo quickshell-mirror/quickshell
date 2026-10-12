@@ -41,7 +41,7 @@ class Windowset: public QObject {
 	Q_PROPERTY(bool active READ default NOTIFY activeChanged BINDABLE bindableActive);
 	/// The projection this windowset is a member of. A projection is the set of screens covered by
 	/// a windowset.
-	Q_PROPERTY(WindowsetProjection* projection READ default NOTIFY projectionChanged BINDABLE bindableProjection);
+	Q_PROPERTY(qs::wm::WindowsetProjection* projection READ default NOTIFY projectionChanged BINDABLE bindableProjection);
 	/// If false, this windowset should generally be hidden from workspace pickers.
 	Q_PROPERTY(bool shouldDisplay READ default NOTIFY shouldDisplayChanged BINDABLE bindableShouldDisplay);
 	/// If true, a window in this windowset has been marked as urgent.
@@ -70,7 +70,7 @@ public:
 	Q_INVOKABLE virtual void remove();
 	/// Move the windowset to a different projection. A projection represents the set of screens
 	/// a workspace spans. Requires @@canSetProjection.
-	Q_INVOKABLE virtual void setProjection(WindowsetProjection* projection);
+	Q_INVOKABLE virtual void setProjection(qs::wm::WindowsetProjection* projection);
 
 	[[nodiscard]] QBindable<QString> bindableId() const { return &this->bId; }
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
@@ -134,7 +134,7 @@ class WindowsetProjection: public QObject {
 	/// Screens the windowset projection spans, often a single screen or all screens.
 	Q_PROPERTY(QList<QuickshellScreenInfo*> screens READ screens NOTIFY screensChanged);
 	/// Windowsets that are currently present on the projection.
-	Q_PROPERTY(QList<Windowset*> windowsets READ default NOTIFY windowsetsChanged BINDABLE bindableWindowsets);
+	Q_PROPERTY(QList<qs::wm::Windowset*> windowsets READ default NOTIFY windowsetsChanged BINDABLE bindableWindowsets);
 	// clang-format on
 
 public:

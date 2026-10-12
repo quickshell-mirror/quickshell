@@ -55,8 +55,8 @@ signals:
 	void connectivityChanged();
 
 private slots:
-	void deviceAdded(NetworkDevice* dev);
-	void deviceRemoved(NetworkDevice* dev);
+	void deviceAdded(qs::network::NetworkDevice* dev);
+	void deviceRemoved(qs::network::NetworkDevice* dev);
 
 private:
 	explicit Networking(QObject* parent = nullptr);

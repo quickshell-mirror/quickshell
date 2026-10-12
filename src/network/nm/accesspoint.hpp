@@ -61,11 +61,11 @@ signals:
 	void loaded();
 	void ssidChanged(const QByteArray& ssid);
 	void signalStrengthChanged(quint8 signal);
-	void flagsChanged(NM80211ApFlags::Enum flags);
-	void wpaFlagsChanged(NM80211ApSecurityFlags::Enum wpaFlags);
-	void rsnFlagsChanged(NM80211ApSecurityFlags::Enum rsnFlags);
-	void modeChanged(NM80211Mode::Enum mode);
-	void securityChanged(WifiSecurityType::Enum security);
+	void flagsChanged(qs::network::NM80211ApFlags::Enum flags);
+	void wpaFlagsChanged(qs::network::NM80211ApSecurityFlags::Enum wpaFlags);
+	void rsnFlagsChanged(qs::network::NM80211ApSecurityFlags::Enum rsnFlags);
+	void modeChanged(qs::network::NM80211Mode::Enum mode);
+	void securityChanged(qs::network::WifiSecurityType::Enum security);
 
 private:
 	// clang-format off

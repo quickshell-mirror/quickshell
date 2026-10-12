@@ -120,7 +120,7 @@ public slots:
 	void initFs();
 
 private slots:
-	void onMessage(const LogMessage& msg, bool showInSparse);
+	void onMessage(const qs::log::LogMessage& msg, bool showInSparse);
 
 private:
 	QFile* file = nullptr;

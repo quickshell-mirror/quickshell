@@ -227,7 +227,7 @@ class FileView: public QObject {
 	/// Its state may be saved with @@writeAdapter().
 	///
 	/// Currently the only adapter is @@JsonAdapter.
-	Q_PROPERTY(FileViewAdapter* adapter READ adapter WRITE setAdapter NOTIFY adapterChanged);
+	Q_PROPERTY(qs::io::FileViewAdapter* adapter READ adapter WRITE setAdapter NOTIFY adapterChanged);
 
 	QSDOC_HIDE Q_PROPERTY(QString __path READ path WRITE setPath NOTIFY pathChanged);
 	QSDOC_HIDE Q_PROPERTY(QString __text READ text NOTIFY internalTextChanged);

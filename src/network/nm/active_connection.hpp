@@ -43,8 +43,8 @@ public:
 signals:
 	void loaded();
 	void connectionChanged(QDBusObjectPath path);
-	void stateChanged(NMConnectionState::Enum state);
-	void stateReasonChanged(NMConnectionStateReason::Enum reason);
+	void stateChanged(qs::network::NMConnectionState::Enum state);
+	void stateReasonChanged(qs::network::NMConnectionStateReason::Enum reason);
 
 private slots:
 	void onStateChanged(quint32 state, quint32 reason);

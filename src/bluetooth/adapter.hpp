@@ -32,7 +32,7 @@ public:
 	};
 	Q_ENUM(Enum);
 
-	Q_INVOKABLE static QString toString(BluetoothAdapterState::Enum state);
+	Q_INVOKABLE static QString toString(qs::bluetooth::BluetoothAdapterState::Enum state);
 };
 
 } // namespace qs::bluetooth
@@ -64,7 +64,7 @@ class BluetoothAdapter: public QObject {
 	/// True if the adapter is currently enabled. More detailed state is available from @@state.
 	Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged);
 	/// Detailed power state of the adapter.
-	Q_PROPERTY(BluetoothAdapterState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(qs::bluetooth::BluetoothAdapterState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// True if the adapter can be discovered by other bluetooth devices.
 	Q_PROPERTY(bool discoverable READ discoverable WRITE setDiscoverable NOTIFY discoverableChanged);
 	/// Timeout in seconds for how long the adapter stays discoverable after @@discoverable is set to true.

@@ -27,17 +27,17 @@ class Network: public QObject {
 	/// The name of the network.
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// The device this network belongs to.
-	Q_PROPERTY(NetworkDevice* device READ device CONSTANT);
+	Q_PROPERTY(qs::network::NetworkDevice* device READ device CONSTANT);
 	/// A list of NetworkManager connection settings profiles for this network.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend. 
-	Q_PROPERTY(QList<NMSettings*> nmSettings READ default NOTIFY nmSettingsChanged BINDABLE bindableNmSettings);
+	Q_PROPERTY(QList<qs::network::NMSettings*> nmSettings READ default NOTIFY nmSettingsChanged BINDABLE bindableNmSettings);
 	/// True if the network is connected.
 	Q_PROPERTY(bool connected READ default NOTIFY connectedChanged BINDABLE bindableConnected);
 	/// True if the wifi network has known connection settings saved.
 	Q_PROPERTY(bool known READ default NOTIFY knownChanged BINDABLE bindableKnown);
 	/// The connectivity state of the network.
-	Q_PROPERTY(ConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
+	Q_PROPERTY(qs::network::ConnectionState::Enum state READ default NOTIFY stateChanged BINDABLE bindableState);
 	/// If the network is currently connecting or disconnecting. Shorthand for checking @@state.
 	Q_PROPERTY(bool stateChanging READ default NOTIFY stateChangingChanged BINDABLE bindableStateChanging);
 	// clang-format on
@@ -53,7 +53,7 @@ public:
 	/// Attempt to connect to the network with a specific @@nmSettings entry.
 	///
 	/// > [!WARNING] Only valid for the NetworkManager backend.
-	Q_INVOKABLE void connectWithSettings(NMSettings* settings);
+	Q_INVOKABLE void connectWithSettings(qs::network::NMSettings* settings);
 	/// Disconnect from the network.
 	Q_INVOKABLE void disconnect();
 	/// Forget all connection settings for this network.
@@ -77,7 +77,7 @@ public:
 
 signals:
 	/// Signals that a connection to the network has failed because of the given @@ConnectionFailReason.
-	void connectionFailed(ConnectionFailReason::Enum reason);
+	void connectionFailed(qs::network::ConnectionFailReason::Enum reason);
 
 	void nameChanged();
 	void connectedChanged();
@@ -86,7 +86,7 @@ signals:
 	void stateChangingChanged();
 	void nmSettingsChanged();
 	QSDOC_HIDE void requestConnect();
-	QSDOC_HIDE void requestConnectWithSettings(NMSettings* settings);
+	QSDOC_HIDE void requestConnectWithSettings(qs::network::NMSettings* settings);
 	QSDOC_HIDE void requestDisconnect();
 	QSDOC_HIDE void requestForget();
 
