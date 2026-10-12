@@ -21,8 +21,27 @@ endfunction()
 # DEPENDENCIES introduces a cmake dependency which we don't need with static modules.
 # This greatly improves comp speed by not introducing those dependencies.
 function (qs_add_module_deps_light target)
-	foreach (dep IN LISTS ARGN)
-		string(APPEND qmldir_extra "depends ${dep}\n")
+	cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "URIS")
+
+	set(uris)
+
+	# Add dep metatypes files to target so it picks up the dep type data
+	foreach (dep IN LISTS arg_UNPARSED_ARGUMENTS)
+		get_target_property(uri ${dep} QT_QML_MODULE_URI)
+		get_target_property(metatypes ${dep} INTERFACE_QT_META_TYPES_BUILD_FILE)
+
+		if (NOT uri OR NOT metatypes)
+			message(FATAL_ERROR "${dep} must be a qml module defined before ${target}")
+		endif()
+
+		list(APPEND uris ${uri})
+		target_sources(${target} PRIVATE ${metatypes})
+	endforeach()
+
+	list(APPEND uris ${arg_URIS})
+
+	foreach (uri IN LISTS uris)
+		string(APPEND qmldir_extra "depends ${uri}\n")
 	endforeach()
 
 	qs_append_qmldir(${target} "${qmldir_extra}")

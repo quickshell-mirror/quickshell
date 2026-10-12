@@ -10,7 +10,7 @@ qt_add_qml_module(quickshell-hyprland-focus-grab
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-hyprland-focus-grab Quickshell)
+qs_add_module_deps_light(quickshell-hyprland-focus-grab quickshell-core)
 
 install_qml_module(quickshell-hyprland-focus-grab)
 

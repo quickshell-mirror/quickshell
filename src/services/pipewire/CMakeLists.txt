@@ -20,7 +20,7 @@ qt_add_qml_module(quickshell-service-pipewire
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-pipewire Quickshell)
+qs_add_module_deps_light(quickshell-service-pipewire quickshell-core)
 
 install_qml_module(quickshell-service-pipewire)
 

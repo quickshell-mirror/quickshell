@@ -44,7 +44,7 @@ qt_add_qml_module(quickshell-service-statusnotifier
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-statusnotifier Quickshell Quickshell.DBusMenu)
+qs_add_module_deps_light(quickshell-service-statusnotifier quickshell-core quickshell-dbusmenu)
 
 install_qml_module(quickshell-service-statusnotifier)
 

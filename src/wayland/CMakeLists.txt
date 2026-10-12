@@ -148,7 +148,7 @@ qt_add_qml_module(quickshell-wayland
 	IMPORTS ${WAYLAND_MODULES}
 )
 
-qs_add_module_deps_light(quickshell-wayland Quickshell)
+qs_add_module_deps_light(quickshell-wayland quickshell-core)
 
 install_qml_module(quickshell-wayland)
 

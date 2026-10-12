@@ -12,7 +12,7 @@ qt_add_qml_module(quickshell-window
 	DEPENDENCIES QtQuick
 )
 
-qs_add_module_deps_light(quickshell-window Quickshell)
+qs_add_module_deps_light(quickshell-window quickshell-core)
 
 install_qml_module(quickshell-window)
 

@@ -11,6 +11,8 @@ qt_add_qml_module(quickshell-x11
 	DEPENDENCIES QtQuick
 )
 
+qs_add_module_deps_light(quickshell-x11 quickshell-core quickshell-window)
+
 install_qml_module(quickshell-x11)
 
 add_library(quickshell-x11-init OBJECT init.cpp)

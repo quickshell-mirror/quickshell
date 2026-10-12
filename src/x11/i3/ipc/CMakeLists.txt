@@ -13,7 +13,7 @@ qt_add_qml_module(quickshell-i3-ipc
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-i3-ipc Quickshell)
+qs_add_module_deps_light(quickshell-i3-ipc quickshell-core)
 
 install_qml_module(quickshell-i3-ipc)
 

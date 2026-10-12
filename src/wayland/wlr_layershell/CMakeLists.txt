@@ -10,7 +10,10 @@ qt_add_qml_module(quickshell-wayland-layershell
 	DEPENDENCIES QtQuick
 )
 
-qs_add_module_deps_light(quickshell-wayland-layershell Quickshell Quickshell.Wayland)
+qs_add_module_deps_light(quickshell-wayland-layershell
+	quickshell-core quickshell-window
+	URIS Quickshell.Wayland
+)
 
 install_qml_module(quickshell-wayland-layershell)
 

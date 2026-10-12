@@ -20,7 +20,7 @@ qt_add_qml_module(quickshell-dbusmenu
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-dbusmenu Quickshell)
+qs_add_module_deps_light(quickshell-dbusmenu quickshell-core)
 
 install_qml_module(quickshell-dbusmenu)
 
