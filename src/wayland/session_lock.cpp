@@ -171,6 +171,8 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 }
 
 void WlSessionLock::unlock() {
+	auto wasLocked = this->isLocked();
+
 	this->lockTarget = false;
 
 	for (auto* surface: this->surfaces) {
@@ -180,7 +182,7 @@ void WlSessionLock::unlock() {
 	this->surfaces.clear();
 
 	if (this->manager) this->manager->unlock();
-	if (this->isLocked()) emit this->lockStateChanged();
+	if (wasLocked) emit this->lockStateChanged();
 }
 
 void WlSessionLock::onScreensChanged() {
