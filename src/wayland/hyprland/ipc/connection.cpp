@@ -452,6 +452,31 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		                        << (*workspaceIter)->bindableName().value() << "to" << name;
 
 		(*workspaceIter)->bindableName().setValue(name);
+	} else if (event->name == "changeworkspaceid") {
+		auto args = event->parseView(2);
+		auto oldAddress = QString::fromUtf8(args.at(0));
+		auto newAddress = QString::fromUtf8(args.at(1));
+
+		const auto& mList = this->mWorkspaces.valueList();
+
+		auto workspaceIter = std::ranges::find_if(mList, [&](HyprlandWorkspace* m) {
+			return m->bindableAddress().value() == oldAddress;
+		});
+
+		if (workspaceIter == mList.end()) return;
+		auto* workspace = *workspaceIter;
+
+		qCDebug(logHyprlandIpc) << "Workspace with address" << oldAddress << "changed id to"
+		                        << newAddress;
+
+		// Hyprland names a workspace after its new id unless it was renamed.
+		auto name = workspace->bindableName().value();
+		if (name == oldAddress) name = newAddress;
+
+		// The list is sorted by id, so the workspace moves to its new place in it.
+		this->mWorkspaces.removeObject(workspace);
+		workspace->updateInitial(newAddress, name);
+		this->mWorkspaces.insertObjectSorted(workspace, &HyprlandIpc::compareWorkspaces);
 	} else if (event->name == "fullscreen") {
 		if (auto* workspace = this->bFocusedWorkspace.value()) {
 			workspace->bindableHasFullscreen().setValue(event->data == "1");
