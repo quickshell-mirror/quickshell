@@ -177,3 +177,11 @@ install(
 	DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 	RENAME org.quickshell.svg
 )
+
+foreach (SYSTEMD_FILE "quickshell.service" "quickshell@.service" "quickshell-path@.service")
+	configure_file(assets/${SYSTEMD_FILE}.in ${SYSTEMD_FILE})
+	install(
+		FILES ${CMAKE_BINARY_DIR}/${SYSTEMD_FILE}
+		DESTINATION lib/systemd/user
+	)
+endforeach()
