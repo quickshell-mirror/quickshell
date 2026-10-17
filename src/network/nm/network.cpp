@@ -204,6 +204,12 @@ NMWirelessNetwork::NMWirelessNetwork(const QString& ssid, NetworkDevice* device,
 	QObject::connect(this, &NMWirelessNetwork::referenceApChanged, this, updateSecurity);
 	QObject::connect(this, &NMWirelessNetwork::settingsRemoved, this, checkDisappeared);
 	QObject::connect(this, &NMWirelessNetwork::apRemoved, this, checkDisappeared);
+	QObject::connect(
+	    this,
+	    &NMWirelessNetwork::activeApPathChanged,
+	    this,
+	    &NMWirelessNetwork::updateReferenceAp
+	);
 
 	// Register and bind the frontend WifiNetwork.
 	this->mFrontend = new WifiNetwork(ssid, device, this);
@@ -215,6 +221,11 @@ void NMWirelessNetwork::updateReferenceAp() {
 	if (this->mAccessPoints.isEmpty()) {
 		this->bReferenceAp = nullptr;
 		this->bSignalStrength = 0;
+		this->bFrequency = 0;
+		this->bMaxBitrate = 0;
+		this->bHwAddress = QString();
+		this->bBandwidth = 0;
+		this->bLastSeen = QDateTime();
 		return;
 	}
 
@@ -233,6 +244,15 @@ void NMWirelessNetwork::updateReferenceAp() {
 	if (this->bReferenceAp != selectedAp) {
 		this->bReferenceAp = selectedAp;
 		this->bSignalStrength.setBinding([selectedAp]() { return selectedAp->signalStrength(); });
+		this->bFrequency.setBinding([selectedAp]() { return selectedAp->frequency(); });
+		this->bHwAddress.setBinding([selectedAp]() { return selectedAp->hwAddress(); });
+		this->bMaxBitrate.setBinding([selectedAp]() { return selectedAp->maxBitrate(); });
+		this->bBandwidth.setBinding([selectedAp]() { return selectedAp->bandwidth(); });
+		this->bLastSeen.setBinding([selectedAp]() {
+			const qint32 sec = selectedAp->lastSeen();
+			if (sec <= 0) return QDateTime();
+			return clockBootTimeToDateTime(static_cast<qint64>(sec) * 1000);
+		});
 	}
 }
 
@@ -260,7 +280,11 @@ void NMWirelessNetwork::bindFrontend() {
 	auto translateSignal = [this]() { return this->signalStrength() / 100.0; };
 	frontend->bindableSignalStrength().setBinding(translateSignal);
 	frontend->bindableSecurity().setBinding([this]() { return this->security(); });
-
+	frontend->bindableFrequency().setBinding([this]() { return this->frequency(); });
+	frontend->bindableBssid().setBinding([this]() { return this->hwAddress(); });
+	frontend->bindableMaxBitrate().setBinding([this]() { return this->maxBitrate(); });
+	frontend->bindableBandwidth().setBinding([this]() { return this->bandwidth(); });
+	frontend->bindableLastSeen().setBinding([this]() { return this->lastSeen(); });
 	QObject::connect(frontend, &WifiNetwork::requestConnect, this, [this]() {
 		if (auto* settingsRef = this->referenceSettings()) {
 			emit this->requestActivateConnection(settingsRef->path());
