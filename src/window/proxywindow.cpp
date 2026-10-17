@@ -646,6 +646,19 @@ bool ProxiedWindow::event(QEvent* event) {
 		emit this->devicePixelRatioChanged();
 	}
 
+	// Qt positions context menu events that carry no position at the active
+	// focus item without checking that there is one. Windows that have never
+	// become the active keyboard-focus window - such as layer-shell surfaces
+	// with keyboard focus disabled - have no active focus item, so delivery
+	// crashes inside QQuickDeliveryAgentPrivate::contextMenuTargets(). There
+	// is nothing to deliver such an event to, so consume it.
+	if (event->type() == QEvent::ContextMenu) {
+		auto* menuEvent = static_cast<QContextMenuEvent*>(event); // NOLINT
+		if (menuEvent->pos().isNull() && this->activeFocusItem() == nullptr) {
+			return true;
+		}
+	}
+
 	return this->QQuickWindow::event(event);
 }
 
