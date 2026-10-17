@@ -199,29 +199,32 @@ bool ScriptModel::updateValuesUnique(const QList<QJSValue>& newValues) {
 				this->endInsertRows();
 				anyChanges = true;
 			}
-		} else if (!newIter->strictlyEquals(*iter)) {
-			auto first = static_cast<qint32>(std::distance(this->mValues.begin(), iter));
-			auto index = first;
-
-			do {
-				this->mValues.replace(index, *newIter);
-				++iter;
-				++newIter;
-				++index;
-			} while (iter != this->mValues.end() && newIter != newValues.end()
-			         && !newIter->strictlyEquals(*iter));
-
-			this->dataChanged(
-			    this->index(first, 0, QModelIndex()),
-			    this->index(index - 1, 0, QModelIndex()),
-			    {Qt::UserRole}
-			);
-
-			anyChanges = true;
 		} else {
 			++iter;
 			++newIter;
 		}
+	}
+
+	for (auto i = 0; i != this->mValues.length();) {
+		if (this->mValues.at(i).strictlyEquals(newValues.at(i))) {
+			++i;
+			continue;
+		}
+
+		auto first = i;
+
+		do {
+			this->mValues.replace(i, newValues.at(i));
+			++i;
+		} while (i != this->mValues.length() && !this->mValues.at(i).strictlyEquals(newValues.at(i)));
+
+		this->dataChanged(
+		    this->index(first, 0, QModelIndex()),
+		    this->index(i - 1, 0, QModelIndex()),
+		    {Qt::UserRole}
+		);
+
+		anyChanges = true;
 	}
 
 	this->isModifying = false;
