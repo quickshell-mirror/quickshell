@@ -277,6 +277,7 @@ int launch(const LaunchArgs& args, char** argv) {
 		QIcon::setFallbackSearchPaths(fallbackPaths);
 	}
 
+	QGuiApplication::setDesktopFileName(appId);
 	QGuiApplication::setDesktopSettingsAware(pragmas.desktopSettingsAware);
 
 	QGuiApplication* app = nullptr;
@@ -290,8 +291,6 @@ int launch(const LaunchArgs& args, char** argv) {
 
 	LogManager::initThreadLogging();
 	LogManager::initFs();
-
-	QGuiApplication::setDesktopFileName(appId);
 
 	if (args.debugPort != -1) {
 		QQmlDebuggingEnabler::enableDebugging(true);
