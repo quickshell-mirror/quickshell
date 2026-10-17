@@ -29,6 +29,7 @@ qt_add_qml_module(quickshell-bluetooth
 	DEPENDENCIES QtQml
 )
 
+qs_add_module_deps_light(quickshell-bluetooth Quickshell)
 install_qml_module(quickshell-bluetooth)
 
 # dbus headers

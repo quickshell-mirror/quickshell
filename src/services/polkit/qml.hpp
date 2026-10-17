@@ -47,7 +47,7 @@ class PolkitAgent
 	/// The current authentication state if an authentication request is active.
 	///
 	/// Null when no authentication request is active.
-	Q_PROPERTY(AuthFlow* flow READ default NOTIFY flowChanged BINDABLE flow);
+	Q_PROPERTY(qs::service::polkit::AuthFlow* flow READ default NOTIFY flowChanged BINDABLE flow);
 
 public:
 	explicit PolkitAgent(QObject* parent = nullptr): QObject(parent) {};
