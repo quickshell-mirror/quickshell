@@ -135,7 +135,7 @@ void Bluez::onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& 
 			this->mAdapterMap.remove(path.path());
 			this->mAdapters.removeObject(adapter);
 			this->updateDefaultAdapter();
-			delete adapter;
+			adapter->deleteLater();
 		}
 	} else if (auto* device = this->mDeviceMap.value(path.path())) {
 		if (interfaces.contains("org.bluez.Device1")) {
@@ -147,7 +147,7 @@ void Bluez::onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& 
 
 			this->mDeviceMap.remove(path.path());
 			this->mDevices.removeObject(device);
-			delete device;
+			device->deleteLater();
 		} else {
 			for (const auto& interface: interfaces) {
 				device->removeInterface(interface);
