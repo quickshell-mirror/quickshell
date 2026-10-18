@@ -237,7 +237,14 @@ bool EngineGeneration::setExtraWatchedFiles(const QVector<QString>& files) {
 
 void EngineGeneration::onFileChanged(const QString& name) {
 	if (!this->watcher->files().contains(name)) {
-		this->deletedWatchedFiles.push_back(name);
+		// The file was replaced (unlink + create), so Qt dropped the watch. The directory event
+		// may already have been delivered, so it cannot be relied on to look at the file later.
+		// If the file is back, watch it again and check it now.
+		if (QFileInfo::exists(name) && this->watcher->addPath(name)) {
+			this->onFileChanged(name);
+		} else {
+			this->deletedWatchedFiles.push_back(name);
+		}
 	} else {
 		// some editors (e.g vscode) perform file saving in two steps: truncate + write
 		// ignore the first event (truncate) with size 0 to prevent incorrect live reloading

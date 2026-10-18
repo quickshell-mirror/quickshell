@@ -6,3 +6,4 @@
 - Fixed `WlSessionLock.locked` changes not being emitted on unlock.
 - Fixed a crash when unplugging a screen being captured by ScreencopyView or trying to capture the fallback screen.
 - Fixed most broken qml types in qmlls/qmllint for Qt 6.12.
+- Fixed a race between `fileChanged` and `directoryChanged` events that can lead to a missing reload on watched files.
