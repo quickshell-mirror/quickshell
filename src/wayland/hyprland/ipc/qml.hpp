@@ -48,7 +48,7 @@ class HyprlandIpcQml: public QObject {
 public:
 	explicit HyprlandIpcQml();
 
-	/// Execute a hyprland [dispatcher](https://wiki.hyprland.org/Configuring/Dispatchers).
+	/// Execute a hyprland [dispatcher](https://wiki.hypr.land/configuring/core/dispatchers/).
 	Q_INVOKABLE static void dispatch(const QString& request);
 
 	/// Get the HyprlandMonitor object that corresponds to a quickshell screen.
@@ -85,7 +85,7 @@ public:
 signals:
 	/// Emitted for every event that comes in through the hyprland event socket (socket2).
 	///
-	/// See [Hyprland Wiki: IPC](https://wiki.hyprland.org/IPC/) for a list of events.
+	/// See [Hyprland Wiki: IPC](https://wiki.hypr.land/IPC/) for a list of events.
 	void rawEvent(qs::hyprland::ipc::HyprlandIpcEvent* event);
 
 	void usingLuaChanged();

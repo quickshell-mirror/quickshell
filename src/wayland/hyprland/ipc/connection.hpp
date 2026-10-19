@@ -41,7 +41,7 @@ class HyprlandIpcEvent: public QObject {
 	Q_OBJECT;
 	/// The name of the event.
 	///
-	/// See [Hyprland Wiki: IPC](https://wiki.hyprland.org/IPC/) for a list of events.
+	/// See [Hyprland Wiki: IPC](https://wiki.hypr.land/IPC/) for a list of events.
 	Q_PROPERTY(QString name READ nameStr CONSTANT);
 	/// The unparsed data of the event.
 	Q_PROPERTY(QString data READ dataStr CONSTANT);

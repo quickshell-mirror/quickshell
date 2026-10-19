@@ -51,7 +51,7 @@ class FocusGrab;
 /// }
 /// ```
 ///
-/// [hyprland_focus_grab_v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-global-shortcuts-v1.xml
+/// [hyprland_focus_grab_v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-focus-grab-v1.xml
 class HyprlandFocusGrab
     : public QObject
     , public QQmlParserStatus {
