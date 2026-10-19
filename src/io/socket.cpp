@@ -74,7 +74,7 @@ void Socket::onSocketError(QLocalSocket::LocalSocketError error) {
 	qCWarning(logSocket) << "Socket error for" << this << error;
 	emit this->error(error);
 
-	if (!this->connected) {
+	if (!this->connected && this->socket != nullptr) {
 		QObject::disconnect(this->socket, nullptr, this, nullptr);
 		this->socket->deleteLater();
 		this->socket = nullptr;
