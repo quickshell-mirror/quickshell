@@ -7,3 +7,4 @@
 - Fixed a crash when unplugging a screen being captured by ScreencopyView or trying to capture the fallback screen.
 - Fixed most broken qml types in qmlls/qmllint for Qt 6.12.
 - Fixed missing thread entry for Pipewire event loop resulting in Pipewire connection failing.
+- Fixed Greetd treating responses for a cancelled session as responses for the next one.

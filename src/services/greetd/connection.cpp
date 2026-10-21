@@ -126,6 +126,8 @@ void GreetdConnection::setActive(bool active) {
 			    {"type", "cancel_session"},
 			});
 
+			// Greetd requests are answered in order, so drop all responses to requests prior to cancelling.
+			this->mCancelledResponses = this->mPendingResponses;
 			this->setInactive();
 		}
 	} else {
@@ -171,6 +173,14 @@ void GreetdConnection::onSocketReady() {
 		auto type = json.value("type").toString();
 
 		qCDebug(logGreetd).noquote() << "Received greetd response:" << text;
+
+		if (this->mPendingResponses != 0) this->mPendingResponses--;
+
+		if (this->mCancelledResponses != 0) {
+			qCDebug(logGreetd) << "Discarding response to a cancelled session.";
+			this->mCancelledResponses--;
+			continue;
+		}
 
 		if (type == "success") {
 			switch (this->mState) {
@@ -260,6 +270,8 @@ void GreetdConnection::sendRequest(const QJsonObject& json) {
 
 	this->socket.write(text);
 	this->socket.flush();
+
+	this->mPendingResponses++;
 }
 
 GreetdConnection* GreetdConnection::instance() {
