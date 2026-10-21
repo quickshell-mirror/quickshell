@@ -27,10 +27,14 @@ void IdleMonitor::onPostReload() {
 }
 
 void IdleMonitor::updateNotification() {
-	auto* notification = this->bNotification.value();
-	delete notification;
-	notification = nullptr;
+	auto* oldNotification = this->bNotification.value();
 
+	// The replacement usually lands on the address just freed, and an equal
+	// pointer would not notify, leaving bIsIdle bound to the old notification.
+	this->bNotification = nullptr;
+	delete oldNotification;
+
+	impl::IdleNotification* notification = nullptr;
 	auto guard = qScopeGuard([&, this] { this->bNotification = notification; });
 
 	auto params = this->bParams.value();
