@@ -6,6 +6,7 @@
 #include <qtclasshelpermacros.h>
 #include <qtypes.h>
 #include <qwayland-wlr-screencopy-unstable-v1.h>
+#include <wayland-client-protocol.h>
 
 #include "../manager.hpp"
 
@@ -45,29 +46,41 @@ private slots:
 private:
 	void submitFrame();
 
-	class OutputTransformQuery: public QtWayland::wl_output {
+	// Learns the output transform from wl_output.geometry on a private bind.
+	// QtWayland does not retain it: QWaylandScreen consumes mTransform in
+	// updateOutputProperties() and QScreen::orientation() drops flipped variants.
+	//
+	// The proxy deliberately does not use Qt's generated QtWayland::wl_output.
+	// Compositors send wl_surface.enter for every wl_output resource a client
+	// holds, and QWaylandScreen::fromWlOutput() decides whether an output is one
+	// of its own screens purely by the proxy's listener - so a proxy carrying
+	// Qt's listener ends up in QWaylandSurface::m_screens as a fake QWaylandScreen
+	// and is dereferenced after this object is gone. (quickshell#1094)
+	class OutputTransformQuery {
 	public:
-		OutputTransformQuery(WlrScreencopyContext* context);
-		~OutputTransformQuery() override;
+		explicit OutputTransformQuery(WlrScreencopyContext* context);
+		~OutputTransformQuery();
 		Q_DISABLE_COPY_MOVE(OutputTransformQuery);
 
 		qint32 transform = -1;
 		void setScreen(QtWaylandClient::QWaylandScreen* screen);
 
-	protected:
-		void output_geometry(
-		    qint32 x,
-		    qint32 y,
-		    qint32 width,
-		    qint32 height,
-		    qint32 subpixel,
-		    const QString& make,
-		    const QString& model,
-		    qint32 transform
-		) override;
-
 	private:
+		void release();
+
+		// clang-format off
+		static void onGeometry(void* data, ::wl_output* output, int32_t x, int32_t y, int32_t physicalWidth, int32_t physicalHeight, int32_t subpixel, const char* make, const char* model, int32_t transform);
+		static void onMode(void* data, ::wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh);
+		static void onDone(void* data, ::wl_output* output);
+		static void onScale(void* data, ::wl_output* output, int32_t factor);
+		static void onName(void* data, ::wl_output* output, const char* name);
+		static void onDescription(void* data, ::wl_output* output, const char* description);
+		// clang-format on
+
+		static const wl_output_listener LISTENER;
+
 		WlrScreencopyContext* context;
+		::wl_output* output = nullptr;
 	};
 
 	WlrScreencopyManager* manager;
