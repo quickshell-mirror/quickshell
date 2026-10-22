@@ -107,7 +107,7 @@ void HyprlandFocusGrab::tryActivate() {
 		qWarning() << "The active compositor does not support the hyprland_focus_grab_v1 protocol. "
 		              "HyprlandFocusGrab will not work.";
 		qWarning() << "** Learn why $XDG_CURRENT_DESKTOP sucks and download a better compositor "
-		              "today at https://hyprland.org";
+		              "today at https://hypr.land";
 		return;
 	}
 

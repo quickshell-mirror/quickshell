@@ -31,7 +31,7 @@ namespace qs::hyprland::global_shortcuts {
 /// > Note that, as this type bypasses xdg-desktop-portal, XDPH is not required.
 ///
 /// [hyprland_global_shortcuts_v1]: https://github.com/hyprwm/hyprland-protocols/blob/main/protocols/hyprland-global-shortcuts-v1.xml
-/// [the wiki]: https://wiki.hyprland.org/Configuring/Binds/#dbus-global-shortcuts
+/// [the wiki]: https://wiki.hypr.land/configuring/core/binds/globals/#d-bus-global-shortcuts
 class GlobalShortcut: public PostReloadHook {
 	using ShortcutImpl = impl::GlobalShortcut;
 
