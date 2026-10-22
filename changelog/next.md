@@ -1,3 +1,7 @@
+## New Features
+
+- Added a refreshRate property to ShellScreen.
+
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.

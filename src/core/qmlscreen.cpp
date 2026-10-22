@@ -16,6 +16,7 @@ QuickshellScreenInfo::QuickshellScreenInfo(QObject* parent, QScreen* screen)
 		QObject::connect(this->screen, &QScreen::geometryChanged, this, &QuickshellScreenInfo::geometryChanged);
 		QObject::connect(this->screen, &QScreen::physicalDotsPerInchChanged, this, &QuickshellScreenInfo::physicalPixelDensityChanged);
 		QObject::connect(this->screen, &QScreen::logicalDotsPerInchChanged, this, &QuickshellScreenInfo::logicalPixelDensityChanged);
+		QObject::connect(this->screen, &QScreen::refreshRateChanged, this, &QuickshellScreenInfo::refreshRateChanged);
 		QObject::connect(this->screen, &QScreen::orientationChanged, this, &QuickshellScreenInfo::orientationChanged);
 		QObject::connect(this->screen, &QScreen::primaryOrientationChanged, this, &QuickshellScreenInfo::primaryOrientationChanged);
 		QObject::connect(this->screen, &QObject::destroyed, this, &QuickshellScreenInfo::screenDestroyed);
@@ -121,6 +122,15 @@ qreal QuickshellScreenInfo::devicePixelRatio() const {
 	}
 
 	return this->screen->devicePixelRatio();
+}
+
+qreal QuickshellScreenInfo::refreshRate() const {
+	if (this->screen == nullptr) {
+		this->warnDangling();
+		return 0.0;
+	}
+
+	return this->screen->refreshRate();
 }
 
 Qt::ScreenOrientation QuickshellScreenInfo::orientation() const {
