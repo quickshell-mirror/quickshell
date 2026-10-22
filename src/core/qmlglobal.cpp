@@ -8,9 +8,11 @@
 #include <qguiapplication.h>
 #include <qicon.h>
 #include <qjsengine.h>
+#include <qjsvalue.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qprocess.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
@@ -33,6 +35,10 @@
 #include "qmlscreen.hpp"
 #include "rootwrapper.hpp"
 #include "scanenv.hpp"
+
+#ifdef QS_WAYLAND
+#include "../wayland/activation.hpp"
+#endif
 
 QuickshellSettings::QuickshellSettings() {
 	QObject::connect(
@@ -328,6 +334,26 @@ void QuickshellGlobal::execDetached(const qs::io::process::ProcessContext& conte
 	}
 
 	process.startDetached();
+}
+
+void QuickshellGlobal::requestActivationToken(const QJSValue& callback) {
+	if (!callback.isCallable()) {
+		qCritical() << "requestActivationToken called with a non-function callback:"
+		            << callback.toString();
+		return;
+	}
+
+	// The engine may be gone by the time the token arrives, e.g. after a reload.
+	const auto call = [self = QPointer(this), callback](const QString& token) {
+		if (!self) return;
+		const auto result = callback.call({token});
+		if (result.isError()) qCritical() << "Error in activation token callback:" << result.toString();
+	};
+
+#ifdef QS_WAYLAND
+	if (qs::wayland::activation::requestActivationToken(call)) return;
+#endif
+	call({});
 }
 
 QString QuickshellGlobal::iconPath(const QString& icon) {
