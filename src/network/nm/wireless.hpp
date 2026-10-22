@@ -67,6 +67,12 @@ private slots:
 	void onActiveConnectionLoaded(qs::network::NMActiveConnection* active);
 	void onScanTimeout();
 	void onScanningChanged(bool scanning);
+	void onAddNetworkRequested(
+	    const QString& ssid,
+	    WifiSecurityType::Enum security,
+	    const QVariantMap& credentials,
+	    bool hidden
+	);
 
 private:
 	void registerAccessPoint(const QString& path);
