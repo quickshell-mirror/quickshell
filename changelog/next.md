@@ -2,6 +2,10 @@
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
 
+## New Features
+
+- Added `WaylandWindow.appId` for setting the app id of toplevel windows on Wayland.
+
 ## Bug Fixes
 
 - Fixed ScriptModel not sending role updates on changed data that compares equal by key or structure.
