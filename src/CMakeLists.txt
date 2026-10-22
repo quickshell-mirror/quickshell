@@ -42,3 +42,5 @@ endif()
 if (NETWORK)
 	add_subdirectory(network)
 endif()
+
+add_subdirectory(http)
