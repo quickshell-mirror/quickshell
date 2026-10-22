@@ -12,7 +12,6 @@
 #include "dbus_nm_wired.h"
 #include "device.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 
 namespace qs::network {
 
@@ -31,11 +30,8 @@ public:
 signals:
 	void speedChanged(quint32 speed);
 
-private slots:
-	void onSettingsLoaded(qs::network::NMSettings* settings);
-	void onActiveConnectionLoaded(qs::network::NMActiveConnection* active);
-
 private:
+	[[nodiscard]] NMNetwork* networkForConnection(NMConnection* conn) override;
 	void initWired();
 	void bindFrontend();
 

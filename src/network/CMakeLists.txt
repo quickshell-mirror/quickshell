@@ -1,6 +1,7 @@
 add_subdirectory(nm)
 
 qt_add_library(quickshell-network STATIC
+	known_network.cpp
 	network.cpp
 	device.cpp
 	wired.cpp

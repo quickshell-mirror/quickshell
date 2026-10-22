@@ -18,7 +18,7 @@ namespace qs::network {
 class NetworkDevice: public QObject {
 	Q_OBJECT;
 	QML_ELEMENT;
-	QML_UNCREATABLE("Devices can only be acquired through Network");
+	QML_UNCREATABLE("Devices can only be acquired through the Networking singleton");
 	// clang-format off
 	/// The device type.
 	///

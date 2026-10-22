@@ -11,12 +11,11 @@
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
 #include "../wired.hpp"
-#include "active_connection.hpp"
+#include "connection.hpp"
 #include "dbus_nm_wired.h"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
-#include "settings.hpp"
 
 namespace qs::network {
 using namespace qs::dbus;
@@ -69,11 +68,6 @@ void NMWiredDevice::initWired() {
 	this->NMDevice::bindNetwork(net);
 	this->mNetwork = net;
 
-	// clang-format off
-	QObject::connect(this, &NMWiredDevice::settingsLoaded, this, &NMWiredDevice::onSettingsLoaded);
-	QObject::connect(this, &NMWiredDevice::activeConnectionLoaded, this, &NMWiredDevice::onActiveConnectionLoaded);
-	// clang-format on
-
 	emit this->loaded();
 }
 
@@ -86,13 +80,7 @@ void NMWiredDevice::bindFrontend() {
 	});
 }
 
-void NMWiredDevice::onSettingsLoaded(NMSettings* settings) {
-	this->mNetwork->addSettings(settings);
-}
-
-void NMWiredDevice::onActiveConnectionLoaded(NMActiveConnection* active) {
-	this->mNetwork->addActiveConnection(active);
-}
+NMNetwork* NMWiredDevice::networkForConnection(NMConnection* /*conn*/) { return this->mNetwork; }
 
 bool NMWiredDevice::isValid() const {
 	return this->NMDevice::isValid() && (this->wiredProxy && this->wiredProxy->isValid());
