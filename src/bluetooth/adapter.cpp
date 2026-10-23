@@ -98,6 +98,18 @@ void BluetoothAdapter::addInterface(const QString& interface, const QVariantMap&
 	if (interface == "org.bluez.Adapter1") {
 		this->properties.updatePropertySet(properties, false);
 		qCDebug(logAdapter) << "Updated Adapter properties for" << this;
+
+		// The properties bundled with InterfacesAdded are a snapshot BlueZ took at
+		// signal-emission time. If the adapter was still mid-transition (PowerState
+		// "off-enabling"/"on-disabling") at that instant, and the PropertiesChanged
+		// that completes the transition reaches the bus before our subscription
+		// (registered in the constructor, just before this call) is fully installed,
+		// we never see it and are stuck showing the stale transitional state forever.
+		// Re-fetch once via GetAll, now that the subscription is guaranteed live, so
+		// we reconcile with whatever BlueZ's actual current state is instead of
+		// trusting a snapshot that may already be outdated. This is a single query
+		// triggered by the InterfacesAdded event itself, not a poll.
+		this->properties.updateAllViaGetAll();
 	}
 }
 
