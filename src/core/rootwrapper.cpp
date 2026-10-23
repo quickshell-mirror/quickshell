@@ -2,9 +2,11 @@
 #include <cstdlib>
 #include <utility>
 
+#include <qcoreapplication.h>
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qfilesystemwatcher.h>
+#include <qlocale.h>
 #include <qlogging.h>
 #include <qobject.h>
 #include <qqmlcomponent.h>
@@ -26,6 +28,14 @@ RootWrapper::RootWrapper(QString rootPath, QString shellId)
     , rootPath(std::move(rootPath))
     , shellId(std::move(shellId))
     , originalWorkingDirectory(QDir::current().absolutePath()) {
+	// RootWrapper outlives the application during normal shutdown.
+	QObject::connect(
+	    QCoreApplication::instance(),
+	    &QCoreApplication::aboutToQuit,
+	    this,
+	    &RootWrapper::removeTranslations
+	);
+
 	QObject::connect(
 	    QuickshellSettings::instance(),
 	    &QuickshellSettings::watchFilesChanged,
@@ -48,10 +58,37 @@ RootWrapper::RootWrapper(QString rootPath, QString shellId)
 }
 
 RootWrapper::~RootWrapper() {
+	QObject::disconnect(this->translationLanguageConnection);
 	// event loop may no longer be running so deleteLater is not an option
 	if (this->generation != nullptr) {
 		this->generation->shutdown();
 	}
+	this->removeTranslations();
+}
+
+void RootWrapper::removeTranslations() {
+	if (QCoreApplication::instance() != nullptr) {
+		QCoreApplication::removeTranslator(&this->translator);
+		QCoreApplication::removeTranslator(&this->fallbackTranslator);
+	}
+}
+
+void RootWrapper::updateTranslations(QQmlEngine* engine) {
+	this->removeTranslations();
+	auto directory = QFileInfo(this->rootPath).dir().filePath("i18n");
+
+	// The source-language catalog supplies plurals even when a translation is missing.
+	if (this->fallbackTranslator.load("qml.qm", directory)) {
+		QCoreApplication::installTranslator(&this->fallbackTranslator);
+	}
+
+	if (!engine->uiLanguage().isEmpty()
+	    && this->translator.load(QLocale(engine->uiLanguage()), "qml", "_", directory)
+	    && this->translator.filePath() != this->fallbackTranslator.filePath())
+	{
+		QCoreApplication::installTranslator(&this->translator);
+	}
+	engine->retranslate();
 }
 
 void RootWrapper::reloadGraph(bool hard) {
@@ -143,6 +180,19 @@ void RootWrapper::reloadGraph(bool hard) {
 
 		return;
 	}
+
+	// Do not replace the running shell's translator or connection until compilation succeeds.
+	// Install before creating objects so imperative translations during startup work too.
+	auto* engine = generation->engine;
+	engine->setUiLanguage(
+	    this->generation ? this->generation->engine->uiLanguage() : QLocale().uiLanguages().value(0)
+	);
+	QObject::disconnect(this->translationLanguageConnection);
+	this->translationLanguageConnection =
+	    QObject::connect(engine, &QQmlEngine::uiLanguageChanged, this, [this, engine]() {
+		    this->updateTranslations(engine);
+	    });
+	this->updateTranslations(engine);
 
 	auto* newRoot = component.beginCreate(generation->engine->rootContext());
 
