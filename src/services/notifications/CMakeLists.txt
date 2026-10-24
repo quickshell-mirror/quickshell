@@ -29,3 +29,10 @@ target_link_libraries(quickshell-service-notifications PRIVATE Qt::Quick Qt::DBu
 target_link_libraries(quickshell PRIVATE quickshell-service-notificationsplugin)
 
 qs_module_pch(quickshell-service-notifications SET dbus)
+
+if (WAYLAND)
+	target_compile_definitions(quickshell-service-notifications PRIVATE QS_WAYLAND)
+	target_link_libraries(quickshell-service-notifications PRIVATE
+		quickshell-wayland-activation
+	)
+endif()
