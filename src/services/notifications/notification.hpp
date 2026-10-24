@@ -148,6 +148,11 @@ public:
 
 	void close(NotificationCloseReason::Enum reason);
 
+	// Closes requested between these calls wait for finishInvoke, so the client
+	// gets ActionInvoked before NotificationClosed.
+	void beginInvoke();
+	void finishInvoke();
+
 	[[nodiscard]] quint32 id() const;
 	[[nodiscard]] bool isTracked() const;
 
@@ -207,6 +212,9 @@ signals:
 private:
 	quint32 mId;
 	NotificationCloseReason::Enum mCloseReason = NotificationCloseReason::Dismissed;
+	qsizetype mPendingInvokes = 0;
+	NotificationCloseReason::Enum mDeferredCloseReason =
+	    static_cast<NotificationCloseReason::Enum>(0);
 	bool mLastGeneration = false;
 	NotificationImage mImagePixmap;
 	QList<NotificationAction*> mActions;
@@ -268,6 +276,8 @@ signals:
 	void textChanged();
 
 private:
+	void sendInvoked(const QString& token);
+
 	Notification* notification;
 	QString mIdentifier;
 	QString mText;
