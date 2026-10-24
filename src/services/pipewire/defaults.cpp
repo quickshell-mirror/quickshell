@@ -241,6 +241,14 @@ void PwDefaultTracker::onDefaultSinkDestroyed() {
 	qCInfo(logDefaults) << "Default sink destroyed.";
 	this->mDefaultSink = nullptr;
 	emit this->defaultSinkChanged();
+
+	// Nodes are re-created with the same name in practice (a bluetooth transport being
+	// re-established, a card profile change, ...). If the replacement node is already
+	// registered at this point, no further update for default.audio.sink will arrive,
+	// so resolve it again here instead of leaving the default sink null forever.
+	if (auto* node = this->registry->findNodeByName(this->mDefaultSinkName)) {
+		this->setDefaultSink(node);
+	}
 }
 
 void PwDefaultTracker::setDefaultSinkName(const QString& name) {
@@ -282,6 +290,11 @@ void PwDefaultTracker::onDefaultSourceDestroyed() {
 	qCInfo(logDefaults) << "Default source destroyed.";
 	this->mDefaultSource = nullptr;
 	emit this->defaultSourceChanged();
+
+	// See onDefaultSinkDestroyed.
+	if (auto* node = this->registry->findNodeByName(this->mDefaultSourceName)) {
+		this->setDefaultSource(node);
+	}
 }
 
 void PwDefaultTracker::setDefaultSourceName(const QString& name) {
