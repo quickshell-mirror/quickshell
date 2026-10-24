@@ -15,6 +15,12 @@
 #include "datastream.hpp"
 #include "processcore.hpp"
 
+struct QProcessForeign {
+	Q_GADGET;
+	QML_FOREIGN(QProcess);
+	QML_ANONYMOUS;
+};
+
 // Needed when compiling with clang musl-libc++.
 // Default include paths contain macros that cause name collisions.
 #undef stdout
