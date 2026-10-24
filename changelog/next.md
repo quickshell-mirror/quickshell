@@ -1,6 +1,7 @@
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
+- `NotificationAction.invoke()` now sends a Wayland activation token to the notifying application.
 
 ## Bug Fixes
 
