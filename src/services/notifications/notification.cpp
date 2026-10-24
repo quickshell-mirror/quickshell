@@ -1,4 +1,5 @@
 #include "notification.hpp"
+#include <utility>
 
 #include <qcontainerfwd.h>
 #include <qdbusargument.h>
@@ -6,7 +7,9 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+#include <qpointer.h>
 #include <qproperty.h>
+#include <qstring.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -15,6 +18,10 @@
 #include "../../core/logcat.hpp"
 #include "dbusimage.hpp"
 #include "server.hpp"
+
+#ifdef QS_WAYLAND
+#include "../../wayland/activation.hpp"
+#endif
 
 namespace qs::service::notifications {
 
@@ -48,11 +55,31 @@ void NotificationAction::invoke() {
 		return;
 	}
 
-	NotificationServer::instance()->ActionInvoked(this->notification->id(), this->mIdentifier);
+	this->notification->beginInvoke();
+
+#ifdef QS_WAYLAND
+	// The token has to go out before ActionInvoked, so hold the action until the compositor sends it.
+	const auto callback = [action = QPointer(this)](const QString& token) {
+		if (action) action->sendInvoked(token);
+	};
+
+	if (qs::wayland::activation::requestActivationToken(callback)) return;
+#endif
+	this->sendInvoked({});
+}
+
+void NotificationAction::sendInvoked(const QString& token) {
+	if (this->notification->isRetained()) return;
+
+	auto* server = NotificationServer::instance();
+	if (!token.isEmpty()) server->ActivationToken(this->notification->id(), token);
+	server->ActionInvoked(this->notification->id(), this->mIdentifier);
 
 	if (!this->notification->bindableResident().value()) {
 		this->notification->close(NotificationCloseReason::Dismissed);
 	}
+
+	this->notification->finishInvoke();
 }
 
 void NotificationAction::setText(const QString& text) {
@@ -71,11 +98,25 @@ void Notification::close(NotificationCloseReason::Enum reason) {
 		return;
 	}
 
+	if (reason != 0 && this->mPendingInvokes > 0) {
+		this->mDeferredCloseReason = reason;
+		return;
+	}
+
 	this->mCloseReason = reason;
 
 	if (reason != 0) {
 		NotificationServer::instance()->deleteNotification(this, reason);
 	}
+}
+
+void Notification::beginInvoke() { this->mPendingInvokes++; }
+
+void Notification::finishInvoke() {
+	if (--this->mPendingInvokes > 0 || this->mDeferredCloseReason == 0) return;
+	this->close(
+	    std::exchange(this->mDeferredCloseReason, static_cast<NotificationCloseReason::Enum>(0))
+	);
 }
 
 void Notification::sendInlineReply(const QString& replyText) {
