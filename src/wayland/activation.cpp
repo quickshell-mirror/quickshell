@@ -29,14 +29,15 @@ public:
 	ActivationManager(): QWaylandClientExtensionTemplate(1) { this->initialize(); }
 };
 
+// One token request with its own callback. It isn't owned by the window, so the token still
+// arrives if the window is closed or destroyed before the compositor answers.
 class ActivationToken
     : public QObject
     , public QtWayland::xdg_activation_token_v1 {
 public:
-	ActivationToken(::xdg_activation_token_v1* token, QtWaylandClient::QWaylandWindow* window)
-	    : QObject(window)
-	    , QtWayland::xdg_activation_token_v1(token)
-	    , window(window) {}
+	ActivationToken(::xdg_activation_token_v1* token, std::function<void(const QString&)> callback)
+	    : QtWayland::xdg_activation_token_v1(token)
+	    , callback(std::move(callback)) {}
 
 	~ActivationToken() override { this->destroy(); }
 	Q_DISABLE_COPY_MOVE(ActivationToken);
@@ -44,11 +45,28 @@ public:
 private:
 	void xdg_activation_token_v1_done(const QString& token) override {
 		this->deleteLater();
-		if (this->window) emit this->window->xdgActivationTokenCreated(token);
+		this->callback(token);
 	}
 
-	QPointer<QtWaylandClient::QWaylandWindow> window;
+	std::function<void(const QString&)> callback;
 };
+
+bool sendRequest(
+    QtWaylandClient::QWaylandWindow* window,
+    quint32 serial,
+    std::function<void(const QString&)> callback
+) {
+	auto* seat = window->display()->lastInputDevice();
+
+	static auto* manager = new ActivationManager(); // NOLINT
+	if (!manager->isActive() || !window->surface() || !seat) return false;
+
+	auto* token = new ActivationToken(manager->get_activation_token(), std::move(callback));
+	token->set_serial(serial, seat->object());
+	token->set_surface(window->surface());
+	token->commit();
+	return true;
+}
 
 } // namespace
 
@@ -57,33 +75,17 @@ bool requestActivationToken(std::function<void(const QString&)> callback) {
 
 	auto* display = QtWaylandClient::QWaylandIntegration::instance()->display();
 	auto* window = display->lastInputWindow();
-	if (!window || !window->surface() || !display->lastInputDevice()) return false;
+	if (!window) return false;
 
-	QObject::connect(
-	    window,
-	    &QtWaylandClient::QWaylandWindow::xdgActivationTokenCreated,
-	    window,
-	    std::move(callback),
-	    Qt::SingleShotConnection
-	);
-	window->requestXdgActivationToken(display->lastInputSerial());
-	return true;
+	return sendRequest(window, display->lastInputSerial(), std::move(callback));
 }
 
 void requestXdgActivationToken(QtWaylandClient::QWaylandWindow* window, quint32 serial) {
-	auto* display = window->display();
-	auto* seat = display->lastInputDevice();
+	const auto callback = [window = QPointer(window)](const QString& token) {
+		if (window) emit window->xdgActivationTokenCreated(token);
+	};
 
-	static auto* manager = new ActivationManager(); // NOLINT
-	if (!manager->isActive() || !window->surface() || !seat) {
-		emit window->xdgActivationTokenCreated({});
-		return;
-	}
-
-	auto* token = new ActivationToken(manager->get_activation_token(), window);
-	token->set_serial(serial, seat->object());
-	token->set_surface(window->surface());
-	token->commit();
+	if (!sendRequest(window, serial, callback)) emit window->xdgActivationTokenCreated({});
 }
 
 } // namespace qs::wayland::activation
