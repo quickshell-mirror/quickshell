@@ -4,6 +4,8 @@
 
 ## Bug Fixes
 
+- Fixed SystemClock reporting the wrong time and rapidly firing during daylight-saving fall-back.
+
 - Fixed ScriptModel not sending role updates on changed data that compares equal by key or structure.
 - Fixed Hyprland workspaces keeping their old id after Hyprland changes it.
 - Fixed desktop entries being parsed incorrectly with trailing whitespace or CRLF line endings.
