@@ -49,11 +49,19 @@ void SystemClock::setTime(const QDateTime& targetTime) {
 	this->currentTime = offset > -500 && offset < 500 ? targetTime : currentTime;
 
 	auto time = this->currentTime.time();
-	this->currentTime.setTime(QTime(
+	const auto roundedTime = QTime(
 	    this->mPrecision >= SystemClock::Hours ? time.hour() : 0,
 	    this->mPrecision >= SystemClock::Minutes ? time.minute() : 0,
 	    this->mPrecision >= SystemClock::Seconds ? time.second() : 0
-	));
+	);
+	// Preserve the current occurrence of an ambiguous local time.
+	const auto rounded = this->currentTime.addMSecs(time.msecsTo(roundedTime));
+	if (rounded.date() == this->currentTime.date() && rounded.time() == roundedTime) {
+		this->currentTime = rounded;
+	} else {
+		// Preserve Qt's wall-time resolution across partial-hour transitions.
+		this->currentTime.setTime(roundedTime);
+	}
 
 	emit this->dateChanged();
 }
@@ -71,11 +79,11 @@ void SystemClock::schedule(const QDateTime& targetTime) {
 	auto nextTime = offset > 0 && offset < 500 ? targetTime : currentTime;
 
 	auto baseTimeT = nextTime.time();
-	nextTime.setTime(QTime(
+	nextTime = nextTime.addMSecs(baseTimeT.msecsTo(QTime(
 	    hourPrecision ? baseTimeT.hour() : 0,
 	    minutePrecision ? baseTimeT.minute() : 0,
 	    secondPrecision ? baseTimeT.second() : 0
-	));
+	)));
 
 	if (secondPrecision) nextTime = nextTime.addSecs(1);
 	else if (minutePrecision) nextTime = nextTime.addSecs(60);
