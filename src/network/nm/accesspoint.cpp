@@ -10,6 +10,7 @@
 
 #include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "../accesspoint.hpp"
 #include "dbus_nm_accesspoint.h"
 #include "enums.hpp"
 
@@ -20,7 +21,17 @@ namespace {
 QS_LOGGING_CATEGORY(logNetworkManager, "quickshell.network.networkmanager", QtWarningMsg);
 }
 
-NMAccessPoint::NMAccessPoint(const QString& path, QObject* parent): QObject(parent) {
+NMAccessPoint::NMAccessPoint(const QString& path, QObject* parent)
+    : QObject(parent)
+    , mFrontend(new AccessPoint(this)) {
+	this->mFrontend->bindableBssid().setBinding([this]() { return this->bBssid.value(); });
+	this->mFrontend->bindableFrequency().setBinding([this]() { return this->bFrequency.value(); });
+	this->mFrontend->bindableSignalStrength().setBinding([this]() {
+		return this->signalStrength() / 100.0;
+	});
+	this->mFrontend->bindableActive().setBinding([this]() { return this->bActive.value(); });
+	this->mFrontend->bindableSecurity().setBinding([this]() { return this->security(); });
+
 	this->proxy = new DBusNMAccessPointProxy(
 	    "org.freedesktop.NetworkManager",
 	    path,

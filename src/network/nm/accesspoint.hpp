@@ -7,6 +7,7 @@
 #include <qtypes.h>
 
 #include "../../dbus/properties.hpp"
+#include "../accesspoint.hpp"
 #include "../enums.hpp"
 #include "dbus_nm_accesspoint.h"
 #include "enums.hpp"
@@ -45,6 +46,8 @@ class NMAccessPoint: public QObject {
 public:
 	explicit NMAccessPoint(const QString& path, QObject* parent = nullptr);
 
+	[[nodiscard]] AccessPoint* frontend() const { return this->mFrontend; }
+	QBindable<bool> bindableActive() { return &this->bActive; }
 	[[nodiscard]] bool isValid() const;
 	[[nodiscard]] QString path() const;
 	[[nodiscard]] QString address() const;
@@ -59,6 +62,9 @@ public:
 
 signals:
 	void loaded();
+	void bssidChanged();
+	void frequencyChanged();
+	void activeChanged();
 	void ssidChanged(const QByteArray& ssid);
 	void signalStrengthChanged(quint8 signal);
 	void flagsChanged(qs::network::NM80211ApFlags::Enum flags);
@@ -68,7 +74,12 @@ signals:
 	void securityChanged(qs::network::WifiSecurityType::Enum security);
 
 private:
+	AccessPoint* mFrontend;
+
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, QString, bBssid, &NMAccessPoint::bssidChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, quint32, bFrequency, &NMAccessPoint::frequencyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, bool, bActive, &NMAccessPoint::activeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, QByteArray, bSsid, &NMAccessPoint::ssidChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, quint8, bSignalStrength, &NMAccessPoint::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, NM80211ApFlags::Enum, bFlags, &NMAccessPoint::flagsChanged);
@@ -78,6 +89,8 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMAccessPoint, WifiSecurityType::Enum, bSecurity, &NMAccessPoint::securityChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(NMAccessPointAdapter, accessPointProperties);
+	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pBssid, bBssid, accessPointProperties, "HwAddress");
+	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pFrequency, bFrequency, accessPointProperties, "Frequency");
 	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pSsid, bSsid, accessPointProperties, "Ssid");
 	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pSignalStrength, bSignalStrength, accessPointProperties, "Strength");
 	QS_DBUS_PROPERTY_BINDING(NMAccessPoint, pFlags, bFlags, accessPointProperties, "Flags");

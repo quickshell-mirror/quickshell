@@ -9,6 +9,7 @@
 #include <qtmetamacros.h>
 
 #include "../core/logcat.hpp"
+#include "accesspoint.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
@@ -21,6 +22,9 @@ QS_LOGGING_CATEGORY(logWifiNetwork, "quickshell.wifinetwork", QtWarningMsg);
 
 WifiNetwork::WifiNetwork(QString ssid, NetworkDevice* device, QObject* parent)
     : Network(std::move(ssid), device, parent) {};
+
+void WifiNetwork::accessPointAdded(AccessPoint* ap) { this->mAccessPoints.insertObject(ap); }
+void WifiNetwork::accessPointRemoved(AccessPoint* ap) { this->mAccessPoints.removeObject(ap); }
 
 void WifiNetwork::connectWithPsk(const QString& psk) {
 	if (this->bConnected) {

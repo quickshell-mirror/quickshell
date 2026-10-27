@@ -214,6 +214,7 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 
 	qCDebug(logNetworkManager) << "Access point added:" << path;
 	this->mAccessPoints.insert(path, ap);
+
 	QObject::connect(
 	    ap,
 	    &NMAccessPoint::loaded,
@@ -230,6 +231,7 @@ void NMWirelessDevice::registerAccessPoint(const QString& path) {
 		    ap->rsnFlags()
 		);
 	});
+	ap->bindableActive().setBinding([this, path]() { return this->activeApPath().path() == path; });
 }
 
 NMWirelessNetwork* NMWirelessDevice::registerNetwork(const QString& ssid) {

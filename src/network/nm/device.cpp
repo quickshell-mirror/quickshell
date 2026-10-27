@@ -74,6 +74,7 @@ void NMDevice::bindFrontend(NetworkDevice* frontend) {
 	QObject::connect(frontend, &NetworkDevice::requestSetNmManaged, this, &NMDevice::setManaged);
 	QObject::connect(this, &NMDevice::networkAdded, frontend, &NetworkDevice::networkAdded);
 	QObject::connect(this, &NMDevice::networkRemoved, frontend, &NetworkDevice::networkRemoved);
+	// clang-format on
 }
 
 void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 reason) {
@@ -85,6 +86,7 @@ void NMDevice::onStateChanged(quint32 newState, quint32 /*oldState*/, quint32 re
 }
 
 void NMDevice::bindNetwork(NMNetwork* net) {
+	// clang-format off
 	net->bindableDeviceFailReason().setBinding([this]() { return this->lastFailReason(); });
 	QObject::connect(net, &NMNetwork::requestDisconnect, this, &NMDevice::disconnect);
 	QObject::connect(net, &NMNetwork::requestActivateConnection, this, [this](const QString& settingsPath){
@@ -97,6 +99,7 @@ void NMDevice::bindNetwork(NMNetwork* net) {
 		if (visible) emit this->networkAdded(net->frontend());
 		else emit this->networkRemoved(net->frontend());
 	});
+	// clang-format on
 	if (net->visible()) emit this->networkAdded(net->frontend());
 }
 

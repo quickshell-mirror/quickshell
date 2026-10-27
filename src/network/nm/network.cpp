@@ -200,49 +200,53 @@ NMWirelessNetwork::NMWirelessNetwork(const QString& ssid, NetworkDevice* device,
 		if (this->mAccessPoints.isEmpty() && this->mSettings.isEmpty()) emit this->disappeared();
 	};
 
+	// clang-format off
+	QObject::connect(this, &NMWirelessNetwork::activeApPathChanged, this, &NMWirelessNetwork::updateActiveAp);
+	QObject::connect(this, &NMWirelessNetwork::activeApChanged, this, &NMWirelessNetwork::updateReferenceAp);
 	QObject::connect(this, &NMWirelessNetwork::referenceSettingsChanged, this, updateSecurity);
 	QObject::connect(this, &NMWirelessNetwork::referenceApChanged, this, updateSecurity);
 	QObject::connect(this, &NMWirelessNetwork::settingsRemoved, this, checkDisappeared);
 	QObject::connect(this, &NMWirelessNetwork::apRemoved, this, checkDisappeared);
+	// clang-format on
 
 	// Register and bind the frontend WifiNetwork.
 	this->mFrontend = new WifiNetwork(ssid, device, this);
 	this->bindFrontend();
 }
 
-void NMWirelessNetwork::updateReferenceAp() {
-	// If the network has no APs, the reference is a nullptr.
-	if (this->mAccessPoints.isEmpty()) {
-		this->bReferenceAp = nullptr;
-		this->bSignalStrength = 0;
-		return;
-	}
+void NMWirelessNetwork::updateActiveAp() {
+	this->bActiveAp = this->mAccessPoints.value(this->bActiveApPath);
+}
 
-	// Otherwise, choose the AP with the strongest signal.
-	NMAccessPoint* selectedAp = nullptr;
-	for (auto* ap: this->mAccessPoints.values()) {
-		// Always prefer the active AP.
-		if (ap->path() == this->bActiveApPath) {
-			selectedAp = ap;
-			break;
-		}
-		if (!selectedAp || ap->signalStrength() > selectedAp->signalStrength()) {
-			selectedAp = ap;
+void NMWirelessNetwork::updateReferenceAp() {
+	auto* reference = this->bActiveAp.value();
+	if (!reference) {
+		for (auto* ap: this->mAccessPoints) {
+			if (!reference || ap->signalStrength() > reference->signalStrength()) {
+				reference = ap;
+			}
 		}
 	}
-	if (this->bReferenceAp != selectedAp) {
-		this->bReferenceAp = selectedAp;
-		this->bSignalStrength.setBinding([selectedAp]() { return selectedAp->signalStrength(); });
+	if (this->bReferenceAp != reference) {
+		this->bReferenceAp = reference;
+		if (reference) {
+			this->bSignalStrength.setBinding([reference]() { return reference->signalStrength(); });
+		} else {
+			this->bSignalStrength = 0;
+		}
 	}
 }
 
 void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 	if (this->mAccessPoints.contains(ap->path())) return;
-	this->mAccessPoints.insert(ap->path(), ap);
-	auto onDestroyed = [this, ap]() {
-		if (this->mAccessPoints.take(ap->path())) {
+	const auto path = ap->path();
+	auto* frontend = ap->frontend();
+	this->mAccessPoints.insert(path, ap);
+	auto onDestroyed = [this, ap, path, frontend]() {
+		if (this->mAccessPoints.take(path)) {
+			this->updateActiveAp();
 			this->updateReferenceAp();
-			// Deletes `this`
+			emit this->accessPointRemoved(frontend);
 			emit this->apRemoved(ap);
 		}
 	};
@@ -250,6 +254,8 @@ void NMWirelessNetwork::addAccessPoint(NMAccessPoint* ap) {
 	QObject::connect(ap, &NMAccessPoint::signalStrengthChanged, this, &NMWirelessNetwork::updateReferenceAp);
 	QObject::connect(ap, &NMAccessPoint::destroyed, this, onDestroyed);
 	// clang-format on
+	emit this->accessPointAdded(frontend);
+	this->updateActiveAp();
 	this->updateReferenceAp();
 };
 
@@ -258,6 +264,10 @@ void NMWirelessNetwork::bindFrontend() {
 	this->NMNetwork::bindFrontend(frontend);
 
 	auto translateSignal = [this]() { return this->signalStrength() / 100.0; };
+	frontend->bindableActiveAccessPoint().setBinding([this]() {
+		auto* active = this->bActiveAp.value();
+		return active ? active->frontend() : nullptr;
+	});
 	frontend->bindableSignalStrength().setBinding(translateSignal);
 	frontend->bindableSecurity().setBinding([this]() { return this->security(); });
 
@@ -305,6 +315,11 @@ void NMWirelessNetwork::bindFrontend() {
 		}
 		qCInfo(logNetworkManager) << "Failed to connectWithPsk: The network disappeared.";
 	});
+
+	// clang-format off
+	QObject::connect(this, &NMWirelessNetwork::accessPointAdded, frontend, &WifiNetwork::accessPointAdded);
+	QObject::connect(this, &NMWirelessNetwork::accessPointRemoved, frontend, &WifiNetwork::accessPointRemoved);
+	// clang-format on
 }
 
 } // namespace qs::network

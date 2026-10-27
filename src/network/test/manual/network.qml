@@ -147,7 +147,7 @@ Scope {
                             if (a.connected !== b.connected) {
                                 return b.connected - a.connected;
                             }
-                            if (modelData.device?.type === DeviceType.Wifi) {
+                            if (modelData.type === DeviceType.Wifi) {
                                 return b.signalStrength - a.signalStrength;
                             }
                         })
@@ -214,33 +214,30 @@ Scope {
                         border.width: 1
                         margin: 5
 
-                        RowLayout {
-                            ColumnLayout {
+                        ColumnLayout {
+                            Layout.fillWidth: true
+
+                            RowLayout {
                                 Layout.fillWidth: true
-                                RowLayout {
-                                    Label {
-                                        text: modelData.name
-                                        font.bold: true
-                                    }
-                                    Label {
-                                        text: modelData.known ? "Known" : ""
-                                        color: palette.placeholderText
-                                    }
+                                Label {
+                                    text: modelData.name
+                                    font.bold: true
                                 }
-                                RowLayout {
+                                Label {
                                     visible: modelData.device?.type === DeviceType.Wifi
-                                    Label {
-                                        text: `Security: ${WifiSecurityType.toString(modelData.security)}`
-                                        color: palette.placeholderText
-                                    }
-                                    Label {
-                                        text: `| Signal strength: ${Math.round(modelData.signalStrength * 100)}%`
-                                        color: palette.placeholderText
-                                    }
+                                    text: `${Math.round(modelData.signalStrength * 100)}%`
+                                    color: palette.placeholderText
                                 }
-                            }
-                            ColumnLayout {
-                                Layout.alignment: Qt.AlignRight
+                                Label {
+                                    visible: modelData.device?.type === DeviceType.Wifi
+                                    text: WifiSecurityType.toString(modelData.security)
+                                    color: palette.placeholderText
+                                }
+                                Label {
+                                    text: modelData.known ? "Known" : ""
+                                    color: palette.placeholderText
+                                }
+                                Item { Layout.fillWidth: true }
                                 RowLayout {
                                     Layout.alignment: Qt.AlignRight
                                     BusyIndicator {
@@ -252,17 +249,6 @@ Scope {
                                     Label {
                                         text: ConnectionState.toString(modelData.state)
                                         color: modelData.connected ? palette.link : palette.placeholderText
-                                    }
-                                    RowLayout {
-                                        Label {
-                                            text: "Choose settings:"
-                                        }
-                                        ComboBox {
-                                            id: settingsComboBox
-                                            model: modelData.nmSettings.map(s => s?.read()?.connection?.id)
-                                            currentIndex: 0
-                                        }
-                                        visible: modelData.nmSettings.length > 1
                                     }
                                     Button {
                                         text: "Connect"
@@ -294,11 +280,122 @@ Scope {
                                                 });
                                         }
                                     }
+                                    Button {
+                                        id: detailsButton
+                                        text: checked ? "Hide Details" : "Details"
+                                        checkable: true
+                                    }
                                 }
-                                Loader {
-                                    id: failLoader
-                                    Layout.alignment: Qt.AlignRight
-                                    visible: sourceComponent !== null
+                            }
+
+                            Loader {
+                                id: failLoader
+                                Layout.alignment: Qt.AlignRight
+                                visible: sourceComponent !== null
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                visible: detailsButton.checked
+                                spacing: 5
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Item { Layout.fillWidth: true }
+                                    RowLayout {
+                                        visible: modelData.nmSettings.length > 1
+                                        Label { text: "Choose settings:" }
+                                        ComboBox {
+                                            id: settingsComboBox
+                                            model: modelData.nmSettings.map(s => s?.read()?.connection?.id)
+                                            currentIndex: 0
+                                        }
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    visible: modelData.device?.type === DeviceType.Wifi
+                                    spacing: 5
+
+                                    Label {
+                                        text: "Access Points"
+                                        font.bold: true
+                                    }
+
+                                    GridLayout {
+                                        id: apTable
+                                        Layout.fillWidth: true
+                                        columns: 5
+                                        columnSpacing: 12
+                                        rowSpacing: 5
+
+                                        readonly property var accessPoints: modelData.accessPoints?.values ?? []
+
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: "BSSID"
+                                            color: palette.placeholderText
+                                        }
+                                        Label {
+                                            text: "Signal"
+                                            color: palette.placeholderText
+                                        }
+                                        Label {
+                                            text: "Frequency"
+                                            color: palette.placeholderText
+                                        }
+                                        Label {
+                                            text: "Security"
+                                            color: palette.placeholderText
+                                        }
+                                        Label {
+                                            text: "Active"
+                                            color: palette.placeholderText
+                                        }
+
+                                        // Cells share one grid so headers and rows use the same column widths.
+                                        Repeater {
+                                            model: apTable.accessPoints.length * apTable.columns
+
+                                            Loader {
+                                                id: apCell
+                                                required property int index
+                                                readonly property int column: index % apTable.columns
+                                                readonly property AccessPoint ap: apTable.accessPoints[Math.floor(index / apTable.columns)] ?? null
+                                                Layout.fillWidth: column === 0
+                                                sourceComponent: column === 4 ? activeCell : textCell
+
+                                                Component {
+                                                    id: textCell
+                                                    Label {
+                                                        text: {
+                                                            if (!apCell.ap) return "";
+                                                            switch (apCell.column) {
+                                                            case 0: return apCell.ap.bssid;
+                                                            case 1: return `${Math.round(apCell.ap.signalStrength * 100)}%`;
+                                                            case 2: return `${apCell.ap.frequency} MHz`;
+                                                            case 3: return WifiSecurityType.toString(apCell.ap.security);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                Component {
+                                                    id: activeCell
+                                                    CheckBox {
+                                                        enabled: false
+                                                        checked: apCell.ap?.active ?? false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Label {
+                                        text: "No access points available"
+                                        visible: !modelData.accessPoints?.values.length
+                                        color: palette.placeholderText
+                                    }
                                 }
                             }
                         }

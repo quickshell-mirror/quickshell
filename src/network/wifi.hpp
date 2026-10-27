@@ -7,6 +7,8 @@
 #include <qtypes.h>
 
 #include "../core/doc.hpp"
+#include "../core/model.hpp"
+#include "accesspoint.hpp"
 #include "device.hpp"
 #include "enums.hpp"
 #include "network.hpp"
@@ -19,9 +21,16 @@ class WifiNetwork: public Network {
 	QML_ELEMENT;
 	QML_UNCREATABLE("WifiNetwork can only be acquired through WifiDevice");
 	// clang-format off
-	/// The current signal strength of the network, from 0.0 to 1.0.
+	/// The signal strength of the active access point, from 0.0 to 1.0.
+	/// When no access point is active, this is the strongest available signal.
 	Q_PROPERTY(qreal signalStrength READ default NOTIFY signalStrengthChanged BINDABLE bindableSignalStrength);
-	/// The security type of the wifi network.
+	/// The available access points for this network.
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::network::AccessPoint>*);
+	Q_PROPERTY(UntypedObjectModel* accessPoints READ accessPoints CONSTANT);
+	/// The access point the network is connected to or `null`.
+	Q_PROPERTY(qs::network::AccessPoint* activeAccessPoint READ default NOTIFY activeAccessPointChanged BINDABLE bindableActiveAccessPoint);
+	/// The security type of the active access point, or the strongest available access point when none is active.
+	/// When no access points are available, this is the security of the saved network settings, or `Unknown` if no settings are available.
 	Q_PROPERTY(qs::network::WifiSecurityType::Enum security READ default NOTIFY securityChanged BINDABLE bindableSecurity);
 	// clang-format on
 
@@ -38,16 +47,24 @@ public:
 	/// > `WpaPsk`, `Wpa2Psk`, or `Sae`.
 	Q_INVOKABLE void connectWithPsk(const QString& psk);
 
+	void accessPointAdded(AccessPoint* ap);
+	void accessPointRemoved(AccessPoint* ap);
+
+	[[nodiscard]] ObjectModel<AccessPoint>* accessPoints() { return &this->mAccessPoints; }
+	QBindable<AccessPoint*> bindableActiveAccessPoint() { return &this->bActiveAccessPoint; }
 	QBindable<qreal> bindableSignalStrength() { return &this->bSignalStrength; }
 	QBindable<WifiSecurityType::Enum> bindableSecurity() { return &this->bSecurity; }
 
 signals:
 	QSDOC_HIDE void requestConnectWithPsk(QString psk);
+	void activeAccessPointChanged();
 	void signalStrengthChanged();
 	void securityChanged();
 
 private:
+	ObjectModel<AccessPoint> mAccessPoints {this};
 	// clang-format off
+	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, AccessPoint*, bActiveAccessPoint, &WifiNetwork::activeAccessPointChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, qreal, bSignalStrength, &WifiNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(WifiNetwork, WifiSecurityType::Enum, bSecurity, &WifiNetwork::securityChanged);
 	// clang-format on

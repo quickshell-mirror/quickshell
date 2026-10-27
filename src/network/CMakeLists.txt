@@ -5,6 +5,7 @@ qt_add_library(quickshell-network STATIC
 	device.cpp
 	wired.cpp
 	wifi.cpp
+	accesspoint.hpp
 	enums.cpp
 	qml.cpp
 )

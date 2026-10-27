@@ -117,11 +117,15 @@ signals:
 	void signalStrengthChanged(quint8 signal);
 	void securityChanged(qs::network::WifiSecurityType::Enum security);
 	void activeApPathChanged(QString path);
+	void activeApChanged(qs::network::NMAccessPoint* ap);
 	void referenceApChanged(qs::network::NMAccessPoint* ap);
 	void capabilitiesChanged(qs::network::NMWirelessCapabilities::Enum caps);
+	void accessPointAdded(qs::network::AccessPoint* ap);
+	void accessPointRemoved(qs::network::AccessPoint* ap);
 	void apRemoved(qs::network::NMAccessPoint* ap);
 
 private:
+	void updateActiveAp();
 	void updateReferenceAp();
 	void bindFrontend();
 
@@ -133,6 +137,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, WifiSecurityType::Enum, bSecurity, &NMWirelessNetwork::securityChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, quint8, bSignalStrength, &NMWirelessNetwork::signalStrengthChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, QString, bActiveApPath, &NMWirelessNetwork::activeApPathChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMAccessPoint*, bActiveAp, &NMWirelessNetwork::activeApChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(NMWirelessNetwork, NMAccessPoint*, bReferenceAp, &NMWirelessNetwork::referenceApChanged);
 	// clang-format on
 };
