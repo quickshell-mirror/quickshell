@@ -184,6 +184,10 @@ by the time your contribution is ready.
 You can run the tests using `just test` but you must enable them first
 using `-DBUILD_TESTING=ON`.
 
+For headless test runs, use `QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software just test`.
+Tests that move a window need a platform plugin that reports position changes;
+the `minimal` plugin does not, and those tests fail there.
+
 ### Documentation
 Most of quickshell's documentation is automatically generated from the source code.
 You should annotate `Q_PROPERTY`s and `Q_INVOKABLE`s with doc comments. Note that the parser
