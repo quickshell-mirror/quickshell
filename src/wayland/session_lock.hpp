@@ -155,6 +155,8 @@ public:
 
 	void attach();
 	void show();
+	void finishFrames();
+	void destroyWindow();
 
 	[[nodiscard]] QQuickItem* contentItem() const;
 

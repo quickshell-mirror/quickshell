@@ -173,14 +173,22 @@ void WlSessionLock::realizeLockTarget(WlSessionLock* old) {
 void WlSessionLock::unlock() {
 	this->lockTarget = false;
 
-	for (auto* surface: this->surfaces) {
-		surface->deleteLater();
-	}
-
+	auto surfaces = this->surfaces.values();
 	this->surfaces.clear();
+
+	// finish frames before unlocking, or they can hang forever
+	for (auto* surface: surfaces) {
+		surface->finishFrames();
+	}
 
 	auto wasLocked = this->isLocked();
 	if (this->manager) this->manager->unlock();
+
+	for (auto* surface: surfaces) {
+		surface->destroyWindow();
+		surface->deleteLater();
+	}
+
 	if (wasLocked) emit this->lockStateChanged();
 }
 
@@ -298,6 +306,15 @@ QQuickWindow* WlSessionLockSurface::disownWindow() {
 void WlSessionLockSurface::show() {
 	this->attach();
 	this->ext->setVisible();
+}
+
+// waits for the current frame
+void WlSessionLockSurface::finishFrames() {
+	if (this->window != nullptr) this->window->releaseResources();
+}
+
+void WlSessionLockSurface::destroyWindow() {
+	if (this->window != nullptr) this->window->destroy();
 }
 
 QQuickItem* WlSessionLockSurface::contentItem() const { return this->mContentItem; }
