@@ -1,8 +1,10 @@
 #include "subprocess.hpp"
 #include <array>
+#include <csignal>
 #include <ostream>
 #include <string>
 
+#include <fcntl.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qstring.h>
@@ -18,16 +20,72 @@
 #include "conversation.hpp"
 #include "ipc.hpp"
 
+namespace {
+
+// Handlers installed by the shell, such as its crash handler, must not run in the subprocess.
+// Reset them as exec would, leaving ignored signals ignored.
+void resetSignalHandlers() {
+	// NOLINTBEGIN (misc-include-cleaner)
+	for (auto sig = 1; sig < NSIG; sig++) {
+		struct sigaction action {};
+		if (sigaction(sig, nullptr, &action) == -1) continue;
+		if (action.sa_handler != SIG_DFL && action.sa_handler != SIG_IGN) signal(sig, SIG_DFL);
+	}
+	// NOLINTEND (misc-include-cleaner)
+}
+
+#ifdef __FreeBSD__
+void onLifelineClosed(int /*sig*/) { _exit(1); }
+#endif
+
+// Pipes raise SIGIO for an O_ASYNC reader when their last writer closes (Linux pipe_release,
+// FreeBSD pipeclose), so this kills the subprocess once every copy of the lifeline's write end
+// is gone. Unlike a parent death signal, that also happens when the shell relaunches in place
+// after a crash, as exec closes the shell's copy. Writing to the lifeline also triggers it.
+void armLifeline(int fd) {
+	// NOLINTBEGIN (misc-include-cleaner)
+	fcntl(fd, F_SETOWN, getpid());
+
+#ifdef __FreeBSD__
+	// There is no F_SETSIG, and SIGIO is ignored by default.
+	struct sigaction action {};
+	action.sa_handler = &onLifelineClosed;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGIO, &action, nullptr);
+
+	sigset_t mask {};
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGIO);
+	sigprocmask(SIG_UNBLOCK, &mask, nullptr);
+#else
+	// Unlike SIGIO, a pam module cannot catch, block or ignore this.
+	fcntl(fd, F_SETSIG, SIGKILL);
+#endif
+
+	auto flags = fcntl(fd, F_GETFL);
+	if (flags != -1) fcntl(fd, F_SETFL, flags | O_ASYNC);
+	// NOLINTEND (misc-include-cleaner)
+}
+
+} // namespace
+
 pid_t PamConversation::createSubprocess(
     PamIpcPipes* pipes,
+    int* lifelineFd,
     const QString& configDir,
     const QString& config,
     const QString& user
 ) {
 	auto toSubprocess = std::array<int, 2>();
 	auto fromSubprocess = std::array<int, 2>();
+	auto lifeline = std::array<int, 2>();
 
-	if (pipe(toSubprocess.data()) == -1 || pipe(fromSubprocess.data()) == -1) {
+	// The lifeline must be CLOEXEC so exec drops the shell's end, including the crash handler's
+	// in-place relaunch. Forks that never exec (later subprocesses, the crash handler's coredump
+	// child) keep a copy until they exit.
+	if (pipe(toSubprocess.data()) == -1 || pipe(fromSubprocess.data()) == -1
+	    || pipe2(lifeline.data(), O_CLOEXEC) == -1)
+	{
 		qCDebug(logPam) << "Failed to create pipes for subprocess.";
 		return 0;
 	}
@@ -42,6 +100,13 @@ pid_t PamConversation::createSubprocess(
 	if (pid < 0) {
 		qCDebug(logPam) << "Failed to fork for subprocess.";
 	} else if (pid == 0) {
+		resetSignalHandlers();
+
+		// Armed before our copy of the write end is closed, so if the shell is already gone,
+		// closing it triggers the lifeline.
+		armLifeline(lifeline[0]);
+		close(lifeline[1]); // close w
+
 		close(toSubprocess[1]);   // close w
 		close(fromSubprocess[0]); // close r
 
@@ -60,9 +125,11 @@ pid_t PamConversation::createSubprocess(
 	} else {
 		close(toSubprocess[0]);   // close r
 		close(fromSubprocess[1]); // close w
+		close(lifeline[0]);       // close r
 
 		pipes->fdIn = fromSubprocess[0];
 		pipes->fdOut = toSubprocess[1];
+		*lifelineFd = lifeline[1];
 
 		free(configDirF); // NOLINT
 		free(configF);    // NOLINT

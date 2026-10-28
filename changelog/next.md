@@ -12,3 +12,4 @@
 - Fixed most broken qml types in qmlls/qmllint for Qt 6.12.
 - Fixed missing thread entry for Pipewire event loop resulting in Pipewire connection failing.
 - Fixed Greetd treating responses for a cancelled session as responses for the next one.
+- Fixed PAM helpers surviving a killed or crashed shell and PAM module crashes relaunching the shell.
