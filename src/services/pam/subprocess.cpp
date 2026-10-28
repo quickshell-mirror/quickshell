@@ -41,6 +41,17 @@ pid_t PamConversation::createSubprocess(
 
 	if (pid < 0) {
 		qCDebug(logPam) << "Failed to fork for subprocess.";
+
+		close(toSubprocess[0]);
+		close(toSubprocess[1]);
+		close(fromSubprocess[0]);
+		close(fromSubprocess[1]);
+
+		free(configDirF); // NOLINT
+		free(configF);    // NOLINT
+		free(userF);      // NOLINT
+
+		return 0;
 	} else if (pid == 0) {
 		close(toSubprocess[1]);   // close w
 		close(fromSubprocess[0]); // close r
@@ -71,7 +82,7 @@ pid_t PamConversation::createSubprocess(
 		return pid;
 	}
 
-	return -1; // should never happen but lint
+	return 0; // should never happen but lint
 }
 
 PamIpcExitCode PamSubprocess::exec(const char* configDir, const char* config, const char* user) {

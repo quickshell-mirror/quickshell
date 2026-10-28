@@ -52,7 +52,7 @@ void PamConversation::start(const QString& configDir, const QString& config, con
 }
 
 void PamConversation::abort() {
-	if (this->childPid != 0) {
+	if (this->childPid > 0) {
 		qCDebug(logPam) << "Killing subprocess for" << this;
 		kill(this->childPid, SIGKILL); // NOLINT (include)
 		waitpid(this->childPid, nullptr, 0);
@@ -61,7 +61,7 @@ void PamConversation::abort() {
 }
 
 void PamConversation::internalError() {
-	if (this->childPid != 0) {
+	if (this->childPid > 0) {
 		qCDebug(logPam) << "Killing subprocess for" << this;
 		kill(this->childPid, SIGKILL); // NOLINT (include)
 		waitpid(this->childPid, nullptr, 0);
