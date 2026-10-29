@@ -267,16 +267,22 @@ bool QmlScanner::scanQmlFile(const QString& path, bool& singleton, bool& interna
 			continue;
 		}
 
+		if (import.endsWith(".js") && pathInfo.isFile()) {
+			if (!this->scannedFiles.contains(cpath)) {
+				this->scannedFiles.push_back(cpath);
+				QByteArray jsData;
+				this->readAndHashFile(cpath, jsData);
+			}
+
+			continue;
+		}
+
 		if (!pathInfo.isDir()) {
 			qCDebug(logQmlScanner) << "Ignoring non-directory import" << ipath << "from" << path;
 			continue;
 		}
 
-		if (import.endsWith(".js")) {
-			this->scannedFiles.push_back(cpath);
-			QByteArray jsData;
-			this->readAndHashFile(cpath, jsData);
-		} else this->scanDir(cpath);
+		this->scanDir(cpath);
 	}
 
 	return true;
