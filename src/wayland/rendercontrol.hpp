@@ -13,6 +13,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <rhi/qrhi.h>
+#include <wayland-client-protocol.h>
 
 #include "../window/rendercontrol.hpp"
 #include "buffer/manager.hpp"
@@ -24,7 +25,8 @@ class WindowDamageTracker;
 
 namespace qs::wayland::render {
 
-class WlBufferRef;
+class SurfaceBufferPool;
+class WaylandRenderControl;
 
 class SurfaceBuffer {
 public:
@@ -32,11 +34,11 @@ public:
 	~SurfaceBuffer();
 	Q_DISABLE_COPY_MOVE(SurfaceBuffer);
 
-	[[nodiscard]] bool busy() const;
-
+	SurfaceBufferPool* pool = nullptr;
 	QSize size;
 	bool alpha = false;
-	std::unique_ptr<WlBufferRef> ref;
+	// Set by renderFrame(), cleared by SurfaceBufferPool::onRelease().
+	bool busy = false;
 	// Keep the dmabuf alive until the GL objects are destroyed.
 	std::unique_ptr<buffer::WlBuffer> buffer;
 	std::unique_ptr<buffer::WlBufferQSGTexture> import;
@@ -48,16 +50,22 @@ public:
 
 class SurfaceBufferPool {
 public:
+	explicit SurfaceBufferPool(WaylandRenderControl* control): control(control) {}
+
 	[[nodiscard]] bool available(QSize size, bool alpha) const;
 	// Requires available(size, alpha).
 	SurfaceBuffer* acquire(QQuickWindow* window, QRhi* rhi, QSize size, bool alpha);
 	void clear();
 
 private:
+	static void onRelease(void* data, wl_buffer* buffer);
+	static const wl_buffer_listener LISTENER;
+
 	SurfaceBuffer* create(QQuickWindow* window, QRhi* rhi, QSize size, bool alpha);
 
 	std::vector<std::unique_ptr<SurfaceBuffer>> buffers;
 	std::shared_ptr<QRhiRenderBuffer> depthStencil;
+	WaylandRenderControl* control;
 };
 
 // Separate content target for drawDecoration().
@@ -81,6 +89,7 @@ public:
 
 	void requestCommit() override;
 	bool eventFilter(QObject* watched, QEvent* event) override;
+	void onBufferReleased();
 
 private slots:
 	void scheduleFrame();
@@ -98,6 +107,7 @@ private:
 	SurfaceBufferPool pool;
 	std::unique_ptr<DecorationTarget> decoration;
 	qs::window::WindowDamageTracker* tracker = nullptr;
+	bool bufferAwaited = false;
 	bool commitRequested = false;
 	bool presented = false;
 	bool repaintRequested = false;

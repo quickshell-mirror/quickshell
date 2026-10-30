@@ -113,6 +113,19 @@ void driveAnimations() {
 	if (driver->isRunning()) timer->startAtRefreshRate();
 }
 
+// Borrow the wl_buffer for one commit; SurfaceBufferPool owns it and handles releases.
+class WlBufferRef: public QtWaylandClient::QWaylandBuffer {
+public:
+	WlBufferRef(wl_buffer* buffer, QSize size): mSize(size) { this->mBuffer = buffer; }
+	~WlBufferRef() override { this->mBuffer = nullptr; }
+	Q_DISABLE_COPY_MOVE(WlBufferRef);
+
+	[[nodiscard]] QSize size() const override { return this->mSize; }
+
+private:
+	QSize mSize;
+};
+
 qs::window::WindowRenderControl* createRenderControl() {
 	if (qEnvironmentVariableIsSet("QS_DISABLE_DMABUF")) {
 		qCInfo(logRenderControl) << "Render control is unavailable with QS_DISABLE_DMABUF.";
@@ -124,33 +137,28 @@ qs::window::WindowRenderControl* createRenderControl() {
 
 } // namespace
 
-class WlBufferRef: public QtWaylandClient::QWaylandBuffer {
-public:
-	WlBufferRef(wl_buffer* buffer, QSize size): mSize(size) { this->init(buffer); }
-	~WlBufferRef() override { this->mBuffer = nullptr; }
-	Q_DISABLE_COPY_MOVE(WlBufferRef);
-
-	[[nodiscard]] QSize size() const override { return this->mSize; }
-
-private:
-	QSize mSize;
-};
-
 SurfaceBuffer::~SurfaceBuffer() = default;
 
-bool SurfaceBuffer::busy() const { return this->ref->busy(); }
+const wl_buffer_listener SurfaceBufferPool::LISTENER = {.release = &SurfaceBufferPool::onRelease};
+
+void SurfaceBufferPool::onRelease(void* data, wl_buffer* /*buffer*/) {
+	auto* buffer = static_cast<SurfaceBuffer*>(data);
+	buffer->busy = false;
+	buffer->pool->control->onBufferReleased();
+}
 
 SurfaceBuffer* SurfaceBufferPool::acquire(QQuickWindow* window, QRhi* rhi, QSize size, bool alpha) {
 	auto matches = [&](const std::unique_ptr<SurfaceBuffer>& buffer) {
 		return buffer->size == size && buffer->alpha == alpha;
 	};
 
+	// Keep old buffers until onRelease() clears busy.
 	std::erase_if(this->buffers, [&](const auto& buffer) {
-		return !matches(buffer) && !buffer->busy();
+		return !matches(buffer) && !buffer->busy;
 	});
 
 	for (const auto& buffer: this->buffers) {
-		if (matches(buffer) && !buffer->busy()) return buffer.get();
+		if (matches(buffer) && !buffer->busy) return buffer.get();
 	}
 
 	return this->create(window, rhi, size, alpha);
@@ -165,7 +173,7 @@ bool SurfaceBufferPool::available(QSize size, bool alpha) const {
 	auto used = 0;
 	for (const auto& buffer: this->buffers) {
 		if (buffer->size != size || buffer->alpha != alpha) continue;
-		if (!buffer->busy()) return true;
+		if (!buffer->busy) return true;
 		used++;
 	}
 
@@ -181,10 +189,12 @@ SurfaceBuffer* SurfaceBufferPool::create(QQuickWindow* window, QRhi* rhi, QSize 
 	);
 
 	auto result = std::make_unique<SurfaceBuffer>();
+	result->pool = this;
 	result->size = size;
 	result->alpha = alpha;
 	result->buffer.reset(buffer::WlBufferManager::instance()->createBuffer(request));
 	if (!result->buffer) return nullptr;
+	wl_buffer_add_listener(result->buffer->buffer(), &LISTENER, result.get());
 
 	result->import.reset(result->buffer->createQsgTexture(window));
 	if (!result->import) return nullptr;
@@ -210,11 +220,10 @@ SurfaceBuffer* SurfaceBufferPool::create(QQuickWindow* window, QRhi* rhi, QSize 
 	result->renderTarget->setRenderPassDescriptor(result->renderPass.get());
 	if (!result->renderTarget->create()) return nullptr;
 
-	result->ref = std::make_unique<WlBufferRef>(result->buffer->buffer(), size);
 	return this->buffers.emplace_back(std::move(result)).get();
 }
 
-WaylandRenderControl::WaylandRenderControl() {
+WaylandRenderControl::WaylandRenderControl(): pool(this) {
 	// clang-format off
 	QObject::connect(this, &QQuickRenderControl::renderRequested, this, &WaylandRenderControl::onRenderRequested);
 	QObject::connect(this, &QQuickRenderControl::sceneChanged, this, &WaylandRenderControl::scheduleFrame);
@@ -246,6 +255,10 @@ void WaylandRenderControl::scheduleFrame() {
 void WaylandRenderControl::onRenderRequested() {
 	this->repaintRequested = true;
 	this->scheduleFrame();
+}
+
+void WaylandRenderControl::onBufferReleased() {
+	if (std::exchange(this->bufferAwaited, false)) this->scheduleFrame();
 }
 
 bool WaylandRenderControl::eventFilter(QObject* watched, QEvent* event) {
@@ -332,8 +345,9 @@ void WaylandRenderControl::renderFrame() {
 		return;
 	}
 
+	// onBufferReleased() schedules another frame.
 	if (!this->pool.available(pixelSize, alpha)) {
-		QTimer::singleShot(1, this, &WaylandRenderControl::scheduleFrame);
+		this->bufferAwaited = true;
 		return;
 	}
 
@@ -391,11 +405,13 @@ void WaylandRenderControl::renderFrame() {
 
 	// Collect changes made during render; WindowDamageTracker::sync() forces full damage with margins.
 	auto damage = tracker ? tracker->damage() : std::nullopt;
-	auto exposed = waylandWindow->isExposed();
-	waylandWindow->safeCommit(buffer->ref.get(), damage.value_or(QRect(QPoint(), surfaceSize)));
+	auto ref = WlBufferRef(buffer->buffer->buffer(), surfaceSize);
+	waylandWindow->safeCommit(&ref, damage.value_or(QRect(QPoint(), surfaceSize)));
 	QQuickWindowPrivate::get(window)->fireFrameSwapped();
-	if (!exposed) return;
+	// Keep the damage until safeCommit() accepts a buffer.
+	if (!ref.busy()) return;
 
+	buffer->busy = true;
 	this->commitRequested = false;
 	this->presented = true;
 	if (tracker) tracker->presented();
