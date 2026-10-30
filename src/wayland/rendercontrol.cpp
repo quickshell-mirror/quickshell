@@ -363,7 +363,7 @@ void WaylandRenderControl::renderFrame() {
 	// Emit frameSwapped even when damage tracking skips the render.
 	auto* tracker = this->tracker;
 	auto repaint = std::exchange(this->repaintRequested, false);
-	if (tracker && !repaint && tracker->damage() == QRegion()) {
+	if (tracker && !repaint && tracker->damage() == QRegion() && !tracker->pendingPreprocess()) {
 		this->endFrame();
 		this->commitWithoutFrame();
 		QQuickWindowPrivate::get(window)->fireFrameSwapped();

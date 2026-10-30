@@ -116,6 +116,7 @@ public:
 	void markFull() { this->full = true; }
 	void renderScene() override;
 	[[nodiscard]] std::optional<QRegion> damage() const;
+	[[nodiscard]] bool pendingPreprocess() const { return this->unmeasured; }
 	void presented();
 
 protected:
@@ -173,6 +174,7 @@ private:
 	QColor color;
 	bool full = true;
 	bool unboundedFrame = false;
+	bool unmeasured = false;
 	bool loggedEffectShader = false;
 };
 
@@ -378,7 +380,11 @@ SceneDamageTracker::Subtree SceneDamageTracker::measureGeometry(QSGGeometryNode*
 	}
 
 	auto* geometry = node->geometry();
-	if (!geometry || geometry->vertexCount() == 0) return {};
+	// Don't skip frames with unfinished glyph geometry; see QSGDefaultGlyphNode::preprocess().
+	if (!geometry || geometry->vertexCount() == 0) {
+		this->unmeasured |= node->flags().testFlag(QSGNode::UsePreprocess);
+		return {};
+	}
 
 	if (geometry->attributeCount() == 0) return UNBOUNDED;
 
@@ -494,6 +500,7 @@ std::optional<QRegion> SceneDamageTracker::damage() const {
 void SceneDamageTracker::presented() {
 	this->frameDamage = QRegion();
 	this->full = false;
+	this->unmeasured = false;
 }
 
 WindowDamageTracker::WindowDamageTracker(QsQuickWindowBase* window)
@@ -544,6 +551,10 @@ void WindowDamageTracker::sync() {
 void WindowDamageTracker::afterSync() {
 	// QQuickWindowPrivate::syncSceneGraph() creates the root before afterSynchronizing.
 	this->tracker->setRootNode(QQuickWindowPrivate::get(this->window)->renderer->rootNode());
+}
+
+bool WindowDamageTracker::pendingPreprocess() const {
+	return this->tracker && this->tracker->pendingPreprocess();
 }
 
 std::optional<QRegion> WindowDamageTracker::damage() {

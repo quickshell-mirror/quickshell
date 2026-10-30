@@ -24,6 +24,8 @@ public:
 
 	// Logical window coordinates; see SceneDamageTracker::windowRect().
 	[[nodiscard]] std::optional<QRegion> damage();
+	// Geometry still needs preprocess; see SceneDamageTracker::measureGeometry().
+	[[nodiscard]] bool pendingPreprocess() const;
 	void presented();
 
 private slots:
