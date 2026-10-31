@@ -12,6 +12,7 @@ class WindowRenderControl: public QQuickRenderControl {
 	Q_OBJECT;
 
 public:
+	static void setEnabled(bool enabled);
 	static void setFactory(WindowRenderControl* (*factory)());
 	static WindowRenderControl* create();
 

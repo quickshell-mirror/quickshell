@@ -38,10 +38,6 @@ Scope {
     TestProcess {
         id: withControl
         config: "rendercontrol-enabled.qml"
-        environment: ({
-                QS_RENDERCONTROL_START: String(root.startTime),
-                QS_RENDER_CONTROL: "1"
-            })
     }
 
     TestProcess {

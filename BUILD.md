@@ -155,6 +155,16 @@ Specific protocols can also be disabled:
 [zwlr-screencopy-v1]: https://wayland.app/protocols/wlr-screencopy-unstable-v1
 [hyprland-toplevel-export-v1]: https://wayland.app/protocols/hyprland-toplevel-export-v1
 
+#### Render Control
+Use quickshell's render control for Wayland windows and report changed frame regions
+to the compositor. Enable it in a shell with `//@ pragma RenderControl`.
+
+To disable: `-DWAYLAND_RENDER_CONTROL=OFF`
+
+Dependencies:
+- `libgbm`
+- `vulkan-headers` (build-time)
+
 ### X11
 This feature enables x11 support. Currently this implements panel windows for X11 similarly
 to the wlroots layershell above.

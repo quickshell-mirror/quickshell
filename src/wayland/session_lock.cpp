@@ -20,6 +20,7 @@
 #include "../core/qmlscreen.hpp"
 #include "../core/reload.hpp"
 #include "../window/proxywindow.hpp"
+#include "../window/rendercontrol.hpp"
 #include "session_lock/session_lock.hpp"
 
 WlSessionLock::~WlSessionLock() {
@@ -245,7 +246,7 @@ void WlSessionLockSurface::onReload(QObject* oldInstance) {
 	}
 
 	if (this->window == nullptr) {
-		this->window = new QsQuickWindowBase();
+		this->window = new QsQuickWindowBase(qs::window::WindowRenderControl::create());
 
 		// needed for vulkan dmabuf import, qt ignores these if not applicable
 		auto graphicsConfig = this->window->graphicsConfiguration();

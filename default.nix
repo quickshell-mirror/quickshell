@@ -106,6 +106,7 @@
       (lib.cmakeBool "USE_JEMALLOC" withJemalloc)
       (lib.cmakeBool "WAYLAND" withWayland)
       (lib.cmakeBool "SCREENCOPY" (libgbm != null))
+      (lib.cmakeBool "WAYLAND_RENDER_CONTROL" (libgbm != null))
       (lib.cmakeBool "SERVICE_PIPEWIRE" withPipewire)
       (lib.cmakeBool "SERVICE_PAM" withPam)
       (lib.cmakeBool "SERVICE_NETWORKMANAGER" withNetworkManager)

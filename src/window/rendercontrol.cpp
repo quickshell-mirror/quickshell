@@ -5,7 +5,6 @@
 #include <qpoint.h>
 #include <qquickwindow.h>
 #include <qsgrendererinterface.h>
-#include <qtenvironmentvariables.h>
 #include <qwindow.h>
 
 #include "../core/logcat.hpp"
@@ -15,13 +14,14 @@ namespace qs::window {
 namespace {
 QS_LOGGING_CATEGORY(logRenderControl, "quickshell.window.rendercontrol", QtWarningMsg);
 WindowRenderControl* (*FACTORY)() = nullptr; // NOLINT
+bool ENABLED = false;                        // NOLINT
 } // namespace
 
+void WindowRenderControl::setEnabled(bool enabled) { ENABLED = enabled; }
 void WindowRenderControl::setFactory(WindowRenderControl* (*factory)()) { FACTORY = factory; }
 
 WindowRenderControl* WindowRenderControl::create() {
-	static const auto enabled = qEnvironmentVariableIsSet("QS_RENDER_CONTROL");
-	if (!enabled) return nullptr;
+	if (!ENABLED) return nullptr;
 
 	if (!FACTORY) {
 		qCInfo(logRenderControl) << "Render control is unavailable on this platform.";

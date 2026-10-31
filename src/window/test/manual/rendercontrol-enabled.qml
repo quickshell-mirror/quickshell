@@ -1,3 +1,4 @@
+//@ pragma RenderControl
 import QtQuick
 
 RenderControlScene {
