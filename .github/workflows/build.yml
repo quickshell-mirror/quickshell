@@ -61,5 +61,12 @@ jobs:
 
       - name: Build
         run: |
-          cmake -GNinja -B build -DVENDOR_CPPTRACE=ON
+          cmake -GNinja -B build -DVENDOR_CPPTRACE=ON -DBUILD_TESTING=ON
           cmake --build build
+
+      - name: Test popup windows (headless)
+        env:
+          QT_QUICK_BACKEND: software
+        run: |
+          QT_QPA_PLATFORM=offscreen ctest --test-dir build -R '^popupwindow$' --no-tests=error --timeout 60 --verbose
+          QT_QPA_PLATFORM=minimal ctest --test-dir build -R '^popupwindow$' --no-tests=error --timeout 60 --verbose

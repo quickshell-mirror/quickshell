@@ -5,4 +5,5 @@ function (qs_test name)
 endfunction()
 
 qs_test(popupwindow popupwindow.cpp)
+target_link_libraries(popupwindow PRIVATE Qt::GuiPrivate)
 qs_test(windowattached windowattached.cpp)

@@ -1,5 +1,9 @@
 #include "popupwindow.hpp"
 
+#include <private/qhighdpiscaling_p.h>
+#include <qguiapplication.h>
+#include <qpa/qwindowsysteminterface.h>
+#include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qsignalspy.h>
 #include <qtest.h>
@@ -112,8 +116,19 @@ void TestPopupWindow::moveWithParent() { // NOLINT
 	parent.backingWindow()->setX(10);
 	parent.backingWindow()->setY(10);
 
-	QCOMPARE(popup.x(), parent.x() + 10);
-	QCOMPARE(popup.y(), parent.y() + 10);
+	if (QGuiApplication::platformName() == "minimal") {
+		// Minimal stores geometry without notifying Qt of the window-system move.
+		auto* window = parent.backingWindow();
+		QWindowSystemInterface::handleGeometryChange<QWindowSystemInterface::SynchronousDelivery>(
+		    window,
+		    QHighDpi::toNativePixels(window->geometry(), window)
+		);
+		popup.contentItem()->ensurePolished();
+	}
+
+	// Parent movement schedules repositioning for the next window polish.
+	QTRY_COMPARE(popup.x(), parent.x() + 10);
+	QTRY_COMPARE(popup.y(), parent.y() + 10);
 }
 
 void TestPopupWindow::attachParentLate() { // NOLINT
