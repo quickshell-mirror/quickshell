@@ -7,6 +7,7 @@
 #include <qqmlintegration.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "connection.hpp"
 
@@ -85,6 +86,7 @@ private slots:
 	void onSpecialWorkspaceDestroyed();
 
 private:
+	HyprlandWorkspace* findWorkspaceFromObject(const QVariant& workspaceObject);
 	void setWorkspaceProperty(
 	    QBindable<HyprlandWorkspace*> property,
 	    HyprlandWorkspace* workspace,

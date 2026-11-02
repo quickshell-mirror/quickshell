@@ -6,6 +6,7 @@
 #include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "workspace.hpp"
 
@@ -35,19 +36,8 @@ void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QStrin
 }
 
 void HyprlandMonitor::updateFromObject(QVariantMap object) {
-	auto activeWorkspaceObj = object.value("activeWorkspace").value<QVariantMap>();
-	auto activeWorkspaceAddress = activeWorkspaceObj.value("address").value<QString>();
-	auto activeWorkspaceId = activeWorkspaceObj.value("id").value<qint32>();
-	if (activeWorkspaceAddress.isEmpty()) activeWorkspaceAddress = QString::number(activeWorkspaceId);
-	auto activeWorkspaceName = activeWorkspaceObj.value("name").value<QString>();
-
-	auto specialWorkspaceObj = object.value("specialWorkspace").value<QVariantMap>();
-	auto specialWorkspaceAddress = specialWorkspaceObj.value("address").value<QString>();
-	auto specialWorkspaceId = specialWorkspaceObj.value("id").value<qint32>();
-	if (specialWorkspaceAddress.isEmpty())
-		specialWorkspaceAddress = QString::number(specialWorkspaceId);
-	auto specialWorkspaceName = specialWorkspaceObj.value("name").value<QString>();
-
+	auto* activeWorkspace = this->findWorkspaceFromObject(object.value("activeWorkspace"));
+	auto* specialWorkspace = this->findWorkspaceFromObject(object.value("specialWorkspace"));
 	auto focused = object.value("focused").value<bool>();
 
 	Qt::beginPropertyUpdateGroup();
@@ -61,26 +51,8 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	this->bScale = object.value("scale").value<qreal>();
 	Qt::endPropertyUpdateGroup();
 
-	if (this->bActiveWorkspace == nullptr
-	    || this->bActiveWorkspace->bindableName().value() != activeWorkspaceName)
-	{
-		auto* workspace =
-		    this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceAddress);
-		workspace->setMonitor(this);
-		this->setActiveWorkspace(workspace);
-	}
-
-	if (specialWorkspaceName.isEmpty()) {
-		this->setSpecialWorkspace(nullptr);
-	} else if (
-	    this->bSpecialWorkspace == nullptr
-	    || this->bSpecialWorkspace->bindableName().value() != specialWorkspaceName
-	)
-	{
-		auto* workspace =
-		    this->ipc->findWorkspaceByName(specialWorkspaceName, true, specialWorkspaceAddress);
-		this->setSpecialWorkspace(workspace);
-	}
+	this->setActiveWorkspace(activeWorkspace);
+	this->setSpecialWorkspace(specialWorkspace);
 
 	this->mLastIpcObject = std::move(object);
 	emit this->lastIpcObjectChanged();
@@ -88,6 +60,17 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	if (focused) {
 		this->ipc->setFocusedMonitor(this);
 	}
+}
+
+HyprlandWorkspace* HyprlandMonitor::findWorkspaceFromObject(const QVariant& workspaceObject) {
+	auto object = workspaceObject.value<QVariantMap>();
+	auto name = object.value("name").value<QString>();
+	if (name.isEmpty()) return nullptr;
+
+	auto address = object.value("address").value<QString>();
+	if (address.isEmpty()) address = QString::number(object.value("id").value<qint32>());
+
+	return this->ipc->findWorkspaceByName(name, true, address);
 }
 
 void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
