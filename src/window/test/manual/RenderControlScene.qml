@@ -134,6 +134,27 @@ Scope {
     						layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "orange"; shadowHorizontalOffset: 20; shadowBlur: 0.5 }
     					}`, shadowCell);
 
+                        // Test damage carried into the next frame when the mask layer updates.
+                        Qt.createQmlObject(`import QtQuick; import QtQuick.Effects; Item {
+    						anchors.fill: parent
+    						layer.enabled: true
+    						layer.effect: MultiEffect { maskEnabled: true; maskSource: maskSource }
+
+    						Rectangle { anchors.fill: parent; color: (root.test === "Animate effects") && tick.on ? "yellow" : "white" }
+
+    						Rectangle {
+    							id: maskSource
+    							anchors.fill: parent
+    							visible: false
+    							layer.enabled: true
+    							gradient: Gradient {
+    								orientation: Gradient.Horizontal
+    								GradientStop { position: 0; color: "transparent" }
+    								GradientStop { position: 1; color: "white" }
+    							}
+    						}
+    					}`, maskCell);
+
                         try {
                             Qt.createQmlObject(`import QtQuick; import QtQuick.Effects; RectangularShadow {
     							anchors.fill: parent
@@ -613,6 +634,14 @@ Scope {
                         width: 30
                         height: 30
                         property variant source: chainMiddle
+                    }
+
+                    Item {
+                        id: maskCell
+                        x: 60
+                        y: 560
+                        width: 40
+                        height: 30
                     }
 
                     Rectangle {

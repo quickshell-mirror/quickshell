@@ -114,9 +114,11 @@ public:
 
 	void setFrame(const QSize& size, qreal scale, const QColor& color, bool full);
 	void markFull() { this->full = true; }
+	void beginRender() { this->rendering = true; }
 	void renderScene() override;
 	[[nodiscard]] std::optional<QRegion> damage() const;
 	[[nodiscard]] bool pendingPreprocess() const { return this->unmeasured; }
+	[[nodiscard]] bool pendingDamage() const { return !this->frameDamage.isEmpty(); }
 	void presented();
 
 protected:
@@ -166,15 +168,18 @@ private:
 	QList<QSGNode*> topmost;
 	QSet<QSGNode*> stale;
 	QSet<QSGNode*> renderNodes;
+	QSet<QSGNode*> staleTextures;
 	QMap<QSGNode*, GlyphAtlas> glyphAtlases;
 	QList<QRect> pending;
 	QRegion frameDamage;
+	QRegion nextDamage;
 	QSize size;
 	qreal scale = 1;
 	QColor color;
 	bool full = true;
 	bool unboundedFrame = false;
 	bool unmeasured = false;
+	bool rendering = false;
 	bool loggedEffectShader = false;
 };
 
@@ -241,6 +246,7 @@ bool SceneDamageTracker::boundedEffectShader(QSGMaterial* material) {
 
 void SceneDamageTracker::setFrame(const QSize& size, qreal scale, const QColor& color, bool full) {
 	this->full |= full || this->size != size || this->scale != scale || this->color != color;
+	this->rendering = false;
 	this->size = size;
 	this->scale = scale;
 	this->color = color;
@@ -252,6 +258,13 @@ void SceneDamageTracker::nodeChanged(QSGNode* node, QSGNode::DirtyState state) {
 	if (state.testFlag(QSGNode::DirtyNodeRemoved)) {
 		this->forget(node);
 		return;
+	}
+
+	// Carry layer updates during rendering into the next frame; see QSGRhiLayer::grab().
+	if (this->rendering && state.testFlag(QSGNode::DirtyMaterial)
+	    && node->flags().testFlag(QSGNode::UsePreprocess))
+	{
+		this->staleTextures.insert(node);
 	}
 
 	// refresh() skips blocked subtrees; discard bounds that may go stale while blocked.
@@ -269,6 +282,7 @@ void SceneDamageTracker::forget(QSGNode* node) {
 	this->subtrees.remove(node);
 	this->localBounds.remove(node);
 	this->renderNodes.remove(node);
+	this->staleTextures.remove(node);
 	this->glyphAtlases.remove(node);
 	this->forgetChildren(node);
 }
@@ -484,6 +498,16 @@ void SceneDamageTracker::renderScene() {
 
 	this->frameDamage += uniteRects(this->pending);
 	this->pending.clear();
+
+	if (this->rendering) {
+		for (auto* node: std::as_const(this->staleTextures)) {
+			auto rect = this->windowRect(node).toAlignedRect();
+			if (!rect.isEmpty()) this->nextDamage += rect;
+		}
+
+		this->staleTextures.clear();
+		this->rendering = false;
+	}
 	// Keep full damage for render nodes even without a nodeChanged() notification.
 	this->unboundedFrame = !this->renderNodes.isEmpty();
 }
@@ -498,7 +522,7 @@ std::optional<QRegion> SceneDamageTracker::damage() const {
 }
 
 void SceneDamageTracker::presented() {
-	this->frameDamage = QRegion();
+	this->frameDamage = std::exchange(this->nextDamage, QRegion());
 	this->full = false;
 	this->unmeasured = false;
 }
@@ -555,6 +579,14 @@ void WindowDamageTracker::afterSync() {
 
 bool WindowDamageTracker::pendingPreprocess() const {
 	return this->tracker && this->tracker->pendingPreprocess();
+}
+
+bool WindowDamageTracker::pendingDamage() const {
+	return this->tracker && this->tracker->pendingDamage();
+}
+
+void WindowDamageTracker::beginRender() {
+	if (this->tracker) this->tracker->beginRender();
 }
 
 std::optional<QRegion> WindowDamageTracker::damage() {

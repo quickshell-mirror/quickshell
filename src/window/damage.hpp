@@ -26,6 +26,9 @@ public:
 	[[nodiscard]] std::optional<QRegion> damage();
 	// Geometry still needs preprocess; see SceneDamageTracker::measureGeometry().
 	[[nodiscard]] bool pendingPreprocess() const;
+	// Damage carried into the next frame by SceneDamageTracker::presented().
+	[[nodiscard]] bool pendingDamage() const;
+	void beginRender();
 	void presented();
 
 private slots:

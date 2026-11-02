@@ -390,6 +390,7 @@ void WaylandRenderControl::renderFrame() {
 	renderTarget.setMirrorVertically(this->rhi->isYUpInFramebuffer());
 	window->setRenderTarget(renderTarget);
 
+	if (tracker) tracker->beginRender();
 	this->render();
 
 	if (decoration) {
@@ -414,7 +415,10 @@ void WaylandRenderControl::renderFrame() {
 	buffer->busy = true;
 	this->commitRequested = false;
 	this->presented = true;
-	if (tracker) tracker->presented();
+	if (!tracker) return;
+	tracker->presented();
+	// Redraw stale layer textures carried over by SceneDamageTracker::presented().
+	if (tracker->pendingDamage()) this->scheduleFrame();
 }
 
 void WaylandRenderControl::abortFrame() {
