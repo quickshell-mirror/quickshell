@@ -1,3 +1,7 @@
+## New Features
+
+- Added `HyprlandWorkspace.type` to expose the type of a workspace (normal/special).
+
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
