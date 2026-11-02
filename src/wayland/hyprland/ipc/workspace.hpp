@@ -16,6 +16,28 @@ namespace qs::hyprland::ipc {
 
 class HyprlandMonitor;
 
+class HyprlandWorkspaceType: public QObject {
+	Q_OBJECT
+	QML_ELEMENT
+	QML_SINGLETON
+
+public:
+	enum Enum : quint8 {
+		Normal = 0,
+		Special,
+	};
+	Q_ENUM(Enum);
+
+	using QObject::QObject;
+
+	Q_INVOKABLE static QString toString(qs::hyprland::ipc::HyprlandWorkspaceType::Enum type) {
+		switch (type) {
+		case Normal: return "Normal";
+		case Special: return "Special";
+		}
+	}
+};
+
 class HyprlandWorkspace: public QObject {
 	Q_OBJECT;
 	// clang-format off
@@ -27,6 +49,12 @@ class HyprlandWorkspace: public QObject {
 	// >
 	// > After 0.57, this property will equal `-1` for non-numbered workspaces.
 	Q_PROPERTY(qint32 id READ default NOTIFY idChanged BINDABLE bindableId);
+	/// The type of the workspace. This is either Normal, for numbered or named workspaces,
+	/// or Special for special workspaces.
+	///
+	/// > [!NOTE] On Hyprland versions prior to 0.57, this property uses @@name to detect
+	/// > special workspaces.
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandWorkspaceType::Enum type READ default NOTIFY typeChanged BINDABLE bindableType);
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
 	/// If this workspace is currently active on its monitor. See also @@focused.
 	Q_PROPERTY(bool active READ default NOTIFY activeChanged BINDABLE bindableActive);
@@ -68,6 +96,7 @@ public:
 
 	[[nodiscard]] QBindable<QString> bindableAddress() { return &this->bAddress; }
 	[[nodiscard]] QBindable<qint32> bindableId() { return &this->bId; }
+	[[nodiscard]] QBindable<HyprlandWorkspaceType::Enum> bindableType() { return &this->bType; }
 	[[nodiscard]] QBindable<QString> bindableName() { return &this->bName; }
 	[[nodiscard]] QBindable<bool> bindableActive() { return &this->bActive; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
@@ -110,6 +139,7 @@ private:
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bAddress, &HyprlandWorkspace::addressChanged);
 	Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(HyprlandWorkspace, qint32, bId, -1, &HyprlandWorkspace::idChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, HyprlandWorkspaceType::Enum, bType, &HyprlandWorkspace::typeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, QString, bName, &HyprlandWorkspace::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bActive, &HyprlandWorkspace::activeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(HyprlandWorkspace, bool, bFocused, &HyprlandWorkspace::focusedChanged);
