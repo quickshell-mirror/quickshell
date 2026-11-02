@@ -1,3 +1,7 @@
+## New Features
+
+- Added `HyprlandMonitor.specialWorkspace` to expose the special workspace currently open on a monitor.
+
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.

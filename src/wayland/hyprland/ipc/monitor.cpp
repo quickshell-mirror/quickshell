@@ -6,6 +6,7 @@
 #include <qproperty.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <qvariant.h>
 
 #include "workspace.hpp"
 
@@ -15,6 +16,10 @@ QVariantMap HyprlandMonitor::lastIpcObject() const { return this->mLastIpcObject
 
 QBindable<HyprlandWorkspace*> HyprlandMonitor::bindableActiveWorkspace() const {
 	return &this->bActiveWorkspace;
+}
+
+QBindable<HyprlandWorkspace*> HyprlandMonitor::bindableSpecialWorkspace() const {
+	return &this->bSpecialWorkspace;
 }
 
 void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QString& description) {
@@ -31,11 +36,8 @@ void HyprlandMonitor::updateInitial(qint32 id, const QString& name, const QStrin
 }
 
 void HyprlandMonitor::updateFromObject(QVariantMap object) {
-	auto activeWorkspaceObj = object.value("activeWorkspace").value<QVariantMap>();
-	auto activeWorkspaceAddress = activeWorkspaceObj.value("address").value<QString>();
-	auto activeWorkspaceId = activeWorkspaceObj.value("id").value<qint32>();
-	if (activeWorkspaceAddress.isEmpty()) activeWorkspaceAddress = QString::number(activeWorkspaceId);
-	auto activeWorkspaceName = activeWorkspaceObj.value("name").value<QString>();
+	auto* activeWorkspace = this->findWorkspaceFromObject(object.value("activeWorkspace"));
+	auto* specialWorkspace = this->findWorkspaceFromObject(object.value("specialWorkspace"));
 	auto focused = object.value("focused").value<bool>();
 
 	Qt::beginPropertyUpdateGroup();
@@ -49,14 +51,8 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	this->bScale = object.value("scale").value<qreal>();
 	Qt::endPropertyUpdateGroup();
 
-	if (this->bActiveWorkspace == nullptr
-	    || this->bActiveWorkspace->bindableName().value() != activeWorkspaceName)
-	{
-		auto* workspace =
-		    this->ipc->findWorkspaceByName(activeWorkspaceName, true, activeWorkspaceAddress);
-		workspace->setMonitor(this);
-		this->setActiveWorkspace(workspace);
-	}
+	this->setActiveWorkspace(activeWorkspace);
+	this->setSpecialWorkspace(specialWorkspace);
 
 	this->mLastIpcObject = std::move(object);
 	emit this->lastIpcObjectChanged();
@@ -66,32 +62,58 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 	}
 }
 
+HyprlandWorkspace* HyprlandMonitor::findWorkspaceFromObject(const QVariant& workspaceObject) {
+	auto object = workspaceObject.value<QVariantMap>();
+	auto name = object.value("name").value<QString>();
+	if (name.isEmpty()) return nullptr;
+
+	auto address = object.value("address").value<QString>();
+	if (address.isEmpty()) address = QString::number(object.value("id").value<qint32>());
+
+	return this->ipc->findWorkspaceByName(name, true, address);
+}
+
 void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
-	auto* oldWorkspace = this->bActiveWorkspace.value();
+	this->setWorkspaceProperty(
+	    &this->bActiveWorkspace,
+	    workspace,
+	    &HyprlandMonitor::onActiveWorkspaceDestroyed
+	);
+}
+
+void HyprlandMonitor::setSpecialWorkspace(HyprlandWorkspace* workspace) {
+	this->setWorkspaceProperty(
+	    &this->bSpecialWorkspace,
+	    workspace,
+	    &HyprlandMonitor::onSpecialWorkspaceDestroyed
+	);
+}
+
+void HyprlandMonitor::setWorkspaceProperty(
+    QBindable<HyprlandWorkspace*> property,
+    HyprlandWorkspace* workspace,
+    void (HyprlandMonitor::*onDestroyed)()
+) {
+	auto* oldWorkspace = property.value();
 	if (workspace == oldWorkspace) return;
 
 	if (oldWorkspace != nullptr) {
-		QObject::disconnect(oldWorkspace, nullptr, this, nullptr);
+		QObject::disconnect(oldWorkspace, &QObject::destroyed, this, onDestroyed);
 	}
 
 	Qt::beginPropertyUpdateGroup();
 
 	if (workspace != nullptr) {
 		workspace->setMonitor(this);
-
-		QObject::connect(
-		    workspace,
-		    &QObject::destroyed,
-		    this,
-		    &HyprlandMonitor::onActiveWorkspaceDestroyed
-		);
+		QObject::connect(workspace, &QObject::destroyed, this, onDestroyed);
 	}
 
-	this->bActiveWorkspace = workspace;
+	property.setValue(workspace);
 
 	Qt::endPropertyUpdateGroup();
 }
 
 void HyprlandMonitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
+void HyprlandMonitor::onSpecialWorkspaceDestroyed() { this->bSpecialWorkspace = nullptr; }
 
 } // namespace qs::hyprland::ipc

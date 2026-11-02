@@ -424,6 +424,17 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 			qCDebug(logHyprlandIpc) << "Workspace" << id << "activated on"
 			                        << this->bFocusedMonitor->bindableName().value();
 		}
+	} else if (event->name == "activespecialv2") {
+		auto args = event->parseView(3);
+		auto address = QString::fromUtf8(args.at(0));
+		auto name = QString::fromUtf8(args.at(1));
+		auto monitorName = QString::fromUtf8(args.at(2));
+
+		auto* monitor = this->findMonitorByName(monitorName, true);
+		auto* workspace = name.isEmpty() ? nullptr : this->findWorkspaceByName(name, true, address);
+		monitor->setSpecialWorkspace(workspace);
+		qCDebug(logHyprlandIpc) << "Special workspace" << (workspace ? address : "<none>")
+		                        << "activated on" << monitorName;
 	} else if (event->name == "moveworkspacev2") {
 		auto args = event->parseView(3);
 		auto id = QString::fromUtf8(args.at(0));
