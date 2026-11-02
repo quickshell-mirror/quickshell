@@ -85,6 +85,12 @@ private slots:
 	void onSpecialWorkspaceDestroyed();
 
 private:
+	void setWorkspaceProperty(
+	    QBindable<HyprlandWorkspace*> property,
+	    HyprlandWorkspace* workspace,
+	    void (HyprlandMonitor::*onDestroyed)()
+	);
+
 	HyprlandIpc* ipc;
 
 	QVariantMap mLastIpcObject;

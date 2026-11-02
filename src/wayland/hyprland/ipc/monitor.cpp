@@ -91,64 +91,46 @@ void HyprlandMonitor::updateFromObject(QVariantMap object) {
 }
 
 void HyprlandMonitor::setActiveWorkspace(HyprlandWorkspace* workspace) {
-	auto* oldWorkspace = this->bActiveWorkspace.value();
+	this->setWorkspaceProperty(
+	    &this->bActiveWorkspace,
+	    workspace,
+	    &HyprlandMonitor::onActiveWorkspaceDestroyed
+	);
+}
+
+void HyprlandMonitor::setSpecialWorkspace(HyprlandWorkspace* workspace) {
+	this->setWorkspaceProperty(
+	    &this->bSpecialWorkspace,
+	    workspace,
+	    &HyprlandMonitor::onSpecialWorkspaceDestroyed
+	);
+}
+
+void HyprlandMonitor::setWorkspaceProperty(
+    QBindable<HyprlandWorkspace*> property,
+    HyprlandWorkspace* workspace,
+    void (HyprlandMonitor::*onDestroyed)()
+) {
+	auto* oldWorkspace = property.value();
 	if (workspace == oldWorkspace) return;
 
 	if (oldWorkspace != nullptr) {
-		QObject::disconnect(oldWorkspace, nullptr, this, nullptr);
+		QObject::disconnect(oldWorkspace, &QObject::destroyed, this, onDestroyed);
 	}
 
 	Qt::beginPropertyUpdateGroup();
 
 	if (workspace != nullptr) {
 		workspace->setMonitor(this);
-
-		QObject::connect(
-		    workspace,
-		    &QObject::destroyed,
-		    this,
-		    &HyprlandMonitor::onActiveWorkspaceDestroyed
-		);
+		QObject::connect(workspace, &QObject::destroyed, this, onDestroyed);
 	}
 
-	this->bActiveWorkspace = workspace;
+	property.setValue(workspace);
 
 	Qt::endPropertyUpdateGroup();
 }
 
 void HyprlandMonitor::onActiveWorkspaceDestroyed() { this->bActiveWorkspace = nullptr; }
-
-void HyprlandMonitor::setSpecialWorkspace(HyprlandWorkspace* workspace) {
-	auto* oldWorkspace = this->bSpecialWorkspace.value();
-	if (workspace == oldWorkspace) return;
-
-	if (oldWorkspace != nullptr) {
-		QObject::disconnect(
-		    oldWorkspace,
-		    &QObject::destroyed,
-		    this,
-		    &HyprlandMonitor::onSpecialWorkspaceDestroyed
-		);
-	}
-
-	Qt::beginPropertyUpdateGroup();
-
-	if (workspace != nullptr) {
-		workspace->setMonitor(this);
-
-		QObject::connect(
-		    workspace,
-		    &QObject::destroyed,
-		    this,
-		    &HyprlandMonitor::onSpecialWorkspaceDestroyed
-		);
-	}
-
-	this->bSpecialWorkspace = workspace;
-
-	Qt::endPropertyUpdateGroup();
-}
-
 void HyprlandMonitor::onSpecialWorkspaceDestroyed() { this->bSpecialWorkspace = nullptr; }
 
 } // namespace qs::hyprland::ipc
