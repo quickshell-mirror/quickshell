@@ -324,7 +324,10 @@ TrayImageHandle::requestPixmap(const QString& /*unused*/, QSize* size, const QSi
 
 void StatusNotifierItem::display(QObject* parentWindow, qint32 relativeX, qint32 relativeY) {
 	if (!this->menuHandle()) {
-		qCritical() << "No menu present for" << this;
+		// Items without a served com.canonical.dbusmenu (e.g. XEmbed bridge items
+		// advertising Menu=/NO_DBUSMENU) expect the host to forward context menu
+		// requests via the SNI ContextMenu method, mirroring waybar's behavior.
+		this->item->ContextMenu(relativeX, relativeY);
 		return;
 	}
 
