@@ -10,7 +10,9 @@
 #include <qqmlerror.h>
 #include <qqmlincubator.h>
 #include <qquickwindow.h>
+#include <qstring.h>
 #include <qtclasshelpermacros.h>
+#include <qurl.h>
 
 #include "incubator.hpp"
 #include "qsintercept.hpp"
@@ -32,7 +34,7 @@ class EngineGeneration: public QObject {
 
 public:
 	explicit EngineGeneration();
-	explicit EngineGeneration(const QDir& rootPath, QmlScanner scanner);
+	explicit EngineGeneration(const QDir& rootPath, QmlScanner scanner, QString vfsPath);
 	~EngineGeneration() override;
 	Q_DISABLE_COPY_MOVE(EngineGeneration);
 
@@ -47,6 +49,8 @@ public:
 	void registerExtension(const void* key, EngineGenerationExt* extension);
 	EngineGenerationExt* findExtension(const void* key);
 
+	[[nodiscard]] QString relativeUrl(const QUrl& url) const;
+
 	static EngineGeneration* findEngineGeneration(const QQmlEngine* engine);
 	static EngineGeneration* findObjectGeneration(const QObject* object);
 
@@ -57,6 +61,7 @@ public:
 	RootWrapper* wrapper = nullptr;
 	QDir rootPath;
 	QmlScanner scanner;
+	QString vfsPath;
 	QsUrlInterceptor urlInterceptor;
 	QsInterceptNetworkAccessManagerFactory interceptNetFactory;
 	QQmlEngine* engine = nullptr;
@@ -85,7 +90,7 @@ private slots:
 	void onFileChanged(const QString& name);
 	void onDirectoryChanged();
 	void onTrackedWindowDestroyed(QObject* object);
-	static void onEngineWarnings(const QList<QQmlError>& warnings);
+	void onEngineWarnings(const QList<QQmlError>& warnings) const;
 
 private:
 	void postReload();
