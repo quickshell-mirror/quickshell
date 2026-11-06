@@ -10,6 +10,7 @@
 #include <qquickwindow.h>
 #include <qsize.h>
 #include <qtclasshelpermacros.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <rhi/qrhi.h>
@@ -56,6 +57,8 @@ public:
 	// Requires available(size, alpha).
 	SurfaceBuffer* acquire(QQuickWindow* window, QRhi* rhi, QSize size, bool alpha);
 	void clear();
+	// Drops idle buffers other than the last acquired one.
+	bool trim();
 
 private:
 	static void onRelease(void* data, wl_buffer* buffer);
@@ -65,6 +68,7 @@ private:
 
 	std::vector<std::unique_ptr<SurfaceBuffer>> buffers;
 	std::shared_ptr<QRhiRenderBuffer> depthStencil;
+	SurfaceBuffer* current = nullptr;
 	WaylandRenderControl* control;
 };
 
@@ -94,6 +98,7 @@ public:
 private slots:
 	void scheduleFrame();
 	void onRenderRequested();
+	void trimBuffers();
 
 private:
 	bool initializeScene();
@@ -107,6 +112,7 @@ private:
 	SurfaceBufferPool pool;
 	std::unique_ptr<DecorationTarget> decoration;
 	qs::window::WindowDamageTracker* tracker = nullptr;
+	QTimer trimTimer;
 	bool bufferAwaited = false;
 	bool commitRequested = false;
 	bool presented = false;

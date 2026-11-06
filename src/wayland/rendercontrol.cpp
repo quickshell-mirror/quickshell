@@ -172,15 +172,24 @@ SurfaceBuffer* SurfaceBufferPool::acquire(QQuickWindow* window, QRhi* rhi, QSize
 	});
 
 	for (const auto& buffer: this->buffers) {
-		if (matches(buffer) && !buffer->busy) return buffer.get();
+		if (!matches(buffer) || buffer->busy) continue;
+		this->current = buffer.get();
+		return this->current;
 	}
 
-	return this->create(window, rhi, size, alpha);
+	this->current = this->create(window, rhi, size, alpha);
+	return this->current;
 }
 
 void SurfaceBufferPool::clear() {
+	this->current = nullptr;
 	this->buffers.clear();
 	this->depthStencil.reset();
+}
+
+bool SurfaceBufferPool::trim() {
+	auto idle = [this](const auto& buffer) { return buffer.get() != this->current && !buffer->busy; };
+	return std::erase_if(this->buffers, idle) != 0;
 }
 
 bool SurfaceBufferPool::available(QSize size, bool alpha) const {
@@ -238,9 +247,13 @@ SurfaceBuffer* SurfaceBufferPool::create(QQuickWindow* window, QRhi* rhi, QSize 
 }
 
 WaylandRenderControl::WaylandRenderControl(): pool(this) {
+	this->trimTimer.setSingleShot(true);
+	this->trimTimer.setInterval(std::chrono::seconds(1));
+
 	// clang-format off
 	QObject::connect(this, &QQuickRenderControl::renderRequested, this, &WaylandRenderControl::onRenderRequested);
 	QObject::connect(this, &QQuickRenderControl::sceneChanged, this, &WaylandRenderControl::scheduleFrame);
+	QObject::connect(&this->trimTimer, &QTimer::timeout, this, &WaylandRenderControl::trimBuffers);
 	// clang-format on
 }
 
@@ -272,7 +285,19 @@ void WaylandRenderControl::onRenderRequested() {
 }
 
 void WaylandRenderControl::onBufferReleased() {
+	this->trimTimer.start();
 	if (std::exchange(this->bufferAwaited, false)) this->scheduleFrame();
+}
+
+void WaylandRenderControl::trimBuffers() {
+	// WlDmaBufferQSGTexture's destructor needs the current context.
+	if (!this->rhi->makeThreadLocalNativeContextCurrent()) return;
+	if (!this->pool.trim()) return;
+
+	// QRhiGles2 frees released GL objects in beginOffscreenFrame(), see executeDeferredReleases().
+	QRhiCommandBuffer* commands = nullptr;
+	if (this->rhi->beginOffscreenFrame(&commands) != QRhi::FrameOpSuccess) return;
+	this->rhi->endOffscreenFrame();
 }
 
 bool WaylandRenderControl::eventFilter(QObject* watched, QEvent* event) {
