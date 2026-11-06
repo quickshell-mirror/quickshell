@@ -189,7 +189,9 @@ void SurfaceBufferPool::clear() {
 
 bool SurfaceBufferPool::trim() {
 	auto idle = [this](const auto& buffer) { return buffer.get() != this->current && !buffer->busy; };
-	return std::erase_if(this->buffers, idle) != 0;
+	auto dropped = std::erase_if(this->buffers, idle) != 0;
+	if (this->buffers.empty()) this->depthStencil.reset();
+	return dropped;
 }
 
 bool SurfaceBufferPool::available(QSize size, bool alpha) const {
@@ -290,6 +292,8 @@ void WaylandRenderControl::onBufferReleased() {
 }
 
 void WaylandRenderControl::trimBuffers() {
+	// Hidden before the first frame.
+	if (!this->rhi) return;
 	// WlDmaBufferQSGTexture's destructor needs the current context.
 	if (!this->rhi->makeThreadLocalNativeContextCurrent()) return;
 	if (!this->pool.trim()) return;
@@ -308,6 +312,9 @@ bool WaylandRenderControl::eventFilter(QObject* watched, QEvent* event) {
 	case QEvent::Expose:
 		if (!this->window()->isExposed()) {
 			this->presented = false;
+			// The compositor releases the attached buffer after the unmap; trim it with the rest.
+			this->pool.forget();
+			this->trimTimer.start();
 			break;
 		}
 		// Commit surface state even if renderFrame() finds no damage.

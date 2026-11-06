@@ -59,6 +59,8 @@ public:
 	void clear();
 	// Drops idle buffers other than the last acquired one.
 	bool trim();
+	// Lets trim() drop the last acquired buffer too.
+	void forget() { this->current = nullptr; }
 
 private:
 	static void onRelease(void* data, wl_buffer* buffer);
