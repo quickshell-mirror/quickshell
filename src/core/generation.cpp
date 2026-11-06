@@ -35,10 +35,11 @@ QS_LOGGING_CATEGORY(logScene, "scene");
 
 static QHash<const QQmlEngine*, EngineGeneration*> g_generations; // NOLINT
 
-EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
+EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner, QString vfsPath)
     : rootPath(rootPath)
     , scanner(std::move(scanner))
-    , urlInterceptor(this->rootPath)
+    , vfsPath(std::move(vfsPath))
+    , urlInterceptor(this->rootPath, this->vfsPath)
     , interceptNetFactory(this->rootPath, this->scanner.fileIntercepts)
     , engine(new QQmlEngine()) {
 	g_generations.insert(this->engine, this);
@@ -47,7 +48,12 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	QObject::connect(this->engine, &QQmlEngine::warnings, this, &EngineGeneration::onEngineWarnings);
 
 	this->engine->addUrlInterceptor(&this->urlInterceptor);
-	this->engine->addImportPath("qs:@/");
+
+	if (this->vfsPath.isEmpty()) {
+		this->engine->addImportPath("qs:@/");
+	} else {
+		this->engine->addImportPath(this->vfsPath);
+	}
 
 	this->engine->setNetworkAccessManagerFactory(&this->interceptNetFactory);
 	this->incubationController.initLoop();
@@ -60,7 +66,7 @@ EngineGeneration::EngineGeneration(const QDir& rootPath, QmlScanner scanner)
 	QsEnginePlugin::runConstructGeneration(*this);
 }
 
-EngineGeneration::EngineGeneration(): EngineGeneration(QDir(), QmlScanner()) {}
+EngineGeneration::EngineGeneration(): EngineGeneration(QDir(), QmlScanner(), QString()) {}
 
 EngineGeneration::~EngineGeneration() {
 	for (auto* extension: this->extensions.values()) {
@@ -268,11 +274,9 @@ void EngineGeneration::onDirectoryChanged() {
 	}
 }
 
-void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) {
+void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) const {
 	for (const auto& error: warnings) {
-		const auto& url = error.url();
-		auto rel = url.scheme() == "qs" && url.path().startsWith("@/qs/") ? "@" % url.path().sliced(5)
-		                                                                  : url.toString();
+		auto rel = this->relativeUrl(error.url());
 
 		QString objectName;
 		auto desc = error.description();
@@ -284,6 +288,17 @@ void EngineGeneration::onEngineWarnings(const QList<QQmlError>& warnings) {
 		qCWarning(logScene).noquote().nospace()
 		    << objectName << rel << '[' << error.line() << ':' << error.column() << "]: " << desc;
 	}
+}
+
+QString EngineGeneration::relativeUrl(const QUrl& url) const {
+	if (url.scheme() == "qs" && url.path().startsWith("@/qs/")) return '@' % url.path().sliced(5);
+
+	if (!this->vfsPath.isEmpty() && url.isLocalFile()) {
+		const QString prefix = this->vfsPath % "/qs/";
+		if (url.path().startsWith(prefix)) return '@' % url.path().sliced(prefix.length());
+	}
+
+	return url.toString();
 }
 
 void EngineGeneration::registerExtension(const void* key, EngineGenerationExt* extension) {
