@@ -119,10 +119,19 @@ if (WAYLAND_TOPLEVEL_MANAGEMENT)
 	list(APPEND WAYLAND_MODULES Quickshell.Wayland._ToplevelManagement)
 endif()
 
-if (SCREENCOPY)
+if (SCREENCOPY OR WAYLAND_RENDER_CONTROL)
 	add_subdirectory(buffer)
+endif()
+
+if (SCREENCOPY)
 	add_subdirectory(screencopy)
 	list(APPEND WAYLAND_MODULES Quickshell.Wayland._Screencopy)
+endif()
+
+if (WAYLAND_RENDER_CONTROL)
+	target_sources(quickshell-wayland PRIVATE rendercontrol.cpp)
+	target_link_libraries(quickshell-wayland PRIVATE quickshell-wayland-buffer Qt::QuickPrivate)
+	target_compile_definitions(quickshell-wayland-init PRIVATE QS_WAYLAND_RENDER_CONTROL)
 endif()
 
 

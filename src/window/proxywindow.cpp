@@ -1,4 +1,6 @@
 #include "proxywindow.hpp"
+#include <algorithm>
+#include <array>
 #include <functional>
 
 #include <private/qquickwindow_p.h>
@@ -7,6 +9,7 @@
 #include <qevent.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
+#include <qmetaobject.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
@@ -31,6 +34,7 @@
 #include "../core/region.hpp"
 #include "../core/reload.hpp"
 #include "../debug/lint.hpp"
+#include "rendercontrol.hpp"
 #include "windowinterface.hpp"
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
@@ -620,13 +624,24 @@ namespace {
 QList<std::function<void(QQuickWindow*)>> SCENEGRAPH_INIT_CALLBACKS; // NOLINT
 }
 
-QsQuickWindowBase::QsQuickWindowBase(QWindow* parent): QQuickWindow(parent) {
+QsQuickWindowBase::QsQuickWindowBase(qs::window::WindowRenderControl* renderControl)
+    : QQuickWindow(renderControl)
+    , renderControl(renderControl) {
 	QObject::connect(
 	    this,
 	    &QQuickWindow::sceneGraphInitialized,
 	    this,
 	    &ProxiedWindow::onSceneGraphInitialized
 	);
+
+	if (renderControl) this->installEventFilter(renderControl);
+}
+
+// Destroy the control first; QQuickRenderControl::~QQuickRenderControl() accesses the window.
+QsQuickWindowBase::~QsQuickWindowBase() { delete this->renderControl; }
+
+void QsQuickWindowBase::requestCommit() {
+	if (this->renderControl) this->renderControl->requestCommit();
 }
 
 void QsQuickWindowBase::onSceneGraphInitialized() {
@@ -640,6 +655,22 @@ void QsQuickWindowBase::onSceneGraphInitialized() {
 void QsQuickWindowBase::callOnScenegraphInit(std::function<void(QQuickWindow*)> cb) { // NOLINT
 	SCENEGRAPH_INIT_CALLBACKS.emplaceBack(cb);
 }
+
+bool QsQuickWindowBase::hasRenderReceivers() const {
+	static const auto renderSignals = std::array {
+	    QMetaMethod::fromSignal(&QQuickWindow::beforeRenderPassRecording),
+	    QMetaMethod::fromSignal(&QQuickWindow::afterRenderPassRecording),
+	    QMetaMethod::fromSignal(&QQuickWindow::afterRendering),
+	};
+
+	return std::ranges::any_of(renderSignals, [this](const QMetaMethod& signal) {
+		return this->isSignalConnected(signal);
+	});
+}
+
+ProxiedWindow::ProxiedWindow(ProxyWindowBase* proxy)
+    : QsQuickWindowBase(qs::window::WindowRenderControl::create())
+    , mProxy(proxy) {}
 
 bool ProxiedWindow::event(QEvent* event) {
 	if (event->type() == QEvent::DevicePixelRatioChange) {
@@ -665,6 +696,7 @@ void ProxyWindowBase::onPolished() {
 
 		this->window->setFlag(Qt::WindowTransparentForInput, this->mMask != nullptr && mask.isEmpty());
 		this->window->setMask(mask);
+		this->window->requestCommit();
 
 		this->pendingPolish.inputMask = false;
 	}

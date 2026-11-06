@@ -1,5 +1,6 @@
 ## Other Changes
 
+- Added experimental Wayland rendering with partial damage, enabled by the `RenderControl` pragma.
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
 
 ## Bug Fixes

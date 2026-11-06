@@ -14,6 +14,7 @@
 #include <qquickitem.h>
 #include <qquickwindow.h>
 #include <qsurfaceformat.h>
+#include <qtclasshelpermacros.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -27,6 +28,10 @@
 
 class ProxiedWindow;
 class ProxyWindowContentItem;
+
+namespace qs::window {
+class WindowRenderControl;
+}
 
 // Proxy to an actual window exposing a limited property set with the ability to
 // transfer it to a new window.
@@ -256,21 +261,28 @@ class QsQuickWindowBase: public QQuickWindow {
 	Q_OBJECT;
 
 public:
-	explicit QsQuickWindowBase(QWindow* parent = nullptr);
+	explicit QsQuickWindowBase(qs::window::WindowRenderControl* renderControl = nullptr);
+	~QsQuickWindowBase() override;
+	Q_DISABLE_COPY_MOVE(QsQuickWindowBase);
 
 	static void callOnScenegraphInit(std::function<void(QQuickWindow*)> cb);
 
+	[[nodiscard]] bool hasRenderReceivers() const;
+
+	void requestCommit();
+
 private slots:
 	void onSceneGraphInitialized();
+
+private:
+	qs::window::WindowRenderControl* renderControl = nullptr;
 };
 
 class ProxiedWindow: public QsQuickWindowBase {
 	Q_OBJECT;
 
 public:
-	explicit ProxiedWindow(ProxyWindowBase* proxy, QWindow* parent = nullptr)
-	    : QsQuickWindowBase(parent)
-	    , mProxy(proxy) {}
+	explicit ProxiedWindow(ProxyWindowBase* proxy);
 
 	[[nodiscard]] ProxyWindowBase* proxy() const { return this->mProxy; }
 	void setProxy(ProxyWindowBase* proxy) { this->mProxy = proxy; }
