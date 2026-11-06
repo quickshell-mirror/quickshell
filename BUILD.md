@@ -158,6 +158,7 @@ Specific protocols can also be disabled:
 #### Render Control
 Use quickshell's render control for Wayland windows and report changed frame regions
 to the compositor. Enable it in a shell with `//@ pragma RenderControl`.
+Requires Qt 6.8 or newer and is skipped on older versions.
 
 To disable: `-DWAYLAND_RENDER_CONTROL=OFF`
 

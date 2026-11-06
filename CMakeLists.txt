@@ -148,6 +148,12 @@ if (Qt6_VERSION VERSION_GREATER_EQUAL "6.9.0")
 	find_package(Qt6 REQUIRED COMPONENTS ${QT_PRIVDEPS})
 endif()
 
+# Render control paces animations with QChronoTimer, which was added in Qt 6.8.
+if (WAYLAND_RENDER_CONTROL AND Qt6_VERSION VERSION_LESS "6.8.0")
+	message(STATUS "  Render Control: OFF (Requires Qt 6.8)")
+	set(WAYLAND_RENDER_CONTROL OFF)
+endif()
+
 set(CMAKE_AUTOUIC OFF)
 qt_standard_project_setup(REQUIRES 6.6)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml_modules)
