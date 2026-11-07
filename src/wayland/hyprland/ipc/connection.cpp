@@ -583,12 +583,19 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		if (!ok) return;
 
-		// It happens that Hyprland sends windowtitlev2 events before event
-		// "openwindow" is emitted, so let's preemptively create it
-		auto* toplevel = this->findToplevelByAddress(windowAddress, true);
+		// Hyprland can send windowtitlev2 events before emitting
+		// openwindow. However, the openwindow event will overwrite
+		// the title anyway, so it's not necessary to preemptively
+		// create the toplevel. Doing so can leave stale toplevel
+		// entries if an application sets the title of a window that
+		// it never maps (Steam does this). Hyprland never sends
+		// closewindow for a window which was never mapped, so the
+		// entry will stay in the Hyprland.toplevels when the window
+		// is destroyed
+		auto* toplevel = this->findToplevelByAddress(windowAddress, false);
 		if (!toplevel) {
-			qCWarning(logHyprlandIpc) << "Got windowtitlev2 event for client with address"
-			                          << windowAddress << "which was not previously tracked.";
+			qCDebug(logHyprlandIpc) << "Got windowtitlev2 event for client with address" << windowAddress
+			                        << "which was not previously tracked.";
 			return;
 		}
 
