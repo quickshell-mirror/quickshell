@@ -64,10 +64,15 @@ void PwBindableObject::unref() {
 	if (this->refcount == 0) this->unbind();
 }
 
-void PwBindableObject::registryBind(const char* interface, quint32 version) {
+bool PwBindableObject::registryBind(const char* interface, quint32 version) {
+	// During PwRegistry::reset() the registry proxy is already gone, but object
+	// destruction can re-enter QML and ref objects that have not been destroyed yet.
+	if (this->registry->object == nullptr) return false;
+
 	// NOLINTNEXTLINE
 	auto* object = pw_registry_bind(this->registry->object, this->id, interface, version, 0);
 	this->object = static_cast<pw_proxy*>(object);
+	return this->object != nullptr;
 }
 
 void PwBindableObject::bind() {
