@@ -52,7 +52,7 @@ signals:
 	void destroying(qs::service::pipewire::PwBindableObject* self);
 
 protected:
-	void registryBind(const char* interface, quint32 version);
+	bool registryBind(const char* interface, quint32 version);
 	virtual void bind();
 	void unbind();
 	virtual void bindHooks() {}
@@ -73,7 +73,7 @@ public:
 protected:
 	void bind() override {
 		if (this->object != nullptr) return;
-		this->registryBind(INTERFACE, VERSION);
+		if (!this->registryBind(INTERFACE, VERSION)) return;
 		this->PwBindableObject::bind();
 	}
 
