@@ -1,6 +1,7 @@
 #include "proxywindow.hpp"
 #include <functional>
 
+#include <private/qquickitem_p.h>
 #include <private/qquickwindow_p.h>
 #include <qcontainerfwd.h>
 #include <qcoreevent.h>
@@ -10,6 +11,7 @@
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
+#include <qpointer.h>
 #include <qqmlcontext.h>
 #include <qqmlengine.h>
 #include <qqmlinfo.h>
@@ -173,9 +175,35 @@ void ProxyWindowBase::createWindow() {
 	emit this->windowConnected();
 }
 
+namespace {
+
+// Due to QTBUG-152100, a ShaderEffectSource given its sourceItem before it has a window leaves
+// an extra reference on that item's window. Detaching the content item then leaves the item
+// pointing at the window, and detaching it again after the window is deleted crashes.
+// Release those references before the window goes away.
+void releaseWindowReferences(QQuickItem* item, QQuickWindow* window) {
+	// Releasing a window emits windowChanged, and a handler may delete this item or its children.
+	const QPointer<QQuickItem> guard(item);
+	auto* d = QQuickItemPrivate::get(item);
+	while (guard && d->window == window) d->derefWindow();
+	if (!guard) return;
+
+	QList<QPointer<QQuickItem>> children;
+	for (auto* child: d->childItems) children.append(child);
+
+	for (auto& child: children) {
+		if (child) releaseWindowReferences(child, window);
+	}
+}
+
+} // namespace
+
 void ProxyWindowBase::deleteWindow(bool keepItemOwnership) {
 	if (this->window != nullptr) emit this->windowDestroyed();
-	if (auto* window = this->disownWindow(keepItemOwnership)) window->deleteLater();
+	if (auto* window = this->disownWindow(keepItemOwnership)) {
+		if (!keepItemOwnership) releaseWindowReferences(this->mContentItem, window);
+		window->deleteLater();
+	}
 }
 
 ProxiedWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
