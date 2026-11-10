@@ -43,9 +43,9 @@ void PwBindableObject::init(PwRegistry* registry, quint32 id, quint32 perms) {
 
 void PwBindableObject::safeDestroy() {
 	this->unbind();
+	this->id = 0;
 	qCDebug(logRegistry) << "Destroying object" << this;
 	emit this->destroying(this);
-	this->id = 0;
 	delete this;
 }
 
@@ -65,6 +65,8 @@ void PwBindableObject::unref() {
 }
 
 void PwBindableObject::registryBind(const char* interface, quint32 version) {
+	if (this->registry == nullptr || this->registry->object == nullptr || this->id == 0) return;
+
 	// NOLINTNEXTLINE
 	auto* object = pw_registry_bind(this->registry->object, this->id, interface, version, 0);
 	this->object = static_cast<pw_proxy*>(object);
@@ -141,11 +143,6 @@ void PwRegistry::reset() {
 
 	this->listener.remove();
 
-	if (this->object != nullptr) {
-		pw_proxy_destroy(reinterpret_cast<pw_proxy*>(this->object));
-		this->object = nullptr;
-	}
-
 	for (auto* meta: this->metadata.values()) {
 		meta->safeDestroy();
 	}
@@ -165,6 +162,11 @@ void PwRegistry::reset() {
 		device->safeDestroy();
 	}
 	this->devices.clear();
+
+	if (this->object != nullptr) {
+		pw_proxy_destroy(reinterpret_cast<pw_proxy*>(this->object));
+		this->object = nullptr;
+	}
 
 	this->linkGroups.clear();
 	this->initState = InitState::SendingObjects;
