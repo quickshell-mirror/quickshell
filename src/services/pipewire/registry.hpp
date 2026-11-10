@@ -74,6 +74,7 @@ protected:
 	void bind() override {
 		if (this->object != nullptr) return;
 		this->registryBind(INTERFACE, VERSION);
+		if (this->object == nullptr) return;
 		this->PwBindableObject::bind();
 	}
 
