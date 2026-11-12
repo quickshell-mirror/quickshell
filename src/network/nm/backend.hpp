@@ -44,11 +44,11 @@ public:
 	[[nodiscard]] NMConnectivityState::Enum connectivity() const { return this->bConnectivity; }
 
 signals:
-	void deviceAdded(NetworkDevice* device);
-	void deviceRemoved(NetworkDevice* device);
+	void deviceAdded(qs::network::NetworkDevice* device);
+	void deviceRemoved(qs::network::NetworkDevice* device);
 	void wifiEnabledChanged(bool enabled);
 	void wifiHardwareEnabledChanged(bool enabled);
-	void connectivityStateChanged(NMConnectivityState::Enum state);
+	void connectivityStateChanged(qs::network::NMConnectivityState::Enum state);
 	void connectivityCheckAvailableChanged(bool available);
 	void connectivityCheckEnabledChanged(bool enabled);
 
@@ -64,7 +64,7 @@ private slots:
 	void onServiceUnregistered();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
-	    const NMSettingsMap& settings,
+	    const qs::network::NMSettingsMap& settings,
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& specificObjectPath
 	);

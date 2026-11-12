@@ -4,6 +4,7 @@
 #include <qabstractitemmodeltester.h>
 #include <qcontainerfwd.h>
 #include <qdebug.h>
+#include <qhash.h>
 #include <qjsengine.h>
 #include <qjsvalue.h>
 #include <qlist.h>
@@ -47,6 +48,7 @@ ChangeObserver::ChangeObserver(QAbstractItemModel* model) {
 	QObject::connect(model, &QAbstractItemModel::rowsInserted, this, &ChangeObserver::onInsert);
 	QObject::connect(model, &QAbstractItemModel::rowsRemoved, this, &ChangeObserver::onRemove);
 	QObject::connect(model, &QAbstractItemModel::rowsMoved, this, &ChangeObserver::onMove);
+	QObject::connect(model, &QAbstractItemModel::dataChanged, this, &ChangeObserver::onDataChanged);
 }
 
 void ChangeObserver::onInsert(const QModelIndex& parent, int first, int last) {
@@ -70,6 +72,10 @@ void ChangeObserver::onMove(
 	QCOMPARE(destParent, QModelIndex());
 	this->mOperations
 	    .emplaceBack(ModelOperation::Move, sourceStart, sourceEnd - sourceStart + 1, destStart);
+}
+
+void ChangeObserver::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight) {
+	this->mChanges.emplaceBack(topLeft.row(), bottomRight.row());
 }
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
@@ -186,6 +192,7 @@ void TestScriptModel::unique() {
 	model.setValues(newList);
 	QVERIFY(qjsValueListsEqual(model.values(), newList));
 	QCOMPARE_EQ(observer.operations(), operations);
+	QCOMPARE_EQ(observer.changes(), ChangeList());
 }
 
 void TestScriptModel::structuralEquality() {
@@ -278,6 +285,102 @@ void TestScriptModel::comparisonModes() {
 	observer.clear();
 	model.setValues({makeValue()});
 	QCOMPARE_EQ(observer.operations(), OpList());
+}
+
+void TestScriptModel::dataUpdated_data() {
+	QTest::addColumn<QString>("oldstr");
+	QTest::addColumn<QString>("newstr");
+	QTest::addColumn<OpList>("operations");
+	QTest::addColumn<ChangeList>("changes");
+
+	// Uppercase = same data, Lowercase = data updated
+	QTest::addRow("insert") << "ABC" << "AXBC" << OpList({{ModelOperation::Insert, 1, 1}})
+	                        << ChangeList();
+	QTest::addRow("remove") << "AXBC" << "ABC" << OpList({{ModelOperation::Remove, 1, 1}})
+	                        << ChangeList();
+	QTest::addRow("move") << "ABCD" << "ACBD" << OpList({{ModelOperation::Move, 2, 1, 1}})
+	                      << ChangeList();
+	QTest::addRow("move_range") << "ABCDEF" << "ADEBCF" << OpList({{ModelOperation::Move, 3, 2, 1}})
+	                            << ChangeList();
+	QTest::addRow("state_ok") << "ABCDEFG" << "ABEFXYCDG"
+	                          << OpList({
+	                                 {ModelOperation::Move, 4, 2, 2}, // ABEFCDG
+	                                 {ModelOperation::Insert, 4, 2},  // ABEFXYCDG
+	                             })
+	                          << ChangeList();
+
+	QTest::addRow("insert_all_updated") << "ABC" << "aXbc" << OpList({{ModelOperation::Insert, 1, 1}})
+	                                    << ChangeList({{0, 0}, {2, 3}});
+	QTest::addRow("remove_all_updated")
+	    << "AXBC" << "abc" << OpList({{ModelOperation::Remove, 1, 1}}) << ChangeList({{0, 2}});
+	QTest::addRow("move_all_updated")
+	    << "ABCD" << "acbd" << OpList({{ModelOperation::Move, 2, 1, 1}}) << ChangeList({{0, 3}});
+	QTest::addRow("move_range_all_updated")
+	    << "ABCDEF" << "adebcf" << OpList({{ModelOperation::Move, 3, 2, 1}}) << ChangeList({{0, 5}});
+	QTest::addRow("state_ok_all_updated") << "ABCDEFG" << "abefXYcdg"
+	                                      << OpList({
+	                                             {ModelOperation::Move, 4, 2, 2}, // abefCDG
+	                                             {ModelOperation::Insert, 4, 2},  // abefXYCDG
+	                                         })
+	                                      << ChangeList({{0, 3}, {6, 8}});
+
+	QTest::addRow("update_in_place") << "ABC" << "aBc" << OpList() << ChangeList({{0, 0}, {2, 2}});
+	QTest::addRow("move_updated") << "ABCDEF" << "AdeBCF" << OpList({{ModelOperation::Move, 3, 2, 1}})
+	                              << ChangeList({{1, 2}});
+	QTest::addRow("move_neighbours_updated")
+	    << "ABCD" << "aCbd" << OpList({{ModelOperation::Move, 2, 1, 1}})
+	    << ChangeList({{0, 0}, {2, 3}});
+	QTest::addRow("move_partially_updated")
+	    << "ABCDEF" << "aCdEbf" << OpList({{ModelOperation::Move, 2, 3, 1}})
+	    << ChangeList({{0, 0}, {2, 2}, {4, 5}});
+}
+
+void TestScriptModel::dataUpdated() {
+	QFETCH(const QString, oldstr);
+	QFETCH(const QString, newstr);
+	QFETCH(const OpList, operations);
+	QFETCH(const ChangeList, changes);
+
+	QJSEngine engine;
+	auto version = 0;
+	QHash<QString, QJSValue> oldValues;
+
+	auto strToJsValueList = [&](const QString& str) -> QJSValueList {
+		QJSValueList list;
+
+		for (auto c: str) {
+			auto key = QString(c.toUpper());
+
+			if (c.isUpper() && oldValues.contains(key)) {
+				list.emplace_back(oldValues.value(key));
+				continue;
+			}
+
+			auto value = engine.newObject();
+			value.setProperty("key", key);
+			value.setProperty("version", version);
+			list.emplace_back(value);
+		}
+
+		version++;
+		return list;
+	};
+
+	auto oldList = strToJsValueList(oldstr);
+	for (const auto& value: oldList) oldValues.insert(value.property("key").toString(), value);
+	auto newList = strToJsValueList(newstr);
+
+	ScriptModel model;
+	model.setObjectProp("key");
+	auto modelTester = QAbstractItemModelTester(&model);
+
+	model.setValues(oldList);
+	auto observer = ChangeObserver(&model);
+
+	model.setValues(newList);
+	QVERIFY(qjsValueListsEqual(model.values(), newList));
+	QCOMPARE_EQ(observer.operations(), operations);
+	QCOMPARE_EQ(observer.changes(), changes);
 }
 
 QTEST_MAIN(TestScriptModel);

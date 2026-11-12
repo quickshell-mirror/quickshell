@@ -11,13 +11,15 @@ qt_add_qml_module(quickshell-hyprland-ipc
 	DEPENDENCIES QtQuick
 )
 
-qs_add_module_deps_light(quickshell-hyprland-ipc Quickshell)
+qs_add_module_deps_light(quickshell-hyprland-ipc quickshell-core)
 
 install_qml_module(quickshell-hyprland-ipc)
 
 target_link_libraries(quickshell-hyprland-ipc PRIVATE Qt::Quick quickshell-core)
 
 if (WAYLAND_TOPLEVEL_MANAGEMENT)
+	qs_add_module_deps_light(quickshell-hyprland-ipc quickshell-wayland-toplevel-management)
+
 	target_sources(quickshell-hyprland-ipc PRIVATE
 		toplevel_mapping.cpp
 		hyprland_toplevel.cpp

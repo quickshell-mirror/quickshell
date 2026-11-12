@@ -57,7 +57,7 @@ public:
 	[[nodiscard]] QBindable<bool> bindableActive() { return &this->bActive; }
 	[[nodiscard]] QBindable<bool> bindableFocused() { return &this->bFocused; }
 	[[nodiscard]] QBindable<bool> bindableUrgent() { return &this->bUrgent; }
-	[[nodiscard]] QBindable<I3Monitor*> bindableMonitor() const { return &this->bMonitor; }
+	[[nodiscard]] QBindable<I3Monitor*> bindableMonitor() const;
 	[[nodiscard]] QVariantMap lastIpcObject() const;
 
 	void updateFromObject(const QVariantMap& obj);

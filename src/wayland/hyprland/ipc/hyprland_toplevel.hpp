@@ -28,7 +28,7 @@ class HyprlandToplevel: public QObject {
 	Q_PROPERTY(QString address READ addressStr NOTIFY addressChanged);
 	/// The toplevel handle, exposing the Hyprland toplevel.
 	/// Will be null until the address is reported
-	Q_PROPERTY(HyprlandToplevel* handle READ hyprlandHandle NOTIFY hyprlandHandleChanged);
+	Q_PROPERTY(qs::hyprland::ipc::HyprlandToplevel* handle READ hyprlandHandle NOTIFY hyprlandHandleChanged);
 	/// The wayland toplevel handle. Will be null intil the address is reported
 	Q_PROPERTY(qs::wayland::toplevel::Toplevel* wayland READ waylandHandle NOTIFY waylandHandleChanged);
 	/// The title of the toplevel
@@ -81,10 +81,10 @@ public:
 		return &this->bLastIpcObject;
 	};
 
-	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableWorkspace() { return &this->bWorkspace; }
+	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableWorkspace();
 	void setWorkspace(HyprlandWorkspace* workspace);
 
-	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor() { return &this->bMonitor; }
+	[[nodiscard]] QBindable<HyprlandMonitor*> bindableMonitor();
 
 signals:
 	void addressChanged();

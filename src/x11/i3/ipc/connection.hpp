@@ -80,7 +80,7 @@ public:
 
 signals:
 	void connected();
-	void rawEvent(I3IpcEvent* event);
+	void rawEvent(qs::i3::ipc::I3IpcEvent* event);
 
 protected slots:
 	void eventSocketError(QLocalSocket::LocalSocketError error) const;

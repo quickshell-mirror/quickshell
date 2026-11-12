@@ -64,25 +64,25 @@ signals:
 	void loaded();
 	void activateConnection(const QDBusObjectPath& connPath, const QDBusObjectPath& devPath);
 	void addAndActivateConnection(
-	    const NMSettingsMap& settings,
+	    const qs::network::NMSettingsMap& settings,
 	    const QDBusObjectPath& devPath,
 	    const QDBusObjectPath& specificObjectPath
 	);
-	void networkAdded(Network* net);
-	void networkRemoved(Network* net);
-	void settingsLoaded(NMSettings* settings);
-	void settingsRemoved(NMSettings* settings);
+	void networkAdded(qs::network::Network* net);
+	void networkRemoved(qs::network::Network* net);
+	void settingsLoaded(qs::network::NMSettings* settings);
+	void settingsRemoved(qs::network::NMSettings* settings);
 	void availableSettingsPathsChanged(QList<QDBusObjectPath> paths);
 	void activeConnectionPathChanged(const QDBusObjectPath& connection);
-	void activeConnectionLoaded(NMActiveConnection* active);
+	void activeConnectionLoaded(qs::network::NMActiveConnection* active);
 	void interfaceChanged(const QString& interface);
 	void hwAddressChanged(const QString& hwAddress);
 	void managedChanged(bool managed);
-	void stateChanged(NMDeviceState::Enum state);
-	void stateReasonChanged(NMDeviceStateReason::Enum reason);
-	void lastFailReasonChanged(NMDeviceStateReason::Enum reason);
+	void stateChanged(qs::network::NMDeviceState::Enum state);
+	void stateReasonChanged(qs::network::NMDeviceStateReason::Enum reason);
+	void lastFailReasonChanged(qs::network::NMDeviceStateReason::Enum reason);
 	void autoconnectChanged(bool autoconnect);
-	void interfaceFlagsChanged(NMDeviceInterfaceFlags::Enum flags);
+	void interfaceFlagsChanged(qs::network::NMDeviceInterfaceFlags::Enum flags);
 
 public slots:
 	void disconnect();

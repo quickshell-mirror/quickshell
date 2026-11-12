@@ -52,7 +52,7 @@ public:
 	Q_INVOKABLE static void dispatch(const QString& request);
 
 	/// Get the HyprlandMonitor object that corresponds to a quickshell screen.
-	Q_INVOKABLE static HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
+	Q_INVOKABLE static qs::hyprland::ipc::HyprlandMonitor* monitorFor(QuickshellScreenInfo* screen);
 
 	/// Refresh monitor information.
 	///

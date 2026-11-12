@@ -32,8 +32,8 @@ signals:
 	void speedChanged(quint32 speed);
 
 private slots:
-	void onSettingsLoaded(NMSettings* settings);
-	void onActiveConnectionLoaded(NMActiveConnection* active);
+	void onSettingsLoaded(qs::network::NMSettings* settings);
+	void onActiveConnectionLoaded(qs::network::NMActiveConnection* active);
 
 private:
 	void initWired();

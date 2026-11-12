@@ -25,7 +25,7 @@ class NetworkDevice: public QObject {
 	/// When the device type is `Wifi`, the device object is a @@WifiDevice.
 	/// When the device type is `Wired`, the device object is a @@WiredDevice.
 	/// connection and scanning.
-	Q_PROPERTY(DeviceType::Enum type READ type CONSTANT);
+	Q_PROPERTY(qs::network::DeviceType::Enum type READ type CONSTANT);
 	/// The name of the device's control interface.
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged BINDABLE bindableName);
 	/// A list of available or connected networks for this device.

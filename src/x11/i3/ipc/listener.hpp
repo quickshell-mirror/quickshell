@@ -52,7 +52,7 @@ public:
 	void setSubscriptions(QList<QString> subscriptions);
 
 signals:
-	void ipcEvent(I3IpcEvent* event);
+	void ipcEvent(qs::i3::ipc::I3IpcEvent* event);
 	void subscriptionsChanged();
 
 private:

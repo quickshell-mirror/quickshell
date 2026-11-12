@@ -34,7 +34,7 @@ qt_add_qml_module(quickshell-service-upower
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-upower Quickshell)
+qs_add_module_deps_light(quickshell-service-upower quickshell-core)
 
 install_qml_module(quickshell-service-upower)
 

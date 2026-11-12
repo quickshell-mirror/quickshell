@@ -45,12 +45,12 @@ class AuthFlow
 	/// Each identity may be a user or a group. You may select any of them to
 	/// authenticate by setting @@selectedIdentity. By default, the first identity
 	/// in the list is selected.
-	Q_PROPERTY(QList<Identity*> identities READ identities CONSTANT);
+	Q_PROPERTY(QList<qs::service::polkit::Identity*> identities READ identities CONSTANT);
 
 	/// The identity that will be used to authenticate.
 	///
 	/// Changing this will abort any ongoing authentication conversations and start a new one.
-	Q_PROPERTY(Identity* selectedIdentity READ default WRITE setSelectedIdentity NOTIFY selectedIdentityChanged BINDABLE selectedIdentity);
+	Q_PROPERTY(qs::service::polkit::Identity* selectedIdentity READ default WRITE setSelectedIdentity NOTIFY selectedIdentityChanged BINDABLE selectedIdentity);
 
 	/// Indicates that a response from the user is required from the user,
 	/// typically a password.

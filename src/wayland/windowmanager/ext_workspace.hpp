@@ -33,10 +33,10 @@ public:
 
 signals:
 	void serverCommit();
-	void workspaceCreated(Workspace* workspace);
-	void workspaceDestroyed(Workspace* workspace);
-	void groupCreated(WorkspaceGroup* group);
-	void groupDestroyed(WorkspaceGroup* group);
+	void workspaceCreated(qs::wayland::workspace::Workspace* workspace);
+	void workspaceDestroyed(qs::wayland::workspace::Workspace* workspace);
+	void groupCreated(qs::wayland::workspace::WorkspaceGroup* group);
+	void groupDestroyed(qs::wayland::workspace::WorkspaceGroup* group);
 
 protected:
 	void ext_workspace_manager_v1_workspace_group(::ext_workspace_group_handle_v1* handle) override;

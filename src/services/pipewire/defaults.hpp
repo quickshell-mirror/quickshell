@@ -41,9 +41,9 @@ signals:
 	void defaultConfiguredSourceNameChanged();
 
 private slots:
-	void onMetadataAdded(PwMetadata* metadata);
+	void onMetadataAdded(qs::service::pipewire::PwMetadata* metadata);
 	void onMetadataProperty(const char* key, const char* type, const char* value);
-	void onNodeAdded(PwNode* node);
+	void onNodeAdded(qs::service::pipewire::PwNode* node);
 	void onDefaultSinkDestroyed();
 	void onDefaultSourceDestroyed();
 	void onDefaultConfiguredSinkDestroyed();

@@ -61,7 +61,7 @@ public:
 
 signals:
 	void loaded();
-	void settingsChanged(NMSettingsMap settings);
+	void settingsChanged(qs::network::NMSettingsMap settings);
 	void idChanged(QString id);
 	void uuidChanged(QString uuid);
 

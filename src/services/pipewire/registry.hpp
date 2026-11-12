@@ -49,7 +49,7 @@ public:
 
 signals:
 	// goes with safeDestroy
-	void destroying(PwBindableObject* self);
+	void destroying(qs::service::pipewire::PwBindableObject* self);
 
 protected:
 	void registryBind(const char* interface, quint32 version);
@@ -132,10 +132,10 @@ public:
 	[[nodiscard]] PwNode* findNodeByName(QStringView name) const;
 
 signals:
-	void nodeAdded(PwNode* node);
-	void linkAdded(PwLink* link);
-	void linkGroupAdded(PwLinkGroup* group);
-	void metadataAdded(PwMetadata* metadata);
+	void nodeAdded(qs::service::pipewire::PwNode* node);
+	void linkAdded(qs::service::pipewire::PwLink* link);
+	void linkGroupAdded(qs::service::pipewire::PwLinkGroup* group);
+	void metadataAdded(qs::service::pipewire::PwMetadata* metadata);
 	void initialized();
 	void cleared();
 

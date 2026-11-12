@@ -158,11 +158,11 @@ signals:
 	void readyChanged();
 
 private slots:
-	void onNodeAdded(PwNode* node);
+	void onNodeAdded(qs::service::pipewire::PwNode* node);
 	void onNodeRemoved(QObject* object);
-	void onLinkAdded(PwLink* link);
+	void onLinkAdded(qs::service::pipewire::PwLink* link);
 	void onLinkRemoved(QObject* object);
-	void onLinkGroupAdded(PwLinkGroup* group);
+	void onLinkGroupAdded(qs::service::pipewire::PwLinkGroup* group);
 	void onLinkGroupRemoved(QObject* object);
 
 private:
@@ -199,7 +199,7 @@ signals:
 
 private slots:
 	void onNodeDestroyed();
-	void onLinkGroupCreated(PwLinkGroup* linkGroup);
+	void onLinkGroupCreated(qs::service::pipewire::PwLinkGroup* linkGroup);
 	void onLinkGroupDestroyed(QObject* object);
 
 private:
@@ -361,7 +361,7 @@ class PwLinkIface: public PwObjectIface {
 	/// The current state of the link.
 	///
 	/// > [!WARNING] This property is invalid unless the node is bound using @@PwObjectTracker.
-	Q_PROPERTY(PwLinkState::Enum state READ state NOTIFY stateChanged);
+	Q_PROPERTY(qs::service::pipewire::PwLinkState::Enum state READ state NOTIFY stateChanged);
 	QML_NAMED_ELEMENT(PwLink);
 	QML_UNCREATABLE("PwLinks cannot be created directly");
 

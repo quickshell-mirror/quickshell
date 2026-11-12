@@ -66,7 +66,7 @@ class BluezQml: public QObject {
 	QML_SINGLETON;
 	// clang-format off
 	/// The default bluetooth adapter. Usually there is only one.
-	Q_PROPERTY(BluetoothAdapter* defaultAdapter READ default NOTIFY defaultAdapterChanged BINDABLE bindableDefaultAdapter);
+	Q_PROPERTY(qs::bluetooth::BluetoothAdapter* defaultAdapter READ default NOTIFY defaultAdapterChanged BINDABLE bindableDefaultAdapter);
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::bluetooth::BluetoothAdapter>*);
 	/// A list of all bluetooth adapters. See @@defaultAdapter for the default.
 	Q_PROPERTY(UntypedObjectModel* adapters READ adapters CONSTANT);

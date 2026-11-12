@@ -43,13 +43,13 @@ public:
 	Q_INVOKABLE static void refreshWorkspaces();
 
 	/// Find an I3Workspace using its name, returns null if the workspace doesn't exist.
-	Q_INVOKABLE static I3Workspace* findWorkspaceByName(const QString& name);
+	Q_INVOKABLE static qs::i3::ipc::I3Workspace* findWorkspaceByName(const QString& name);
 
 	/// Find an I3Monitor using its name, returns null if the monitor doesn't exist.
-	Q_INVOKABLE static I3Monitor* findMonitorByName(const QString& name);
+	Q_INVOKABLE static qs::i3::ipc::I3Monitor* findMonitorByName(const QString& name);
 
 	/// Return the i3/Sway monitor associated with `screen`
-	Q_INVOKABLE static I3Monitor* monitorFor(QuickshellScreenInfo* screen);
+	Q_INVOKABLE static qs::i3::ipc::I3Monitor* monitorFor(QuickshellScreenInfo* screen);
 
 	/// The path to the I3 or Sway socket currently being used
 	[[nodiscard]] static QString socketPath();
@@ -67,7 +67,7 @@ public:
 	[[nodiscard]] static QBindable<I3Monitor*> bindableFocusedMonitor();
 
 signals:
-	void rawEvent(I3IpcEvent* event);
+	void rawEvent(qs::i3::ipc::I3IpcEvent* event);
 	void connected();
 	void focusedWorkspaceChanged();
 	void focusedMonitorChanged();

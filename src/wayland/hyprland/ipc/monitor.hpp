@@ -54,9 +54,7 @@ public:
 	[[nodiscard]] QBindable<qint32> bindableHeight() { return &this->bHeight; }
 	[[nodiscard]] QBindable<qreal> bindableScale() { return &this->bScale; }
 
-	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableActiveWorkspace() const {
-		return &this->bActiveWorkspace;
-	}
+	[[nodiscard]] QBindable<HyprlandWorkspace*> bindableActiveWorkspace() const;
 
 	[[nodiscard]] QBindable<bool> bindableFocused() const { return &this->bFocused; }
 

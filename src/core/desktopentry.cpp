@@ -158,22 +158,23 @@ ParsedDesktopEntryData DesktopEntry::parseText(const QString& id, const QString&
 	};
 
 	for (auto& line: text.split(u'\n', Qt::SkipEmptyParts)) {
-		if (line.startsWith(u'#')) continue;
+		const auto trimmed = line.trimmed();
+		if (trimmed.isEmpty() || trimmed.startsWith(u'#')) continue;
 
-		if (line.startsWith(u'[') && line.endsWith(u']')) {
+		if (trimmed.startsWith(u'[') && trimmed.endsWith(u']')) {
 			finishCategory();
-			groupName = line.sliced(1, line.length() - 2);
+			groupName = trimmed.sliced(1, trimmed.length() - 2);
 			continue;
 		}
 
-		auto splitIdx = line.indexOf(u'=');
+		auto splitIdx = trimmed.indexOf(u'=');
 		if (splitIdx == -1) {
 			qCWarning(logDesktopEntry) << "Encountered invalid line in desktop entry (no =)" << line;
 			continue;
 		}
 
-		auto key = line.sliced(0, splitIdx);
-		const auto& value = line.sliced(splitIdx + 1);
+		auto key = trimmed.sliced(0, splitIdx);
+		const auto& value = trimmed.sliced(splitIdx + 1);
 
 		auto localeIdx = key.indexOf('[');
 		Locale locale;

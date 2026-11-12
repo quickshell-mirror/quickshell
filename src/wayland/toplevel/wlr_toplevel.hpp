@@ -94,7 +94,7 @@ public:
 	static ToplevelManager* instance();
 
 signals:
-	void toplevelReady(ToplevelHandle* toplevel);
+	void toplevelReady(qs::wayland::toplevel::wlr::ToplevelHandle* toplevel);
 
 protected:
 	explicit ToplevelManager();

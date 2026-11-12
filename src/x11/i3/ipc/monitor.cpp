@@ -12,6 +12,10 @@
 
 namespace qs::i3::ipc {
 
+QBindable<I3Workspace*> I3Monitor::bindableActiveWorkspace() const {
+	return &this->bActiveWorkspace;
+}
+
 I3Monitor::I3Monitor(I3IpcController* ipc): QObject(ipc), ipc(ipc) {
 	// clang-format off
 	this->bFocused.setBinding([this]() { return this->ipc->bindableFocusedMonitor().value() == this; });

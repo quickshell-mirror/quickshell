@@ -39,7 +39,8 @@ public:
 
 signals:
 	void deviceReady();
-	void routeVolumesChanged(qint32 routeDevice, const PwVolumeProps& volumeProps);
+	void
+	routeVolumesChanged(qint32 routeDevice, const qs::service::pipewire::PwVolumeProps& volumeProps);
 
 private slots:
 	void polled();

@@ -22,7 +22,7 @@ qt_add_qml_module(quickshell-service-notifications
 	VERSION 0.1
 )
 
-qs_add_module_deps_light(quickshell-service-notifications Quickshell)
+qs_add_module_deps_light(quickshell-service-notifications quickshell-core)
 install_qml_module(quickshell-service-notifications)
 
 target_link_libraries(quickshell-service-notifications PRIVATE Qt::Quick Qt::DBus)

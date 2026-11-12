@@ -27,7 +27,7 @@ public:
 		Full = 4,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkConnectivity::Enum conn);
+	Q_INVOKABLE static QString toString(qs::network::NetworkConnectivity::Enum conn);
 };
 
 ///! The backend supplying the Network service.
@@ -42,7 +42,7 @@ public:
 		NetworkManager = 1,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(NetworkBackendType::Enum type);
+	Q_INVOKABLE static QString toString(qs::network::NetworkBackendType::Enum type);
 };
 
 ///! The connection state of a device or network.
@@ -60,7 +60,7 @@ public:
 		Disconnected = 4,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(ConnectionState::Enum state);
+	Q_INVOKABLE static QString toString(qs::network::ConnectionState::Enum state);
 };
 
 ///! The reason a connection failed.
@@ -85,7 +85,7 @@ public:
 		WifiNetworkLost = 5,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(ConnectionFailReason::Enum reason);
+	Q_INVOKABLE static QString toString(qs::network::ConnectionFailReason::Enum reason);
 };
 
 ///! Type of a @@NetworkDevice.
@@ -101,7 +101,7 @@ public:
 		Wired = 2,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(DeviceType::Enum type);
+	Q_INVOKABLE static QString toString(qs::network::DeviceType::Enum type);
 };
 
 ///! The security type of a @@WifiNetwork.
@@ -126,7 +126,7 @@ public:
 		Unknown = 11,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(WifiSecurityType::Enum type);
+	Q_INVOKABLE static QString toString(qs::network::WifiSecurityType::Enum type);
 };
 
 ///! The 802.11 mode of a @@WifiDevice.
@@ -149,7 +149,7 @@ public:
 		Unknown = 4,
 	};
 	Q_ENUM(Enum);
-	Q_INVOKABLE static QString toString(WifiDeviceMode::Enum mode);
+	Q_INVOKABLE static QString toString(qs::network::WifiDeviceMode::Enum mode);
 };
 
 } // namespace qs::network

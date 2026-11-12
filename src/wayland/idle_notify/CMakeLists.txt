@@ -11,7 +11,7 @@ qt_add_qml_module(quickshell-wayland-idle-notify
 
 install_qml_module(quickshell-wayland-idle-notify)
 
-qs_add_module_deps_light(quickshell-wayland-idle-notify Quickshell)
+qs_add_module_deps_light(quickshell-wayland-idle-notify quickshell-core)
 
 wl_proto(wlp-idle-notify ext-idle-notify-v1 "${WAYLAND_PROTOCOLS}/staging/ext-idle-notify")
 

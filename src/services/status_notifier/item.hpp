@@ -169,6 +169,8 @@ private slots:
 	void onGetAllFailed() const;
 
 private:
+	void activateWithToken(const QString& token);
+	void activateWithoutToken();
 	void updateMenuState();
 	void updatePixmapIndex();
 	void onMenuPathChanged();

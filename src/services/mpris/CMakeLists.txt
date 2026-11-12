@@ -33,7 +33,7 @@ qt_add_qml_module(quickshell-service-mpris
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-mpris Quickshell)
+qs_add_module_deps_light(quickshell-service-mpris quickshell-core)
 
 install_qml_module(quickshell-service-mpris)
 

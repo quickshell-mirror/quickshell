@@ -44,7 +44,7 @@ qt_add_qml_module(quickshell-service-statusnotifier
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-service-statusnotifier Quickshell Quickshell.DBusMenu)
+qs_add_module_deps_light(quickshell-service-statusnotifier quickshell-core quickshell-dbusmenu)
 
 install_qml_module(quickshell-service-statusnotifier)
 
@@ -52,3 +52,10 @@ target_link_libraries(quickshell-service-statusnotifier PRIVATE Qt::Quick Qt::DB
 target_link_libraries(quickshell PRIVATE quickshell-service-statusnotifierplugin)
 
 qs_module_pch(quickshell-service-statusnotifier SET dbus)
+
+if (WAYLAND)
+    target_compile_definitions(quickshell-service-statusnotifier PRIVATE QS_WAYLAND)
+    target_link_libraries(quickshell-service-statusnotifier PRIVATE
+        quickshell-wayland-activation
+    )
+endif()

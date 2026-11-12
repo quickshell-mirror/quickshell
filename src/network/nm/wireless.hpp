@@ -51,20 +51,20 @@ public:
 	[[nodiscard]] WifiDevice* frontend() override { return this->mFrontend; };
 
 signals:
-	void accessPointLoaded(NMAccessPoint* ap);
-	void accessPointRemoved(NMAccessPoint* ap);
+	void accessPointLoaded(qs::network::NMAccessPoint* ap);
+	void accessPointRemoved(qs::network::NMAccessPoint* ap);
 	void lastScanChanged(QDateTime lastScan);
 	void scanningChanged(bool scanning);
-	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
+	void capabilitiesChanged(qs::network::NMWirelessCapabilities::Enum caps);
 	void activeAccessPointChanged(const QDBusObjectPath& path);
-	void modeChanged(NM80211Mode::Enum mode);
+	void modeChanged(qs::network::NM80211Mode::Enum mode);
 
 private slots:
 	void onAccessPointAdded(const QDBusObjectPath& path);
 	void onAccessPointRemoved(const QDBusObjectPath& path);
-	void onAccessPointLoaded(NMAccessPoint* ap);
-	void onSettingsLoaded(NMSettings* settings);
-	void onActiveConnectionLoaded(NMActiveConnection* active);
+	void onAccessPointLoaded(qs::network::NMAccessPoint* ap);
+	void onSettingsLoaded(qs::network::NMSettings* settings);
+	void onActiveConnectionLoaded(qs::network::NMActiveConnection* active);
 	void onScanTimeout();
 	void onScanningChanged(bool scanning);
 

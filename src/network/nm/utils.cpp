@@ -20,7 +20,7 @@ namespace qs::network {
 
 WifiSecurityType::Enum securityFromSettingsMap(const NMSettingsMap& settings) {
 	const QString mapName = "802-11-wireless-security";
-	if (!settings.contains(mapName)) return WifiSecurityType::Unknown;
+	if (!settings.contains(mapName)) return WifiSecurityType::Open;
 	const QVariantMap& security = settings.value(mapName);
 	if (security.isEmpty()) return WifiSecurityType::Open;
 

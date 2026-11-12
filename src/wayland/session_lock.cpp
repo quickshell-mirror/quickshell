@@ -179,8 +179,9 @@ void WlSessionLock::unlock() {
 
 	this->surfaces.clear();
 
+	auto wasLocked = this->isLocked();
 	if (this->manager) this->manager->unlock();
-	if (this->isLocked()) emit this->lockStateChanged();
+	if (wasLocked) emit this->lockStateChanged();
 }
 
 void WlSessionLock::onScreensChanged() {

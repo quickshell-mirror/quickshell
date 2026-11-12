@@ -209,7 +209,8 @@ signals:
 
 private slots:
 	void onDeviceReady();
-	void onDeviceVolumesChanged(qint32 routeDevice, const PwVolumeProps& props);
+	void
+	onDeviceVolumesChanged(qint32 routeDevice, const qs::service::pipewire::PwVolumeProps& props);
 
 private:
 	void updateVolumeProps(const PwVolumeProps& volumeProps);

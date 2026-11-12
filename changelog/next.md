@@ -1,9 +1,14 @@
+## Other Changes
+
+- `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
+
 ## Bug Fixes
 
-- Fixed main process crashes on pam subprocess misbehavior.
-- Fixed crashes when attempting to create or modify session locks reentrantly.
-- Fixed networking state breaking after restarting NetworkManager.
-- Fixed accessibility information not being provided for Quickshell windows.
-- Fixed `WlSessionLockSurface.screen` being null and never updating with a real screen on monitor plug.
-- Fixed `NotificationAction.text` not accepting text updates.
-- Fixed `PwNodePeakMonitor` never reporting a peak for nodes without speaker positions, such as pro-audio profile devices.
+- Fixed ScriptModel not sending role updates on changed data that compares equal by key or structure.
+- Fixed Hyprland workspaces keeping their old id after Hyprland changes it.
+- Fixed desktop entries being parsed incorrectly with trailing whitespace or CRLF line endings.
+- Fixed `WlSessionLock.locked` changes not being emitted on unlock.
+- Fixed a crash when unplugging a screen being captured by ScreencopyView or trying to capture the fallback screen.
+- Fixed most broken qml types in qmlls/qmllint for Qt 6.12.
+- Fixed missing thread entry for Pipewire event loop resulting in Pipewire connection failing.
+- Fixed Greetd treating responses for a cancelled session as responses for the next one.

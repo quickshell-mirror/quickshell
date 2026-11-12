@@ -29,9 +29,9 @@ public:
 	static StatusNotifierHost* instance();
 
 signals:
-	void itemRegistered(StatusNotifierItem* item);
-	void itemReady(StatusNotifierItem* item);
-	void itemUnregistered(StatusNotifierItem* item);
+	void itemRegistered(qs::service::sni::StatusNotifierItem* item);
+	void itemReady(qs::service::sni::StatusNotifierItem* item);
+	void itemUnregistered(qs::service::sni::StatusNotifierItem* item);
 
 private slots:
 	void onWatcherRegistered();

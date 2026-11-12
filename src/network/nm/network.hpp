@@ -41,16 +41,18 @@ public:
 signals:
 	void requestDisconnect();
 	void requestActivateConnection(const QString& settingsPath);
-	void
-	requestAddAndActivateConnection(const NMSettingsMap& settingsMap, const QString& specificObject);
+	void requestAddAndActivateConnection(
+	    const qs::network::NMSettingsMap& settingsMap,
+	    const QString& specificObject
+	);
 
-	void settingsAdded(NMSettings* settings);
-	void settingsRemoved(NMSettings* settings);
-	void stateChanged(NMConnectionState::Enum state);
+	void settingsAdded(qs::network::NMSettings* settings);
+	void settingsRemoved(qs::network::NMSettings* settings);
+	void stateChanged(qs::network::NMConnectionState::Enum state);
 	void knownChanged(bool known);
-	void reasonChanged(NMConnectionStateReason::Enum reason);
-	void deviceFailReasonChanged(NMDeviceStateReason::Enum reason);
-	void referenceSettingsChanged(NMSettings* settings);
+	void reasonChanged(qs::network::NMConnectionStateReason::Enum reason);
+	void deviceFailReasonChanged(qs::network::NMDeviceStateReason::Enum reason);
+	void referenceSettingsChanged(qs::network::NMSettings* settings);
 	void visibilityChanged(bool visible);
 
 protected:
@@ -113,11 +115,11 @@ public:
 signals:
 	void disappeared();
 	void signalStrengthChanged(quint8 signal);
-	void securityChanged(WifiSecurityType::Enum security);
+	void securityChanged(qs::network::WifiSecurityType::Enum security);
 	void activeApPathChanged(QString path);
-	void referenceApChanged(NMAccessPoint* ap);
-	void capabilitiesChanged(NMWirelessCapabilities::Enum caps);
-	void apRemoved(NMAccessPoint* ap);
+	void referenceApChanged(qs::network::NMAccessPoint* ap);
+	void capabilitiesChanged(qs::network::NMWirelessCapabilities::Enum caps);
+	void apRemoved(qs::network::NMAccessPoint* ap);
 
 private:
 	void updateReferenceAp();

@@ -11,7 +11,7 @@ qt_add_qml_module(quickshell-wayland-idle-inhibit
 
 install_qml_module(quickshell-wayland-idle-inhibit)
 
-qs_add_module_deps_light(quickshell-wayland-idle-inhibit Quickshell)
+qs_add_module_deps_light(quickshell-wayland-idle-inhibit quickshell-core)
 
 wl_proto(wlp-idle-inhibit idle-inhibit-unstable-v1 "${WAYLAND_PROTOCOLS}/unstable/idle-inhibit")
 

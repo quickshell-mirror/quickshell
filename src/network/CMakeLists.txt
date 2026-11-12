@@ -19,7 +19,7 @@ qt_add_qml_module(quickshell-network
 	DEPENDENCIES QtQml
 )
 
-qs_add_module_deps_light(quickshell-network Quickshell)
+qs_add_module_deps_light(quickshell-network quickshell-core)
 install_qml_module(quickshell-network)
 target_link_libraries(quickshell-network PRIVATE quickshell-network-nm Qt::Qml Qt::DBus)
 qs_add_link_dependencies(quickshell-network quickshell-dbus)

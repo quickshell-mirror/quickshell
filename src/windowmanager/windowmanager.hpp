@@ -23,7 +23,7 @@ public:
 	static void setProvider(std::function<WindowManager*()> provider);
 	static WindowManager* instance();
 
-	Q_INVOKABLE ScreenProjection* screenProjection(QuickshellScreenInfo* screen);
+	Q_INVOKABLE qs::wm::ScreenProjection* screenProjection(QuickshellScreenInfo* screen);
 
 	[[nodiscard]] QBindable<QList<Windowset*>> bindableWindowsets() const {
 		return &this->bWindowsets;
@@ -64,10 +64,10 @@ class WindowManagerQml: public QObject {
 	QML_SINGLETON;
 	// clang-format off
 	/// All windowsets tracked by the WM across all projections.
-	Q_PROPERTY(QList<Windowset*> windowsets READ default BINDABLE bindableWindowsets);
+	Q_PROPERTY(QList<qs::wm::Windowset*> windowsets READ default BINDABLE bindableWindowsets);
 	/// All windowset projections tracked by the WM. Does not include
 	/// internal projections from @@screenProjection().
-	Q_PROPERTY(QList<WindowsetProjection*> windowsetProjections READ default BINDABLE bindableWindowsetProjections);
+	Q_PROPERTY(QList<qs::wm::WindowsetProjection*> windowsetProjections READ default BINDABLE bindableWindowsetProjections);
 	// clang-format on
 
 public:
@@ -75,7 +75,7 @@ public:
 	/// windowsets on that screen, regardless of the WM-specified projection. Depending on
 	/// how the WM lays out its actual projections, multiple ScreenProjections may contain
 	/// the same Windowsets.
-	Q_INVOKABLE static ScreenProjection* screenProjection(QuickshellScreenInfo* screen) {
+	Q_INVOKABLE static qs::wm::ScreenProjection* screenProjection(QuickshellScreenInfo* screen) {
 		return WindowManager::instance()->screenProjection(screen);
 	}
 

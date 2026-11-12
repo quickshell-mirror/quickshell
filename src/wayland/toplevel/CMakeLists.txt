@@ -10,7 +10,8 @@ qt_add_qml_module(quickshell-wayland-toplevel-management
 )
 
 qs_add_module_deps_light(quickshell-wayland-toplevel-management
-	Quickshell Quickshell.Wayland
+	quickshell-core
+	URIS Quickshell.Wayland
 )
 
 install_qml_module(quickshell-wayland-toplevel-management)

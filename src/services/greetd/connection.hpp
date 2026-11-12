@@ -74,6 +74,8 @@ private:
 	bool mExitAfterLaunch = false;
 	QString mMessage;
 	bool mResponseRequired = false;
+	quint32 mPendingResponses = 0;
+	quint32 mCancelledResponses = 0;
 	QString mUser;
 	QLocalSocket socket;
 	StreamReader reader;

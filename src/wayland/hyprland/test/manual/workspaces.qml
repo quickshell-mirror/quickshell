@@ -16,7 +16,7 @@ FloatingWindow {
 			color: "lightgray"
 
 			ColumnLayout {
-				Text { text: `Workspace ${wsDelegate.modelData.id} on ${wsDelegate.modelData.monitor} | urgent: ${wsDelegate.modelData.urgent}`}
+				Text { text: `Workspace (addr ${wsDelegate.modelData.address}; id ${wsDelegate.modelData.id}; name: ${wsDelegate.modelData.name}) on ${wsDelegate.modelData.monitor} | urgent: ${wsDelegate.modelData.urgent}`}
 
 				ColumnLayout {
 					Repeater {
