@@ -155,7 +155,16 @@ void PwCore::onError(void* data, quint32 id, qint32 /*seq*/, qint32 res, const c
 		return;
 	}
 
-	qCWarning(logLoop) << "Pipewire error on object" << id << "with code" << res << message;
+	// Only errors on the core object itself concern the connection; the protocol reports a
+	// lost connection that way. An error on any other id belongs to that one object, such
+	// as a node that failed to change state, and the connection is still fine. Tearing the
+	// whole registry down for it destroys every node and link the shell is showing.
+	if (id != PW_ID_CORE) {
+		qCWarning(logLoop) << "Pipewire error on object" << id << "with code" << res << message;
+		return;
+	}
+
+	qCWarning(logLoop) << "Pipewire core error with code" << res << message;
 
 	emit self->fatalError();
 }
