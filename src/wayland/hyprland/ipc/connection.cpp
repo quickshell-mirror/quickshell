@@ -493,6 +493,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		if (!ok) return;
 
+		this->closedDuringToplevelRequest.remove(windowAddress);
+
 		auto workspaceName = QString::fromUtf8(args.at(1));
 		auto windowClass = QString::fromUtf8(args.at(2));
 		auto windowTitle = QString::fromUtf8(args.at(3));
@@ -523,6 +525,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 		auto windowAddress = args.at(0).toULongLong(&ok, 16);
 
 		if (!ok) return;
+
+		if (this->requestingToplevels) this->closedDuringToplevelRequest.insert(windowAddress);
 
 		const auto& mList = this->mToplevels.valueList();
 		auto toplevelIter = std::ranges::find_if(mList, [&](HyprlandToplevel* m) {
@@ -752,6 +756,7 @@ void HyprlandIpc::refreshToplevels() {
 
 	this->makeRequest("j/clients", [this](bool success, const QByteArray& resp) {
 		this->requestingToplevels = false;
+		const auto closed = std::exchange(this->closedDuringToplevelRequest, {});
 		if (!success) return;
 
 		qCDebug(logHyprlandIpc) << "Parsing j/clients response";
@@ -775,6 +780,11 @@ void HyprlandIpc::refreshToplevels() {
 
 			auto* toplevel = toplevelsIter == mList.end() ? nullptr : *toplevelsIter;
 			auto exists = toplevel != nullptr;
+
+			if (!exists && closed.contains(address)) {
+				qCDebug(logHyprlandIpc) << "Skipping j/clients entry for closed window" << address;
+				continue;
+			}
 
 			if (!exists) toplevel = new HyprlandToplevel(this);
 			toplevel->updateFromObject(object);
