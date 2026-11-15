@@ -1,0 +1,10 @@
+<node>
+	<interface name="net.reactivated.Fprint.Manager">
+		<method name="GetDevices">
+			<arg direction="out" type="ao" name="devices"/>
+		</method>
+		<method name="GetDefaultDevice">
+			<arg direction="out" type="o" name="device"/>
+		</method>
+	</interface>
+</node>
