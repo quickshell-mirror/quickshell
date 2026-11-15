@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qcontainerfwd.h>
+#include <qlist.h>
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
@@ -20,6 +21,8 @@ class FprintDevice: public QObject {
 	Q_PROPERTY(QString scanType READ default NOTIFY scanTypeChanged BINDABLE bindableScanType);
 	Q_PROPERTY(bool isFingerPresent READ default NOTIFY isFingerPresentChanged BINDABLE bindableIsFingerPresent);
 	Q_PROPERTY(bool isFingerNeeded READ default NOTIFY isFingerNeededChanged BINDABLE bindableIsFingerNeeded);
+	Q_PROPERTY(QString user READ default WRITE setUser NOTIFY userChanged BINDABLE bindableUser);
+	Q_PROPERTY(QList<QString> enrolledFingers READ enrolledFingers NOTIFY enrolledFingersChanged BINDABLE bindableEnrolledFingers);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("FprintDevices can only be acquired from FprintManager");
@@ -30,10 +33,22 @@ public:
 	void init(const QString& path);
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
+
 	[[nodiscard]] QBindable<qreal> bindableNumEnrollStages() const { return &this->bNumEnrollStages; }
+
 	[[nodiscard]] QBindable<QString> bindableScanType() const { return &this->bScanType; }
+
 	[[nodiscard]] QBindable<bool> bindableIsFingerPresent() const { return &this->bIsFingerPresent; }
+
 	[[nodiscard]] QBindable<bool> bindableIsFingerNeeded() const { return &this->bIsFingerNeeded; }
+
+	[[nodiscard]] QBindable<QString> bindableUser() const { return &this->bUser; }
+	void setUser(const QString& user);
+
+	[[nodiscard]] QBindable<QList<QString>> bindableEnrolledFingers() const {
+		return &this->bEnrolledFingers;
+	}
+	[[nodiscard]] QList<QString> enrolledFingers() const { return this->mEnrolledFingers; }
 
 signals:
 	void nameChanged();
@@ -41,14 +56,22 @@ signals:
 	void scanTypeChanged();
 	void isFingerPresentChanged();
 	void isFingerNeededChanged();
+	void userChanged();
+	void enrolledFingersChanged();
 
 private:
+	void registerFingers();
+
+	QList<QString> mEnrolledFingers;
+
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bName, &FprintDevice::nameChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, qint32, bNumEnrollStages, &FprintDevice::numEnrollStagesChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bScanType, &FprintDevice::scanTypeChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bIsFingerPresent, &FprintDevice::isFingerPresentChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bIsFingerNeeded, &FprintDevice::isFingerNeededChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bUser, &FprintDevice::userChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QList<QString>, bEnrolledFingers, &FprintDevice::enrolledFingersChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(FprintDevice, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(FprintDevice, pName, bName, deviceProperties, "name");
