@@ -32,6 +32,9 @@ public:
 
 	void init(const QString& path);
 
+	Q_INVOKABLE void verifyStart(const QString& finger);
+	Q_INVOKABLE void verifyStop();
+
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
 
 	[[nodiscard]] QBindable<qreal> bindableNumEnrollStages() const { return &this->bNumEnrollStages; }
@@ -58,11 +61,18 @@ signals:
 	void isFingerNeededChanged();
 	void userChanged();
 	void enrolledFingersChanged();
+	void fingerSelected(const QString& finger);
+	void fingerMatched(const QString& finger);
+	void verifyStatusChanged(const QString& result, bool done);
+	void enrollStatusChanged(const QString& result, bool done);
 
 private:
 	void registerFingers();
+	void releaseClaim();
+	void wrapAction(const std::function<void()>& action);
 
 	QList<QString> mEnrolledFingers;
+	bool mVerifying;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bName, &FprintDevice::nameChanged);
