@@ -25,6 +25,7 @@
 #include "../core/qmlglobal.hpp"
 #include "../core/rootwrapper.hpp"
 #include "../ipc/ipc.hpp"
+#include "../window/rendercontrol.hpp"
 #include "build.hpp"
 #include "launch_p.hpp"
 
@@ -73,6 +74,7 @@ int launch(const LaunchArgs& args, char** argv) {
 	struct {
 		bool useQApplication = false;
 		bool nativeTextRendering = false;
+		bool renderControl = false;
 		bool desktopSettingsAware = true;
 		bool useSystemStyle = false;
 		QString iconTheme = qEnvironmentVariable("QS_ICON_THEME");
@@ -110,6 +112,7 @@ int launch(const LaunchArgs& args, char** argv) {
 				else pragmas.envOverrides.insert(var, val);
 			} else if (pragma == "UseQApplication") pragmas.useQApplication = true;
 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
+			else if (pragma == "RenderControl") pragmas.renderControl = true;
 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
 			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
 			else if (pragma == "DropExpensiveFonts") pragmas.dropExpensiveFonts = true;
@@ -312,6 +315,8 @@ int launch(const LaunchArgs& args, char** argv) {
 	if (pragmas.nativeTextRendering) {
 		QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 	}
+
+	if (pragmas.renderControl) qs::window::WindowRenderControl::setEnabled(true);
 
 	qs::ipc::IpcServer::start();
 	QsPaths::instance()->createLock();

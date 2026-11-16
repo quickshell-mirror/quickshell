@@ -4,6 +4,8 @@ qt_add_library(quickshell-window STATIC
 	panelinterface.cpp
 	floatingwindow.cpp
 	popupwindow.cpp
+	damage.cpp
+	rendercontrol.cpp
 )
 
 qt_add_qml_module(quickshell-window

@@ -10,6 +10,7 @@
 #include <private/qwaylandsurface_p.h>
 #include <private/qwaylandwindow_p.h>
 #include <qlogging.h>
+#include <qobject.h>
 #include <qrect.h>
 #include <qsize.h>
 #include <qtversionchecks.h>
@@ -20,6 +21,7 @@
 #include <wayland-xdg-shell-client-protocol.h>
 
 #include "../../window/panelinterface.hpp"
+#include "../../window/proxywindow.hpp"
 #include "../activation.hpp"
 #include "shell_integration.hpp"
 #include "wlr_layershell.hpp"
@@ -77,7 +79,10 @@ toWaylandKeyboardFocus(const WlrKeyboardFocus::Enum& focus) noexcept {
 } // namespace
 
 void LayerSurfaceBridge::commitState() {
-	if (this->surface) this->surface->commit();
+	if (!this->surface) return;
+	this->surface->commit();
+
+	if (auto* window = qobject_cast<QsQuickWindowBase*>(this->parent())) window->requestCommit();
 }
 
 LayerSurfaceBridge* LayerSurfaceBridge::get(QWindow* window) {

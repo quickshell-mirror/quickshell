@@ -116,6 +116,8 @@ void BackgroundEffect::onWindowPolished() {
 
 	this->surface->setBlurRegion(region);
 	this->pendingBlurRegion = false;
+
+	if (auto* window = qobject_cast<QsQuickWindowBase*>(this->mWindow)) window->requestCommit();
 }
 
 bool BackgroundEffect::eventFilter(QObject* object, QEvent* event) {

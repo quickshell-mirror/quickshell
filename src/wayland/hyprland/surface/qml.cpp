@@ -109,6 +109,7 @@ void HyprlandWindow::updateVisibleMask() {
 
 void HyprlandWindow::onWindowPolished() {
 	if (!this->surface) return;
+	if (!this->pendingPolish.opacity && !this->pendingPolish.visibleMask) return;
 
 	if (this->pendingPolish.opacity) {
 		this->surface->setOpacity(this->mOpacity);
@@ -134,6 +135,8 @@ void HyprlandWindow::onWindowPolished() {
 		this->surface->setVisibleRegion(mask);
 		this->pendingPolish.visibleMask = false;
 	}
+
+	if (auto* window = qobject_cast<QsQuickWindowBase*>(this->mWindow)) window->requestCommit();
 }
 
 void HyprlandWindow::onWindowConnected() {

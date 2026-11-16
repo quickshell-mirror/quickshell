@@ -151,6 +151,7 @@ public:
 
 	[[nodiscard]] bool isCompatible(const WlBufferRequest& request) const override;
 	[[nodiscard]] WlBufferQSGTexture* createQsgTexture(QQuickWindow* window) const override;
+	void finish() const override;
 
 private:
 	WlDmaBuffer() noexcept = default;
@@ -237,9 +238,11 @@ public:
 	);
 
 	bool initRenderFormats(QQuickWindow* window);
+	bool initRenderFormatsFromPlatformDisplay();
 
 private:
 	bool initRenderFormatsGl(QQuickWindow* window);
+	bool initRenderFormatsEgl(EGLDisplay display);
 	bool initRenderFormatsVk(QQuickWindow* window);
 
 	void feedbackDone();
