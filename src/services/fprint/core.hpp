@@ -42,12 +42,21 @@ private:
 	DBusFprintService* service = nullptr;
 };
 
+///! Provides access to the Fprint service.
+/// An interface to the [Fprint daemon], which can be used to
+/// verify and enroll new fingerprints.
+///
+/// > [!NOTE] The Fprint daemon must be installed to use this service.
+///
+/// [Fprint daemon]: https://fprint.freedesktop.org/
 class FprintManagerQml: public QObject {
 	Q_OBJECT;
 	QML_NAMED_ELEMENT(FprintManager);
 	QML_SINGLETON;
 
+	/// All the fingerprint readers attached to the system. If there are no devices available, an empty array is returned.
 	Q_PROPERTY(qs::services::fprint::FprintDevice* defaultDevice READ defaultDevice CONSTANT);
+	/// The default fingerprint reader device.
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::fprint::FprintDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 
