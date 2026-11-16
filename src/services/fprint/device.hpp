@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <qcontainerfwd.h>
 #include <qlist.h>
 #include <qobject.h>
@@ -34,9 +36,8 @@ class FprintDevice: public QObject {
 	Q_PROPERTY(QString user READ default WRITE setUser NOTIFY userChanged BINDABLE bindableUser);
 	/// The enrolled fingerprints on the device for the current @@FprintDevice.user. This will be empty if the user is null.
 	Q_PROPERTY(QList<QString> enrolledFingers READ default NOTIFY enrolledFingersChanged BINDABLE bindableEnrolledFingers);
-	/// Whether the device is ready to be used.
-	/// > [!WARNING] If this flag is false, properties won't be valid and methods won't work.
-	Q_PROPERTY(bool ready READ default NOTIFY readyChanged BINDABLE bindableReady);
+	/// If device statistics have been queried for this device yet. This will be true for all devices returned from @@FprintManager.devices, but not the default device, which may be returned before it is ready to avoid returning null.
+	Q_PROPERTY(bool ready READ default NOTIFY ready BINDABLE bindableReady);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("FprintDevices can only be acquired from FprintManager");
@@ -102,7 +103,7 @@ public:
 	[[nodiscard]] QList<QString> enrolledFingers() const { return this->mEnrolledFingers; }
 
 signals:
-	QSDOC_HIDE void readyChanged();
+	QSDOC_HIDE void ready();
 	void nameChanged();
 	void numEnrollStagesChanged();
 	void scanTypeChanged();
@@ -153,8 +154,8 @@ private:
 	void wrapAction(const std::function<void()>& action);
 
 	QList<QString> mEnrolledFingers;
-	bool mVerifying;
-	bool mEnrolling;
+	bool mVerifying {false};
+	bool mEnrolling {false};
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bName, &FprintDevice::nameChanged);
@@ -164,7 +165,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bFingerNeeded, &FprintDevice::fingerNeededChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bUser, &FprintDevice::userChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QList<QString>, bEnrolledFingers, &FprintDevice::enrolledFingersChanged);
-	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bReady, &FprintDevice::readyChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bReady, &FprintDevice::ready);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(FprintDevice, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(FprintDevice, pName, bName, deviceProperties, "name");

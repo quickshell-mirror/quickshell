@@ -1,3 +1,7 @@
+## New Features
+
+- Added `FprintManager` to handle enrolled fingerprints and finger validation using the Fprint daemon.
+
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.

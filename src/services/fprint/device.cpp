@@ -1,11 +1,19 @@
 #include "device.hpp"
+#include <functional>
 
 #include <qcontainerfwd.h>
+#include <qdbusconnection.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qdbusservicewatcher.h>
 #include <qlist.h>
+#include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 
+#include "../../core/logcat.hpp"
 #include "../../dbus/properties.hpp"
+#include "dbus_device.h"
 
 using namespace qs::dbus;
 
@@ -89,7 +97,7 @@ void FprintDevice::registerFingers() {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto reponseCallback = [this](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<QList<QString>> reply = *call;
+		const QDBusPendingReply<QList<QString>> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to get enrolled fingers:" << reply.error().message();
@@ -111,7 +119,7 @@ void FprintDevice::wrapAction(const std::function<void()>& action) {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto reponseCallback = [action](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<void> reply = *call;
+		const QDBusPendingReply<void> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to claim device:" << reply.error().message();
@@ -130,7 +138,7 @@ void FprintDevice::releaseClaim() {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<void> reply = *call;
+		const QDBusPendingReply<void> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to release device:" << reply.error().message();
@@ -155,7 +163,7 @@ void FprintDevice::verifyStart(const QString& finger) {
 		auto* call = new QDBusPendingCallWatcher(pending, this);
 
 		auto responseCallback = [this](QDBusPendingCallWatcher* call) {
-			QDBusPendingReply<void> reply = *call;
+			const QDBusPendingReply<void> reply = *call;
 
 			if (reply.isError()) {
 				qCWarning(logFprintDevice) << "Failed to verify finger:" << reply.error().message();
@@ -183,7 +191,7 @@ void FprintDevice::verifyStop() {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<void> reply = *call;
+		const QDBusPendingReply<void> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to stop verification:" << reply.error().message();
@@ -206,7 +214,7 @@ void FprintDevice::enrollStart(const QString& finger) {
 		auto* call = new QDBusPendingCallWatcher(pending, this);
 
 		auto responseCallback = [this](QDBusPendingCallWatcher* call) {
-			QDBusPendingReply<void> reply = *call;
+			const QDBusPendingReply<void> reply = *call;
 
 			if (reply.isError()) {
 				qCWarning(logFprintDevice) << "Failed to enroll finger:" << reply.error().message();
@@ -234,7 +242,7 @@ void FprintDevice::enrollStop() {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<void> reply = *call;
+		const QDBusPendingReply<void> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to stop enrollment:" << reply.error().message();
@@ -256,7 +264,7 @@ void FprintDevice::deleteFingers() {
 	auto* call = new QDBusPendingCallWatcher(pending, this);
 
 	auto responseCallback = [](QDBusPendingCallWatcher* call) {
-		QDBusPendingReply<void> reply = *call;
+		const QDBusPendingReply<void> reply = *call;
 
 		if (reply.isError()) {
 			qCWarning(logFprintDevice) << "Failed to delete enrolled fingers:" << reply.error().message();
@@ -279,7 +287,7 @@ void FprintDevice::deleteFinger(const QString& finger) {
 		auto* call = new QDBusPendingCallWatcher(pending, this);
 
 		auto responseCallback = [this](QDBusPendingCallWatcher* call) {
-			QDBusPendingReply<void> reply = *call;
+			const QDBusPendingReply<void> reply = *call;
 
 			if (reply.isError()) {
 				qCWarning(logFprintDevice)

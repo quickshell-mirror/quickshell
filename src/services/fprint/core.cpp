@@ -1,9 +1,17 @@
 #include "core.hpp"
 
-#include <QtDBus/qdbuspendingcall.h>
-#include <QtDBus/qdbuspendingreply.h>
+#include <qdbusextratypes.h>
+#include <qdbuspendingcall.h>
+#include <qdbuspendingreply.h>
+#include <qdbusservicewatcher.h>
+#include <qlist.h>
+#include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qobject.h>
 
+#include "../../core/logcat.hpp"
+#include "../../core/model.hpp"
+#include "dbus_service.h"
 #include "device.hpp"
 
 namespace qs::services::fprint {
@@ -78,7 +86,7 @@ void FprintManager::registerDevice(const QString& path) {
 	device->init(path);
 
 	this->mDevices.insert(path, device);
-	QObject::connect(device, &FprintDevice::readyChanged, this, &FprintManager::onDeviceReady);
+	QObject::connect(device, &FprintDevice::ready, this, &FprintManager::onDeviceReady);
 }
 
 void FprintManager::onDeviceReady() {

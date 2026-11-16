@@ -54,9 +54,9 @@ class FprintManagerQml: public QObject {
 	QML_NAMED_ELEMENT(FprintManager);
 	QML_SINGLETON;
 
-	/// All the fingerprint readers attached to the system. If there are no devices available, an empty array is returned.
+	/// All the fingerprint readers attached to the system.
 	Q_PROPERTY(qs::services::fprint::FprintDevice* defaultDevice READ defaultDevice CONSTANT);
-	/// The default fingerprint reader device.
+	/// The default fingerprint reader device. Cannot be null, but might not be initialized (check @@FprintDevice.ready if you need to know).
 	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::fprint::FprintDevice>*);
 	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
 
