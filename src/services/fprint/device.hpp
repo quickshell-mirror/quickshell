@@ -18,7 +18,7 @@ class FprintDevice: public QObject {
 	Q_OBJECT;
 	// clang-format off
 	Q_PROPERTY(QString name READ default NOTIFY nameChanged BINDABLE bindableName);
-	Q_PROPERTY(qreal numEnrollStages READ default NOTIFY numEnrollStagesChanged BINDABLE bindableNumEnrollStages);
+	Q_PROPERTY(qint32 numEnrollStages READ default NOTIFY numEnrollStagesChanged BINDABLE bindableNumEnrollStages);
 	Q_PROPERTY(QString scanType READ default NOTIFY scanTypeChanged BINDABLE bindableScanType);
 	Q_PROPERTY(bool isFingerPresent READ default NOTIFY isFingerPresentChanged BINDABLE bindableIsFingerPresent);
 	Q_PROPERTY(bool isFingerNeeded READ default NOTIFY isFingerNeededChanged BINDABLE bindableIsFingerNeeded);
@@ -43,7 +43,9 @@ public:
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
 
-	[[nodiscard]] QBindable<qreal> bindableNumEnrollStages() const { return &this->bNumEnrollStages; }
+	[[nodiscard]] QBindable<qint32> bindableNumEnrollStages() const {
+		return &this->bNumEnrollStages;
+	}
 
 	[[nodiscard]] QBindable<QString> bindableScanType() const { return &this->bScanType; }
 
