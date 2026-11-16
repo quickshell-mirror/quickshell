@@ -9,6 +9,7 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
+#include <qset.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -143,6 +144,9 @@ private:
 	bool requestingMonitors = false;
 	bool requestingWorkspaces = false;
 	bool requestingToplevels = false;
+	// j/clients replies can predate openwindow events already processed, so
+	// windows opened during a request must not be pruned as missing.
+	QSet<quint64> openedDuringToplevelRequest;
 	bool monitorsRequested = false;
 
 	ObjectModel<HyprlandMonitor> mMonitors {this};

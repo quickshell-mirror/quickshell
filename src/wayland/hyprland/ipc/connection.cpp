@@ -164,6 +164,10 @@ void HyprlandIpc::toplevelAddressed(
 
 	auto* hyprToplevel = this->findToplevelByAddress(address, true);
 
+	// The mapping protocol is not ordered against the j/clients reply, so an
+	// address resolved while a refresh is in flight must not be pruned.
+	if (this->requestingToplevels) this->openedDuringToplevelRequest.insert(address);
+
 	if (attached) {
 		if (attached->address()) {
 			qCDebug(logHyprlandIpc) << "Toplevel" << attached->addressStr() << "already has address"
@@ -493,6 +497,8 @@ void HyprlandIpc::onEvent(HyprlandIpcEvent* event) {
 
 		if (!ok) return;
 
+		if (this->requestingToplevels) this->openedDuringToplevelRequest.insert(windowAddress);
+
 		auto workspaceName = QString::fromUtf8(args.at(1));
 		auto windowClass = QString::fromUtf8(args.at(2));
 		auto windowTitle = QString::fromUtf8(args.at(3));
@@ -752,12 +758,14 @@ void HyprlandIpc::refreshToplevels() {
 
 	this->makeRequest("j/clients", [this](bool success, const QByteArray& resp) {
 		this->requestingToplevels = false;
+		const auto opened = std::exchange(this->openedDuringToplevelRequest, {});
 		if (!success) return;
 
 		qCDebug(logHyprlandIpc) << "Parsing j/clients response";
 		auto json = QJsonDocument::fromJson(resp).array();
 
 		const auto& mList = this->mToplevels.valueList();
+		auto seen = QSet<quint64>();
 
 		for (auto entry: json) {
 			auto object = entry.toObject().toVariantMap();
@@ -769,6 +777,7 @@ void HyprlandIpc::refreshToplevels() {
 				qCWarning(logHyprlandIpc) << "Invalid address in j/clients entry:" << object;
 				continue;
 			}
+			seen.insert(address);
 
 			auto toplevelsIter =
 			    std::ranges::find_if(mList, [&](HyprlandToplevel* m) { return m->address() == address; });
@@ -786,6 +795,26 @@ void HyprlandIpc::refreshToplevels() {
 
 			auto* workspace = toplevel->bindableWorkspace().value();
 			if (workspace) workspace->insertToplevel(toplevel);
+		}
+
+		// Windows can disappear from j/clients without a closewindow event, e.g.
+		// X11 windows that are unmapped or Wine windows that are never mapped.
+		// Windows opened while this request was in flight may be missing from
+		// the older reply, so only prune entries that predate it.
+		auto missing = QVector<HyprlandToplevel*>();
+		for (auto* toplevel: mList) {
+			if (!seen.contains(toplevel->address()) && !opened.contains(toplevel->address())) {
+				missing.push_back(toplevel);
+			}
+		}
+
+		for (auto* toplevel: missing) {
+			qCDebug(logHyprlandIpc) << "Pruning toplevel absent from j/clients" << toplevel->address();
+			if (toplevel == this->bActiveToplevel.value()) this->bActiveToplevel = nullptr;
+			auto* workspace = toplevel->bindableWorkspace().value();
+			if (workspace) workspace->toplevels()->removeObject(toplevel);
+			this->mToplevels.removeObject(toplevel);
+			delete toplevel;
 		}
 	});
 }
