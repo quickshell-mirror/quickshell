@@ -10,6 +10,7 @@ public:
 	explicit WlBufferManagerPrivate(WlBufferManager* manager);
 
 	void dmabufReady();
+	void renderFormatsDone(bool success);
 
 	WlBufferManager* manager;
 	dmabuf::LinuxDmabufManager dmabuf;

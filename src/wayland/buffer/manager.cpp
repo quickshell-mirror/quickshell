@@ -9,6 +9,7 @@
 #include <qmatrix4x4.h>
 #include <qnamespace.h>
 #include <qquickwindow.h>
+#include <qsgrendererinterface.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
 #include <qvectornd.h>
@@ -75,17 +76,16 @@ void WlBufferManager::initWindow(QQuickWindow* window) {
 	}
 
 	qCDebug(logBuffer) << "Initializing render formats";
-	auto success = this->p->dmabuf.initRenderFormats(window);
+	this->p->renderFormatsDone(this->p->dmabuf.initRenderFormats(window));
+}
 
-	if (!success) {
-		qCWarning(
-		    logBuffer
-		) << "Render format initialization failed. All buffers will fall back to SHM.";
-		this->p->mRenderFormatsFailed = true;
-	}
+bool WlBufferManager::initWithoutWindow() {
+	if (this->p->mRenderFormatsReady) return !this->p->mRenderFormatsFailed;
+	if (QQuickWindow::graphicsApi() != QSGRendererInterface::OpenGL) return true;
 
-	this->p->mRenderFormatsReady = true;
-	if (this->p->mDmabufFormatsReady) emit this->ready();
+	qCDebug(logBuffer) << "Initializing render formats from the platform display";
+	this->p->renderFormatsDone(this->p->dmabuf.initRenderFormatsFromPlatformDisplay());
+	return !this->p->mRenderFormatsFailed;
 }
 
 bool WlBufferManager::isReady() const {
@@ -136,6 +136,18 @@ bool WlBufferManager::isReady() const {
 WlBufferManagerPrivate::WlBufferManagerPrivate(WlBufferManager* manager)
     : manager(manager)
     , dmabuf(this) {}
+
+void WlBufferManagerPrivate::renderFormatsDone(bool success) {
+	if (!success) {
+		qCWarning(
+		    logBuffer
+		) << "Render format initialization failed. All buffers will fall back to SHM.";
+		this->mRenderFormatsFailed = true;
+	}
+
+	this->mRenderFormatsReady = true;
+	if (this->mDmabufFormatsReady) emit this->manager->ready();
+}
 
 void WlBufferManagerPrivate::dmabufReady() {
 	this->mDmabufFormatsReady = true;

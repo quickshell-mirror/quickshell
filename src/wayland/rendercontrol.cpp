@@ -140,9 +140,27 @@ private:
 	QSize mSize;
 };
 
+// Scale window damage to the surface coordinates QWaylandWindow::commit() takes; the two
+// differ under QT_SCALE_FACTOR.
+QRegion surfaceRegion(const QRegion& region, qreal scale, QSize surfaceSize) {
+	QRegion scaled;
+	for (const auto& rect: region) {
+		auto surfaceRect = QRectF(rect.topLeft().toPointF() * scale, rect.size().toSizeF() * scale);
+		scaled += surfaceRect.toAlignedRect();
+	}
+
+	return scaled & QRect(QPoint(), surfaceSize);
+}
+
 qs::window::WindowRenderControl* createRenderControl() {
 	if (qEnvironmentVariableIsSet("QS_DISABLE_DMABUF")) {
 		qCInfo(logRenderControl) << "Render control is unavailable with QS_DISABLE_DMABUF.";
+		return nullptr;
+	}
+
+	// Frames are only drawn into dmabufs; without them the window stays on Qt's render loop.
+	if (!buffer::WlBufferManager::instance()->initWithoutWindow()) {
+		qCInfo(logRenderControl) << "Render control is unavailable without dmabuf render formats.";
 		return nullptr;
 	}
 
@@ -422,8 +440,8 @@ void WaylandRenderControl::renderFrame() {
 	QRhiRenderTarget* target = nullptr;
 	auto* buffer = this->pool.acquire(window, this->rhi.get(), pixelSize, alpha);
 	if (buffer) {
-		target =
-		    decoration ? this->decorationTarget(window->size() * scale) : buffer->renderTarget.get();
+		auto contentSize = waylandWindow->geometry().size() * scale;
+		target = decoration ? this->decorationTarget(contentSize) : buffer->renderTarget.get();
 	}
 
 	if (!target) {
@@ -449,11 +467,19 @@ void WaylandRenderControl::renderFrame() {
 	}
 
 	this->endFrame();
+	// The buffer is committed without explicit sync, and QRhiGles2::endOffscreenFrame() only flushes.
+	buffer->buffer->finish();
 
 	// Collect changes made during render; WindowDamageTracker::sync() forces full damage with margins.
 	auto damage = tracker ? tracker->damage() : std::nullopt;
+	auto surfaceDamage = QRegion(QRect(QPoint(), surfaceSize));
+	if (damage) {
+		auto surfaceScale = window->effectiveDevicePixelRatio() / scale;
+		surfaceDamage = surfaceRegion(*damage, surfaceScale, surfaceSize);
+	}
+
 	auto ref = WlBufferRef(buffer->buffer->buffer(), surfaceSize);
-	waylandWindow->safeCommit(&ref, damage.value_or(QRect(QPoint(), surfaceSize)));
+	waylandWindow->safeCommit(&ref, surfaceDamage);
 	QQuickWindowPrivate::get(window)->fireFrameSwapped();
 	// Keep the damage until safeCommit() accepts a buffer.
 	if (!ref.busy()) return;

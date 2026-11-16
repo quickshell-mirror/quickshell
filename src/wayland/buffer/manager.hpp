@@ -87,6 +87,9 @@ public:
 
 	// Must be called from render thread.
 	[[nodiscard]] virtual WlBufferQSGTexture* createQsgTexture(QQuickWindow* window) const = 0;
+	// Blocks until the GPU has drawn what was rendered into the buffer, unless the compositor
+	// can wait for it. Must be called from render thread with the rendering context current.
+	virtual void finish() const {}
 
 	WlBufferTransform transform;
 
@@ -127,6 +130,8 @@ public:
 	static WlBufferManager* instance();
 
 	void initWindow(QQuickWindow* window);
+	// True when render formats work, or cannot be known before a window exists.
+	[[nodiscard]] bool initWithoutWindow();
 	[[nodiscard]] bool isReady() const;
 	[[nodiscard]] WlBuffer* createBuffer(const WlBufferRequest& request);
 
