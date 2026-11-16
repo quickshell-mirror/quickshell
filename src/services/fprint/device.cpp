@@ -1,12 +1,13 @@
 #include "device.hpp"
 
-#include <QtDBus/qdbuspendingcall.h>
-#include <QtDBus/qdbuspendingreply.h>
-#include <QtDBus/qdbusreply.h>
 #include <qcontainerfwd.h>
 #include <qlist.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
+
+#include "../../dbus/properties.hpp"
+
+using namespace qs::dbus;
 
 namespace qs::services::fprint {
 
@@ -24,6 +25,13 @@ void FprintDevice::init(const QString& path) {
 		qCWarning(logFprintDevice) << "Cannot create FprintDevice for" << path;
 		return;
 	}
+
+	QObject::connect(
+	    &this->deviceProperties,
+	    &DBusPropertyGroup::getAllFinished,
+	    this,
+	    &FprintDevice::onGetAllFinished
+	);
 
 	this->deviceProperties.setInterface(this->device);
 	this->deviceProperties.updateAllViaGetAll();
@@ -66,9 +74,14 @@ void FprintDevice::init(const QString& path) {
 	    this,
 	    &FprintDevice::enrollStatusChanged,
 	    [this](const QString& /*result*/, bool done) {
-		    if (done) this->releaseClaim();
+		    if (done && this->mEnrolling) this->releaseClaim();
 	    }
 	);
+}
+
+void FprintDevice::onGetAllFinished() {
+	qCDebug(logFprintDevice) << "FprintDevice" << this->device->path() << "ready.";
+	this->bReady = true;
 }
 
 void FprintDevice::registerFingers() {
@@ -132,6 +145,11 @@ void FprintDevice::releaseClaim() {
 void FprintDevice::setUser(const QString& user) { this->bUser = user; }
 
 void FprintDevice::verifyStart(const QString& finger) {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
 	this->wrapAction([this, finger]() {
 		auto pending = this->device->VerifyStart(finger);
 		auto* call = new QDBusPendingCallWatcher(pending, this);
@@ -153,6 +171,11 @@ void FprintDevice::verifyStart(const QString& finger) {
 }
 
 void FprintDevice::verifyStop() {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
 	if (!this->mVerifying) return;
 
 	this->mVerifying = false;
@@ -170,6 +193,106 @@ void FprintDevice::verifyStop() {
 	};
 
 	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void FprintDevice::enrollStart(const QString& finger) {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
+	this->wrapAction([this, finger]() {
+		auto pending = this->device->EnrollStart(finger);
+		auto* call = new QDBusPendingCallWatcher(pending, this);
+
+		auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+			QDBusPendingReply<void> reply = *call;
+
+			if (reply.isError()) {
+				qCWarning(logFprintDevice) << "Failed to enroll finger:" << reply.error().message();
+			} else {
+				this->mEnrolling = true;
+			}
+
+			delete call;
+		};
+
+		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+	});
+}
+
+void FprintDevice::enrollStop() {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
+	if (!this->mEnrolling) return;
+
+	this->mEnrolling = false;
+	auto pending = this->device->EnrollStop();
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [](QDBusPendingCallWatcher* call) {
+		QDBusPendingReply<void> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logFprintDevice) << "Failed to stop enrollment:" << reply.error().message();
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void FprintDevice::deleteFingers() {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
+	auto pending = this->device->DeleteEnrolledFingers(this->bUser);
+	auto* call = new QDBusPendingCallWatcher(pending, this);
+
+	auto responseCallback = [](QDBusPendingCallWatcher* call) {
+		QDBusPendingReply<void> reply = *call;
+
+		if (reply.isError()) {
+			qCWarning(logFprintDevice) << "Failed to delete enrolled fingers:" << reply.error().message();
+		}
+
+		delete call;
+	};
+
+	QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+}
+
+void FprintDevice::deleteFinger(const QString& finger) {
+	if (!this->bReady) {
+		qCWarning(logFprintDevice) << "Device is not ready yet.";
+		return;
+	}
+
+	this->wrapAction([this, finger]() {
+		auto pending = this->device->DeleteEnrolledFinger(finger);
+		auto* call = new QDBusPendingCallWatcher(pending, this);
+
+		auto responseCallback = [this](QDBusPendingCallWatcher* call) {
+			QDBusPendingReply<void> reply = *call;
+
+			if (reply.isError()) {
+				qCWarning(logFprintDevice)
+				    << "Failed to delete enrolled finger:" << reply.error().message();
+			} else {
+				this->releaseClaim();
+			}
+
+			delete call;
+		};
+
+		QObject::connect(call, &QDBusPendingCallWatcher::finished, this, responseCallback);
+	});
 }
 
 } // namespace qs::services::fprint

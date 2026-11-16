@@ -8,6 +8,7 @@
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
+#include "../../core/doc.hpp"
 #include "../../dbus/properties.hpp"
 #include "dbus_device.h"
 
@@ -22,7 +23,8 @@ class FprintDevice: public QObject {
 	Q_PROPERTY(bool isFingerPresent READ default NOTIFY isFingerPresentChanged BINDABLE bindableIsFingerPresent);
 	Q_PROPERTY(bool isFingerNeeded READ default NOTIFY isFingerNeededChanged BINDABLE bindableIsFingerNeeded);
 	Q_PROPERTY(QString user READ default WRITE setUser NOTIFY userChanged BINDABLE bindableUser);
-	Q_PROPERTY(QList<QString> enrolledFingers READ enrolledFingers NOTIFY enrolledFingersChanged BINDABLE bindableEnrolledFingers);
+	Q_PROPERTY(QList<QString> enrolledFingers READ default NOTIFY enrolledFingersChanged BINDABLE bindableEnrolledFingers);
+	Q_PROPERTY(bool ready READ default NOTIFY readyChanged BINDABLE bindableReady);
 	// clang-format on
 	QML_ELEMENT;
 	QML_UNCREATABLE("FprintDevices can only be acquired from FprintManager");
@@ -34,6 +36,10 @@ public:
 
 	Q_INVOKABLE void verifyStart(const QString& finger);
 	Q_INVOKABLE void verifyStop();
+	Q_INVOKABLE void enrollStart(const QString& finger);
+	Q_INVOKABLE void enrollStop();
+	Q_INVOKABLE void deleteFingers();
+	Q_INVOKABLE void deleteFinger(const QString& finger);
 
 	[[nodiscard]] QBindable<QString> bindableName() const { return &this->bName; }
 
@@ -45,6 +51,8 @@ public:
 
 	[[nodiscard]] QBindable<bool> bindableIsFingerNeeded() const { return &this->bIsFingerNeeded; }
 
+	[[nodiscard]] QBindable<bool> bindableReady() const { return &this->bReady; }
+
 	[[nodiscard]] QBindable<QString> bindableUser() const { return &this->bUser; }
 	void setUser(const QString& user);
 
@@ -54,6 +62,7 @@ public:
 	[[nodiscard]] QList<QString> enrolledFingers() const { return this->mEnrolledFingers; }
 
 signals:
+	QSDOC_HIDE void readyChanged();
 	void nameChanged();
 	void numEnrollStagesChanged();
 	void scanTypeChanged();
@@ -66,6 +75,9 @@ signals:
 	void verifyStatusChanged(const QString& result, bool done);
 	void enrollStatusChanged(const QString& result, bool done);
 
+private slots:
+	void onGetAllFinished();
+
 private:
 	void registerFingers();
 	void releaseClaim();
@@ -73,6 +85,7 @@ private:
 
 	QList<QString> mEnrolledFingers;
 	bool mVerifying;
+	bool mEnrolling;
 
 	// clang-format off
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bName, &FprintDevice::nameChanged);
@@ -82,6 +95,7 @@ private:
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bIsFingerNeeded, &FprintDevice::isFingerNeededChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QString, bUser, &FprintDevice::userChanged);
 	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, QList<QString>, bEnrolledFingers, &FprintDevice::enrolledFingersChanged);
+	Q_OBJECT_BINDABLE_PROPERTY(FprintDevice, bool, bReady, &FprintDevice::readyChanged);
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(FprintDevice, deviceProperties);
 	QS_DBUS_PROPERTY_BINDING(FprintDevice, pName, bName, deviceProperties, "name");

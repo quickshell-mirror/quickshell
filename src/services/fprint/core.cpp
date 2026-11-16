@@ -77,10 +77,16 @@ void FprintManager::registerDevice(const QString& path) {
 	auto* device = new FprintDevice(this);
 	device->init(path);
 
-	this->mDevices.insertObject(qobject_cast<FprintDevice*>(device));
+	this->mDevices.insert(path, device);
+	QObject::connect(device, &FprintDevice::readyChanged, this, &FprintManager::onDeviceReady);
 }
 
-ObjectModel<FprintDevice>* FprintManager::devices() { return &this->mDevices; }
+void FprintManager::onDeviceReady() {
+	auto* device = qobject_cast<FprintDevice*>(this->sender());
+	this->mReadyDevices.insertObject(device);
+}
+
+ObjectModel<FprintDevice>* FprintManager::devices() { return &this->mReadyDevices; }
 
 FprintDevice* FprintManager::defaultDevice() { return &this->mDefaultDevice; }
 

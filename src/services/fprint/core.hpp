@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qcontainerfwd.h>
+#include <qhash.h>
 #include <qlist.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
@@ -20,6 +22,9 @@ public:
 
 	static FprintManager* instance();
 
+private slots:
+	void onDeviceReady();
+
 private:
 	explicit FprintManager();
 
@@ -29,7 +34,8 @@ private:
 	void registerDefaultDevice();
 
 	FprintDevice mDefaultDevice {this};
-	ObjectModel<FprintDevice> mDevices {this};
+	QHash<QString, FprintDevice*> mDevices;
+	ObjectModel<FprintDevice> mReadyDevices {this};
 
 	QS_DBUS_BINDABLE_PROPERTY_GROUP(FprintManager, serviceProperties);
 
