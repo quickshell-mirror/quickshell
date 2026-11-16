@@ -26,6 +26,10 @@ if (SERVICE_UPOWER)
 	add_subdirectory(upower)
 endif()
 
+if (SERVICE_FPRINT)
+	add_subdirectory(fprint)
+endif()
+
 if (SERVICE_NOTIFICATIONS)
 	add_subdirectory(notifications)
 endif()

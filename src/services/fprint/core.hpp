@@ -1,0 +1,70 @@
+#pragma once
+
+#include <qcontainerfwd.h>
+#include <qhash.h>
+#include <qlist.h>
+#include <qobject.h>
+#include <qqmlintegration.h>
+#include <qtmetamacros.h>
+
+#include "../../core/model.hpp"
+#include "dbus_service.h"
+#include "device.hpp"
+
+namespace qs::services::fprint {
+
+class FprintManager: public QObject {
+	Q_OBJECT;
+
+public:
+	[[nodiscard]] ObjectModel<FprintDevice>* devices();
+	[[nodiscard]] FprintDevice* defaultDevice();
+
+	static FprintManager* instance();
+
+private slots:
+	void onDeviceReady();
+
+private:
+	explicit FprintManager();
+
+	void init();
+	void registerDevice(const QString& path);
+	void registerDevices();
+	void registerDefaultDevice();
+
+	FprintDevice mDefaultDevice {this};
+	QHash<QString, FprintDevice*> mDevices;
+	ObjectModel<FprintDevice> mReadyDevices {this};
+
+	QS_DBUS_BINDABLE_PROPERTY_GROUP(FprintManager, serviceProperties);
+
+	DBusFprintService* service = nullptr;
+};
+
+///! Provides access to the Fprint service.
+/// An interface to the [Fprint daemon], which can be used to
+/// verify and enroll new fingerprints.
+///
+/// > [!NOTE] The Fprint daemon must be installed to use this service.
+///
+/// [Fprint daemon]: https://fprint.freedesktop.org/
+class FprintManagerQml: public QObject {
+	Q_OBJECT;
+	QML_NAMED_ELEMENT(FprintManager);
+	QML_SINGLETON;
+
+	/// All the fingerprint readers attached to the system.
+	Q_PROPERTY(qs::services::fprint::FprintDevice* defaultDevice READ defaultDevice CONSTANT);
+	/// The default fingerprint reader device. Cannot be null, but might not be initialized (check @@FprintDevice.ready if you need to know).
+	QSDOC_TYPE_OVERRIDE(ObjectModel<qs::service::fprint::FprintDevice>*);
+	Q_PROPERTY(UntypedObjectModel* devices READ devices CONSTANT);
+
+public:
+	explicit FprintManagerQml(QObject* parent = nullptr);
+
+	[[nodiscard]] ObjectModel<FprintDevice>* devices();
+	[[nodiscard]] FprintDevice* defaultDevice();
+};
+
+} // namespace qs::services::fprint
