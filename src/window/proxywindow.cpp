@@ -8,6 +8,7 @@
 #include <qevent.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
@@ -35,7 +36,9 @@
 #include "../debug/lint.hpp"
 #include "windowinterface.hpp"
 
+namespace {
 QS_LOGGING_CATEGORY(logProxyWindow, "quickshell.window", QtWarningMsg);
+} // namespace
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
     : Reloadable(parent)
