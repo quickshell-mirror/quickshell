@@ -1,12 +1,14 @@
 #include "proxywindow.hpp"
 #include <functional>
 
+#include <private/qquickitem_p.h>
 #include <private/qquickwindow_p.h>
 #include <qcontainerfwd.h>
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
@@ -26,12 +28,17 @@
 #include <qwindow.h>
 
 #include "../core/generation.hpp"
+#include "../core/logcat.hpp"
 #include "../core/qmlglobal.hpp"
 #include "../core/qmlscreen.hpp"
 #include "../core/region.hpp"
 #include "../core/reload.hpp"
 #include "../debug/lint.hpp"
 #include "windowinterface.hpp"
+
+namespace {
+QS_LOGGING_CATEGORY(logProxyWindow, "quickshell.window", QtWarningMsg);
+} // namespace
 
 ProxyWindowBase::ProxyWindowBase(QObject* parent)
     : Reloadable(parent)
@@ -185,6 +192,29 @@ ProxiedWindow* ProxyWindowBase::disownWindow(bool keepItemOwnership) {
 
 	if (!keepItemOwnership) {
 		this->mContentItem->setParentItem(nullptr);
+
+		// A ShaderEffectSource whose sourceItem is set while the effect itself has no window
+		// (e.g. an inline `source: ShaderEffectSource { sourceItem: foo }`) takes a window ref
+		// on the source that Qt never releases, since it only derefs when the effect has a window.
+		// Release such refs while the old window is still alive, otherwise destroying the item
+		// later dereferences the freed window. This mirrors ~QQuickItem.
+		auto* oldWindow = this->window;
+		qsizetype staleRefs = 0;
+		auto releaseStaleRefs = [&](auto&& self, QQuickItem* item) -> void {
+			auto* d = QQuickItemPrivate::get(item);
+			if (d->window == oldWindow) {
+				d->windowRefCount = 1;
+				d->derefWindow();
+				staleRefs++;
+			}
+			for (auto* child: item->childItems()) self(self, child);
+		};
+		releaseStaleRefs(releaseStaleRefs, this->mContentItem);
+
+		if (staleRefs > 0) {
+			qCDebug(logProxyWindow) << "Released" << staleRefs << "leaked window reference(s) on items of"
+			                        << this;
+		}
 	}
 
 	auto* window = this->window;
