@@ -281,7 +281,7 @@ int launch(const LaunchArgs& args, char** argv) {
 	QGuiApplication::setDesktopSettingsAware(pragmas.desktopSettingsAware);
 
 	QGuiApplication* app = nullptr;
-	auto qArgC = 0;
+	auto qArgC = 1;
 
 	if (pragmas.useQApplication) {
 		app = new QApplication(qArgC, argv);
