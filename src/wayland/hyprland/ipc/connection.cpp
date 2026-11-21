@@ -187,10 +187,11 @@ void HyprlandIpc::makeRequest(
 	qCDebug(logHyprlandIpc) << "Making request:" << request;
 
 	auto connectedCallback = [this, request, requestSocket, callback]() {
-		auto responseCallback = [requestSocket, callback]() {
+		auto responseCallback = [this, requestSocket, callback]() {
 			auto response = requestSocket->readAll();
 			callback(true, std::move(response));
-			delete requestSocket;
+			QObject::disconnect(requestSocket, nullptr, this, nullptr);
+			requestSocket->deleteLater();
 		};
 
 		QObject::connect(requestSocket, &QLocalSocket::readyRead, this, responseCallback);
