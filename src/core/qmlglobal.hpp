@@ -4,6 +4,7 @@
 #include <qcontainerfwd.h>
 #include <qhash.h>
 #include <qjsengine.h>
+#include <qjsvalue.h>
 #include <qlist.h>
 #include <qobject.h>
 #include <qqmlengine.h>
@@ -207,6 +208,21 @@ public:
 	///
 	/// This function is equivalent to @@Quickshell.Io.Process.startDetached().
 	Q_INVOKABLE static void execDetached(const qs::io::process::ProcessContext& context);
+
+	/// Requests an xdg-activation token for the most recent input and calls `callback` with it,
+	/// or with an empty string if one can't be requested. The callback is called exactly once,
+	/// and may be called before this function returns.
+	///
+	/// Pass the token to a launched program as `XDG_ACTIVATION_TOKEN` so the program can raise its
+	/// window for the input that launched it, e.g. an app that is already running.
+	///
+	/// ```qml
+	/// Quickshell.requestActivationToken(token => {
+	///   const env = token ? ["env", `XDG_ACTIVATION_TOKEN=${token}`] : [];
+	///   Quickshell.execDetached([...env, "myapp"]);
+	/// });
+	/// ```
+	Q_INVOKABLE void requestActivationToken(const QJSValue& callback);
 
 	/// Returns a string usable for a @@QtQuick.Image.source for a given system icon.
 	///

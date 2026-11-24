@@ -1,6 +1,8 @@
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
+- `NotificationAction.invoke()` now sends a Wayland activation token to the notifying application.
+- Added `Quickshell.requestActivationToken()` to get a Wayland activation token for the latest input, e.g. to pass to a launched app.
 
 ## Bug Fixes
 

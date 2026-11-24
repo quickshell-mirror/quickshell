@@ -61,6 +61,11 @@ qs_module_pch(quickshell-core SET large)
 
 target_link_libraries(quickshell PRIVATE quickshell-coreplugin)
 
+if (WAYLAND)
+	target_compile_definitions(quickshell-core PRIVATE QS_WAYLAND)
+	target_link_libraries(quickshell-core PRIVATE quickshell-wayland-activation)
+endif()
+
 if (BUILD_TESTING)
 	add_subdirectory(test)
 endif()
