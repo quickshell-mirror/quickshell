@@ -59,6 +59,13 @@ StatusNotifierHost::StatusNotifierHost(QObject* parent): QObject(parent) {
 	    &StatusNotifierHost::onWatcherUnregistered
 	);
 
+	QObject::connect(
+	    &this->serviceWatcher,
+	    &QDBusServiceWatcher::serviceOwnerChanged,
+	    this,
+	    &StatusNotifierHost::onWatcherOwnerChanged
+	);
+
 	this->serviceWatcher.addWatchedService("org.kde.StatusNotifierWatcher");
 	this->serviceWatcher.setConnection(bus);
 
@@ -142,6 +149,28 @@ void StatusNotifierHost::onWatcherUnregistered() {
 	}
 
 	this->mItems.clear();
+}
+
+void StatusNotifierHost::onWatcherOwnerChanged(
+    const QString& /*unused*/,
+    const QString& oldOwner,
+    const QString& newOwner
+) {
+	// When the watcher appears or goes away, serviceOwnerChanged is sent
+	// alongside serviceRegistered or serviceUnregistered. Those are handled by
+	// onWatcherRegistered and onWatcherUnregistered.
+	if (oldOwner.isEmpty()) return;
+	if (newOwner.isEmpty()) return;
+	if (oldOwner == newOwner) return;
+
+	// When the watcher is restarted directly, Qt only sends
+	// serviceOwnerChanged. When it is stopped and started again in two steps,
+	// Qt sends serviceUnregistered and then serviceRegistered. We do not
+	// receive those in the first case, so they are triggered manually here.
+	qCDebug(logStatusNotifierHost) << "StatusNotifierWatcher changed owner, refreshing items";
+
+	this->onWatcherUnregistered();
+	this->onWatcherRegistered();
 }
 
 void StatusNotifierHost::onItemRegistered(const QString& item) {
