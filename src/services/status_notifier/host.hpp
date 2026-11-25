@@ -36,6 +36,8 @@ signals:
 private slots:
 	void onWatcherRegistered();
 	void onWatcherUnregistered();
+	void
+	onWatcherOwnerChanged(const QString& service, const QString& oldOwner, const QString& newOwner);
 	void onItemRegistered(const QString& item);
 	void onItemUnregistered(const QString& item);
 	void onItemReady();
