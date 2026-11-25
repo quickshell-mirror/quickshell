@@ -50,6 +50,8 @@ signals:
 
 private slots:
 	void onServiceUnregistered(const QString& service);
+	void
+	onServiceOwnerChanged(const QString& service, const QString& oldOwner, const QString& newOwner);
 
 private:
 	QString qualifiedItem(const QString& item);

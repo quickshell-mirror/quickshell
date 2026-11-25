@@ -42,7 +42,17 @@ StatusNotifierWatcher::StatusNotifierWatcher(QObject* parent): QObject(parent) {
 	    &StatusNotifierWatcher::onServiceUnregistered
 	);
 
-	this->serviceWatcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
+	QObject::connect(
+	    &this->serviceWatcher,
+	    &QDBusServiceWatcher::serviceOwnerChanged,
+	    this,
+	    &StatusNotifierWatcher::onServiceOwnerChanged
+	);
+
+	// WatchForOwnerChange also reports ownership changes that do not pass
+	// through an unowned state, which is how a name that is handed over to
+	// another owner looks like.
+	this->serviceWatcher.setWatchMode(QDBusServiceWatcher::WatchForOwnerChange);
 	this->serviceWatcher.addWatchedService("org.kde.StatusNotifierWatcher");
 	this->serviceWatcher.setConnection(bus);
 
@@ -98,6 +108,35 @@ void StatusNotifierWatcher::onServiceUnregistered(const QString& service) {
 	}
 
 	this->serviceWatcher.removeWatchedService(service);
+}
+
+void StatusNotifierWatcher::onServiceOwnerChanged(
+    const QString& service,
+    const QString& oldOwner,
+    const QString& newOwner
+) {
+	// This handles one case only: another watcher took the name from us. The
+	// old owner has to be us and the new owner has to be somebody else.
+	if (service != "org.kde.StatusNotifierWatcher") return;
+	if (oldOwner != QDBusConnection::sessionBus().baseService()) return;
+	if (oldOwner == newOwner) return;
+
+	// We are not the watcher anymore. The items and hosts we track belong to
+	// the watcher that replaced us and are dropped below. tryRegister() will
+	// take the name back if it becomes free again.
+	qCDebug(logStatusNotifierWatcher) << "StatusNotifierWatcher name taken over by" << newOwner;
+
+	for (auto& item: this->items) {
+		this->serviceWatcher.removeWatchedService(item.split("/").at(0));
+	}
+
+	for (auto& host: this->hosts) {
+		this->serviceWatcher.removeWatchedService(host);
+	}
+
+	this->items.clear();
+	this->hosts.clear();
+	this->registered = false;
 }
 
 bool StatusNotifierWatcher::isHostRegistered() const { // NOLINT
