@@ -145,7 +145,7 @@ void Notification::updateProperties(
 	} else {
 		auto value = hints.value(imageDataName).value<QDBusArgument>();
 		value >> this->mImagePixmap.writeImage();
-		imagePath = this->mImagePixmap.url();
+		if (this->mImagePixmap.hasData()) imagePath = this->mImagePixmap.url();
 	}
 
 	// don't store giant byte arrays longer than necessary
