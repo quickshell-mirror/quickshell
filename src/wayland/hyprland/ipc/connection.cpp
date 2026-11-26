@@ -17,6 +17,7 @@
 #include <qproperty.h>
 #include <qqml.h>
 #include <qtenvironmentvariables.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 #include <qvariant.h>
@@ -80,11 +81,14 @@ HyprlandIpc::HyprlandIpc() {
 	QObject::connect(&this->eventSocket, &QLocalSocket::errorOccurred, this, &HyprlandIpc::eventSocketError);
 	QObject::connect(&this->eventSocket, &QLocalSocket::stateChanged, this, &HyprlandIpc::eventSocketStateChanged);
 	QObject::connect(&this->eventSocket, &QLocalSocket::readyRead, this, &HyprlandIpc::eventSocketReady);
+	QObject::connect(&this->reconnectTimer, &QTimer::timeout, this, &HyprlandIpc::reconnectEventSocket);
 
 	auto *instance = HyprlandToplevelMappingManager::instance();
 	QObject::connect(instance, &HyprlandToplevelMappingManager::toplevelAddressed, this, &HyprlandIpc::toplevelAddressed);
 
 	// clang-format on
+
+	this->reconnectTimer.setSingleShot(true);
 
 	this->makeRequest("j/status", [&, this](bool success, QByteArray resp) {
 		if (success) {
@@ -109,7 +113,9 @@ QString HyprlandIpc::requestSocketPath() const { return this->mRequestSocketPath
 QString HyprlandIpc::eventSocketPath() const { return this->mEventSocketPath; }
 
 void HyprlandIpc::eventSocketError(QLocalSocket::LocalSocketError error) const {
-	if (!this->valid) {
+	if (this->reconnecting) {
+		qCDebug(logHyprlandIpc) << "Unable to reconnect to hyprland event socket:" << error;
+	} else if (!this->valid) {
 		qWarning() << "Unable to connect to hyprland event socket:" << error;
 	} else {
 		qWarning() << "Hyprland event socket error:" << error;
@@ -120,12 +126,39 @@ void HyprlandIpc::eventSocketStateChanged(QLocalSocket::LocalSocketState state) 
 	if (state == QLocalSocket::ConnectedState) {
 		this->eventReader.setDevice(&this->eventSocket);
 		qCInfo(logHyprlandIpc) << "Hyprland event socket connected.";
+
+		if (this->reconnecting) {
+			this->reconnecting = false;
+			this->reconnectDelay = 0;
+
+			// Events sent while disconnected are lost, so anything they may have changed has to be
+			// queried again. Requesting after the socket is connected ensures no later event is missed.
+			this->refreshMonitors(true);
+			this->refreshWorkspaces(true);
+			this->refreshToplevels();
+			this->refreshActiveToplevel();
+		}
+
 		emit this->connected();
-	} else if (state == QLocalSocket::UnconnectedState && this->valid) {
+	} else if (this->valid) {
+		// A socket closed by hyprland passes through ClosingState before becoming unconnected.
 		qCWarning(logHyprlandIpc) << "Hyprland event socket disconnected.";
+		this->reconnecting = true;
+	}
+
+	if (state == QLocalSocket::UnconnectedState && this->reconnecting) {
+		// Retry quickly as the drop is usually transient, but back off if hyprland is gone.
+		this->reconnectDelay = std::clamp(this->reconnectDelay * 2, 100, 5000);
+		qCInfo(logHyprlandIpc) << "Reconnecting to hyprland event socket in" << this->reconnectDelay
+		                       << "ms.";
+		this->reconnectTimer.start(this->reconnectDelay);
 	}
 
 	this->valid = state == QLocalSocket::ConnectedState;
+}
+
+void HyprlandIpc::reconnectEventSocket() {
+	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
 }
 
 void HyprlandIpc::eventSocketReady() {
@@ -750,7 +783,14 @@ void HyprlandIpc::refreshToplevels() {
 	if (this->requestingToplevels) return;
 	this->requestingToplevels = true;
 
-	this->makeRequest("j/clients", [this](bool success, const QByteArray& resp) {
+	// Only toplevels known before the request can be checked for removal, as the response
+	// may be older than toplevels created by events received while it was pending.
+	auto knownAddresses = QVector<quint64>();
+	for (auto* toplevel: this->mToplevels.valueList()) {
+		knownAddresses.push_back(toplevel->address());
+	}
+
+	this->makeRequest("j/clients", [this, knownAddresses](bool success, const QByteArray& resp) {
 		this->requestingToplevels = false;
 		if (!success) return;
 
@@ -758,6 +798,7 @@ void HyprlandIpc::refreshToplevels() {
 		auto json = QJsonDocument::fromJson(resp).array();
 
 		const auto& mList = this->mToplevels.valueList();
+		auto addresses = QVector<quint64>();
 
 		for (auto entry: json) {
 			auto object = entry.toObject().toVariantMap();
@@ -777,6 +818,7 @@ void HyprlandIpc::refreshToplevels() {
 			auto exists = toplevel != nullptr;
 
 			if (!exists) toplevel = new HyprlandToplevel(this);
+			auto* oldWorkspace = toplevel->bindableWorkspace().value();
 			toplevel->updateFromObject(object);
 
 			if (!exists) {
@@ -785,8 +827,42 @@ void HyprlandIpc::refreshToplevels() {
 			}
 
 			auto* workspace = toplevel->bindableWorkspace().value();
+			if (oldWorkspace && oldWorkspace != workspace) oldWorkspace->removeToplevel(toplevel);
 			if (workspace) workspace->insertToplevel(toplevel);
+
+			addresses.push_back(address);
 		}
+
+		auto removedToplevels = QVector<HyprlandToplevel*>();
+
+		for (auto* toplevel: mList) {
+			if (knownAddresses.contains(toplevel->address()) && !addresses.contains(toplevel->address()))
+			{
+				removedToplevels.push_back(toplevel);
+			}
+		}
+
+		for (auto* toplevel: removedToplevels) {
+			qCDebug(logHyprlandIpc) << "Toplevel with address" << toplevel->address()
+			                        << "no longer exists, removing";
+
+			if (toplevel == this->bActiveToplevel.value()) this->bActiveToplevel = nullptr;
+			this->mToplevels.removeObject(toplevel);
+			delete toplevel;
+		}
+	});
+}
+
+void HyprlandIpc::refreshActiveToplevel() {
+	this->makeRequest("j/activewindow", [this](bool success, const QByteArray& resp) {
+		if (!success) return;
+
+		auto object = QJsonDocument::fromJson(resp).object();
+		auto ok = false;
+		auto address = object.value("address").toString().toULongLong(&ok, 16);
+
+		// The response is empty when no window is focused.
+		this->bActiveToplevel = ok ? this->findToplevelByAddress(address, true) : nullptr;
 	});
 }
 
