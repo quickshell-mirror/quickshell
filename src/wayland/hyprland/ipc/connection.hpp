@@ -9,6 +9,7 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
+#include <qtimer.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
@@ -123,6 +124,7 @@ private slots:
 	void eventSocketError(QLocalSocket::LocalSocketError error) const;
 	void eventSocketStateChanged(QLocalSocket::LocalSocketState state);
 	void eventSocketReady();
+	void reconnectEventSocket();
 
 	void toplevelAddressed(qs::wayland::toplevel::wlr::ToplevelHandle* handle, quint64 address);
 
@@ -132,11 +134,15 @@ private:
 	explicit HyprlandIpc();
 
 	void onEvent(HyprlandIpcEvent* event);
+	void refreshActiveToplevel();
 
 	static bool compareWorkspaces(HyprlandWorkspace* a, HyprlandWorkspace* b);
 
 	QLocalSocket eventSocket;
 	StreamReader eventReader;
+	QTimer reconnectTimer;
+	qint32 reconnectDelay = 0;
+	bool reconnecting = false;
 	QString mRequestSocketPath;
 	QString mEventSocketPath;
 	bool valid = false;
