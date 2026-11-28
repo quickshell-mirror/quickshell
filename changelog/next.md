@@ -1,3 +1,7 @@
+## New Features
+
+- Added `AuthFlow.details` exposing the details polkit attaches to authentication requests.
+
 ## Other Changes
 
 - `SystemTrayItem.activate()` now forwards Wayland activation tokens to applications.
